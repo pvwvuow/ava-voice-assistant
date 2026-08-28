@@ -1,0 +1,47 @@
+{
+  "name": "ava-voice-assistant",
+  "productName": "AVA Voice Assistant",
+  "version": "0.1.0",
+  "description": "آوا — دستیار صوتی ویندوز | رابط کاربری نسخه ۰.۱",
+  "main": "main.js",
+  "license": "MIT",
+  "author": {
+    "name": "AVA"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ir.ava.assistant",
+    "productName": "AVA Voice Assistant",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "آوا"
+    }
+  }
+}
