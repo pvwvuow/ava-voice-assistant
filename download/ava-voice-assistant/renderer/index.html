@@ -296,8 +296,15 @@
                 <p class="set-note" data-i18n="set.dict.note">علائم داخلی: بگو «نقطه»، «کاما»، «علامت سوال»، «علامت تعجب»، «دو نقطه»، «خط تیره»، «پرانتز باز/بسته»، «خط جدید»، «پاک کن».</p>
               </div>
 
-              <!-- DNS و شبکه (مدیر کامل — فقط از همین‌جا) -->
-              <div class="set-pane" data-pane="dns">
+              <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
+              <div class="set-pane" data-pane="ext">
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.ping">پینگ DNSها</b><span data-i18n="set.ext.pingHint">سرعت پاسخ همه DNSهای ذخیره‌شده‌ات را می‌سنجد تا بهترین را انتخاب کنی — با صدا هم: «پینگ دی ان اس هامو»</span></span>
+                  <button class="chip" id="btnDnsPing"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.ext.pingBtn">پینگ بگیر</span></button>
+                </div>
+                <p class="set-note" data-i18n="set.ext.note">این بخش مخصوص امکانات خاص است؛ اگر لازمشان نداری می‌توانی نادیده‌شان بگیری. مدیریت کامل DNS و ابزارهای خاص این‌جا جمع شده‌اند.</p>
+
+                <!-- مدیریت DNS (قبل‌تر پنله جدا بود) -->
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.dns.state">وضعیت فعلی</b><span data-i18n="set.dns.stateHint">«دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار (DHCP) برمی‌گرداند</span></span>
                   <button class="chip sm" id="btnDnsReset"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.dns.reset">بازگردانی خودکار</span></button>
@@ -388,6 +395,27 @@
                   <span class="set-info"><b data-i18n="set.ai.openaiKey">کلید API اوپن‌ای‌آی (اختیاری)</b><span data-i18n="set.ai.openaiKeyHint">از platform.openai.com — با GPT جواب می‌دهد</span></span>
                   <input type="password" id="optOpenaiKey" class="set-input" data-i18n-ph="set.ai.openaiPh" placeholder="sk-…" autocomplete="off" dir="ltr" />
                 </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ai.geminiModel">مدل جمنای</b><span data-i18n="set.ai.geminiModelHint">مدل پیش‌فرض: flash-latest (همیشه جدیدترین فلاش) — اگر منسوخ شد از همین‌جا عوضش کن</span></span>
+                  <input type="text" id="optGeminiModel" class="set-input" list="geminiModelList" dir="ltr" data-i18n-ph="set.ai.geminiModelPh" placeholder="gemini-flash-latest" autocomplete="off" />
+                  <datalist id="geminiModelList">
+                    <option value="gemini-flash-latest"></option>
+                    <option value="gemini-2.5-flash"></option>
+                    <option value="gemini-2.5-flash-lite"></option>
+                    <option value="gemini-2.0-flash"></option>
+                    <option value="gemini-2.0-flash-lite"></option>
+                  </datalist>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ai.openaiModel">مدل OpenAI</b><span data-i18n="set.ai.openaiModelHint">می‌توانی هر مدلی بنویسی؛ پیشنهادها از منوی پایین ورودی هم می‌آید</span></span>
+                  <input type="text" id="optOpenaiModel" class="set-input" list="openaiModelList" dir="ltr" data-i18n-ph="set.ai.openaiModelPh" placeholder="gpt-4o-mini" autocomplete="off" />
+                  <datalist id="openaiModelList">
+                    <option value="gpt-4o-mini"></option>
+                    <option value="gpt-4o"></option>
+                    <option value="gpt-4.1-mini"></option>
+                    <option value="gpt-4.1"></option>
+                  </datalist>
+                </div>
                 <p class="set-note" data-i18n="set.ai.note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به هوش مصنوعی می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
               </div>
 
@@ -448,7 +476,7 @@
               <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
               <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
               <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
-              <button class="set-nav-item" data-pane="dns" type="button"><svg class="ic"><use href="#i-shield"/></svg><span data-i18n="set.nav.dns">DNS و شبکه</span></button>
+              <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
               <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
               <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
               <button class="set-nav-item" data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
@@ -646,6 +674,25 @@
     </form>
   </div>
 
+  <!-- ============ پاپ‌آپ پینگ DNSها (v0.13) — «پینگ دی ان اس هامو» ============ -->
+  <div id="dnsPing" class="dnsq" hidden>
+    <div class="dnsq-backdrop" id="dnspBackdrop"></div>
+    <div class="dnsq-card glass dnsp-card">
+      <div class="dnsq-glow" aria-hidden="true"></div>
+      <header class="dnsq-head">
+        <span class="dnsq-ico"><svg class="ic"><use href="#i-pulse"/></svg></span>
+        <div class="dnsq-tt">
+          <b data-i18n="dnsp.title">پینگ DNSها</b>
+          <span data-i18n="dnsp.sub">سریع‌ترین‌ها بالا — هر کدام را خواستی فعال کن</span>
+        </div>
+        <button type="button" class="dnsq-x" id="dnspRefresh" aria-label="پینگ دوباره" data-i18n-tip="dnsp.refresh"><svg class="ic"><use href="#i-refresh"/></svg></button>
+        <button type="button" class="dnsq-x" id="dnspClose" aria-label="بستن"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="dnsp-list" id="dnsPingList"></div>
+      <p class="set-note" data-i18n="dnsp.note">فعال‌سازی هر DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند. «کنسل» بزنی صفحه می‌بندد.</p>
+    </div>
+  </div>
+
   <!-- پاپ‌آپ درباره -->
   <div id="about" class="about glass" hidden>
     <div class="about-head">
@@ -658,7 +705,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span>v0.11.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span>v0.13.0</span></div>
   </div>
 
   <script src="js/app.js"></script>

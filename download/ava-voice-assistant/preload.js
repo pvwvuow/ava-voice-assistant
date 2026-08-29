@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld('ava', {
     current: () => ipcRenderer.invoke('dns:current'),
     apply: (p) => ipcRenderer.invoke('dns:apply', p),
     reset: () => ipcRenderer.invoke('dns:reset'),
+    /* پینگ DNSها (v0.13) — «آوا پینگ dns هامو نشون بده» */
+    ping: (list) => ipcRenderer.invoke('dns:ping', list),
     quickOpen: () => ipcRenderer.invoke('dns:quick-open'),
     onQuickRequest: (cb) => ipcRenderer.on('dns:quick-request', () => cb()),
   },

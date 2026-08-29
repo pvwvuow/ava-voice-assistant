@@ -1,10 +1,11 @@
 /**
- * Smoke test for AVA v0.12.0 — boots the app under Xvfb, checks
+ * Smoke test for AVA v0.13.0 — boots the app under Xvfb, checks
  * v0.11 UI elements (titlebar physical layout, update badge, music
  * page, live text, new settings), suggestion rotation, theme +
- * language switching, plus v0.12 additions: mute button, reverted
- * light-theme orb, app-blur pause rules, phonetic app-open layer,
- * reminders + app-scanner bridges, AI key rotation markers.
+ * language switching, v0.12 additions (phonetic app-open, reminders,
+ * scanner bridges, key rotation) and v0.13 additions: Extensions
+ * pane, DNS ping popup, Gemini/OpenAI model inputs, removed rail
+ * tooltip, mic busy feedback, dismissible music widget, monitor fix.
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -219,7 +220,61 @@ app.whenReady().then(async () => {
       ok('row hover play overlay', markers.hovplay);
     } catch (e) { console.log('SKIP | v0.12 markers | ' + String(e && e.message).slice(0, 80)); }
 
-    // 5.5 v0.12 — mute button + i-mute symbol in DOM
+    // 5.2 v0.13 — static source markers (ping, extensions pane, models,
+    // removed tooltip, widget drag, monitor fix, mic busy guard)
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v13 = {
+        pingIpc: mainjs.includes("ipcMain.handle('dns:ping'") && preload.includes("'dns:ping'"),
+        pingParser: /time\|زمان/.test(mainjs) || mainjs.includes('زمان'),
+        pingOverlay: html.includes('id="dnsPing"') && appjs.includes('runDnsPing'),
+        pingVoice: appjs.includes('پینگ') && appjs.includes('pingVoiceReply'),
+        extPane: html.includes('data-pane="ext"') && !html.includes('data-pane="dns"'),
+        modelInputs: html.includes('optGeminiModel') && html.includes('optOpenaiModel') && appjs.includes('settings.geminiModel'),
+        geminiFirst: /await tryGemini\(\); if \(r\) return r;/.test(appjs) && appjs.includes('gemini-flash-latest'),
+        tooltipGone: !css.includes('rail-item::after'),
+        widgetDrag: appjs.includes('widgetDismissedFor') && appjs.includes('pointerdown'),
+        micBusyGuard: appjs.includes("t('mic.busy')") && css.includes('orbShake'),
+        monitorFix: mainjs.includes('SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l)') && mainjs.includes("'monitor_off', 'lock'"),
+      };
+      ok('dns ping IPC chain', v13.pingIpc);
+      ok('dns ping overlay + voice', v13.pingOverlay && v13.pingVoice);
+      ok('extensions pane replaces dns', v13.extPane);
+      ok('gemini/openai model inputs', v13.modelInputs);
+      ok('auto chain: gemini first', v13.geminiFirst);
+      ok('rail tooltip removed', v13.tooltipGone);
+      ok('music widget draggable', v13.widgetDrag);
+      ok('mic busy guard + shake', v13.micBusyGuard);
+      ok('monitor_off intptr fix + lock ff', v13.monitorFix);
+    } catch (e) { console.log('SKIP | v0.13 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 5.5 v0.13 — ping overlay + model inputs + extensions button in DOM
+    const v13ui = await probe(`(() => ({
+      ping: !!document.querySelector('#dnsPing'),
+      pingList: !!document.querySelector('#dnsPingList'),
+      extBtn: !!document.querySelector('#btnDnsPing'),
+      gmModel: !!document.querySelector('#optGeminiModel'),
+      oaModel: !!document.querySelector('#optOpenaiModel'),
+      extNav: !!document.querySelector('.set-nav-item[data-pane="ext"]'),
+      dnsNavGone: !document.querySelector('.set-nav-item[data-pane="dns"]'),
+    }))()`);
+    ok('ping overlay + ext pane in DOM', v13ui.ping && v13ui.pingList && v13ui.extBtn && v13ui.extNav && v13ui.dnsNavGone, JSON.stringify(v13ui));
+    ok('model inputs in DOM', v13ui.gmModel && v13ui.oaModel);
+
+    // 5.6 v0.13 — toggleListen busy guard: simulate processing state click
+    try {
+      await probe(`document.querySelector('#orb').click(); document.querySelector('#orb').click();`);
+      await new Promise((r) => setTimeout(r, 300));
+      const busy = await probe(`(() => ({ cls: document.body.className, toast: document.querySelector('#toasts') ? document.querySelector('#toasts').textContent.slice(0, 40) : '' }))()`);
+      ok('orb behaves on rapid clicks (no stuck)', /state-(idle|listening)/.test(busy.cls), busy.cls);
+    } catch (e) { console.log('SKIP | busy guard | ' + String(e && e.message).slice(0, 50)); }
+
+    // 5.7 v0.12 — mute button + i-mute symbol in DOM
     const v12ui = await probe(`(() => ({
       mute: !!document.querySelector('#mMute'),
       muteIcon: (document.querySelector('#mMuteIcon')||{}).getAttribute ? document.querySelector('#mMuteIcon').getAttribute('href') : '',

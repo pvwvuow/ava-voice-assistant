@@ -39,6 +39,7 @@
     'set.nav.dict': ['تایپ صوتی', 'Voice typing'], 'set.nav.dns': ['DNS و شبکه', 'DNS & network'],
     'set.nav.voice': ['صدا و پاسخ', 'Voice & replies'], 'set.nav.ai': ['هوش مصنوعی', 'AI'],
     'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
+    'set.nav.ext': ['افزونه‌ها', 'Extensions'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
     'set.mic.checking': ['دسترسی میکروفون بررسی می‌شود…', 'Checking microphone access…'],
     'set.mic.default': ['پیش‌فرض ویندوز', 'Windows default'],
@@ -135,7 +136,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۲ — باز کردن برنامه‌های نصب‌شده با صدا («تلگرام رو باز کن») با دیکشنری تلفظ فارسی و تطبیق فازی + اسکنر Start Menu و بازی‌های Steam، یادآوری‌های صوتی («۲۰ دقیقه دیگه یادم بنداز…»، «ساعت ۵ عصر…»)، مدیای سیستم، چند کلید AI با چرخش خودکار (GLM/Gemini/OpenAI)، پلیر موزیک بازطراحی‌شده، مصرف CPU بهینه و آپدیت دلتا داخل برنامه.', 'v0.12 — open installed apps by voice ("open Telegram") with a Persian phonetic dictionary + fuzzy match, Start Menu & Steam games scanner, voice reminders ("remind me in 20 minutes…", "at 5 PM"), system media keys, multi-key AI rotation (GLM/Gemini/OpenAI), a redesigned music player, lower CPU usage, and in-app delta updates.'],
+    'about.desc': ['نسخه ۰.۱۳ — پینگ DNSها با پاپ‌آپ شیشه‌ای («پینگ دی ان اس هامو»)، بخش افزونه‌ها در تنظیمات، انتخاب مدل جمنای/OpenAI، اولویت جمنای در حالت خودکار AI، فیکس رفتار دکمه میکروفون و مانیتور/قفل، ویجت موزیک قابل بستن با کشیدن، باز کردن برنامه‌ها با صدا، یادآوری‌های صوتی، پلیر موزیک و آپدیت دلتا.', 'v0.13 — glass DNS ping popup ("ping my DNS"), Extensions settings section, Gemini/OpenAI model picker, Gemini-first AI auto chain, mic button & monitor/lock fixes, dismissible music widget, open apps by voice, voice reminders, music player, and in-app delta updates.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -326,6 +327,7 @@
     'music.mute': ['قطع/وصل صدا', 'Mute / unmute'],
     'music.muted': ['صدای پلیر قطع شد', 'Player muted'],
     'music.unmuted': ['صدای پلیر وصل شد', 'Player unmuted'],
+    'music.widgetOff': ['ویجت موزیک بسته شد — با آهنگ بعدی برمی‌گردد', 'Music widget dismissed — returns with the next track'],
 
     /* --- v0.12: باز کردن برنامه‌های سیستم --- */
     'app.open': ['{x} را باز کردم — خوش بگذره!', 'Opened {x} — enjoy!'],
@@ -338,6 +340,32 @@
     'rem.noTime': ['نگفتی کی یادت بندازم — مثلاً بگو «۲۰ دقیقه دیگه یادم بنداز چایی درست کنم» یا «ساعت ۵ عصر یادآوری بذار».', 'You did not say when — try "remind me in 20 minutes to make tea" or "remind me at 5 PM".'],
     'rem.fail': ['یادآوری ثبت نشد — دوباره امتحان کن.', 'The reminder did not save — try again.'],
     'rem.due': ['یادآوری: {x}', 'Reminder: {x}'],
+
+    /* --- v0.13: افزونه‌ها + پینگ DNS --- */
+    'set.ext.ping': ['پینگ DNSها', 'Ping DNS servers'],
+    'set.ext.pingHint': ['سرعت پاسخ همه DNSهای ذخیره‌شده‌ات را می‌سنجد تا بهترین را انتخاب کنی — با صدا هم: «پینگ دی ان اس هامو»', 'Measures the response time of every saved DNS so you can pick the best — also by voice: "ping my DNS"'],
+    'set.ext.pingBtn': ['پینگ بگیر', 'Ping now'],
+    'set.ext.note': ['این بخش مخصوص امکانات خاص است؛ اگر لازمشان نداری می‌توانی نادیده‌شان بگیری. مدیریت کامل DNS و ابزارهای خاص این‌جا جمع شده‌اند.', 'This section holds special tools you can safely ignore if you do not need them — full DNS management and extras live here.'],
+    'dnsp.title': ['پینگ DNSها', 'Ping DNS servers'],
+    'dnsp.sub': ['سریع‌ترین‌ها بالا — هر کدام را خواستی فعال کن', 'Fastest first — activate any of them'],
+    'dnsp.refresh': ['پینگ دوباره', 'Ping again'],
+    'dnsp.note': ['فعال‌سازی هر DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند. «کنسل» بزنی صفحه می‌بندد.', 'Activating a DNS opens the Windows UAC prompt. Cancel just closes this page.'],
+    'dnsp.testing': ['در حال پینگ گرفتن… چند لحظه صبر کن', 'Pinging… one moment'],
+    'dnsp.fail': ['پاسخی نداد', 'No reply'],
+    'dnsp.activate': ['فعال‌سازی', 'Activate'],
+    'dnsp.active': ['فعال شد ✓', 'Active ✓'],
+    'dnsp.onlyApp': ['پینگ فقط داخل نرم‌افزار ویندوزی کار می‌کند', 'Pinging only works inside the Windows app'],
+    'dns.pingReply': ['پینگ گرفتم! سریع‌ترین DNS: «{x}» با {y} میلی‌ثانیه — صفحه پینگ باز است؛ هر کدام را خواستی فعال کن.', 'Pinged! Fastest DNS: "{x}" at {y} ms — the ping page is open; activate whichever you like.'],
+    'dns.pingAllFail': ['هیچ‌کدام از DNSها پاسخ ندادند — اتصال اینترنت را بررسی کن.', 'None of the DNS servers replied — check your internet connection.'],
+
+    /* --- v0.13: انتخاب مدل + فیدبک دکمه میکروفون --- */
+    'set.ai.geminiModel': ['مدل جمنای', 'Gemini model'],
+    'set.ai.geminiModelHint': ['مدل پیش‌فرض: flash-latest (همیشه جدیدترین فلاش) — اگر منسوخ شد از همین‌جا عوضش کن', 'Default: flash-latest (always the newest flash) — change it here whenever a model retires'],
+    'set.ai.geminiModelPh': ['gemini-flash-latest', 'gemini-flash-latest'],
+    'set.ai.openaiModel': ['مدل OpenAI', 'OpenAI model'],
+    'set.ai.openaiModelHint': ['می‌توانی هر مدلی بنویسی؛ پیشنهادها از منوی پایین ورودی هم می‌آید', 'Type any model name; suggestions appear below the input'],
+    'set.ai.openaiModelPh': ['gpt-4o-mini', 'gpt-4o-mini'],
+    'mic.busy': ['یک لحظه! دارم فرمان قبلی‌ات را انجام می‌دهم…', 'One moment! I am still working on your previous command…'],
     'voice.engine': ['موتور صدا', 'Voice engine'],
     'voice.engineHint': ['«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)', '"Google": natural professional female voice (online — the Google Translate voice); "Windows": the installed Windows voice (offline)'],
     'voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
@@ -348,7 +376,7 @@
     'set.voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
     'set.voice.wEng': ['ویندوز — آفلاین', 'Windows — offline'],
     'set.ai.provider': ['موتور هوش مصنوعی', 'AI engine'],
-    'set.ai.providerHint': ['«خودکار»: به ترتیب حساب GLM، کلید GLM، کلید Gemini و بعد OpenAI امتحان می‌شود — یا یکی را ثابت انتخاب کن', '"Auto": tries GLM account, GLM key, Gemini key, then OpenAI in order — or fix one'],
+    'set.ai.providerHint': ['«خودکار»: اول کلید Gemini (با سرچ زنده گوگل)، بعد حساب GLM، کلید GLM و در آخر OpenAI — یا یکی را ثابت انتخاب کن', '"Auto": Gemini key first (with live Google Search), then GLM account, GLM key, and OpenAI last — or fix one'],
     'set.ai.pAuto': ['خودکار (پیشنهادی)', 'Auto (recommended)'],
     'set.ai.pZai': ['حساب GLM (z.ai)', 'GLM account (z.ai)'],
     'set.ai.pGlm': ['کلید API گله‌م', 'GLM API key'],
@@ -509,6 +537,8 @@
   const optAiProvider = $('#optAiProvider');
   const optGeminiKey = $('#optGeminiKey');
   const optOpenaiKey = $('#optOpenaiKey');
+  const optGeminiModel = $('#optGeminiModel');
+  const optOpenaiModel = $('#optOpenaiModel');
   const musicPage = $('#musicPage');
   const btnMusic = $('#btnMusic');
   const btnMusicBack = $('#btnMusicBack');
@@ -613,6 +643,9 @@
     aiProvider: store.get('aiProvider', 'auto'),
     geminiKey: store.get('geminiKey', ''),
     openaiKey: store.get('openaiKey', ''),
+    /* v0.13: انتخاب مدل — flash-latest همیشه جدیدترین فلاش جمنای است */
+    geminiModel: store.get('geminiModel', 'gemini-flash-latest'),
+    openaiModel: store.get('openaiModel', 'gpt-4o-mini'),
     micId: store.get('micId', ''),
     handsFree: store.get('handsFree', false),
     wakeWord: store.get('wakeWord', true),
@@ -1732,6 +1765,30 @@
       return;
     }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
+    /* پینگ DNSها (v0.13) — قبل از مسیر کلاسیک DNS تا «پینگ دی ان اس» قاطی نشود */
+    if (/پینگ[^.]{0,16}(دی\s?ان\s?اس|dns)|(دی\s?ان\s?اس|dns)[^.]{0,12}پینگ|پینگ\s?(بگیر|نشون|بده)|dns.{0,10}ping|ping.{0,10}dns/i.test(raw)) {
+      if (cmdBusy) return;
+      cmdBusy = true;
+      setState('processing');
+      statusText.textContent = t('dnsp.testing');
+      try {
+        const reply = await pingVoiceReply();
+        setState('success');
+        statusText.textContent = t('status.done');
+        body.classList.add('has-card');
+        rcHeard.textContent = `«${raw}»`;
+        rcTag.textContent = 'PING';
+        typeText(rcReply, reply);
+        speak(reply);
+        pushHistory(raw, true);
+      } catch (_) {
+        setState('idle');
+        statusText.innerHTML = IDLE_HINT;
+      }
+      cmdBusy = false;
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+      return;
+    }
     /* DNS کلاسیک: هر جمله‌ای که «دی ان اس / dns» دارد */
     if (/دی\s?ان\s?اس|dns/i.test(raw)) { await runDnsCommand(raw); return; }
     /* DNS با اسم دلخواه — حتی بدون واژه «دی ان اس»:
@@ -1811,6 +1868,7 @@
      ============================================================ */
   let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
   let webGotAny = false, webWatchdog = null, webFailStreak = 0;
+  let recEpoch = 0; /* نسل‌شمار موتور وب — ریس onend/onresult جلسه قدیمی را می‌کشد (فیکس v0.13) */
   let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false, glmSilentMs = 0;
   const ASR_MODEL = 'glm-asr-2512';
   const GLM_MAX_MS = 12000;   // بیشینه ضبط هر فرمان صوتی
@@ -1864,20 +1922,26 @@
   }
 
   function makeRec() {
+    /* نسل‌شمار: اگر جلسه جدیدی شروع شده بود، رویدادهای این جلسه قدیمی
+       کاملاً نادیده گرفته می‌شوند — فیکس «رفتار عجیب» استارت/استارت سریع
+       (قبلاً onend جلسه قبلی، موتور جلسه جدید را هم از کار می‌انداخت) */
+    const myEpoch = recEpoch;
     const r = new SRC();
     r.lang = settings.sttLang || 'fa-IR';
     r.interimResults = true;
     r.continuous = false;
     webGotAny = false;
-    /* سگ‌بان: اگر موتور وب بعد از ۴.۵ ثانیه هیچ نتیجه/خطایی نداد (معمولاً
-       به‌خاطر بی‌دسترس بودن گوگل)، خودکار به موتور بعدی سوییچ می‌کنیم */
+    /* سگ‌بان: اگر موتور وب بعد از ۷.۵ ثانیه هیچ نتیجه/خطایی نداد (معمولاً
+       به‌خاطر کندی شبکه)، خودکار به موتور بعدی سوییچ می‌کنیم
+       (۴.۵ ثانیه قبلی وسط گوش دادن روی اینترنت کند قطع می‌شد) */
     clearTimeout(webWatchdog);
     webWatchdog = setTimeout(() => {
-      if (state !== 'listening' || gotFinal || webGotAny) return;
+      if (myEpoch !== recEpoch || state !== 'listening' || gotFinal || webGotAny) return;
       try { recActive = false; if (rec) { try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ } } } catch (_) { /* noop */ }
       fallbackFromWeb();
-    }, 4500);
+    }, 7500);
     r.onresult = (e) => {
+      if (myEpoch !== recEpoch) return; /* جلسه قدیمی — نادیده */
       let interim = '', final = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const tr = e.results[i][0].transcript;
@@ -1902,6 +1966,7 @@
       }
     };
     r.onerror = (e) => {
+      if (myEpoch !== recEpoch) return; /* جلسه قدیمی — نادیده */
       if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) {
         clearTimeout(webWatchdog);
         recActive = false;
@@ -1915,6 +1980,7 @@
       }
     };
     r.onend = () => {
+      if (myEpoch !== recEpoch) return; /* جلسه قدیمی — وضعیت جلسه جدید را خراب نکن */
       recActive = false;
       clearTimeout(webWatchdog);
       if (gotFinal || srBroken) return;
@@ -1940,7 +2006,7 @@
      ۳) صدا اول بریده می‌شود (سکوت‌ها) بعد تقویت — دقت بالاتر
      ۴) اگر گوگل جواب نداد، همان صدا به‌صورت WAV به GLM-ASR هم می‌رود */
   const G_MAX_MS = 12000;    // بیشینه ضبط
-  const G_SIL_MS = 1500;     // سکوت پایان فرمان
+  const G_SIL_MS = 2200;     // سکوت پایان فرمان (۲.۲ ثانیه — وسط جمله قطع نکنیم)
   const G_IDLE_MS = 8000;    // اگر هیچ حرفی نشنید
   let gRec = null, gMaxT = null;
 
@@ -2592,12 +2658,131 @@
     return t('dns.openedForm');
   }
 
+  /* ============================================================
+     پاپ‌آپ پینگ DNSها (v0.13) — «آوا پینگ dns هامو نشون بده»
+     لیست پروفایل‌های کاربر + DNSهای معروف پینگ می‌شوند، مرتب بر
+     اساس سریع‌ترین؛ هر ردیف دکمه فعال‌سازی (UAC) دارد.
+     ============================================================ */
+  const dnsPingEl = $('#dnsPing');
+  const dnsPingList = $('#dnsPingList');
+  let dnsPingBusy = false;
+
+  function pingTargets() {
+    /* پروفایل‌های کاربر + معروف‌ها (بدون تکرار بر اساس نام) */
+    const seen = new Set();
+    const out = [];
+    for (const p of [...settings.dnsProfiles, ...DNS_BUILTIN]) {
+      const k = normDnsName(p.name);
+      if (!k || seen.has(k) || !p.ips || !p.ips.length) continue;
+      seen.add(k);
+      out.push({ name: p.name, ips: p.ips });
+    }
+    return out;
+  }
+
+  function renderPingRow(p, state, ms) {
+    const row = document.createElement('div');
+    row.className = 'dnsp-row';
+    row.dataset.name = p.name;
+    let badge;
+    if (state === 'wait') badge = `<span class="dnsp-ms wait">…</span>`;
+    else if (state === 'ok') {
+      const cls = ms <= 90 ? 'good' : ms <= 220 ? 'mid' : 'bad';
+      badge = `<span class="dnsp-ms ${cls}">${faNum(ms)} ${LANG === 'en' ? 'ms' : 'ms'}</span>`;
+    } else badge = `<span class="dnsp-ms bad">${t('dnsp.fail')}</span>`;
+    row.innerHTML =
+      `<span class="dnsp-name"><b></b><span></span></span>${badge}` +
+      `<button type="button" class="chip sm dnsp-act"><svg class="ic"><use href="#i-power"/></svg><span></span></button>`;
+    row.querySelector('.dnsp-name b').textContent = p.name;
+    row.querySelector('.dnsp-name span').textContent = p.ips.join(' , ');
+    const act = row.querySelector('.dnsp-act');
+    act.querySelector('span').textContent = t('dnsp.activate');
+    act.addEventListener('click', async () => {
+      act.disabled = true;
+      const msg = await applyDnsIps(p.ips, p.name);
+      toast(msg, '#i-globe');
+      refreshDnsCurrent();
+      act.querySelector('span').textContent = t('dnsp.active');
+      setTimeout(() => { act.disabled = false; act.querySelector('span').textContent = t('dnsp.activate'); }, 2600);
+    });
+    return row;
+  }
+
+  async function runDnsPing() {
+    if (!dnsPingEl || dnsPingBusy) return { ok: false, error: '' };
+    if (!bridge || !bridge.dns || !bridge.dns.ping) {
+      openDnsPingOverlay();
+      if (dnsPingList) dnsPingList.innerHTML = `<p class="dnsp-empty">${t('dnsp.onlyApp')}</p>`;
+      return { ok: false, error: t('dnsp.onlyApp') };
+    }
+    const targets = pingTargets();
+    openDnsPingOverlay();
+    if (!targets.length) {
+      if (dnsPingList) dnsPingList.innerHTML = `<p class="dnsp-empty">${t('dnsp.testing')}</p>`;
+    }
+    if (!targets.length) return { ok: false, error: t('dns.notFound', { x: '' }) };
+    dnsPingBusy = true;
+    if (dnsPingList) {
+      dnsPingList.innerHTML = '';
+      targets.forEach((p) => dnsPingList.appendChild(renderPingRow(p, 'wait')));
+    }
+    const r = await bridge.dns.ping(targets).catch(() => null);
+    dnsPingBusy = false;
+    if (dnsPingList) {
+      dnsPingList.innerHTML = '';
+      const res = (r && r.results) || [];
+      res.forEach((x) => {
+        const src = targets.find((p) => p.name === x.name);
+        if (src) dnsPingList.appendChild(renderPingRow(src, x.ok ? 'ok' : 'fail', x.ms));
+      });
+      if (!res.length) dnsPingList.innerHTML = `<p class="dnsp-empty">${t('dnsp.testing')}</p>`;
+    }
+    return r || { ok: false, error: '' };
+  }
+
+  function openDnsPingOverlay() {
+    if (!dnsPingEl) return;
+    dnsPingEl.hidden = false;
+    document.body.classList.add('dnsq-open');
+  }
+  function closeDnsPingOverlay() {
+    if (!dnsPingEl || dnsPingEl.hidden) return;
+    const card = dnsPingEl.querySelector('.dnsp-card');
+    if (card) card.classList.add('closing');
+    document.body.classList.remove('dnsq-open');
+    setTimeout(() => {
+      dnsPingEl.hidden = true;
+      if (card) card.classList.remove('closing');
+    }, 300);
+  }
+  if (dnsPingEl) {
+    $('#dnspClose').addEventListener('click', closeDnsPingOverlay);
+    $('#dnspBackdrop').addEventListener('click', closeDnsPingOverlay);
+    $('#dnspRefresh').addEventListener('click', () => runDnsPing().catch(() => { /* noop */ }));
+    const btnExtPing = $('#btnDnsPing');
+    if (btnExtPing) btnExtPing.addEventListener('click', () => runDnsPing().catch(() => { /* noop */ }));
+  }
+
+  /* پاسخ صوتی پینگ: صفحه باز می‌شود + سریع‌ترین DNS اعلام می‌شود */
+  async function pingVoiceReply() {
+    if (!bridge || !bridge.dns || !bridge.dns.ping) {
+      openDnsPingOverlay();
+      if (dnsPingList) dnsPingList.innerHTML = `<p class="dnsp-empty">${t('dnsp.onlyApp')}</p>`;
+      return t('dnsp.onlyApp') + '.';
+    }
+    const r = await runDnsPing();
+    const res = (r && r.results) || [];
+    const best = res.find((x) => x.ok);
+    if (best) return t('dns.pingReply', { x: best.name, y: faNum(best.ms) });
+    return t('dns.pingAllFail');
+  }
+
   async function dnsHandle(cmd) {
     const n = normFa(cmd);
     /* باز کردن مدیر کامل DNS داخل تنظیمات (فقط از تنظیمات) */
     const openManager = (msg) => {
       showView('settings');
-      showSettingsPane('dns');
+      showSettingsPane('ext');
       refreshDnsCurrent();
       return msg;
     };
@@ -2797,6 +2982,7 @@
     const eng = resolveEngine();
     if (eng === 'web') {
       try {
+        recEpoch += 1; /* جلسه جدید — رویدادهای جلسه قبلی باطل می‌شوند */
         rec = makeRec();
         statusText.textContent = t('status.listening');
         recActive = true;
@@ -2865,7 +3051,22 @@
       statusText.innerHTML = IDLE_HINT;
     }
   }
-  const toggleListen = () => (state === 'listening' ? stopListening() : startListening());
+  const toggleListen = () => {
+    /* فیکس v0.13: کلیک حین اجرای فرمان قبلی → هیچ تغییر وضعیتی اتفاق
+       نمی‌افتد ولی فیدبک واضح می‌دهیم (قبلاً ریپل می‌خورد و هیچ — حس «گیر کردن») */
+    if (state === 'processing') {
+      try {
+        orb.classList.remove('shake');
+        void orb.offsetWidth;
+        orb.classList.add('shake');
+        setTimeout(() => orb.classList.remove('shake'), 550);
+      } catch (_) { /* noop */ }
+      toast(t('mic.busy'), '#i-mic');
+      return;
+    }
+    if (state === 'listening') return stopListening();
+    startListening();
+  };
 
   /* کلیک اورب: موج ripple انیمیشنی — همیشه از «مرکز دکمه» جریان می‌گیرد
      (نه از نقطه کلیک) + تیلت ریست */
@@ -2920,6 +3121,7 @@
     { cmd: 'شروع ضبط صدا', en: 'start recording', icon: '#i-mic' },
     { cmd: 'آوا تایپ', en: 'Ava type', icon: '#i-type' },
     { cmd: 'تنظیم دی ان اس جدید', en: 'new DNS', icon: '#i-shield' },
+    { cmd: 'پینگ dns هامو نشون بده', en: 'ping my DNS servers', icon: '#i-pulse' },
     { cmd: 'یک جوک بگو', en: 'tell me a joke', icon: '#i-smile' },
     { cmd: 'کامپیوتر رو بخوابون', en: 'sleep the PC', icon: '#i-moon' },
     { cmd: 'مانیتور رو خاموش کن', en: 'turn off the monitor', icon: '#i-monitor' },
@@ -2992,6 +3194,7 @@
       cmdInput.focus();
     } else if (e.key === 'Escape') {
       if (dnsQuickEl && !dnsQuickEl.hidden) closeDnsQuickOverlay();
+      if (dnsPingEl && !dnsPingEl.hidden) closeDnsPingOverlay();
       else if (!confirmBox.hidden) hideConfirm();
       else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
@@ -3267,6 +3470,8 @@
     if (optAiProvider) optAiProvider.value = settings.aiProvider || 'auto';
     if (optGeminiKey) optGeminiKey.value = settings.geminiKey || '';
     if (optOpenaiKey) optOpenaiKey.value = settings.openaiKey || '';
+    if (optGeminiModel) optGeminiModel.value = settings.geminiModel || 'gemini-flash-latest';
+    if (optOpenaiModel) optOpenaiModel.value = settings.openaiModel || 'gpt-4o-mini';
     updateHandsFreeUI();
     refreshEngineUI();
     fillVoiceSelect();
@@ -3307,6 +3512,19 @@
   if (optOpenaiKey) optOpenaiKey.addEventListener('change', () => {
     settings.openaiKey = optOpenaiKey.value.trim();
     store.set('openaiKey', settings.openaiKey);
+  });
+  /* v0.13: انتخاب مدل جمنای / OpenAI — هر نامی قابل قبول است */
+  if (optGeminiModel) optGeminiModel.addEventListener('change', () => {
+    settings.geminiModel = (optGeminiModel.value || '').trim() || 'gemini-flash-latest';
+    optGeminiModel.value = settings.geminiModel;
+    store.set('geminiModel', settings.geminiModel);
+    toast(t('toast.saved'), '#i-spark');
+  });
+  if (optOpenaiModel) optOpenaiModel.addEventListener('change', () => {
+    settings.openaiModel = (optOpenaiModel.value || '').trim() || 'gpt-4o-mini';
+    optOpenaiModel.value = settings.openaiModel;
+    store.set('openaiModel', settings.openaiModel);
+    toast(t('toast.saved'), '#i-spark');
   });
 
   optTts.addEventListener('change', () => {
@@ -3751,8 +3969,8 @@
     zaiWeb.addEventListener('did-stop-loading', () => setTimeout(() => checkZaiToken(), 800));
   }
 
-  /* --- ارسال پیام: زنجیره پرووایدرها (v0.11) ---
-     «خودکار»: حساب GLM (z.ai) → کلید GLM → Gemini (با سرچ گوگل) → OpenAI
+  /* --- ارسال پیام: زنجیره پرووایدرها (v0.13) ---
+     «خودکار»: اول Gemini (با سرچ زنده گوگل) → حساب GLM (z.ai) → کلید GLM → OpenAI
      یا پرووایدر ثابت از تنظیمات. اولین جواب موفق برگردانده می‌شود. */
   async function aiAsk(text) {
     const msgs = [{ role: 'system', content: aiSystem() }, ...chatHist.slice(-8), { role: 'user', content: text }];
@@ -3777,12 +3995,13 @@
     };
     const tryGemini = async () => {
       if (!settings.geminiKey || !bridge || !bridge.ai || !bridge.ai.gemini) return false;
-      /* Gemini با ابزار جستجوی گوگل: سوال‌های «سرچ» جواب لحظه‌ای می‌گیرند */
-      return (await bridge.ai.gemini({ key: settings.geminiKey, model: 'gemini-2.0-flash', messages: msgs, search: true }).catch(() => null)) || false;
+      /* Gemini با ابزار جستجوی گوگل: سوال‌های «سرچ» جواب لحظه‌ای می‌گیرند
+         مدل از تنظیمات (v0.13) — پیش‌فرض flash-latest (همیشه جدیدترین فلاش) */
+      return (await bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: true }).catch(() => null)) || false;
     };
     const tryOpenai = async () => {
       if (!settings.openaiKey || !bridge || !bridge.ai || !bridge.ai.openai) return false;
-      return (await bridge.ai.openai({ key: settings.openaiKey, model: 'gpt-4o-mini', messages: msgs }).catch(() => null)) || false;
+      return (await bridge.ai.openai({ key: settings.openaiKey, model: settings.openaiModel || 'gpt-4o-mini', messages: msgs }).catch(() => null)) || false;
     };
 
     if (prov === 'zai') { const r = await tryZai(); if (r) return r; }
@@ -3790,10 +4009,10 @@
     else if (prov === 'gemini') { const r = await tryGemini(); if (r) return r; }
     else if (prov === 'openai') { const r = await tryOpenai(); if (r) return r; }
     else {
-      /* خودکار — به ترتیب همه موتورهای موجود */
-      let r = await tryZai(); if (r) return r;
+      /* خودکار (v0.13 — خواست کاربر): اول Gemini، بعد حساب GLM، بعد کلید GLM، در آخر OpenAI */
+      let r = await tryGemini(); if (r) return r;
+      r = await tryZai(); if (r) return r;
       r = await tryGlm(); if (r) return r;
-      r = await tryGemini(); if (r) return r;
       r = await tryOpenai(); if (r) return r;
     }
 
@@ -3946,7 +4165,7 @@
      • ویجت شیشه‌ای روی صفحه اصلی + اکولایزر زنده
      ============================================================ */
   const AUDIO_EXT = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|webm|wma)$/i;
-  const music = { tracks: [], view: [], cur: -1, playing: false, shuffle: false, repeat: 'off', folderName: '' };
+  const music = { tracks: [], view: [], cur: -1, playing: false, shuffle: false, repeat: 'off', folderName: '', widgetDismissedFor: null };
 
   /* --- پارسر ID3v2 (mp3) — عنوان، خواننده و کاور --- */
   function decodeId3Text(bytes, enc) {
@@ -4135,7 +4354,7 @@
         if (oldW) oldW.remove();
         if (tr.cover) mwCover.insertAdjacentHTML('afterbegin', coverHtml);
       }
-      if (musicWidget) musicWidget.hidden = false;
+      if (musicWidget) musicWidget.hidden = music.widgetDismissedFor === music.cur; /* با درگ بسته شده — تا آهنگ بعدی */
     } else {
       if (musicWidget) musicWidget.hidden = true;
     }
@@ -4152,6 +4371,7 @@
   function playTrack(i) {
     if (!music.tracks.length) return;
     music.cur = ((i % music.tracks.length) + music.tracks.length) % music.tracks.length;
+    music.widgetDismissedFor = null; /* آهنگ جدید → ویجت دوباره می‌آید */
     const tr = music.tracks[music.cur];
     try { mAudio.src = tr.url; mAudio.play(); } catch (_) { /* noop */ }
     mediaSessionMeta();
@@ -4332,6 +4552,59 @@
   });
   if (mSearch) mSearch.addEventListener('input', () => renderMusicList());
   if (mwPlayBtn) mwPlayBtn.addEventListener('click', () => musicToggle());
+
+  /* --- ویجت موزیک قابل کشیدن (v0.13) — با درگ افقی از صفحه حذف می‌شود ---
+     درگ به چپ یا راست بیش از ~۹۰px → انیمیشن خروج و بسته شدن؛
+     با آهنگ بعدی دوباره ظاهر می‌شود. دکمه پخش درگ را شروع نمی‌کند. */
+  (() => {
+    if (!musicWidget) return;
+    const hint = document.createElement('span');
+    hint.className = 'mw-draghint';
+    hint.textContent = '⇢';
+    musicWidget.appendChild(hint);
+    let sx = 0, dx = 0, dragging = false, pid = null;
+    musicWidget.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return; /* دکمه پخش/بستن دست‌نخورده */
+      dragging = true;
+      sx = e.clientX;
+      dx = 0;
+      pid = e.pointerId;
+      try { musicWidget.setPointerCapture(pid); } catch (_) { /* noop */ }
+      musicWidget.classList.add('dragging');
+    });
+    musicWidget.addEventListener('pointermove', (e) => {
+      if (!dragging || e.pointerId !== pid) return;
+      dx = e.clientX - sx;
+      musicWidget.style.transform = `translateX(${dx}px) rotate(${dx * 0.02}deg)`;
+      musicWidget.style.opacity = String(Math.max(0.35, 1 - Math.abs(dx) / 240));
+    });
+    const endDrag = (e) => {
+      if (!dragging || (e && e.pointerId !== pid)) return;
+      dragging = false;
+      musicWidget.classList.remove('dragging');
+      const far = Math.abs(dx) > 90;
+      const dir = dx < 0 ? -1 : 1;
+      if (far) {
+        musicWidget.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        musicWidget.style.transform = `translateX(${dir * 280}px) rotate(${dir * 9}deg)`;
+        musicWidget.style.opacity = '0';
+        setTimeout(() => {
+          musicWidget.hidden = true;
+          musicWidget.style.cssText = '';
+          music.widgetDismissedFor = music.cur;
+        }, 300);
+        toast(t('music.widgetOff'), '#i-music');
+      } else {
+        musicWidget.style.transition = 'transform 0.25s cubic-bezier(0.22, 1.2, 0.36, 1), opacity 0.25s ease';
+        musicWidget.style.transform = '';
+        musicWidget.style.opacity = '';
+        setTimeout(() => { musicWidget.style.transition = ''; }, 260);
+      }
+      dx = 0;
+    };
+    musicWidget.addEventListener('pointerup', endDrag);
+    musicWidget.addEventListener('pointercancel', endDrag);
+  })();
 
   /* بازیابی وضعیت شافل/تکرار/ولوم از تنظیمات */
   if (mShuffleBtn) mShuffleBtn.classList.toggle('active', !!settings.musicShuffle);

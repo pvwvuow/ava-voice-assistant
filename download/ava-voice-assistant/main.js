@@ -273,7 +273,17 @@ const COMMANDS = {
   sys_restart:  { cmd: 'shutdown /r /t 10 /c "AVA"', fa: 'راه‌اندازی مجدد' },
   shutdown_abort: { cmd: 'shutdown /a', fa: 'لغو خاموش شدن' },
   monitor_off: {
-    cmd: 'powershell -NoProfile -Command "Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport(\"user32.dll\")] public static extern int SendMessage(int h, int m, int w, int l);\'; [W.N]::SendMessage(0xffff,0x0112,0xf170,2); Write-Output ok"',
+    /* فیکس v0.13: امضای درست SendMessageW با IntPtr (در x64 امضای int قابل اعتماد نیست)
+       + ارسال دوبار با فاصله (بعضی درایورها فقط یک بروکست را می‌گیرند)
+       + تاخیر اولیه تا رندرر فرصت کند جوابش را آماده کند */
+    cmd:
+      'powershell -NoProfile -Command "' +
+      'Start-Sleep -m 350; ' +
+      'Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport(\"user32.dll\")] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);\'; ' +
+      '[W.N]::SendMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2); ' +
+      'Start-Sleep -m 450; ' +
+      '[W.N]::SendMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2); ' +
+      'Write-Output ok"',
     fa: 'خاموش کردن مانیتور',
   },
 
@@ -311,7 +321,7 @@ ipcMain.handle('sys:run', (_e, id, arg) => {
   if (!cmdStr) return { ok: false, error: 'ورودی نامعتبر است' };
   /* فرمان‌های پاور: سیستم می‌خوابد/خاموش می‌شود و پروسه exec ممکن است
      timeout بخورد یا با کد غیرصفر بسته شود — ولی خودِ فرمان درست اجرا شده */
-  const fireAndForget = ['sys_sleep', 'sys_shutdown', 'sys_restart', 'monitor_off'].includes(id);
+  const fireAndForget = ['sys_sleep', 'sys_shutdown', 'sys_restart', 'monitor_off', 'lock'].includes(id);
   return new Promise((resolve) => {
     exec(cmdStr, { windowsHide: true, timeout: 20000 }, (err, stdout) => {
       if (err && !fireAndForget) {
@@ -840,6 +850,50 @@ ipcMain.handle('dns:reset', async () => {
     `Clear-DnsClientCache\n` +
     `exit 0\n`;
   return runElevatedPs(body);
+});
+
+/* ============================================================
+   پینگ DNSها (v0.13) — برای هر پروفایل، آی‌پی اول (و در صورت
+   شکست آی‌پی دوم) پینگ می‌شود. خروجی مرتب بر اساس سریع‌ترین.
+   ============================================================ */
+ipcMain.handle('dns:ping', async (_e, list) => {
+  const targets = (Array.isArray(list) ? list : [])
+    .filter((p) => p && p.name && Array.isArray(p.ips) && p.ips.length)
+    .slice(0, 40);
+
+  const pingIp = (ip) =>
+    new Promise((res) => {
+      const clean = String(ip || '').replace(/[^0-9.]/g, '');
+      if (!clean) return res({ ok: false, ms: null });
+      exec(
+        `ping -n 1 -w 1500 ${clean}`,
+        { windowsHide: true, timeout: 4500 },
+        (err, stdout) => {
+          const s = String(stdout || '');
+          if (/(unreachable|could not find host|timed out|General failure|ناموفق|غیرقابل دسترسی|توقف زمان)/i.test(s) || (err && !s)) {
+            return res({ ok: false, ms: null });
+          }
+          const m = s.match(/(?:time|زمان)[=<]\s*(\d+)\s*ms/i);
+          if (m) return res({ ok: true, ms: Number(m[1]) || (s.includes('<') ? 1 : 0) });
+          /* «time<1ms» — کمتر از یک میلی‌ثانیه */
+          if (/<\s*1\s*ms/i.test(s)) return res({ ok: true, ms: 1 });
+          res({ ok: false, ms: null });
+        }
+      );
+    });
+
+  const results = await Promise.all(
+    targets.map(async (p) => {
+      let r = await pingIp(p.ips[0]);
+      if (!r.ok && p.ips[1]) {
+        const r2 = await pingIp(p.ips[1]);
+        if (r2.ok) r = { ok: true, ms: r2.ms, alt: true };
+      }
+      return { name: String(p.name).slice(0, 40), ip: p.ips[0], ms: r.ms, ok: r.ok };
+    })
+  );
+  results.sort((a, b) => (a.ok === b.ok ? (a.ms ?? 9999) - (b.ms ?? 9999) : a.ok ? -1 : 1));
+  return { ok: true, results };
 });
 
 /* ============================================================
