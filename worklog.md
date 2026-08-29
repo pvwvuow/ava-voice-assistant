@@ -269,3 +269,18 @@ Work Log:
 Stage Summary:
 - v0.8.0 آماده انتشار: تشخیص گفتار دقیق‌تر (وب-first + فالبک خودکار + نرمال‌سازی صدا + مدل باکیفیت اختیاری)، تایپ صوتی کامل، DNS صوتی کامل، چت GLM فیکس‌شده، تنظیمات مسطح، آپدیت دلتا
 - یادآوری امنیتی باز: کاربر باید هر دو توکن گیت‌هاب را revoke کند؛ سوال حذف .env از گیت هنوز بی‌پاسخ است
+
+---
+Task ID: 8-b (push + release v0.8.0)
+Agent: main (Super Z)
+Task: پوش main + تگ v0.8.0 و انتشار ریلیز
+
+Work Log:
+- پوش اول رد شد: GitHub Push Protection توکن ghp_ را در scripts/watch_ava_070.py (کامیت محلی c546acd) پیدا کرد
+- تاریخچه بازنویسی شد: soft reset به 2f536e3، حذف فایل حاوی توکن از استیج و دیسک، اسکن کامل diff استیج (فقط کلید عمومی کرومیوم باقی ماند که از قبل در ریلیزهای قبلی بود)، ری‌کامیت یکجا (2a4f2fc)
+- push موفق: main + تگ v0.8.0
+- CI run 33263596288 → success؛ ریلیز: AVA-Setup-0.8.0.exe (107.3MB) + blockmap (0.1MB) + latest.yml → آپدیت دلتا فعال است
+
+Stage Summary:
+- ریلیز v0.8.0: https://github.com/pvwvuow/ava-voice-assistant/releases/tag/v0.8.0 — نصب‌های 0.7.0 خودکار آپدیت می‌شوند
+- توکن ghp_ به گیت‌هاب نرفت (push protection جلویش گرفت) ولی روی دیسک لوکال بود → کاربر حتماً باید revoke کند
