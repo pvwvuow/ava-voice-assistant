@@ -12,6 +12,15 @@ const os = require('os');
 let autoUpdater = null;
 try { ({ autoUpdater } = require('electron-updater')); } catch (_) { autoUpdater = null; }
 
+/* ---------- هویت مرورگر واقعی ----------
+   گوگل ورود از مرورگرهای «غیرمطمئن» (UA حاوی Electron) را می‌بندد:
+   «Couldn't sign you in — This browser or app may not be secure».
+   راه‌حل: همه‌جا (پنجره‌ها، webview، پاپ‌آپ‌های OAuth) هویت کروم واقعی ویندوز. */
+const CHROME_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+const CHROME_SEC_CH_UA = '"Chromium";v="136", "Google Chrome";v="136", "Not:A-Brand";v="24"';
+app.userAgentFallback = CHROME_UA;
+
 let win = null;
 
 /* ---------- CPU / RAM sampling ---------- */
@@ -85,7 +94,7 @@ ipcMain.handle('win:toggle-maximize', () => {
 ipcMain.handle('win:close', () => { if (win) win.close(); });
 ipcMain.handle('win:is-maximized', () => (win ? win.isMaximized() : false));
 
-/* ---------- مجوز میکروفون (برای تشخیص گفتار) ---------- */
+/* ---------- مجوز میکروفون + هویت کروم برای هر دو نشست ---------- */
 function setupMicPermission() {
   const allow = ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'];
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
@@ -94,14 +103,39 @@ function setupMicPermission() {
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => allow.includes(permission));
 
   /* نشست دائمی پنل چت z.ai — لاگین یک بار برای همیشه می‌ماند */
-  try {
-    const aiSes = session.fromPartition('persist:ai');
-    aiSes.setPermissionRequestHandler((_wc, permission, callback) => {
-      callback(['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'].includes(permission));
-    });
-    aiSes.setPermissionCheckHandler((_wc, permission) =>
-      ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'].includes(permission));
-  } catch (_) { /* noop */ }
+  let aiSes = null;
+  try { aiSes = session.fromPartition('persist:ai'); } catch (_) { /* noop */ }
+  if (aiSes) {
+    try {
+      aiSes.setPermissionRequestHandler((_wc, permission, callback) => {
+        callback(['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'].includes(permission));
+      });
+      aiSes.setPermissionCheckHandler((_wc, permission) =>
+        ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'].includes(permission));
+    } catch (_) { /* noop */ }
+  }
+
+  /* ضد خطای «This browser or app may not be secure»:
+     هر درخواست https هدر User-Agent و sec-ch-ua کروم واقعی بفرستد،
+     نه برند Electron — برای ورود گوگل و هم برای z.ai که UAهای اتومات را می‌بندد. */
+  for (const ses of [session.defaultSession, aiSes]) {
+    if (!ses) continue;
+    try {
+      ses.setUserAgent(CHROME_UA);
+      ses.webRequest.onBeforeSendHeaders((details, cb) => {
+        try {
+          const h = details.requestHeaders;
+          if (/^https:\/\//i.test(details.url)) {
+            h['User-Agent'] = CHROME_UA;
+            h['sec-ch-ua'] = CHROME_SEC_CH_UA;
+            h['sec-ch-ua-platform'] = '"Windows"';
+            h['sec-ch-ua-mobile'] = '?0';
+          }
+          cb({ requestHeaders: h });
+        } catch (_) { cb({}); }
+      });
+    } catch (_) { /* noop */ }
+  }
 }
 
 /* ---------- پاپ‌آپ‌های webview (لاگین گوگل/z.ai) ----------
@@ -112,7 +146,11 @@ app.on('web-contents-created', (_ev, wc) => {
     wc.setWindowOpenHandler(({ url }) => {
       const u = String(url || '');
       if (/^https:\/\/([^\/]*\.)?(z\.ai|zhipu\.ai|bigmodel\.cn|google\.com|googleusercontent\.com|accounts\.google\.[a-z.]+)/i.test(u)) {
-        return { action: 'allow' };
+        /* پاپ‌آپ لاگین OAuth از داخل webview z.ai → همان نشست دائمی persist:ai
+           تا کوکی‌های گوگل و z.ai در همان پارتیشن بمانند و ورود کامل شود؛
+           UA پاپ‌آپ هم از userAgentFallback (کروم واقعی) به ارث می‌رسد. */
+        const opts = wc.hostWebContents ? { webPreferences: { partition: 'persist:ai' } } : {};
+        return { action: 'allow', overrideBrowserWindowOptions: opts };
       }
       if (/^https?:\/\//i.test(u)) shell.openExternal(u);
       return { action: 'deny' };
@@ -305,7 +343,7 @@ ipcMain.handle('sys:save-audio', async (_e, data) => {
 const trimBase = (b) => String(b || 'https://api.z.ai/api/paas/v4').replace(/\/+$/, '');
 const netErr = (e) => {
   const m = String((e && e.message) || e);
-  if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN/i.test(m)) {
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|aborted|timed?\s?out/i.test(m)) {
     return 'اتصال به سرور برقرار نشد — اینترنت یا فیلترشکن را بررسی کن';
   }
   return m.slice(0, 140);
@@ -426,12 +464,14 @@ ipcMain.handle('stt:google', async (_e, p) => {
       method: 'POST',
       headers: { 'Content-Type': `audio/l16; rate=${Number(rate) || 16000}` },
       body: Buffer.from(pcm),
+      signal: AbortSignal.timeout(15000), /* شبکه گیر کرد → پیام واضح، نه انتظار بی‌پایان */
     });
     const raw = await r.text();
     if (!r.ok) {
       let msg = `HTTP ${r.status}`;
       try { const j = JSON.parse(raw); msg = (j.error && j.error.message) || msg; } catch (_) { /* noop */ }
       if (r.status === 403) msg = 'دسترسی گوگل رد شد (403) — فیلترشکن/VPN را روشن کن یا در تنظیمات کلید اختصاصی بگذار';
+      if (r.status >= 500) msg = 'سرور گوگل موقتا در دسترس نیست — چند لحظه بعد دوباره امتحان کن';
       return { ok: false, error: `گوگل: ${String(msg).slice(0, 140)}` };
     }
     /* پاسخ چند خط JSON پشت‌سرهم است */
@@ -447,7 +487,12 @@ ipcMain.handle('stt:google', async (_e, p) => {
         }
       } catch (_) { /* noop */ }
     }
-    return { ok: !!text, text: String(text).trim() };
+    text = String(text).trim();
+    return {
+      ok: !!text,
+      text,
+      error: text ? undefined : 'گوگل متنی برنگرداند — کمی بلندتر و واضح‌تر حرف بزن',
+    };
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }

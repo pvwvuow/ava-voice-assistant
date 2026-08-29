@@ -205,13 +205,20 @@
 
   async function attachMic() {
     if (analyser) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
     try {
-      const cons = { echoCancellation: true, noiseSuppression: true };
-      if (settings.micId) cons.deviceId = { exact: settings.micId };
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: cons });
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return false;
+      const base = { echoCancellation: true, noiseSuppression: true };
+      /* اول با میکروفون انتخابی کاربر؛ اگر شناسه قدیمی بود/در دسترس نبود، خودکار پیش‌فرض ویندوز */
+      if (settings.micId) {
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: { ...base, deviceId: { exact: settings.micId } } });
+        } catch (_) { micStream = null; }
+      }
+      if (!micStream) micStream = await navigator.mediaDevices.getUserMedia({ audio: base });
       audioCtx = new AC();
+      /* بعضی سیستم‌ها کانتکست را معلق (suspended) می‌سازند — بدون resume هیچ صدایی نمی‌آید */
+      if (audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch (_) { /* noop */ } }
       const src = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -223,10 +230,18 @@
       micStat.textContent = 'میکروفون فعال است — با حرف زدن، میله‌ها بالا و پایین می‌شوند';
       listMicDevices();
       return true;
-    } catch (_) {
+    } catch (err) {
       micLive = false;
+      const nm = String((err && err.name) || err || '');
+      const why = /NotReadable|TrackStart/i.test(nm)
+        ? 'میکروفون توسط برنامه دیگری در حال استفاده است — آن برنامه را ببند'
+        : /NotFound/i.test(nm)
+        ? 'هیچ میکروفونی پیدا نشد — اتصال میکروفون را چک کن'
+        : /NotAllowed|SecurityError/i.test(nm)
+        ? 'مجوز میکروفون رد شد — در ویندوز: Settings › Privacy › Microphone را روشن کن'
+        : 'دسترسی به میکروفون ممکن نشد — مجوز ویندوز و آنتی‌ویروس را بررسی کن';
       sbMic.innerHTML = '<i class="dot err"></i>میکروفون: بدون دسترسی';
-      micStat.textContent = 'دسترسی به میکروفون ممکن نشد — مجوز ویندوز و آنتی‌ویروس را بررسی کن';
+      micStat.textContent = why;
       return false;
     }
   }
@@ -350,6 +365,11 @@
   }
   function frame() {
     t0 += 0.016;
+    /* خواندن طیف واقعی میکروفون — بدون این فراخوانی micData همیشه صفر می‌ماند
+       و اکولایزر و تشخیص سکوت هیچ صدایی نمی‌بینند (باگ اصلی «صدایی دریافت نمیشه») */
+    if (analyser && micData && micLive) {
+      try { analyser.getByteFrequencyData(micData); } catch (_) { /* noop */ }
+    }
     const target = state === 'listening' ? 0.88 : state === 'processing' ? 0.42 : state === 'success' ? 0.55 : 0.15;
     energy += (target - energy) * 0.05;
     ctx.clearRect(0, 0, W, H);
@@ -506,6 +526,7 @@
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       const ac = new AC();
+      if (ac.state === 'suspended') { try { ac.resume(); } catch (_) { /* noop */ } }
       const o = ac.createOscillator();
       const g = ac.createGain();
       o.connect(g); g.connect(ac.destination);
@@ -533,7 +554,7 @@
       rcHeard.textContent = 'تایمر';
       rcReply.textContent = 'زمان تمام شد؛ یادت بودیم!';
       respCard.classList.add('show');
-      speak('زمان تایر تمام شد؛ خبرت کردم!');
+      speak('زمان تایمر تمام شد؛ خبرت کردم!');
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
     }, mins * 60000);
     const label = unit === 'ثانیه' ? faNum(Math.round(mins * 60)) : faNum(+(mins.toFixed(1)));
@@ -565,11 +586,11 @@
         rcTag.textContent = 'اجرا شد';
         if (runId === 'screenshot' && res.out) reply = `اسکرین‌شات ذخیره شد در: ${res.out}`;
       } else {
-        rcTag.textContent = 'شبیه‌سازی دمو';
-        reply += ' (اجرای واقعی فقط داخل نرم‌افزار ویندوزی انجام می‌شود.)';
+        rcTag.textContent = canRun ? 'اجرا نشد' : 'شبیه‌سازی دمو';
+        if (!canRun) reply += ' (اجرای واقعی فقط داخل نرم‌افزار ویندوزی انجام می‌شود.)';
       }
     } catch (_) {
-      rcTag.textContent = 'شبیه‌سازی دمو';
+      rcTag.textContent = canRun ? 'اجرا نشد' : 'شبیه‌سازی دمو';
     }
     return reply;
   }
@@ -619,7 +640,7 @@
      بدون هیچ کلیدی؛ دمو فقط با تنظیم صریح کاربر.
      ============================================================ */
   let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
-  let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false;
+  let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false, glmSilentMs = 0;
   const ASR_MODEL = 'glm-asr-2512';
   const GLM_MAX_MS = 12000;   // بیشینه ضبط هر فرمان صوتی
   const GLM_SIL_MS = 2300;    // سکوت لازم برای پایان فرمان
@@ -818,7 +839,8 @@
         glmRec.onstop = finishGlmTranscribe;
         glmRec.start();
         statusText.textContent = 'در حال گوش دادن (GLM-ASR)… فرمانت را بگو';
-        /* تشخیص سکوت برای توقف هوشمند ضبط */
+        /* تشخیص سکوت برای توقف هوشمند ضبط (با کمی تحمل تا بین کلمات قطع نشود) */
+        glmSilentMs = 0;
         glmTimer = setInterval(() => {
           if (!glmListening || !micData) return;
           let sum = 0;
@@ -826,9 +848,11 @@
           const avg = sum / micData.length;
           if (avg > GLM_ON_LVL) {
             glmSpoke = true;
+            glmSilentMs = 0;
             statusText.textContent = 'شنیدم… بعد از سکوت، تبدیلش می‌کنم';
           } else if (glmSpoke) {
-            stopGlmRec();
+            glmSilentMs += 300;
+            if (glmSilentMs >= 1300) stopGlmRec();
           }
         }, 300);
         glmMaxTimer = setTimeout(() => stopGlmRec(), GLM_MAX_MS);
@@ -911,6 +935,8 @@
     sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
     gotFinal = false;
     attachMic();
+    /* اگر کانتکست صوتی معلق بود، اینجا بیدارش می‌کنیم تا ضبط شروع شود */
+    if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
 
     const eng = resolveEngine();
     if (eng === 'web') {
@@ -1017,7 +1043,7 @@
   /* ============================================================
      ناوبری: خانه / تنظیمات / چت
      ============================================================ */
-  let appVersion = '0.6.0';
+  let appVersion = '0.6.2';
 
   function showView(v) {
     settingsPage.hidden = v !== 'settings';
@@ -1062,6 +1088,7 @@
     optAiModel.value = settings.glmModel || 'glm-4.6';
     refreshEngineUI();
     fillVoiceSelect();
+    listMicDevices();
     loadAppVersion();
     if (bridge && bridge.settings) {
       bridge.settings.flags().then((f) => {
