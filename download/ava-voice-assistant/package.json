@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۶ با تشخیص گفتار رایگان گوگل (بدون کلید)، چت GLM متصل به حساب z.ai (بدون کلید API)، پاسخ تحلیلی به سوالات پیچیده، فرمان‌های داینامیک، آپدیت خودکار و اکولایزر واقعی",
   "main": "main.js",
   "license": "MIT",
