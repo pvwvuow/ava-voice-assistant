@@ -30,6 +30,8 @@ contextBridge.exposeInMainWorld('ava', {
     run: (id, arg) => ipcRenderer.invoke('sys:run', id, arg),
     /* باز کردن لینک خارجی در مرورگر پیش‌فرض (فقط https) */
     openUrl: (u) => ipcRenderer.invoke('sys:open-url', u),
+    /* کپی متن در کلیپ‌بورد ویندوز (گزارش خطاها) */
+    copyText: (t) => ipcRenderer.invoke('sys:copy-text', t),
     /* ذخیره فایل ضبط صدا در Music/AVA */
     saveAudio: (buf) => ipcRenderer.invoke('sys:save-audio', buf),
     /* نسخه واقعی برنامه */

@@ -7,6 +7,76 @@
    - تم تیره زمردی / تم روشن بنفش-کهربایی + دوزبانه (فارسی/English)
    - فرمان‌های صوتی خواب/خاموش کردن/مانیتور + فرمان‌های سفارشی AI
    ============================================================ */
+/* ============================================================
+   v0.16.1 — سپر پایداری (قبل از هر چیز)
+   هر خطای رندرر در حلقهٔ localStorage ثبت می‌شود؛ اگر برنامه تا
+   ۵ ثانیه «بالا نیامده» باشد، پنل خطا با دکمهٔ کپی گزارش و حالت
+   امن نشان داده می‌شود — دیگر هیچ‌وقت «هیچ‌کاره» بی‌توضیح نیست.
+   ============================================================ */
+(() => {
+  const K = 'ava.errlog';
+  let ring = [];
+  try { ring = JSON.parse(localStorage.getItem(K) || '[]'); } catch (_) { ring = []; }
+  if (!Array.isArray(ring)) ring = [];
+  const push = (msg) => {
+    try {
+      ring.push('[' + new Date().toISOString() + '] ' + msg);
+      while (ring.length > 25) ring.shift();
+      localStorage.setItem(K, JSON.stringify(ring));
+    } catch (_) { /* noop */ }
+    try { document.documentElement.setAttribute('data-ava-err', '1'); } catch (_) { /* noop */ }
+  };
+  window.__avaErr = { ring, push, booted: false, start: Date.now() };
+  window.addEventListener('error', (e) => {
+    push('error: ' + ((e && e.message) || 'unknown') + ' @ ' + ((e && e.filename) ? String(e.filename).split('/').pop() : '?') + ':' + ((e && e.lineno) || 0));
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e && e.reason;
+    push('promise: ' + String((r && (r.stack || r.message)) || r).slice(0, 300));
+  });
+  /* شمارش خطاهای اولیه → اگر زیاد شد، دفعهٔ بعد حالت امن خودکار روشن شود */
+  const bootErrors = () => window.__avaErr.ring.filter((l) => /error:|promise:/.test(l)).length;
+  window.__avaErr.autoSafe = () => {
+    try {
+      if (bootErrors() >= 3 && Date.now() - window.__avaErr.start < 15000 && !localStorage.getItem('ava.safeMode')) {
+        localStorage.setItem('ava.safeMode', '1');
+        return true;
+      }
+    } catch (_) { /* noop */ }
+    return false;
+  };
+  window.__avaCrashPanel = () => {
+    if (document.querySelector('#avaCrashPanel')) return;
+    const d = document.createElement('div');
+    d.id = 'avaCrashPanel';
+    d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(6,10,9,0.92);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;direction:rtl;font-family:inherit;';
+    const txt = (window.__avaErr.ring.slice(-10).join('\n') || '(خطایی ثبت نشده — شاید فایل‌ها کامل نصب نشده‌اند؛ نصب را پاک و نسخهٔ جدید را کامل نصب کن)').slice(0, 1200);
+    d.innerHTML = '<div style="width:min(560px,92vw);background:#0d1512;border:1px solid rgba(52,211,153,0.35);border-radius:18px;padding:22px;color:#e7f0ea;line-height:1.9">' +
+      '<b style="font-size:15px">آوا کامل بالا نیامد</b>' +
+      '<p style="font-size:12px;color:#9fb0a7;margin:8px 0 12px">اگر دکمه‌ها و داده‌ها کار نمی‌کنند، این گزارش را کپی و برایم بفرست. «حالت امن» افکت‌های سنگین را خاموش می‌کند و برنامه را دوباره بالا می‌آورد.</p>' +
+      '<pre style="direction:ltr;text-align:left;font-size:10.5px;max-height:180px;overflow:auto;background:#081009;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;white-space:pre-wrap">' + String(txt).replace(/</g, '&lt;') + '</pre>' +
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
+      '<button id="avaCrashCopy" style="padding:8px 16px;border-radius:10px;border:1px solid rgba(52,211,153,0.5);background:rgba(52,211,153,0.15);color:#e7f0ea;cursor:pointer">کپی گزارش خطا</button>' +
+      '<button id="avaCrashSafe" style="padding:8px 16px;border-radius:10px;border:1px solid rgba(245,158,11,0.5);background:rgba(245,158,11,0.15);color:#e7f0ea;cursor:pointer">حالت امن و شروع دوباره</button>' +
+      '<button id="avaCrashClose" style="padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:none;color:#9fb0a7;cursor:pointer">بستن</button>' +
+      '</div></div>';
+    document.body ? document.body.appendChild(d) : document.documentElement.appendChild(d);
+    const q = (id) => d.querySelector(id);
+    if (q('#avaCrashCopy')) q('#avaCrashCopy').onclick = () => {
+      try {
+        navigator.clipboard.writeText('AVA crash report\n' + (navigator.userAgent || '') + '\n\n' + window.__avaErr.ring.join('\n'));
+        q('#avaCrashCopy').textContent = 'کپی شد ✓';
+      } catch (_) { q('#avaCrashCopy').textContent = 'کپی نشد'; }
+    };
+    if (q('#avaCrashSafe')) q('#avaCrashSafe').onclick = () => {
+      try { localStorage.setItem('ava.safeMode', '1'); } catch (_) { /* noop */ }
+      location.reload();
+    };
+    if (q('#avaCrashClose')) q('#avaCrashClose').onclick = () => d.remove();
+  };
+  setTimeout(() => { if (window.__avaErr && !window.__avaErr.booted) window.__avaCrashPanel(); }, 5000);
+})();
+
 (() => {
   'use strict';
 
@@ -170,6 +240,16 @@
     'set.app.themeHint': ['تیره زمردی یا روشن بنفش/کهربایی — از دکمه خورشید/ماه نوار بالا هم عوض می‌شود', 'Dark emerald or light violet/amber — also via the sun/moon button in the title bar'],
     'set.app.dark': ['تیره (زمردی)', 'Dark (emerald)'], 'set.app.light': ['روشن (بنفش و کهربایی)', 'Light (violet & amber)'],
     'set.app.lite': ['سبک (سیستم ضعیف)', 'Lite (weak PC)'],
+    'set.app.safe': ['حالت امن (اگر برنامه درست کار نمی‌کند)', 'Safe mode (if the app misbehaves)'],
+    'set.app.safeHint': ['افکت‌های سنگین (شیشه، گرادیان، انیمیشن) خاموش می‌شوند تا روی هر سیستمی برنامه سالم کار کند', 'Heavy effects (glass, gradients, animation) turn off so the app works on any system'],
+    'set.app.errCopy': ['گزارش خطاها', 'Error report'],
+    'set.app.errCopyHint': ['اگر چیزی کار نمی‌کند، این دکمه گزارش کامل خطاها را کپی می‌کند تا بفرستی', 'If something is broken, this copies the full error report so you can send it'],
+    'set.app.errCopyBtn': ['کپی گزارش', 'Copy report'],
+    'toast.safeOn': ['حالت امن روشن است — افکت‌های سنگین خاموش', 'Safe mode is on — heavy effects disabled'],
+    'toast.safeOff': ['حالت امن خاموش شد', 'Safe mode off'],
+    'toast.safeAuto': ['چند خطا دیدم — خودکار حالت امن روشن شد', 'Errors detected — safe mode auto-enabled'],
+    'toast.copied': ['گزارش کپی شد — برایم بفرست ✓', 'Report copied — send it to me ✓'],
+    'toast.copyFail': ['کپی نشد — از پنل خطا استفاده کن', 'Copy failed — use the crash panel'],
     'set.app.top': ['همیشه روی همه پنجره‌ها', 'Always on top'], 'set.app.topHint': ['پنجره آوا روی برنامه‌های دیگر باقی بماند', 'Keep the AVA window above other apps'],
     'set.app.login': ['اجرای خودکار با ویندوز', 'Start with Windows'], 'set.app.loginHint': ['آوا هنگام روشن شدن سیستم بالا بیاید', 'Launch AVA when the system boots'],
     'set.app.links': ['پیوندها', 'Links'], 'set.app.linksHint': ['ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود', 'Opens the repo and the latest download in your browser'],
@@ -747,6 +827,7 @@
     extDiscord: store.get('extDiscord', true), /* کنترل دیسکورد — به‌خواست کاربر روشن */
     noAnim: store.get('noAnim', false),
     noFx: store.get('noFx', false),
+    safeMode: store.get('safeMode', false), /* v0.16.1 — حالت امن: بدون افکت سنگین */
   };
   let customCmds = store.get('customCmds', []);
   let history = store.get('history', []);
@@ -933,11 +1014,12 @@
     if (ti) ti.setAttribute('href', settings.theme === 'dark' ? '#i-sun' : '#i-moon');
     refreshWaveColors(); /* رنگ اکولایزر با تم همگام شود */
   }
-  /* کلیدهای بهینه‌سازی: بدون انیمیشن / بدون افکت (v0.15) */
+  /* کلیدهای بهینه‌سازی: بدون انیمیشن / بدون افکت (v0.15) + حالت امن (v0.16.1) */
   function applyPerf() {
-    body.classList.toggle('perf-noanim', !!settings.noAnim);
-    body.classList.toggle('perf-nofx', !!settings.noFx || settings.theme === 'lite');
-    if (typeof vizStop === 'function' && (settings.noFx || settings.theme === 'lite')) vizStop();
+    body.classList.toggle('perf-noanim', !!settings.noAnim || !!settings.safeMode);
+    body.classList.toggle('perf-nofx', !!settings.noFx || settings.theme === 'lite' || !!settings.safeMode);
+    body.classList.toggle('safe-orb', !!settings.safeMode); /* دیسک شیشه‌ای → ساده و صاف */
+    if (typeof vizStop === 'function' && (settings.noFx || settings.theme === 'lite' || settings.safeMode)) vizStop();
   }
   function syncPerfUI() {
     if (optNoAnim) optNoAnim.checked = !!settings.noAnim;
@@ -3614,7 +3696,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.16.0';
+  let appVersion = '0.16.1';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -3759,6 +3841,33 @@
   });
   if (btnLiteTheme) btnLiteTheme.addEventListener('click', () => setTheme(settings.theme === 'lite' ? 'dark' : 'lite'));
 
+  /* ---------- حالت امن + گزارش خطاها (v0.16.1) ---------- */
+  const optSafeMode = $('#optSafeMode');
+  if (optSafeMode) optSafeMode.addEventListener('change', () => {
+    settings.safeMode = optSafeMode.checked;
+    store.set('safeMode', settings.safeMode);
+    applyPerf();
+    toast(settings.safeMode ? t('toast.safeOn') : t('toast.safeOff'), '#i-pulse');
+  });
+  const btnCopyErrors = $('#btnCopyErrors');
+  if (btnCopyErrors) btnCopyErrors.addEventListener('click', async () => {
+    const report = [
+      'AVA error report',
+      'version: ' + (appVersion || '?') + ' | booted: ' + String(!!(window.__avaErr && window.__avaErr.booted)),
+      'UA: ' + (navigator.userAgent || '?'),
+      'bridge: ' + String(!!bridge) + ' | speech: ' + String(!!SRC),
+      'safeMode: ' + String(!!settings.safeMode) + ' | theme: ' + settings.theme,
+      '',
+      ((window.__avaErr && window.__avaErr.ring) || []).join('\n') || '(no errors recorded)',
+    ].join('\n');
+    let okc = false;
+    try { await navigator.clipboard.writeText(report); okc = true; } catch (_) { /* noop */ }
+    if (!okc && bridge && bridge.system && bridge.system.copyText) {
+      try { okc = !!(await bridge.system.copyText(report)); } catch (_) { /* noop */ }
+    }
+    toast(okc ? t('toast.copied') : t('toast.copyFail'), okc ? '#i-check' : '#i-info');
+  });
+
   /* ---------- دکمهٔ ذخیرهٔ تنظیمات هوش مصنوعی (v0.15) ---------- */
   if (btnSaveAi) btnSaveAi.addEventListener('click', () => {
     settings.glmKey = ((optGlmKey && optGlmKey.value) || '').trim();
@@ -3795,6 +3904,8 @@
   function refreshSettingsUI() {
     if (typeof applyExtensions === 'function') applyExtensions();
     if (typeof syncPerfUI === 'function') syncPerfUI();
+    const osm = $('#optSafeMode');
+    if (osm) osm.checked = !!settings.safeMode;
     optTts.checked = !!settings.tts;
     optAutoUpdate.checked = !!settings.autoUpdate;
     optDemo.checked = !!settings.demoMode;
@@ -5129,4 +5240,15 @@
   setTimeout(() => {
     toast(canRun ? t('toast.welcome') : t('toast.preview'), '#i-wave');
   }, 900);
+  /* v0.16.1 — بالا آمدن کامل تأیید شد؛ اگر خطاهای اولیه زیاد بود، حالت امن خودکار */
+  try {
+    window.__avaErr.booted = true;
+    if (window.__avaErr.autoSafe()) {
+      settings.safeMode = true;
+      applyPerf();
+      setTimeout(() => toast(t('toast.safeAuto'), '#i-pulse'), 2200);
+    } else if (settings.safeMode) {
+      setTimeout(() => toast(t('toast.safeOn'), '#i-pulse'), 2200);
+    }
+  } catch (_) { /* noop */ }
 })();

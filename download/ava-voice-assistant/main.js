@@ -4,7 +4,7 @@
  * فعال می‌شود، فرمان‌های پاور (خواب/خاموش/مانیتور)، فرم «DNS جدید» داخل صفحه
  * اصلی با انیمیشن، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard } = require('electron');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -746,6 +746,10 @@ function setupAutoUpdater() {
     autoUpdater.autoInstallOnAppQuit = true; // نصب هنگام بستن برنامه اگر کاربر نصب فوری نزند
     autoUpdater.allowPrerelease = false;
     autoUpdater.allowDowngrade = false;
+    /* v0.16.1 — آپدیت دلتا غیرفعال شد: آپدیت‌های پلکانی از نسخه‌های خیلی عقب
+       (مثل 0.13 → 0.16) می‌توانستند فایل ناقص/خراب نصب کنند و برنامه «هیچ‌کاره» شود.
+       از این به بعد همیشه نصّاب کامل دانلود می‌شود — مطمئن‌تر. */
+    try { autoUpdater.disableDifferentialDownload = true; } catch (_) { /* noop */ }
     autoUpdater.on('checking-for-update', () => sendUI('updater:status', { state: 'checking' }));
     autoUpdater.on('update-available', (i) => sendUI('updater:status', { state: 'available', version: i && i.version }));
     autoUpdater.on('update-not-available', () => sendUI('updater:status', { state: 'none' }));
@@ -852,6 +856,11 @@ ipcMain.handle('updater:install', () => {
 });
 
 /* ---------- IPC: تنظیمات سیستمی ---------- */
+/* کپی متن در کلیپ‌بورد ویندوز (گزارش خطاها — v0.16.1) */
+ipcMain.handle('sys:copy-text', (_e, txt) => {
+  try { clipboard.writeText(String(txt || '')); return true; } catch (_) { return false; }
+});
+
 ipcMain.handle('app:flags', () => ({
   alwaysOnTop: win ? !!win.isAlwaysOnTop() : false,
   loginItem: (() => { try { return app.getLoginItemSettings().openAtLogin; } catch (_) { return false; } })(),

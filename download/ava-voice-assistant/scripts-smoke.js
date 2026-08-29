@@ -1,5 +1,5 @@
 /**
- * Smoke test for AVA v0.16.0 — boots the app under Xvfb, checks
+ * Smoke test for AVA v0.16.1 — boots the app under Xvfb, checks
  * v0.11 UI elements (titlebar physical layout, update badge, music
  * page, live text, new settings), suggestion rotation, theme +
  * language switching, v0.12 additions (phonetic app-open, reminders,
@@ -407,6 +407,31 @@ app.whenReady().then(async () => {
       }))()`);
       ok('discord controls + music deck in DOM', dc.card && dc.toggle && dc.callName && dc.deck && dc.disc && dc.pl && dc.hole, JSON.stringify(dc));
     } catch (e) { console.log('SKIP | v0.16 dom | ' + String(e && e.message).slice(0, 50)); }
+
+    // 5.61 v0.16.1 — stability shield: error ring, crash panel, safe mode,
+    // delta downloads disabled, copy-report bridge
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v161 = {
+        errRing: appjs.includes("window.__avaErr") && appjs.includes("localStorage.setItem(K, JSON.stringify(ring))"),
+        crashPanel: appjs.includes('avaCrashPanel') && appjs.includes('avaCrashSafe'),
+        bootedFlag: appjs.includes('window.__avaErr.booted = true'),
+        noDelta: mainjs.includes('disableDifferentialDownload = true'),
+        safeMode: appjs.includes("safeMode: store.get('safeMode', false)") && appjs.includes("body.classList.toggle('safe-orb'"),
+        safeCss: css.includes('body.safe-orb .orb-glass'),
+        safeToggle: html.includes('id="optSafeMode"') && appjs.includes("$('#optSafeMode')"),
+        copyReport: html.includes('id="btnCopyErrors"') && preload.includes("'sys:copy-text'") && mainjs.includes("ipcMain.handle('sys:copy-text'"),
+      };
+      ok('renderer error ring + crash panel', v161.errRing && v161.crashPanel && v161.bootedFlag);
+      ok('delta updates disabled (full installs)', v161.noDelta);
+      ok('safe mode (toggle + css + perf)', v161.safeMode && v161.safeCss && v161.safeToggle);
+      ok('error report copy bridge', v161.copyReport);
+    } catch (e) { console.log('SKIP | v0.16.1 markers | ' + String(e && e.message).slice(0, 80)); }
 
     // 5.6 v0.13 — toggleListen busy guard: simulate processing state click
     try {

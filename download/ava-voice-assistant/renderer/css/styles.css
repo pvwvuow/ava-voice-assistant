@@ -2151,3 +2151,13 @@ body[data-theme="lite"] { background: #eef1ee; color: var(--text); }
 #mViz.on { opacity: 1; }
 body.perf-noanim #mViz, [data-theme="lite"] #mViz { display: none; }
 
+
+/* ============================================================
+   v0.16.1 — حالت امن: وقتی رندرر/GPU مشکل دارد، دیسک شیشه‌ای و
+   افکت‌ها ساده می‌شوند تا برنامه همیشه قابل استفاده بماند.
+   ============================================================ */
+body.safe-orb .orb-glass { background: rgba(255, 255, 255, 0.08) !important; }
+body.safe-orb .orb { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+body.safe-orb .orb-glass,
+body.safe-orb .np-disc { animation: none !important; }
+body.safe-orb .orb-liquid .bl { filter: none; opacity: 0.5; }
