@@ -1,8 +1,8 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.1.0",
-  "description": "آوا — دستیار صوتی ویندوز | رابط کاربری نسخه ۰.۱",
+  "version": "0.2.0",
+  "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۲ با اجرای واقعی فرمان‌ها",
   "main": "main.js",
   "license": "MIT",
   "author": {

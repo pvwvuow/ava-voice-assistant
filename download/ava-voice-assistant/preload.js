@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld('ava', {
   /* آمار سیستم (CPU / RAM / آپ‌تایم) */
   system: {
     stats: () => ipcRenderer.invoke('sys:stats'),
+    /* اجرای واقعی فرمان‌ها — فقط شناسه‌های فهرست سفید در main.js */
+    run: (id, arg) => ipcRenderer.invoke('sys:run', id, arg),
   },
 
   /* رویدادهای صوتی — نقطه اتصال موتور صوتی در نسخه‌های بعد */

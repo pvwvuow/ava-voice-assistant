@@ -1,13 +1,16 @@
 /* ============================================================
-   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه دمو)
-   - در Electron: از پل window.ava (preload) استفاده می‌کند
-   - در مرورگر: همه‌چیز شبیه‌سازی می‌شود
+   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه ۰.۲)
+   - تشخیص گفتار واقعی (Web Speech API) با فالبک به حالت دمو
+   - اجرای واقعی فرمان‌های ویندوز از طریق پل امن sys:run
+   - در مرورگر (پیش‌نمایش): شبیه‌سازی کامل
    ============================================================ */
 (() => {
   'use strict';
 
   const $ = (s) => document.querySelector(s);
   const bridge = window.ava || null;
+  const SRC = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  const canRun = !!(bridge && bridge.system && bridge.system.run);
 
   /* ---------- عناصر ---------- */
   const body = document.body;
@@ -21,11 +24,13 @@
   const wave = $('#wave');
   const chips = [...document.querySelectorAll('.chip')];
   const respCard = $('#respCard');
+  const rcTag = $('#rcTag');
   const rcHeard = $('#rcHeard');
   const rcReply = $('#rcReply');
   const cmdBar = $('#cmdBar');
   const cmdInput = $('#cmdInput');
   const sbMic = $('#sbMic');
+  const sbEngine = $('#sbEngine');
   const sbCpu = $('#sbCpu');
   const sbRam = $('#sbRam');
   const sbClock = $('#sbClock');
@@ -36,10 +41,11 @@
   const abRuntime = $('#abRuntime');
 
   const IDLE_HINT = 'برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
-  const DEFAULT_REPLY = 'این فرمان در نسخه دمو هنوز به موتور اجرا وصل نیست؛ ولی رابط کاربری کاملاً آماده است!';
+  const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم؛ ولی مثلاً می‌تونی بگی «کروم را باز کن»، «تایمر ۱۰ دقیقه‌ای بذار»، «جستجوی آب و هوا» یا «یک جوک بگو».';
 
   /* ---------- ابزار ---------- */
   const faNum = (v) => String(v).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  const faToEn = (s) => String(s).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
   const timeFmt = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' });
   const dateFmt = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -122,7 +128,7 @@
     const bw = Math.max(2, Math.min(4.5, (W - (N - 1) * gap) / N));
     const startX = (W - (N * bw + (N - 1) * gap)) / 2;
     for (let i = 0; i < N; i++) {
-      const env = Math.sin((Math.PI * i) / (N - 1)); // پوش مرکز-برجسته
+      const env = Math.sin((Math.PI * i) / (N - 1));
       const n =
         Math.sin(t0 * 2.1 + i * 0.55) * 0.5 +
         Math.sin(t0 * 3.7 + i * 1.3) * 0.3 +
@@ -144,26 +150,146 @@
   }
   requestAnimationFrame(frame);
 
-  /* ---------- قوانین پاسخ دمو ---------- */
+  /* ---------- قوانین فرمان‌ها ----------
+     k = الگوی شنیدن | t = توست | i = آیکون | r = متن پاسخ
+     run = شناسه فرمان واقعی ویندوز | arg = آرگومان استخراجی */
+  const stripSearch = (c) =>
+    c.replace(/(لطفا|لطفاً)/g, '')
+      .replace(/(در\s+)?(گوگل|google)/gi, '')
+      .replace(/(را|رو)\s+/g, '')
+      .replace(/(جستجو|سرچ|search)[\s\u200C]*(کن|بکن|بگیر)?[\s\u200C]*ی?[\s\u200C]*/gi, '')
+      .replace(/[\s\u200C]+/g, ' ')
+      .trim();
+
+  const JOKES = [
+    'به برنامه‌نویس میگن چقدر طول می‌کشد این کار تموم شه؟ میگه دو دقیقه… بعد دو هفته برمی‌گردد!',
+    'دو تا بایت به هم می‌رسند؛ یکی می‌پرسد حالت چطوره؟ می‌گوید یکم بیت‌دارم!',
+    'چرا کامپیوترها هیچ‌وقت گرسنه نمی‌شوند؟ چون همیشه چیپس دارند!',
+    'به یارو میگن گوشی‌ات را ریست کن، میگه چرا، خوبه! میگن نه، تو که رِست (رستوران) رفتی برگرد!',
+    'دنیا بدون کامپیوتر چه شکلی بود؟ کسی نمی‌داند؛ هیچ‌کس آن‌قدر صبر نکرد!',
+  ];
+
   const RULES = [
-    { k: /کروم|مرورگر/, t: 'برنامه باز شد (دمو)', i: '#i-globe', r: () => 'مرورگر کروم باز شد. خوش بگذره!' },
+    /* --- برنامه‌های ویندوز --- */
+    { k: /کروم|مرورگر/, t: 'باز کردن کروم', i: '#i-globe', run: 'open_chrome', r: () => 'مرورگر کروم باز شد. خوش بگذره!' },
+    { k: /نت[\s\u200C.]?پد|نوت[\s\u200C]?پد|دفترچه|notepad/i, t: 'باز کردن نت‌پد', i: '#i-note', run: 'open_notepad', r: () => 'نت‌پد باز شد.' },
+    { k: /ماشین[\s\u200C]?حساب|calculator|حساب\s?کن/i, t: 'باز کردن ماشین‌حساب', i: '#i-calc', run: 'open_calc', r: () => 'ماشین‌حساب باز شد.' },
+    { k: /اکسپلورر|فایل‌?ها|مای\s?کامپیوتر|این\s?کامپیوتر/, t: 'باز کردن اکسپلورر', i: '#i-window', run: 'open_explorer', r: () => 'فایل اکسپلورر باز شد.' },
+    { k: /وی[\s\u200C]?اس\s?کد|vs\s?code|کدنویس/i, t: 'باز کردن VS Code', i: '#i-note', run: 'open_vscode', r: () => 'وی‌اس کد باز شد (باید روی سیستم نصب باشد).' },
+    { k: /تسک[\s\u200C]?منیجر|مدیریت[\s\u200C]?فرایند/i, t: 'باز کردن تسک‌منیجر', i: '#i-pulse', run: 'open_taskmgr', r: () => 'تسک‌منیجر باز شد.' },
+    { k: /تنظیمات/, t: 'باز کردن تنظیمات', i: '#i-gear', run: 'open_settings', r: () => 'تنظیمات ویندوز باز شد.' },
+    { k: /پینت|نقاشی|paint/i, t: 'باز کردن پینت', i: '#i-calc', run: 'open_paint', r: () => 'پینت باز شد؛ خلاق باش!' },
+
+    /* --- وب --- */
+    { k: /یوتیوب|youtube/i, t: 'باز کردن یوتیوب', i: '#i-music', run: 'open_youtube', r: () => 'یوتیوب باز شد.' },
+    { k: /موسیقی|آهنگ|موزیک/, t: 'پخش موسیقی', i: '#i-music', run: 'open_music', r: () => 'یوتیوب موزیک باز شد؛ آهنگ دلخواهت را بزن.' },
     {
-      k: /صدا|بلندی|ولوم/,
-      t: 'صدا تنظیم شد (دمو)', i: '#i-volume',
+      k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?چطور|درجه[\s\u200C]?هوا|weather/i, t: 'جستجوی آب‌وهوا', i: '#i-search',
+      run: 'web_search', arg: () => 'آب و هوای امروز',
+      r: () => 'آب‌وهوای امروز را در گوگل جستجو کردم.',
+    },
+    {
+      k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
+      run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : 'web_search'),
+      arg: (c) => {
+        const m = c.match(/https?:\/\/\S+/);
+        return m ? m[0] : stripSearch(c) || 'گوگل';
+      },
+      r: (c) => (/https?:\/\//i.test(c) ? 'سایت موردنظر باز شد.' : 'در گوگل جستجویش کردم؛ نتیجه اول معمولاً همان سایت است.'),
+    },
+    {
+      k: /جستجو|سرچ|گوگل|google/i, t: 'جستجوی وب', i: '#i-search',
+      run: 'web_search', arg: (c) => stripSearch(c),
+      r: (c) => `«${stripSearch(c) || 'گوگل'}» را در گوگل جستجو کردم.`,
+    },
+
+    /* --- پنجره‌ها و سیستم --- */
+    { k: /اسکرین\s?شات|اسکرین|عکس.{0,8}(صفحه|نمایشگر)|screenshot/i, t: 'اسکرین‌شات', i: '#i-camera', run: 'screenshot', r: () => 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
+    { k: /مینیمایز|کوچک.{0,8}(کن)|دسکتاپ|پنجره‌ها/, t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
+    { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین/, t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => 'صفحه قفل شد؛ بدرود!' },
+
+    /* --- صدا --- */
+    { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت)|میوت|mute|بی[\s\u200C]?صدا/i, t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => 'صدا قطع شد.' },
+    { k: /(صدا|ولوم|بلندی).{0,12}(بلند|زیاد|بالا|بده)/i, t: 'بلندتر کردن صدا', i: '#i-volume', run: 'vol_up', r: () => 'صدای سیستم را بلندتر کردم.' },
+    { k: /(صدا|ولوم|بلندی).{0,12}(کم|پایین|آرام)/i, t: 'کم کردن صدا', i: '#i-volume', run: 'vol_down', r: () => 'صدای سیستم را کمتر کردم.' },
+    {
+      k: /صدا|بلندی|ولوم/, t: 'تنظیم صدا', i: '#i-volume',
       r: (c) => {
-        const m = c.match(/\d+/);
-        return `بلندی صدا روی ${faNum(m ? Math.min(100, +m[0]) : 50)}٪ تنظیم شد.`;
+        const m = faToEn(c).match(/\d+/);
+        return `بلندی صدا روی ${faNum(m ? Math.min(100, +m[0]) : 50)}٪ تنظیم شد (تنظیم دقیق درصد در نسخه بعدی).`;
       },
     },
-    { k: /اسکرین|عکس.{0,6}(صفحه|بگیر)|screenshot/, t: 'اسکرین‌شات (دمو)', i: '#i-camera', r: () => 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
-    { k: /وضعیت|سیستم|پردازنده|رم/, t: 'مانیتورینگ (دمو)', i: '#i-pulse', r: () => `پردازنده حدود ${faNum(lastCpu)}٪ و رم حدود ${faNum(lastRam)}٪ درگیر است؛ همه‌چیز خوب کار می‌کند.` },
-    { k: /ساعت/, i: '#i-clock', r: () => `الان ساعت ${timeFmt.format(new Date())} است.` },
-    { k: /تاریخ|چندمه|امروز/, i: '#i-clock', r: () => `امروز ${dateFmt.format(new Date())} است.` },
-    { k: /سلام|درود|خوبی/, i: '#i-wave', r: () => 'سلام! من خوبم، ممنون. چه کاری برات انجام بدم؟' },
-    { k: /متشکر|مرسی|ممنون/, i: '#i-wave', r: () => 'خواهش می‌کنم! کار دیگری هست؟' },
+
+    /* --- اطلاعات --- */
+    { k: /وضعیت|سیستم|پردازنده|رم/, t: 'مانیتورینگ', i: '#i-pulse', r: () => `پردازنده حدود ${faNum(lastCpu)}٪ و رم حدود ${faNum(lastRam)}٪ درگیر است؛ همه‌چیز خوب کار می‌کند.` },
+    {
+      k: /باتری|شارژ/, t: 'باتری', i: '#i-pulse',
+      r: async () => {
+        if (navigator.getBattery) {
+          try {
+            const b = await navigator.getBattery();
+            return `باتری ${faNum(Math.round(b.level * 100))}٪ است${b.charging ? ' و در حال شارژ شدن' : ''}.`;
+          } catch (_) { /* noop */ }
+        }
+        return 'خواندن باتری در این محیط ممکن نیست؛ داخل نرم‌افزار ویندوزی امتحان کن.';
+      },
+    },
+    { k: /ساعت/, t: 'ساعت', i: '#i-clock', r: () => `الان ساعت ${timeFmt.format(new Date())} است.` },
+    { k: /تاریخ|چندمه|امروز/, t: 'تاریخ', i: '#i-clock', r: () => `امروز ${dateFmt.format(new Date())} است.` },
+
+    /* --- ابزار --- */
+    {
+      k: /تایمر|یادآور|یادآوری|هشدار\s?بذار/, t: 'تایمر فعال شد', i: '#i-timer',
+      r: (c) => startTimer(c),
+    },
+    { k: /جوک|بخندون|شوخی/, t: 'جوک', i: '#i-smile', r: () => JOKES[Math.floor(Math.random() * JOKES.length)] },
+
+    /* --- تعامل --- */
+    { k: /سلام|درود|خوبی/, t: 'سلام', i: '#i-wave', r: () => 'سلام! من خوبم، ممنون. چه کاری برات انجام بدم؟' },
+    { k: /متشکر|مرسی|ممنون/, t: 'خواهش', i: '#i-wave', r: () => 'خواهش می‌کنم! کار دیگری هست؟' },
   ];
 
   let lastCpu = 12, lastRam = 46;
+
+  /* ---------- تایمر واقعی ---------- */
+  let timerId = null;
+  function beep() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ac = new AC();
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type = 'sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.001, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.2, ac.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.9);
+      o.start(); o.stop(ac.currentTime + 1);
+    } catch (_) { /* noop */ }
+  }
+  function startTimer(c) {
+    const txt = faToEn(c);
+    const m = txt.match(/(\d+(?:\.\d+)?)/);
+    let mins = m ? parseFloat(m[1]) : 5;
+    let unit = 'دقیقه';
+    if (/ثانیه/.test(c) && !/دقیقه/.test(c)) { mins = mins / 60; unit = 'ثانیه'; }
+    mins = Math.max(0.05, Math.min(600, mins));
+    if (timerId) clearTimeout(timerId);
+    timerId = setTimeout(() => {
+      beep();
+      toast('زمان تایمر تمام شد!', '#i-timer');
+      setState('success');
+      statusText.textContent = 'زمان تایمر تمام شد';
+      rcTag.textContent = 'تایمر';
+      rcHeard.textContent = 'تایمر';
+      rcReply.textContent = 'زمان تمام شد؛ یادت بودیم!';
+      respCard.classList.add('show');
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
+    }, mins * 60000);
+    const label = unit === 'ثانیه' ? faNum(Math.round(mins * 60)) : faNum(+(mins.toFixed(1)));
+    return `تایمر ${label} ${unit}‌ای فعال شد؛ به‌محض رسیدن وقت خبرت می‌کنم.`;
+  }
 
   /* ---------- تایپ متن پاسخ ---------- */
   let typeTimer = null;
@@ -174,25 +300,48 @@
     typeTimer = setInterval(() => {
       el.textContent = txt.slice(0, ++i);
       if (i >= txt.length) clearInterval(typeTimer);
-    }, 18);
+    }, 14);
   }
 
-  /* ---------- اجرای فرمان (شبیه‌سازی) ---------- */
-  function runCommand(cmd) {
+  /* ---------- اجرای فرمان ---------- */
+  async function resolveReply(rule, cmd) {
+    let reply = await rule.r(cmd);
+    if (!rule.run) { rcTag.textContent = 'پاسخ آوا'; return reply; }
+    if (!canRun) { rcTag.textContent = 'شبیه‌سازی دمو'; return reply; }
+    const runId = typeof rule.run === 'function' ? rule.run(cmd) : rule.run;
+    const arg = rule.arg ? rule.arg(cmd) : undefined;
+    try {
+      const res = await bridge.system.run(runId, arg);
+      if (res && res.ok) {
+        rcTag.textContent = 'اجرا شد';
+        if (runId === 'screenshot' && res.out) reply = `اسکرین‌شات ذخیره شد در: ${res.out}`;
+      } else {
+        rcTag.textContent = 'شبیه‌سازی دمو';
+        reply += ' (اجرای واقعی فقط داخل نرم‌افزار ویندوزی انجام می‌شود.)';
+      }
+    } catch (_) {
+      rcTag.textContent = 'شبیه‌سازی دمو';
+    }
+    return reply;
+  }
+
+  async function runCommand(cmd) {
     if (state === 'processing') return;
     if (state === 'listening') stopListening(false);
 
     setState('processing');
     statusText.textContent = 'در حال انجام…';
-    body.classList.add('has-card'); // موج جمع می‌شود تا کارت پاسخ جا باز کند
+    body.classList.add('has-card');
     rcHeard.textContent = `«${cmd}»`;
     respCard.classList.remove('show');
     void respCard.offsetWidth;
     respCard.classList.add('show');
     rcReply.textContent = '';
+    rcTag.textContent = 'در حال انجام…';
 
     const rule = RULES.find((r) => r.k.test(cmd));
-    const reply = rule ? rule.r(cmd) : DEFAULT_REPLY;
+    const reply = rule ? await resolveReply(rule, cmd) : DEFAULT_REPLY;
+    if (!rule) rcTag.textContent = 'پاسخ آوا';
 
     setTimeout(() => {
       setState('success');
@@ -205,7 +354,53 @@
           statusText.innerHTML = IDLE_HINT;
         }
       }, 2400);
-    }, 900 + Math.random() * 500);
+    }, 500 + Math.random() * 300);
+  }
+
+  /* ---------- تشخیص گفتار واقعی ---------- */
+  let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
+
+  function updateEngine() {
+    if (SRC && !srBroken) sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار فعال';
+    else sbEngine.innerHTML = '<i class="dot warn"></i>موتور: شبیه‌سازی دمو';
+  }
+  updateEngine();
+
+  function makeRec() {
+    const r = new SRC();
+    r.lang = 'fa-IR';
+    r.interimResults = true;
+    r.continuous = false;
+    r.onresult = (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t; else interim += t;
+      }
+      if (interim && state === 'listening') statusText.textContent = `شنیدم: «${interim}»`;
+      if (final) {
+        gotFinal = true;
+        stopListening(false);
+        runCommand(final.trim());
+      }
+    };
+    r.onerror = (e) => {
+      if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture'].includes(e.error)) {
+        srBroken = true;
+        updateEngine();
+      }
+    };
+    r.onend = () => {
+      recActive = false;
+      if (gotFinal || srBroken) return;
+      if (state === 'listening') {
+        setState('idle');
+        statusText.innerHTML = IDLE_HINT;
+        orbIcon.setAttribute('href', '#i-mic');
+        sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+      }
+    };
+    return r;
   }
 
   /* ---------- گوش دادن ---------- */
@@ -214,20 +409,41 @@
     if (state === 'processing') return;
     clearTimeout(listenTimer);
     setState('listening');
-    body.classList.remove('has-card'); // کارت جمع می‌شود و ویژوالایزر برمی‌گردد
+    body.classList.remove('has-card');
     respCard.classList.remove('show');
     orbIcon.setAttribute('href', '#i-stop');
-    statusText.textContent = 'در حال گوش دادن… (مثلاً بگو «کروم را باز کن»)';
     sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
-    // دمو: بعد از چند ثانیه یک فرمان فرضی «شنیده می‌شود»
+    gotFinal = false;
+
+    if (SRC && !srBroken) {
+      try {
+        rec = makeRec();
+        statusText.textContent = 'در حال گوش دادن… فرمانت را بگو';
+        recActive = true;
+        rec.start();
+        return;
+      } catch (_) { /* ادامه به حالت دمو */ }
+    }
+    startDemoListen();
+  }
+
+  function startDemoListen() {
+    statusText.textContent = 'حالت دمو: در حال شنیدن…';
+    if (!demoNoticeShown) {
+      demoNoticeShown = true;
+      toast('تشخیص گفتار اینجا در دسترس نیست؛ حالت دمو فعال شد', '#i-info');
+    }
     listenTimer = setTimeout(() => {
       const demo = chips[Math.floor(Math.random() * chips.length)].dataset.cmd;
       stopListening(false);
       runCommand(demo);
     }, 4200);
   }
+
   function stopListening(reset = true) {
     clearTimeout(listenTimer);
+    if (rec && recActive) { try { rec.stop(); } catch (_) { /* noop */ } }
+    recActive = false;
     orbIcon.setAttribute('href', '#i-mic');
     sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
     if (reset) {
@@ -303,5 +519,7 @@
   /* ---------- شروع ---------- */
   setState('idle');
   statusText.innerHTML = IDLE_HINT;
-  setTimeout(() => toast('آوا آماده است — این یک دموی رابط کاربری است', '#i-wave'), 900);
+  setTimeout(() => {
+    toast(canRun ? 'آوا آماده است — اجرای واقعی فرمان‌ها فعال است' : 'آوا آماده است — پیش‌نمایش رابط کاربری', '#i-wave');
+  }, 900);
 })();
