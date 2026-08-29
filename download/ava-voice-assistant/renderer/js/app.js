@@ -160,6 +160,7 @@
     dictTarget: store.get('dictTarget', 'box'),
     typingCmds: store.get('typingCmds', []),
     dnsProfiles: store.get('dnsProfiles', []),
+    settingsPane: store.get('settingsPane', 'mic'),
   };
   let customCmds = store.get('customCmds', []);
   let history = store.get('history', []);
@@ -1952,6 +1953,7 @@
     });
     if (!hit && setNavItems[0]) { id = setNavItems[0].dataset.pane; setNavItems[0].classList.add('active'); }
     setPanes.forEach((p) => p.classList.toggle('active', p.dataset.pane === id));
+    settings.settingsPane = id;
     store.set('settingsPane', id);
   }
   setNavItems.forEach((b) => b.addEventListener('click', () => showSettingsPane(b.dataset.pane)));
@@ -1969,9 +1971,9 @@
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     $('#main').scrollTop = 0;
     if (v === 'settings') {
-      showSettingsPane(store.get('settingsPane', 'mic'));
+      showSettingsPane(settings.settingsPane || 'mic');
       refreshSettingsUI();
-      if (store.get('settingsPane', 'mic') === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
+      if ((settings.settingsPane || 'mic') === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
     }
     if (v === 'chat') {
       if (!chatMsgs.childElementCount) chatWelcome();
