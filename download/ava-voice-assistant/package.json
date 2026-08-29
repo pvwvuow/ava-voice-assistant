@@ -1,7 +1,11 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.2.3",
+  "version": "0.3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pvwvuow/ava-voice-assistant.git"
+  },
   "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۲ با اجرای واقعی فرمان‌ها",
   "main": "main.js",
   "license": "MIT",
