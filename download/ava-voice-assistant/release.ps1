@@ -84,18 +84,28 @@ try {
 if ([string]::IsNullOrWhiteSpace($ver)) { Fail "package.json has no version field" }
 
 $tag = "v$ver"
-$tagExists = (git tag -l $tag | Out-String).Trim()
-if ($tagExists -ne "") {
-  # tag already used -> bump patch (0.5.0 -> 0.5.1)
+
+function TagTaken($t) {
+  # local tags (fetched in step 3, so they include remote ones)
+  if ((git tag -l $t | Out-String).Trim() -ne "") { return $true }
+  # belt and suspenders: ask GitHub directly (tolerate network failure)
+  $r = (git ls-remote --tags origin "refs/tags/$t" 2>$null | Out-String).Trim()
+  return ($r -ne "")
+}
+
+$bumped = $false
+while (TagTaken $tag) {
   $parts = $ver.Split(".")
   $parts[2] = [string]([int]$parts[2] + 1)
-  $newVer = $parts -join "."
-  $env:AVA_NEWVER = $newVer
+  $ver = $parts -join "."
+  $tag = "v$ver"
+  $bumped = $true
+}
+if ($bumped) {
+  $env:AVA_NEWVER = $ver
   node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=process.env.AVA_NEWVER;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
   if ($LASTEXITCODE -ne 0) { Fail "Version bump failed (is Node.js installed?)" }
-  $ver = $newVer
-  $tag = "v$ver"
-  Write-Host "  [*] Tag $tagExists was already used - version bumped to $newVer"
+  Write-Host "  [*] Old tags were already used - version bumped to $ver"
 } else {
   Write-Host "  [*] Releasing version $ver as tag $tag"
 }
@@ -133,4 +143,6 @@ if ($LASTEXITCODE -ne 0) { Fail "Could not push tag $tag" }
 
 Write-Host ""
 Write-Host "  [OK] Tag $tag pushed - GitHub Actions is building the installer."
+Write-Host "  [OK] The installer will be published as AVA-Setup-$ver.exe"
+Write-Host "       https://github.com/pvwvuow/ava-voice-assistant/releases"
 exit 0
