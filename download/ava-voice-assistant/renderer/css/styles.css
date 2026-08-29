@@ -505,7 +505,7 @@ body.has-card #wave { height: 0; opacity: 0; }
 }
 .toast .ic { width: 16px; height: 16px; color: var(--acc2); }
 .toast.out { animation: toastOut 0.35s ease forwards; }
-@keyframes toastIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toastOut { to { opacity: 0; transform: translateY(-8px); } }
 
 /* ============================================================
@@ -561,6 +561,34 @@ body.has-card #wave { height: 0; opacity: 0; }
   .orb-ring { width: 202px; height: 202px; }
   .orb-halo { width: 268px; height: 268px; }
   #wave { height: 48px; }
+}
+/* پنجره دستیار — عرض یک‌سوم صفحه (~۶۴۰px) */
+@media (max-width: 680px) {
+  .hero { padding: 12px 14px 16px; gap: 10px; }
+  .greet h1 { font-size: 19px; }
+  .greet-sub { font-size: 12px; }
+  .orb-stage { width: 190px; height: 190px; }
+  .orb { width: 116px; height: 116px; }
+  .orb-core .ic { width: 30px; height: 30px; }
+  .orb-ring { width: 176px; height: 176px; }
+  .orb-halo { width: 232px; height: 232px; }
+  #wave { height: 42px; }
+  .status-line { font-size: 12px; }
+  .chips { gap: 7px; }
+  .chip { padding: 7px 12px; font-size: 11.5px; gap: 6px; }
+  .chip .ic { width: 13px; height: 13px; }
+  .rc-row p { font-size: 12.5px; }
+  #cmdBar { height: 48px; }
+  .sb-side { gap: 8px; }
+  .about { right: 62px; width: 256px; bottom: 42px; }
+  #toasts { top: 50px; inset-inline-end: 10px; }
+  .toast { max-width: 260px; font-size: 12px; }
+}
+/* عرض خیلی کم */
+@media (max-width: 460px) {
+  .tb-badge { display: none; }
+  .sb-item.num { display: none; }
+  .greet h1 { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bg-blob, .orb-liquid .bl, .orb-halo, .orb-ring, .orb::after { animation: none !important; }

@@ -58,6 +58,30 @@ npm run dist
 
 خروجی در پوشه‌ی `dist/` ساخته می‌شود؛ آیکون برنامه `assets/icon.ico` است و شورتکات دسکتاپ با نام «آوا» ساخته می‌شود.
 
+## انتشار روی گیت‌هاب + دانلود کاربران از Releases
+
+ریپو آماده‌ی پوش است (`git init` شده و commit اولیه انجام شده). کافی است:
+
+**۱)** در گیت‌هاب یک ریپوی خالی به اسم `ava-voice-assistant` بساز (بدون README اولیه).
+
+**۲)** سه دستور زیر را در پوشه‌ی پروژه اجرا کن:
+
+```bash
+git remote add origin https://github.com/USERNAME/ava-voice-assistant.git
+git push -u origin main
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+**۳)** به‌محض پوش تگ، GitHub Actions (فایل `.github/workflows/build.yml`) روی سرور ویندوزی گیت‌هاب `npm run dist` را اجرا می‌کند و نصب‌کننده‌ی EXE را به‌صورت خودکار در بخش **Releases** همان ریپو می‌گذارد.
+
+**۴)** از این به بعد هر کاربری که بخواهد، بدون نصب هیچ‌چیز، از آدرس زیر آخرین نسخه را دانلود می‌کند:
+
+```
+https://github.com/USERNAME/ava-voice-assistant/releases/latest
+```
+
+> نکته: برای نسخه‌های بعدی فقط کافی است نسخه در `package.json` را عوض کنی، commit بزنی و تگ جدید (مثلاً `v0.3.0`) پوش کنی — بقیه‌اش خودکار است.
+
 ## ساختار پروژه
 
 ```

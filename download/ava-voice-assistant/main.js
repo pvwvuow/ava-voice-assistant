@@ -2,7 +2,7 @@
  * آوا — دستیار صوتی ویندوز
  * Electron main process (نسخه ۰.۲ — اجرای واقعی فرمان‌های ویندوز)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen } = require('electron');
 const { exec } = require('child_process');
 const path = require('path');
 const os = require('os');
@@ -33,11 +33,18 @@ function cpuUsage() {
 
 /* ---------- Window ---------- */
 function createWindow() {
+  /* پنجره دستیار: حدود یک‌سوم عرض صفحه، باز می‌شود سمت راست دسکتاپ */
+  const wa = screen.getPrimaryDisplay().workArea;
+  const W = Math.max(400, Math.min(680, Math.round(wa.width / 3)));
+  const H = Math.max(540, Math.min(780, Math.round(wa.height * 0.92)));
+
   win = new BrowserWindow({
-    width: 1120,
-    height: 740,
-    minWidth: 940,
-    minHeight: 620,
+    width: W,
+    height: H,
+    x: wa.x + wa.width - W - 24,           // چسبیده به لبه راست دسکتاپ
+    y: wa.y + Math.max(0, Math.round((wa.height - H) / 2)),
+    minWidth: 360,
+    minHeight: 520,
     frame: false, // نوار عنوان سفارشی
     backgroundColor: '#0a0e10',
     show: false,

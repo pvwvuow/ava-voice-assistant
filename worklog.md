@@ -46,3 +46,21 @@ Stage Summary:
 - نسخه ۰.۲ آماده: تشخیص گفتار واقعی + اجرای واقعی فرمان‌ها در Electron ویندوز
 - بسته‌بندی نصب‌کننده: npm install && npm run dist → EXE نصب‌کننده NSIS
 - پیش‌نمایش: http://localhost:3000/ava/index.html
+
+---
+Task ID: 4
+Agent: main (Super Z)
+Task: پنجره یک‌سوم صفحه + اتصال پروژه به گیت‌هاب (درخواست کاربر)
+
+Work Log:
+- main.js: پنجره جدید = یک‌سوم عرض workArea (کلمپ ۴۰۰-۶۸۰)، ارتفاع ۹۲٪ (کلمپ ۵۴۰-۷۸۰)، موقعیت لبه راست دسکتاپ با فاصله ۲۴px
+- styles.css: دو مدیاکوئری جدید (≤680px: اورب ۱۱۶px، chipها فشرده، about/toasts جابجا؛ ≤460px: مخفی‌کردن badge و CPU/RAM)
+- رفع انیمیشن toastIn (translateX → translateY) که در RTL لحظه‌ای در لبه چپ کلیپ می‌شد
+- .github/workflows/build.yml: ساخت خودکار EXE روی تگ v* با windows-latest + انتشار در Releases + artifact
+- LICENSE (MIT) + بخش «انتشار روی گیت‌هاب» در README
+- git init -b main + دو commit (۱۸ فایل)
+- تست مرورگری 640x780: چیدمان کامل بدون اسکرول، کارت پاسخ و توست‌ها سالم
+
+Stage Summary:
+- پنجره پیش‌فرض حالا پنل دستیار یک‌سوم صفحه سمت راست است
+- ریپو آماده پوش: کاربر فقط remote اضافه می‌کند + push + tag v0.2.0 → EXE خودکار در Releases
