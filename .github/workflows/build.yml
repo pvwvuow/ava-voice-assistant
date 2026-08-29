@@ -1,0 +1,40 @@
+name: ساخت نصب‌کننده ویندوز (AVA Installer)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: دریافت سورس
+        uses: actions/checkout@v4
+
+      - name: نصب Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: نصب وابستگی‌ها
+        run: |
+          cd download/ava-voice-assistant
+          npm install
+
+      - name: ساخت نصب‌کننده NSIS
+        run: |
+          cd download/ava-voice-assistant
+          npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: انتشار در Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: download/ava-voice-assistant/dist/*.exe
+          generate_release_notes: true
