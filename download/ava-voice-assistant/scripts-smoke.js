@@ -11,7 +11,9 @@
  * page, optimization pane (no-anim/no-fx/lite theme), orb glass
  * glare, music visualizer, fling-to-pause, dynamic version labels and
  * v0.16 additions: rebuilt two-card music deck, Gemini model chain fix
- * and the Discord voice-control extension (call/hangup/mute/answer).
+ * and the Discord voice-control extension (call/hangup/mute/answer) and
+ * v0.16.2 regression: safeMode/noFx cold boot must survive applyPerf→vizStop
+ * (user crash: "Cannot access 'vizRaf' before initialization" — TDZ).
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -31,6 +33,9 @@ app.commandLine.appendSwitch('google-api-key', 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21Op
 /* محیط تست بدون GPU سخت‌افزاری — جلوگیری از کرش رندرر در Xvfb */
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+/* کانتینر: /dev/shm فقط 64MB است؛ رندرر هنگام رندر سنگین (تست i18n) OOM و
+   «disposed» می‌شود → کروم به‌جای shm از /tmp استفاده کند (فیکس اسموک v0.16.2) */
+app.commandLine.appendSwitch('disable-dev-shm-usage');
 
 const results = [];
 const ok = (name, cond, extra = '') => {
@@ -550,6 +555,41 @@ app.whenReady().then(async () => {
     const badgeHidden = await probe(`document.querySelector('#btnUpdBadge').hidden`);
     ok('update badge hidden until update', badgeHidden === true);
     } catch (e) { console.log('SKIP | music page | ' + String(e && e.message).slice(0, 50)); }
+
+    // 9. v0.16.2 — TDZ regression: cold boot with safeMode/noFx preset must survive.
+    // User crash report v0.16.1: applyPerf() ran at boot before `let vizRaf` (app.js:4936)
+    // executed, called vizStop() → TDZ ReferenceError → whole IIFE died → crash panel.
+    // Reproduced with a SECOND cold window (reload kills renderer in Xvfb — never reload).
+    try {
+      await probe(`localStorage.setItem('ava.safeMode', '1'); localStorage.setItem('ava.noFx', 'true'); localStorage.setItem('ava.noAnim', 'true'); 'preset-ok'`);
+      const win2 = new BrowserWindow({
+        width: 640, height: 760, show: false,
+        webPreferences: {
+          preload: path.join(__dirname, 'preload.js'),
+          contextIsolation: true, nodeIntegration: false, spellcheck: false, webviewTag: true,
+        },
+      });
+      await win2.loadURL('ava://app/renderer/index.html'); /* IIFE 同步运行 — did-finish-load 意味着 boot 已结束（或已崩溃） */
+      const boot2 = await Promise.race([
+        win2.webContents.executeJavaScript(`(() => ({
+          booted: !!(window.__avaErr && window.__avaErr.booted),
+          tdz: /vizRaf/i.test(JSON.stringify(window.__avaErr && window.__avaErr.ring || [])),
+          safeOrb: document.body.classList.contains('safe-orb'),
+          nofx: document.body.classList.contains('perf-nofx'),
+          errs: JSON.stringify(window.__avaErr && window.__avaErr.ring || []).slice(0, 180),
+        }))()`, true),
+        new Promise((_r, rej) => setTimeout(() => rej(new Error('boot2-timeout')), 15000)),
+      ]);
+      await new Promise((r) => setTimeout(r, 4000)); /* صبر تا پایان init کامل */
+      const boot2b = await Promise.race([
+        win2.webContents.executeJavaScript(`(() => ({ booted: !!(window.__avaErr && window.__avaErr.booted) }))()`, true),
+        new Promise((_r, rej) => setTimeout(() => rej(new Error('boot2b-timeout')), 8000)),
+      ]);
+      ok('safeMode cold boot survives (TDZ vizRaf fix)', boot2b.booted && !boot2.tdz, JSON.stringify(boot2));
+      ok('safeMode perf classes on cold boot', boot2.safeOrb && boot2.nofx);
+      try { win2.destroy(); } catch (_) { /* noop */ }
+      await probe(`['ava.safeMode', 'ava.noFx', 'ava.noAnim'].forEach((k) => localStorage.removeItem(k)); 'clean'`);
+    } catch (e) { console.log('SKIP | safeMode cold boot | ' + String(e && e.message).slice(0, 60)); }
 
     const fails = results.filter((r) => !r.pass);
     console.log('SMOKE SUMMARY: ' + (results.length - fails.length) + '/' + results.length + ' passed');

@@ -1005,6 +1005,14 @@
   tickClock();
   setInterval(tickClock, 15000);
 
+  /* ---------- وضعیت ویژوالایزر (v0.16.2) ----------
+     ⚠ این let باید «قبل از» اولین applyPerf() بیاید؛ applyPerf در حین بوت
+     ممکن است vizStop() را صدا بزند (safeMode/noFx/lite) و اگر vizRaf هنوز
+     در TDZ (منطقهٔ مرگ موقت let) باشد، کل بوت با ReferenceError می‌مرد —
+     باگ گزارش کرش کاربر: «Cannot access 'vizRaf' before initialization».
+     تعریف تابع‌های viz پایین فایل می‌ماند (hoist کامل دارند). */
+  let vizCtx = null, vizAnalyser = null, vizData = null, vizRaf = 0, vizTick = false;
+
   /* ---------- تم روشن/تیره/سبک (v0.15) + بهینه‌سازی ---------- */
   function applyTheme() {
     if (settings.theme === 'light') document.body.setAttribute('data-theme', 'light');
@@ -1019,7 +1027,8 @@
     body.classList.toggle('perf-noanim', !!settings.noAnim || !!settings.safeMode);
     body.classList.toggle('perf-nofx', !!settings.noFx || settings.theme === 'lite' || !!settings.safeMode);
     body.classList.toggle('safe-orb', !!settings.safeMode); /* دیسک شیشه‌ای → ساده و صاف */
-    if (typeof vizStop === 'function' && (settings.noFx || settings.theme === 'lite' || settings.safeMode)) vizStop();
+    /* try/catch اضافی: هیچ خطایی از این مسیر نباید بوت را بکشد (سپر دوم بعد از فیکس TDZ) */
+    if (typeof vizStop === 'function' && (settings.noFx || settings.theme === 'lite' || settings.safeMode)) { try { vizStop(); } catch (_) { /* noop */ } }
   }
   function syncPerfUI() {
     if (optNoAnim) optNoAnim.checked = !!settings.noAnim;
@@ -3696,7 +3705,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.16.1';
+  let appVersion = '0.16.2';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4933,7 +4942,7 @@
   /* ---------- ویژوالایزر زندهٔ موزیک (v0.15) ----------
      AnalyserNode روی همان <audio>؛ فقط هنگام پخش رسم می‌شود (~۳۰fps برای CPU کم)
      و با کلیدهای بهینه‌سازی/تم سبک کلاً خاموش می‌ماند. */
-  let vizCtx = null, vizAnalyser = null, vizData = null, vizRaf = 0, vizTick = false;
+  /* حالت viz بالای فایل اعلان شده (قبل از اولین applyPerf) — فیکس TDZ v0.16.2 */
   function vizEnsure() {
     if (vizAnalyser) return true;
     if (!mViz) return false;
