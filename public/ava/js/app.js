@@ -39,8 +39,9 @@
   const optSttEngine = $('#optSttEngine');
   const optGlmKey = $('#optGlmKey');
   const btnKeyShow = $('#btnKeyShow');
+  const optGoogleKey = $('#optGoogleKey');
+  const btnGoZai = $('#btnGoZai');
   const optDemo = $('#optDemo');
-  const optAiBase = $('#optAiBase');
   const optAiModel = $('#optAiModel');
 
   /* ---------- عناصر چت هوش مصنوعی ---------- */
@@ -50,6 +51,12 @@
   const chatMsgs = $('#chatMsgs');
   const chatBar = $('#chatBar');
   const chatInput = $('#chatInput');
+  const tabQuick = $('#tabQuick');
+  const tabZai = $('#tabZai');
+  const quickWrap = $('#quickWrap');
+  const zaiWrap = $('#zaiWrap');
+  const zaiWeb = $('#zaiWeb');
+  const zaiBadge = $('#zaiBadge');
 
   /* ---------- مودال تأیید ---------- */
   const confirmBox = $('#confirmBox');
@@ -88,7 +95,7 @@
   const abRuntime = $('#abRuntime');
 
   const IDLE_HINT = 'برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
-  const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم. اگر بخواهی از صفحه «چت با هوش مصنوعی» بپرس تا خودم یاد بگیرم و به فرمان‌هام اضافه کنم!';
+  const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!';
 
   /* ---------- تنظیمات (localStorage) ---------- */
   const store = {
@@ -101,6 +108,7 @@
     autoUpdate: store.get('autoUpdate', true),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
+    googleKey: store.get('googleKey', ''),
     glmKey: store.get('glmKey', ''),
     glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
     glmModel: store.get('glmModel', 'glm-4.6'),
@@ -278,7 +286,7 @@
   drawMeter();
 
   function detachMic() {
-    if (isRecording) return; /* حین ضبط، استریم نباید بسته شود */
+    if (isRecording || gRec) return; /* حین ضبط، استریم نباید بسته شود */
     if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
     if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
     analyser = null; micData = null; micLive = false;
@@ -583,6 +591,11 @@
     rcTag.textContent = 'در حال انجام…';
 
     const rule = RULES.find((r) => r.k.test(cmd)) || findCustomRule(cmd);
+    if (!rule && aiConnected()) {
+      /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */
+      await aiHandleCommand(cmd);
+      return;
+    }
     const reply = rule ? await resolveReply(rule, cmd) : DEFAULT_REPLY;
     if (!rule) rcTag.textContent = 'پاسخ آوا';
 
@@ -602,8 +615,8 @@
   }
 
   /* ============================================================
-     تشخیص گفتار واقعی — زنجیره: موتور وب → GLM-ASR ابری
-     هیچ‌وقت بی‌اجازه، فرمان جعلی اجرا نمی‌شود؛ دمو فقط با تنظیم صریح.
+     تشخیص گفتار واقعی — زنجیره: موتور وب → گوگل رایگان (HTTP) → GLM-ASR
+     بدون هیچ کلیدی؛ دمو فقط با تنظیم صریح کاربر.
      ============================================================ */
   let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
   let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false;
@@ -612,9 +625,12 @@
   const GLM_SIL_MS = 2300;    // سکوت لازم برای پایان فرمان
   const GLM_ON_LVL = 16;      // آستانه تشخیص شروع حرف (میانگین طیف)
 
+  const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
+
   function refreshEngineUI() {
-    if (SRC && !srBroken && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
-    else if (glmReady() && settings.sttEngine !== 'web') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
+    if (SRC && !srBroken && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
+    else if (googleReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
+    else if (glmReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
     else if (settings.demoMode) sbEngine.innerHTML = '<i class="dot warn"></i>موتور: حالت دمو';
     else sbEngine.innerHTML = '<i class="dot err"></i>موتور: تنظیم نشده';
   }
@@ -622,8 +638,10 @@
   function resolveEngine() {
     const webOK = !!(SRC && !srBroken);
     if (settings.sttEngine === 'web') return webOK ? 'web' : null;
+    if (settings.sttEngine === 'google') return googleReady() ? 'google' : null;
     if (settings.sttEngine === 'glm') return glmReady() ? 'glm' : null;
     if (webOK) return 'web';
+    if (googleReady()) return 'google';
     if (glmReady()) return 'glm';
     return null;
   }
@@ -647,13 +665,14 @@
       }
     };
     r.onerror = (e) => {
-      if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture'].includes(e.error)) {
+      if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) {
         srBroken = true;
         refreshEngineUI();
-        /* فالبک خودکار به GLM-ASR اگر کلید باشد */
-        if (state === 'listening' && settings.sttEngine === 'auto' && glmReady()) {
+        /* فالبک خودکار: گوگل رایگان → GLM ابری (اگر کلید باشد) */
+        if (state === 'listening' && settings.sttEngine === 'auto') {
           try { recActive = false; } catch (_) { /* noop */ }
-          startGlmListen();
+          if (googleReady()) startGoogleListen();
+          else if (glmReady()) startGlmListen();
         }
       }
     };
@@ -668,6 +687,121 @@
       }
     };
     return r;
+  }
+
+  /* --- موتور رایگان گوگل: ضبط PCM + تشخیص سکوت + ارسال به سرور گوگل --- */
+  const G_MAX_MS = 12000;    // بیشینه ضبط
+  const G_SIL_MS = 1500;     // سکوت پایان فرمان
+  const G_ON = 0.013;        // آستانه شروع حرف (RMS)
+  const G_IDLE_MS = 8000;    // اگر هیچ حرفی نشنید
+  let gRec = null, gMaxT = null;
+
+  function downsampleF32(f32, from, to) {
+    if (from === to) return f32;
+    const ratio = from / to;
+    const len = Math.max(1, Math.floor(f32.length / ratio));
+    const out = new Float32Array(len);
+    for (let i = 0; i < len; i++) {
+      const pos = i * ratio;
+      const i0 = Math.floor(pos);
+      const frac = pos - i0;
+      const s0 = f32[i0] || 0;
+      const s1 = f32[i0 + 1] || s0;
+      out[i] = s0 + (s1 - s0) * frac;
+    }
+    return out;
+  }
+
+  function f32ToI16(f32) {
+    const out = new Int16Array(f32.length);
+    for (let i = 0; i < f32.length; i++) {
+      const v = Math.max(-1, Math.min(1, f32[i]));
+      out[i] = v < 0 ? v * 32768 : v * 32767;
+    }
+    return out;
+  }
+
+  function startGoogleListen() {
+    if (!googleReady()) { noEngine('موتور گوگل فقط داخل نرم‌افزار فعال است'); return; }
+    attachMic().then((ok) => {
+      if (!ok) { noEngine('میکروفون در دسترس نیست'); return; }
+      try {
+        const src = audioCtx.createMediaStreamSource(micStream);
+        const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+        const sink = audioCtx.createGain();
+        sink.gain.value = 0; // بی‌صدا — فقط برای پردازش
+        src.connect(proc);
+        proc.connect(sink);
+        sink.connect(audioCtx.destination);
+        gRec = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, started: Date.now(), busy: false };
+        proc.onaudioprocess = (e) => {
+          if (!gRec || gRec.busy) return;
+          const f = e.inputBuffer.getChannelData(0);
+          gRec.chunks.push(new Float32Array(f));
+          let sum = 0, n = 0;
+          for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
+          const rms = Math.sqrt(sum / Math.max(1, n));
+          const now = Date.now();
+          if (rms > G_ON) {
+            gRec.spoke = true;
+            gRec.lastVoice = now;
+            if (state === 'listening') statusText.textContent = 'شنیدم… بعد از سکوت، گوگل تبدیلش می‌کند';
+          } else if (gRec.spoke && now - gRec.lastVoice > G_SIL_MS) {
+            stopGoogleRec();
+          } else if (!gRec.spoke && now - gRec.started > G_IDLE_MS) {
+            stopGoogleRec();
+          }
+        };
+        statusText.textContent = 'در حال گوش دادن (گوگل)… فرمانت را بگو';
+        gMaxT = setTimeout(() => stopGoogleRec(), G_MAX_MS);
+      } catch (_) {
+        gRec = null;
+        noEngine('شروع ضبط گوگل ممکن نشد');
+      }
+    });
+  }
+
+  function stopGoogleRec() {
+    clearTimeout(gMaxT); gMaxT = null;
+    if (!gRec) return;
+    const g = gRec;
+    gRec = null;
+    try { g.proc.disconnect(); } catch (_) { /* noop */ }
+    try { g.src.disconnect(); } catch (_) { /* noop */ }
+    try { g.sink.disconnect(); } catch (_) { /* noop */ }
+    if (g.busy) return;
+    g.busy = true;
+    const totalMs = (g.chunks.length * 4096 * 1000) / (audioCtx ? audioCtx.sampleRate : 48000);
+    if (!g.spoke || totalMs < 350) {
+      statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
+      setTimeout(() => { if (state === 'listening' || state === 'processing') { setState('idle'); statusText.innerHTML = IDLE_HINT; orbIcon.setAttribute('href', '#i-mic'); sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده'; } }, 1500);
+      return;
+    }
+    setState('processing');
+    statusText.textContent = 'در حال تبدیل گفتار با گوگل…';
+    const merged = new Float32Array(g.chunks.reduce((a, c) => a + c.length, 0));
+    let off = 0;
+    for (const c of g.chunks) { merged.set(c, off); off += c.length; }
+    const rate = (audioCtx && audioCtx.sampleRate) || 48000;
+    const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
+    bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, key: settings.googleKey || '', lang: 'fa-IR' })
+      .then((r) => {
+        if (r && r.ok && r.text) {
+          runCommand(r.text.trim());
+        } else {
+          setState('idle');
+          statusText.textContent = 'تبدیل گوگل ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
+          orbIcon.setAttribute('href', '#i-mic');
+          sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+          toast((r && r.error) || 'گوگل پاسخی نداد', '#i-info');
+        }
+      })
+      .catch(() => {
+        setState('idle');
+        statusText.textContent = 'اتصال به گوگل برقرار نشد — اینترنت/فیلترشکن را چک کن';
+        orbIcon.setAttribute('href', '#i-mic');
+        sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+      });
   }
 
   /* --- موتور GLM-ASR: ضبط واقعی + ارسال به سرور + تبدیل به فرمان --- */
@@ -762,7 +896,7 @@
       return;
     }
     statusText.innerHTML = 'تشخیص گفتار در دسترس نیست — ' + reason;
-    toast('کلید GLM را در تنظیمات وارد کن تا تشخیص گفتار فارسی فعال شود', '#i-key');
+    toast('موتور رایگان گوگل فقط داخل نرم‌افزار ویندوزی فعال است', '#i-info');
   }
 
   /* ---------- گوش دادن ---------- */
@@ -788,11 +922,15 @@
         return;
       } catch (_) { srBroken = true; }
     }
-    if (eng === 'glm' || (settings.sttEngine === 'auto' && glmReady())) {
+    if (eng === 'google') {
+      startGoogleListen();
+      return;
+    }
+    if (eng === 'glm') {
       startGlmListen();
       return;
     }
-    noEngine(settings.sttEngine === 'glm' ? 'کلید GLM تنظیم نشده' : (SRC ? 'موتور وب از کار افتاد و کلید GLM نیست' : 'موتور وب اینجا پشتیبانی نمی‌شود و کلید GLM نیست'));
+    noEngine(SRC ? 'موتور وب از کار افتاد و موتور گوگل اینجا فعال نیست' : 'موتور گوگل اینجا پشتیبانی نمی‌شود (فقط داخل نرم‌افزار)');
   }
 
   function startDemoListen() {
@@ -821,6 +959,14 @@
       try { glmRec.stop(); } catch (_) { /* noop */ }
     }
     glmRec = null;
+    if (gRec) {
+      const g = gRec;
+      gRec = null;
+      try { g.proc.disconnect(); } catch (_) { /* noop */ }
+      try { g.src.disconnect(); } catch (_) { /* noop */ }
+      try { g.sink.disconnect(); } catch (_) { /* noop */ }
+    }
+    clearTimeout(gMaxT); gMaxT = null;
     /* میکروفون روشن می‌ماند تا اکولایزر همیشه به صدای واقعی واکنش نشان دهد */
     orbIcon.setAttribute('href', '#i-mic');
     sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
@@ -871,7 +1017,7 @@
   /* ============================================================
      ناوبری: خانه / تنظیمات / چت
      ============================================================ */
-  let appVersion = '0.5.0';
+  let appVersion = '0.6.0';
 
   function showView(v) {
     settingsPage.hidden = v !== 'settings';
@@ -912,7 +1058,7 @@
     optDemo.checked = !!settings.demoMode;
     optSttEngine.value = settings.sttEngine || 'auto';
     optGlmKey.value = settings.glmKey || '';
-    optAiBase.value = settings.glmBase || 'https://api.z.ai/api/paas/v4';
+    optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
     refreshEngineUI();
     fillVoiceSelect();
@@ -974,7 +1120,7 @@
     refreshEngineUI();
     if (settings.sttEngine === 'glm' && !settings.glmKey) {
       optGlmKey.focus();
-      toast('اول کلید GLM را وارد کن', '#i-key');
+      toast('موتور GLM به کلید نیاز دارد — یا موتور «خودکار»/«گوگل رایگان» را انتخاب کن', '#i-key');
     }
   });
 
@@ -998,10 +1144,17 @@
     toast(settings.demoMode ? 'حالت دمو روشن شد' : 'حالت دمو خاموش شد — تشخیص واقعی یا پیام خطا', '#i-info');
   });
 
-  optAiBase.addEventListener('change', () => {
-    settings.glmBase = optAiBase.value;
-    store.set('glmBase', settings.glmBase);
-    toast('سرویس‌دهنده عوض شد', '#i-spark');
+  optGoogleKey.addEventListener('change', () => {
+    settings.googleKey = optGoogleKey.value.trim();
+    store.set('googleKey', settings.googleKey);
+    refreshEngineUI();
+    toast(settings.googleKey ? 'کلید اختصاصی گوگل ذخیره شد' : 'کلید پاک شد — استفاده از کلید رایگان داخلی', '#i-key');
+  });
+
+  btnGoZai.addEventListener('click', () => {
+    showView('chat');
+    selectChatTab('zai');
+    toast('یک بار وارد حسابت شو — بعدش همه‌چیز بدون کلید کار می‌کند', '#i-globe');
   });
 
   optAiModel.addEventListener('change', () => {
@@ -1208,25 +1361,33 @@
   }
 
   /* ============================================================
-     چت با هوش مصنوعی GLM
+     چت با هوش مصنوعی GLM — بدون کلید API (با نشست حساب z.ai) یا با کلید
      ============================================================ */
   const AI_SYSTEM =
-    'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود. پاسخ را فقط به صورت JSON بده: ' +
-    '{"reply":"متن پاسخ فارسی، کوتاه و دوستانه","add_command":null}\n' +
-    'اگر کاربر خواست فرمان جدیدی اضافه شود، add_command را این‌طور پر کن:\n' +
-    '{"title":"نام کوتاه فرمان","phrases":["جمله‌ای که کاربر میگوید","جمله دوم"],"action":{"type":"open_url|run|ps","value":"..."}}\n' +
+    'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود و به فرمان‌های کاربر گوش می‌دهی.\n' +
+    'همیشه فارسی، کوتاه (حداکثر ۳ جمله)، دوستانه و مفید جواب بده.\n' +
+    'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
+    'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
+    '<<<ADD>>>\n' +
+    '{"title":"نام کوتاه فرمان","phrases":["عبارتی که کاربر می‌گوید"],"action":{"type":"...","value":"..."}}\n' +
+    '<<<END>>>\n' +
+    'قواعد action:\n' +
     '- type=open_url: باز کردن وب‌سایت؛ value آدرس کامل https\n' +
-    '- type=run: اجرای برنامه ویندوز؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, recycle_empty\n' +
+    '- type=run: اجرای فرمان آماده؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, recycle_empty\n' +
     '- type=ps: اسکریپت کوتاه تک‌خطی و غیرمخرب PowerShell\n' +
-    'همیشه فقط JSON خالص بده؛ بدون توضیح اضافه و بدون بک‌تیک.';
+    'مثال: اگر کاربر گفت «فرمان باز کردن تلگرام بساز»، بلوک را با open_url و آدرس https://web.telegram.org بساز.';
 
   let chatBusy = false;
+  let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
+  let zaiToken = '';   // توکن نشست حساب z.ai — از webview خوانده می‌شود
+
+  const aiConnected = () => !!zaiToken || !!settings.glmKey;
 
   function chatWelcome() {
-    const ready = glmReady();
+    const ready = aiConnected();
     addMsg('bot', ready
-      ? 'سلام! من مغز هوشمند آوا هستم. هر چیزی بپرسی جواب می‌دهم و اگر فرمانی بخواهی، خودم می‌سازمش و با تأیید تو به لیست فرمان‌ها اضافه می‌کنم.'
-      : 'سلام! برای چت با هوش مصنوعی، اول کلید GLM را در تنظیمات وارد کن (سرویس‌دهنده Z.ai یا BigModel). بعد اینجا می‌توانی هر فرمانی بخواهی تا برایت بسازم.');
+      ? 'سلام! من مغز هوشمند آوا هستم و به حسابت وصل هستم. هر سوال پیچیده‌ای بپرسی جواب می‌دهم و اگر فرمانی بخواهی، خودم می‌سازمش و با تأیید تو به فرمان‌هام اضافه می‌کنم.'
+      : 'سلام! من مغز هوشمند آوا هستم. برای چت بدون کلید API، برو تب «صفحه چت GLM» و یک بار وارد حسابت شو — بعد اینجا هر سوال و فرمانی بخواهی در خدمتم.');
   }
 
   function addMsg(role, text) {
@@ -1238,20 +1399,110 @@
     return m;
   }
 
-  function parseAi(text) {
-    let t = String(text || '').trim()
-      .replace(/^```(?:json)?/i, '')
-      .replace(/```$/, '')
-      .trim();
-    const m = t.match(/\{[\s\S]*\}/);
-    if (m) {
-      try {
-        const j = JSON.parse(m[0]);
-        if (j && (typeof j.reply === 'string' || j.add_command)) return j;
-      } catch (_) { /* noop */ }
-    }
-    return { reply: t || '…', add_command: null };
+  /* استخراج بلوک افزودن فرمان از پاسخ AI */
+  function parseAdd(text) {
+    const t = String(text || '');
+    const m = t.match(/<<<ADD>>>\s*([\s\S]*?)\s*<<<END>>>/);
+    if (!m) return { reply: t.trim(), add: null };
+    let add = null;
+    try {
+      const j = JSON.parse(m[1].replace(/^```(?:json)?/i, '').replace(/```$/, '').trim());
+      if (j && j.title && j.action && j.action.type && j.action.value) add = j;
+    } catch (_) { /* noop */ }
+    return { reply: t.replace(m[0], '').trim(), add };
   }
+
+  /* --- تب‌های چت: چت سریع / صفحه GLM --- */
+  function selectChatTab(which) {
+    const zai = which === 'zai';
+    if (tabQuick) tabQuick.classList.toggle('active', !zai);
+    if (tabZai) tabZai.classList.toggle('active', zai);
+    if (quickWrap) quickWrap.hidden = zai;
+    if (zaiWrap) zaiWrap.hidden = !zai;
+    if (zai) setTimeout(() => checkZaiToken(), 900);
+  }
+  if (tabQuick) tabQuick.addEventListener('click', () => selectChatTab('quick'));
+  if (tabZai) tabZai.addEventListener('click', () => selectChatTab('zai'));
+
+  function setZaiBadge(on, txt) {
+    if (!zaiBadge) return;
+    zaiBadge.textContent = txt || (on ? 'اتصال به حساب GLM: فعال ✓' : 'بدون کلید API');
+    zaiBadge.classList.toggle('on', !!on);
+  }
+
+  function checkZaiToken(attempts = 0) {
+    if (!zaiWeb || typeof zaiWeb.executeJavaScript !== 'function') return;
+    try {
+      zaiWeb.executeJavaScript("localStorage.getItem('token')||''", true).then((t) => {
+        if (t) {
+          zaiToken = String(t);
+          setZaiBadge(true);
+        } else {
+          zaiToken = '';
+          setZaiBadge(false, attempts < 4 ? 'برای اتصال، وارد حسابت شو' : 'بدون کلید API');
+          if (attempts < 4) setTimeout(() => checkZaiToken(attempts + 1), 2500);
+        }
+      }).catch(() => { /* noop */ });
+    } catch (_) { /* noop */ }
+  }
+  if (zaiWeb) {
+    zaiWeb.addEventListener('dom-ready', () => setTimeout(() => checkZaiToken(), 1400));
+    zaiWeb.addEventListener('did-stop-loading', () => setTimeout(() => checkZaiToken(), 800));
+  }
+
+  /* --- ارسال پیام: اول نشست z.ai، بعد کلید GLM --- */
+  async function aiAsk(text) {
+    const msgs = [{ role: 'system', content: AI_SYSTEM }, ...chatHist.slice(-8), { role: 'user', content: text }];
+    if (zaiToken && bridge && bridge.ai && bridge.ai.zaiChat) {
+      const r = await bridge.ai.zaiChat({ token: zaiToken, messages: msgs });
+      if (r && r.ok) return r;
+      if (r && r.needLogin) { zaiToken = ''; setZaiBadge(false, 'نشست منقضی شد — دوباره وارد شو'); }
+      if (r && !settings.glmKey) return r; // خطای z.ai را نشان بده
+    }
+    if (settings.glmKey && bridge && bridge.ai && bridge.ai.chat) {
+      return bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs });
+    }
+    if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
+    return { ok: false, needLogin: true, error: 'برای چت بدون کلید، اول در تب «صفحه چت GLM» وارد حسابت شو' };
+  }
+
+  async function handleChatSend(v) {
+    addMsg('user', v);
+    chatHist.push({ role: 'user', content: v });
+    const typing = addMsg('bot', 'دارم فکر می‌کنم…');
+    typing.classList.add('typing');
+    chatBusy = true;
+    try {
+      const r = await aiAsk(v);
+      typing.remove();
+      if (!r || !r.ok) {
+        addMsg('err', (r && r.error) || 'پاسخی نرسید.');
+      } else {
+        const { reply, add } = parseAdd(r.text);
+        chatHist.push({ role: 'assistant', content: r.text });
+        const msgEl = addMsg('bot', reply || '…');
+        speak(reply);
+        if (add) renderCmdCard(msgEl, add);
+      }
+    } catch (_) {
+      typing.remove();
+      addMsg('err', 'اتصال به سرور هوش مصنوعی برقرار نشد.');
+    }
+    chatBusy = false;
+    chatInput.focus();
+  }
+
+  chatBar.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = chatInput.value.trim();
+    if (!v || chatBusy) return;
+    if (!bridge || !bridge.ai) {
+      addMsg('err', 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند (درخواست باید از پروسه اصلی برود).');
+      return;
+    }
+    chatInput.value = '';
+    handleChatSend(v);
+  });
 
   function renderCmdCard(msgEl, cc) {
     const card = document.createElement('div');
@@ -1285,52 +1536,61 @@
     chatMsgs.scrollTop = chatMsgs.scrollHeight;
   }
 
-  chatBar.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const v = chatInput.value.trim();
-    if (!v || chatBusy) return;
-    if (!bridge || !bridge.ai) {
-      addMsg('err', 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند (درخواست باید از پروسه اصلی برود).');
-      return;
-    }
-    if (!settings.glmKey) {
-      addMsg('err', 'کلید GLM تنظیم نشده است — از تنظیمات › تشخیص گفتار، کلید را وارد کن و دوباره بیا.');
-      showView('settings');
-      setTimeout(() => optGlmKey.focus(), 300);
-      return;
-    }
-    chatInput.value = '';
-    addMsg('user', v);
-    const typing = addMsg('bot', 'دارم فکر می‌کنم…');
-    typing.classList.add('typing');
-    chatBusy = true;
+  /* ---------- مسیریابی سوالات پیچیده به هوش مصنوعی ----------
+     اگر متن، فرمان شناخته‌شده نبود و اتصال AI برقرار بود،
+     آوا خودش از GLM می‌پرسد، جواب را می‌گوید و فرمان جدید پیشنهادی را با تأیید اضافه می‌کند. */
+  async function aiHandleCommand(cmd) {
+    setState('processing');
+    statusText.textContent = 'سوالت را از هوش مصنوعی می‌پرسم…';
+    body.classList.add('has-card');
+    rcHeard.textContent = `«${cmd}»`;
+    respCard.classList.remove('show');
+    void respCard.offsetWidth;
+    respCard.classList.add('show');
+    rcReply.textContent = '';
+    rcTag.textContent = 'هوش مصنوعی';
     try {
-      const r = await bridge.ai.chat({
-        base: settings.glmBase,
-        key: settings.glmKey,
-        model: settings.glmModel,
-        messages: [
-          { role: 'system', content: AI_SYSTEM },
-          { role: 'user', content: v },
-        ],
-      });
-      typing.remove();
-      if (!r || !r.ok) {
-        addMsg('err', (r && r.error) || 'پاسخی نرسید.');
-      } else {
-        const j = parseAi(r.text);
-        const msgEl = addMsg('bot', j.reply || '…');
-        if (j.add_command && j.add_command.action && j.add_command.title) {
-          renderCmdCard(msgEl, j.add_command);
+      const r = await aiAsk(cmd);
+      if (r && r.ok) {
+        const { reply, add } = parseAdd(r.text);
+        chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: r.text });
+        setState('success');
+        statusText.textContent = 'جواب آمد';
+        rcTag.textContent = add ? 'هوش مصنوعی + فرمان جدید' : 'هوش مصنوعی';
+        typeText(rcReply, reply || '…');
+        speak(reply);
+        if (add) {
+          const okGo = await askConfirm({
+            title: 'فرمان جدید پیشنهاد شد',
+            text: `هوش مصنوعی برای درخواستت این فرمان را ساخت: «${add.title}». به فرمان‌ها اضافه شود؟`,
+            code: (add.action.type === 'ps' ? 'PowerShell: ' : add.action.type === 'open_url' ? 'URL: ' : 'Command: ') + add.action.value,
+          });
+          if (okGo) {
+            add.id = Date.now();
+            customCmds.push(add);
+            store.set('customCmds', customCmds);
+            renderCustomChips();
+            toast(`فرمان «${add.title}» اضافه شد`, '#i-plus');
+          }
         }
+      } else {
+        setState('success');
+        statusText.textContent = r && r.needLogin ? 'اتصال AI برقرار نیست' : 'پاسخی نرسید';
+        rcTag.textContent = 'هوش مصنوعی';
+        typeText(rcReply, (r && r.error) || 'پاسخی نرسید. از صفحه «چت با هوش مصنوعی» امتحان کن.');
       }
     } catch (_) {
-      typing.remove();
-      addMsg('err', 'اتصال به سرور GLM برقرار نشد.');
+      setState('success');
+      rcTag.textContent = 'هوش مصنوعی';
+      typeText(rcReply, 'اتصال به هوش مصنوعی برقرار نشد.');
     }
-    chatBusy = false;
-    chatInput.focus();
-  });
+    setTimeout(() => {
+      if (state === 'success') {
+        setState('idle');
+        statusText.innerHTML = IDLE_HINT;
+      }
+    }, 3000);
+  }
 
   /* ---------- پاپ‌آپ درباره ---------- */
   btnAbout.addEventListener('click', (e) => {

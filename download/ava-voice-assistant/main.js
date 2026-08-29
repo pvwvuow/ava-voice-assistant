@@ -60,6 +60,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: false,
+      webviewTag: true, // برای پنل چت داخلی z.ai
     },
   });
 
@@ -86,12 +87,38 @@ ipcMain.handle('win:is-maximized', () => (win ? win.isMaximized() : false));
 
 /* ---------- مجوز میکروفون (برای تشخیص گفتار) ---------- */
 function setupMicPermission() {
-  const allow = ['media', 'audioCapture', 'notifications', 'fullscreen'];
+  const allow = ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'];
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(allow.includes(permission));
   });
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => allow.includes(permission));
+
+  /* نشست دائمی پنل چت z.ai — لاگین یک بار برای همیشه می‌ماند */
+  try {
+    const aiSes = session.fromPartition('persist:ai');
+    aiSes.setPermissionRequestHandler((_wc, permission, callback) => {
+      callback(['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'].includes(permission));
+    });
+    aiSes.setPermissionCheckHandler((_wc, permission) =>
+      ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'].includes(permission));
+  } catch (_) { /* noop */ }
 }
+
+/* ---------- پاپ‌آپ‌های webview (لاگین گوگل/z.ai) ----------
+   لاگین حساب‌های معتبر داخل برنامه باز می‌شود؛
+   بقیه لینک‌ها به مرورگر پیش‌فرض سیستم می‌روند. */
+app.on('web-contents-created', (_ev, wc) => {
+  try {
+    wc.setWindowOpenHandler(({ url }) => {
+      const u = String(url || '');
+      if (/^https:\/\/([^\/]*\.)?(z\.ai|zhipu\.ai|bigmodel\.cn|google\.com|googleusercontent\.com|accounts\.google\.[a-z.]+)/i.test(u)) {
+        return { action: 'allow' };
+      }
+      if (/^https?:\/\//i.test(u)) shell.openExternal(u);
+      return { action: 'deny' };
+    });
+  } catch (_) { /* noop */ }
+});
 
 /* ---------- اجراکننده واقعی فرمان‌ها (فهرست سفید امن) ----------
    رندرر فقط «شناسه» فرمان را می‌فرستد؛ خودِ دستور در همین‌جا نگه‌داری می‌شود
@@ -308,6 +335,119 @@ ipcMain.handle('ai:chat', async (_e, p) => {
     const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
     if (!text) return { ok: false, error: 'پاسخ خالی از سرور رسید' };
     return { ok: true, text };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ---------- موتور رایگان گوگل برای تشخیص گفتار (بدون هیچ کلیدی) ----------
+   رندرر PCM ۱۶کیلوهرتز تک‌کاناله می‌فرستد؛ این‌جا مستقیم به سرور
+   تشخیص گفتار گوگل (همان موتور داخلی کروم) POST می‌شود. کلید پیش‌فرض،
+   کلید عمومی خود کرومیوم است — کاربر هیچ توکنی لازم ندارد. */
+const GOOGLE_KEY_DEFAULT = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw';
+
+/* ---------- چت با GLM بدون کلید API — با نشست حساب z.ai کاربر ----------
+   کاربر یک بار در تب «صفحه چت» وارد chat.z.ai می‌شود؛ توکن نشستش
+   خوانده می‌شود و درخواست‌ها از این‌جا با همان حساب انجام می‌شود. */
+ipcMain.handle('ai:zaiChat', async (_e, p) => {
+  const { token, messages, model } = p || {};
+  if (!token) return { ok: false, error: 'برای چت بدون کلید، اول در تب «صفحه چت» وارد حسابت شو' };
+  if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+  const ZAI = 'https://chat.z.ai';
+  const auth = { Authorization: `Bearer ${String(token).trim()}` };
+  try {
+    /* انتخاب مدل: از فهرست مدل‌های حساب کاربر */
+    let mdl = String(model || '').trim();
+    if (!mdl) {
+      try {
+        const mr = await fetch(`${ZAI}/api/models`, { headers: auth });
+        const mj = await mr.json().catch(() => ({}));
+        const ids = ((mj && mj.data) || []).map((m) => String(m && m.id)).filter(Boolean);
+        mdl =
+          ids.find((i) => /glm[-_]?4\.6/i.test(i)) ||
+          ids.find((i) => /glm[-_]?4\.5(?![-_]?air)/i.test(i)) ||
+          ids.find((i) => /glm/i.test(i)) ||
+          ids[0] || 'GLM-4.6';
+      } catch (_) { mdl = 'GLM-4.6'; }
+    }
+    const r = await fetch(`${ZAI}/api/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify({
+        model: mdl,
+        messages: messages.slice(-16),
+        temperature: 0.6,
+        stream: false,
+      }),
+    });
+    const ct = String(r.headers.get('content-type') || '');
+    let text = '';
+    if (ct.includes('text/event-stream')) {
+      /* بعضی مسیرها SSE برمی‌گردانند حتی با stream:false */
+      const t = await r.text();
+      for (const line of t.split('\n')) {
+        const s = line.trim();
+        if (!s.startsWith('data:')) continue;
+        const d = s.slice(5).trim();
+        if (d === '[DONE]') break;
+        try {
+          const j = JSON.parse(d);
+          const c = j && j.choices && j.choices[0];
+          const delta = (c && ((c.delta && c.delta.content) || (c.message && c.message.content))) || '';
+          if (delta) text += delta;
+        } catch (_) { /* noop */ }
+      }
+    } else {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = (j && ((j.error && (j.error.message || j.error.code)) || j.detail || j.message)) || `HTTP ${r.status}`;
+        if (r.status === 401) return { ok: false, needLogin: true, error: 'نشست منقضی شده — در تب «صفحه چت» دوباره وارد شو' };
+        return { ok: false, error: `z.ai: ${String(msg).slice(0, 140)}` };
+      }
+      text = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+    }
+    if (!text) return { ok: false, error: 'پاسخ خالی از z.ai رسید' };
+    return { ok: true, text, model: mdl };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+ipcMain.handle('stt:google', async (_e, p) => {
+  const { pcm, rate, key, lang } = p || {};
+  if (!pcm || !pcm.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
+  const k = String(key || GOOGLE_KEY_DEFAULT).trim() || GOOGLE_KEY_DEFAULT;
+  const url =
+    'https://www.google.com/speech-api/v2/recognize?output=json' +
+    `&lang=${encodeURIComponent(lang || 'fa-IR')}` +
+    `&key=${encodeURIComponent(k)}&client=chromium&maxalternatives=1`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': `audio/l16; rate=${Number(rate) || 16000}` },
+      body: Buffer.from(pcm),
+    });
+    const raw = await r.text();
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { const j = JSON.parse(raw); msg = (j.error && j.error.message) || msg; } catch (_) { /* noop */ }
+      if (r.status === 403) msg = 'دسترسی گوگل رد شد (403) — فیلترشکن/VPN را روشن کن یا در تنظیمات کلید اختصاصی بگذار';
+      return { ok: false, error: `گوگل: ${String(msg).slice(0, 140)}` };
+    }
+    /* پاسخ چند خط JSON پشت‌سرهم است */
+    let text = '';
+    for (const line of raw.split('\n')) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        const j = JSON.parse(s);
+        if (j && j.result && j.result.length) {
+          const alt = j.result[0].alternative && j.result[0].alternative[0];
+          if (alt && alt.transcript) { text = alt.transcript; break; }
+        }
+      } catch (_) { /* noop */ }
+    }
+    return { ok: !!text, text: String(text).trim() };
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }

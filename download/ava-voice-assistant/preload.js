@@ -54,11 +54,14 @@ contextBridge.exposeInMainWorld('ava', {
   /* هوش مصنوعی GLM (چت) — کلید از تنظیمات رندرر می‌آید ولی درخواست از پروسه اصلی */
   ai: {
     chat: (payload) => ipcRenderer.invoke('ai:chat', payload),
+    /* چت بدون کلید API — با توکن نشست حساب z.ai کاربر (از webview) */
+    zaiChat: (payload) => ipcRenderer.invoke('ai:zaiChat', payload),
   },
 
-  /* تشخیص گفتار ابری GLM-ASR — بایت‌های ضبط را به پروسه اصلی می‌دهد */
+  /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید) */
   stt: {
     transcribe: (payload) => ipcRenderer.invoke('stt:transcribe', payload),
+    google: (payload) => ipcRenderer.invoke('stt:google', payload),
   },
 
   /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */

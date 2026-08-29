@@ -812,6 +812,58 @@ body.has-card #wave { height: 0; opacity: 0; }
 #chatInput::placeholder { color: var(--text3); }
 .chat-note { text-align: center; }
 
+/* ---------- تب‌های چت + webview صفحه GLM ---------- */
+.chat-tabs {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.chat-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 999px;
+  font-family: inherit; font-size: 11.5px; font-weight: 700;
+  color: var(--text2); cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--stroke);
+  transition: all 0.18s ease;
+}
+.chat-tab .ic { width: 13px; height: 13px; }
+.chat-tab:hover { border-color: rgba(52, 211, 153, 0.4); color: var(--text); }
+.chat-tab.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(13, 148, 136, 0.22));
+  border-color: rgba(52, 211, 153, 0.55);
+  color: #d1fae5;
+}
+.zai-badge {
+  margin-inline-start: auto;
+  font-size: 10.5px; font-weight: 700;
+  color: var(--text3);
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--stroke);
+}
+.zai-badge.on {
+  color: #6ee7b7;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  background: rgba(16, 185, 129, 0.12);
+}
+.zai-wrap {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  border-radius: 18px; overflow: hidden;
+  padding: 8px; gap: 6px;
+}
+.zai-wrap[hidden] { display: none; }
+.zai-web {
+  width: 100%; flex: 1; min-height: 0;
+  border: 0; border-radius: 12px;
+  background: #0b0f0e;
+}
+.zai-hint {
+  margin: 0; padding: 2px 6px;
+  font-size: 10.5px; color: var(--text3); line-height: 1.8;
+  text-align: center;
+}
+
 /* ---------- مودال تأیید فرمان ---------- */
 .confirm {
   position: fixed; inset: 0; z-index: 120;

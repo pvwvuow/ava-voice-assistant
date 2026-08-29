@@ -133,3 +133,29 @@ Work Log:
 Stage Summary:
 - درخواست‌های کاربر انجام شد: (۱) دیگه میره روی دمو؟ نه — زنجیره وب→GLM-ASR با پیام صادقانه، (۲) فایل runmetocreateexeforyou.bat ساخته شد که پوش+تگ+بیلد EXE را خودکار می‌کند و مشکل همگامی نسخه/تگ را ریشه‌ای حل می‌کند، (۳) تنظیمات میکروفون با لیست ورودی‌ها و تست زنده، (۴) اکولایزر واقعاً با صدا بالا/پایین می‌شود (میکروفون همیشه فعال)، (۵) چت AI متصل به اکانت GLM کاربر با ساخت فرمان و افزودن به لیست با تأیید، (۶) فیچرهای جدید: پوشه‌ها، سطل بازیافت، فرمان سفارشی، مدل‌های AI
 - برای فعال‌شدن STT ابری و چت، کاربر باید کلید API از console.z.ai (یا bigmodel) را در تنظیمات وارد کند
+
+---
+Task ID: 7
+Agent: main (Super Z)
+Task: نسخه 0.6.0 — حذف کامل نیاز به کلید API: STT رایگان گوگل (درخواست صریح کاربر)، چت GLM بدون توکن با اتصال به صفحه chat.z.ai، مسیریابی سوالات پیچیده به AI
+
+Work Log:
+- درخواست کاربر: «توکن API ندارم، خودش به همین صفحه ai وصل بشه» + «برای صدا از سیستم گوگل استفاده کن، رایگانه و فارسی داره» + «اگ درخواست پیچیده بود ai تحلیل کنه و جواب بده»
+- main.js: webviewTag:true + نشست دائمی persist:ai با permission handler + setWindowOpenHandler (OAuth لاگین z.ai/گوگل داخل برنامه، بقیه لینک‌ها openExternal)
+- main.js هندلر stt:google: POST PCM 16kHz به www.google.com/speech-api/v2/recognize (fa-IR، کلید عمومی کرومیوم AIzaSyBOti4mM...، client=chromium) با پارس NDJSON چندخطی + پیام 403 راهنما
+- main.js هندلر ai:zaiChat: چت بدون کلید با توکن نشست z.ai — انتخاب خودکار مدل از /api/models (اولویت GLM-4.6)، POST api/chat/completions با stream:false، پارس پاسخ SSE و JSON، تشخیص 401 → needLogin
+- preload.js: ava.stt.google + ava.ai.zaiChat
+- app.js موتور گوگل رایگان: startGoogleListen با ScriptProcessorNode(4096) روی استریم مشترک میک، جمع‌آوری Float32 + VAD با RMS (آستانه 0.013، سکوت 1.5s، سقف 12s، تایم‌اوت بی‌صدایی 8s) → downsampleF32 خطی به 16kHz → f32ToI16 → bridge.stt.google؛ زنجیره resolveEngine: web → google → glm؛ فالبک onerror موتور وب اضافه شد
+- app.js چت بدون کلید: تب‌های chatPage (چت سریع آوا / صفحه چت GLM) + webview chat.z.ai با useragent کروم؛ checkZaiToken با executeJavaScript خواندن localStorage.token با ۵ تلاش + badge وضعیت اتصال؛ aiAsk اول zaiChat بعد کلید GLM؛ حافظه گفتگو chatHist (۸ پیام آخر)
+- پرامپت AI جدید: پاسخ طبیعی فارسی + بلوک <<<ADD>>>{json}<<<END>>> برای فرمان جدید؛ parseAdd استخراج مقاوم؛ renderCmdCard همان قبلی
+- مسیریابی پیچیده: runCommand اگر فرمان شناخته نشد و aiConnected() → aiHandleCommand (پاسخ در کارت با تگ «هوش مصنوعی» + TTS + مودال تأیید برای فرمان پیشنهادی)
+- index.html: تب‌ها + webview (partition=persist:ai, allowpopups, UA کروم) + کلید اختصاصی گوگل (اختیاری) در تنظیمات + دکمه «ورود به حساب GLM» + حذف سلکت سرویس‌دهنده (glmBase ثابت ماند) + نسخه‌ها ۰.۶
+- styles.css: chat-tab/zai-badge/zai-wrap/zai-web/zai-hint
+- package.json: 0.6.0 + توضیحات جدید
+- تست: node --check سه فایل OK، JSON OK، بدون رفرنس stale (optAiBase/parseAi حذف)، یک submit handler، همه هندلرها موجود؛ agent-browser 640×780: چت سریع + تب z.ai + تنظیمات (میک/گفتار/AI/آپدیت) بدون خطا رندر شد؛ sync به public/ava
+- تحویل: ZIP کامل در download/ava-voice-assistant-v0.6.0.zip (این ورک‌اسپیس اعتبارنامه گیت‌هاب ندارد؛ انتشار از سیستم کاربر با runmetocreateexeforyou.bat)
+
+Stage Summary:
+- هیچ کلید API دیگر لازم نیست: STT فارسی با موتور رایگان گوگل (وب → HTTP)، چت با نشست حساب z.ai کاربر داخل برنامه
+- کاربر: ZIP را دانلود → استخراج → دابل‌کلیک runmetocreateexeforyou.bat → پوش + تگ v0.6.0 + بیلد EXE خودکار در Releases
+- ریسک شناخته‌شده: endpoint speech-api/v2 گوگل ممکن است در بعضی شبکه‌ها 403 بدهد → پیام راهنما + فیلد کلید اختصاصی اختیاری در تنظیمات پیش‌بینی شد؛ مسیر z.ai وب (api/models + chat/completions) غیررسمی است و در صورت تغییر UI/API ممکن است نیاز به به‌روزرسانی داشته باشد — در آن صورت تب webview همیشه کار می‌کند

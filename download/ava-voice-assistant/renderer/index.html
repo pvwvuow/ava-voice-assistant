@@ -65,7 +65,7 @@
       <div class="tb-brand">
         <div class="tb-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
         <span class="tb-name">آوا</span>
-        <span class="tb-badge">نسخه ۰.۵</span>
+        <span class="tb-badge">نسخه ۰.۶</span>
       </div>
       <div class="tb-title">دستیار صوتی ویندوز</div>
       <div class="tb-controls">
@@ -87,7 +87,7 @@
         </div>
         <nav class="rail-nav" aria-label="ناوبری">
           <button class="rail-item active" id="btnHome" data-tip="خانه صوتی"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
-          <button class="rail-item" id="btnChat" data-tip="چت با هوش مصنوعی GLM"><svg class="ic"><use href="#i-chat"/></svg></button>
+          <button class="rail-item" id="btnChat" data-tip="چت با هوش مصنوعی GLM (بدون کلید)"><svg class="ic"><use href="#i-chat"/></svg></button>
           <button class="rail-item locked" data-tip="مانیتور سیستم — به‌زودی"><svg class="ic"><use href="#i-pulse"/></svg></button>
           <button class="rail-item locked" data-tip="افزونه‌ها — به‌زودی"><svg class="ic"><use href="#i-grid"/></svg></button>
         </nav>
@@ -204,25 +204,23 @@
           <div class="set-group glass">
             <h3><svg class="ic"><use href="#i-wave"/></svg> تشخیص گفتار (تبدیل صدا به متن)</h3>
             <div class="set-row">
-              <span class="set-info"><b>موتور تشخیص گفتار</b><span>«خودکار»: اول موتور وب، اگر نبود GLM-ASR ابری</span></span>
+              <span class="set-info"><b>موتور تشخیص گفتار</b><span>«خودکار»: اول موتور وب، بعد گوگل رایگان — بدون هیچ کلیدی</span></span>
               <select id="optSttEngine" class="set-select">
                 <option value="auto">خودکار (پیشنهادی)</option>
                 <option value="web">فقط موتور وب</option>
-                <option value="glm">فقط GLM-ASR ابری</option>
+                <option value="google">فقط گوگل رایگان</option>
+                <option value="glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
               </select>
             </div>
             <div class="set-row col">
-              <span class="set-info"><b>کلید API سامانه GLM</b><span>از console.z.ai بگیر — هم برای چت، هم برای تشخیص گفتار فارسی</span></span>
-              <div class="key-row">
-                <input type="password" id="optGlmKey" class="set-input" placeholder="مثل: 1a2b3c…" autocomplete="off" dir="ltr" />
-                <button type="button" class="chip sm" id="btnKeyShow"><svg class="ic"><use href="#i-info"/></svg><span>نمایش</span></button>
-              </div>
+              <span class="set-info"><b>کلید اختصاصی گوگل (اختیاری)</b><span>خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی</span></span>
+              <input type="password" id="optGoogleKey" class="set-input" placeholder="خالی = رایگان و بدون کلید" autocomplete="off" dir="ltr" />
             </div>
             <label class="set-row">
               <span class="set-info"><b>حالت نمایشی (دمو)</b><span>اگر موتوری در دسترس نبود، فرمان نمونه اجرا شود — پیش‌فرض: خاموش</span></span>
               <span class="sw"><input type="checkbox" id="optDemo"/><i></i></span>
             </label>
-            <p class="set-note" id="sttNote">موتور وب در پیش‌نمایش مرورگر کار می‌کند؛ داخل نرم‌افزار ویندوزی، GLM-ASR دقیق‌ترین گزینه فارسی است.</p>
+            <p class="set-note" id="sttNote">تشخیص گفتار فارسی با موتور رایگان گوگل انجام می‌شود — هیچ توکنی لازم نیست؛ فقط اینترنت (و اگر گوگل در منطقه‌ات محدود است، فیلترشکن) کافی است.</p>
           </div>
 
           <div class="set-group glass">
@@ -238,23 +236,27 @@
           </div>
 
           <div class="set-group glass">
-            <h3><svg class="ic"><use href="#i-spark"/></svg> هوش مصنوعی GLM (چت)</h3>
+            <h3><svg class="ic"><use href="#i-spark"/></svg> هوش مصنوعی GLM</h3>
             <div class="set-row">
-              <span class="set-info"><b>سرویس‌دهنده</b><span>هر دو با یک کلید کار می‌کنند</span></span>
-              <select id="optAiBase" class="set-select">
-                <option value="https://api.z.ai/api/paas/v4">Z.ai (GLM)</option>
-                <option value="https://open.bigmodel.cn/api/paas/v4">BigModel (ژوپو)</option>
-              </select>
+              <span class="set-info"><b>اتصال بدون کلید API</b><span>از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — همین!</span></span>
+              <button class="chip" id="btnGoZai"><svg class="ic"><use href="#i-globe"/></svg><span>ورود به حساب GLM</span></button>
+            </div>
+            <div class="set-row col">
+              <span class="set-info"><b>کلید API GLM (اختیاری)</b><span>فقط اگر کلید داشته باشی — بدون آن هم چت از نشست حساب کار می‌کند</span></span>
+              <div class="key-row">
+                <input type="password" id="optGlmKey" class="set-input" placeholder="اختیاری — مثل: 1a2b3c…" autocomplete="off" dir="ltr" />
+                <button type="button" class="chip sm" id="btnKeyShow"><svg class="ic"><use href="#i-info"/></svg><span>نمایش</span></button>
+              </div>
             </div>
             <div class="set-row">
-              <span class="set-info"><b>مدل گفتگو</b><span>فلاش رایگان است؛ ۴.۶ هوشمندتر است</span></span>
+              <span class="set-info"><b>مدل گفتگو (با کلید API)</b><span>فلاش رایگان است؛ ۴.۶ هوشمندتر است</span></span>
               <select id="optAiModel" class="set-select">
                 <option value="glm-4.6">GLM-4.6 (هوشمند)</option>
                 <option value="glm-4.5-flash">GLM-4.5-Flash (رایگان)</option>
                 <option value="glm-4.5-air">GLM-4.5-Air (سبک)</option>
               </select>
             </div>
-            <p class="set-note">در صفحه «چت با هوش مصنوعی» می‌توانی فرمان‌های جدید بخواهی — آوا خودش می‌سازد و با تأیید تو به لیست اضافه می‌کند.</p>
+            <p class="set-note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به GLM می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
           </div>
 
           <div class="set-group glass">
@@ -290,14 +292,26 @@
             <button class="chip" id="btnChatBack"><svg class="ic"><use href="#i-send"/></svg><span>بازگشت به خانه</span></button>
           </header>
 
-          <div class="chat-wrap glass">
+          <div class="chat-tabs">
+            <button class="chat-tab active" id="tabQuick" type="button"><svg class="ic"><use href="#i-spark"/></svg><span>چت سریع آوا</span></button>
+            <button class="chat-tab" id="tabZai" type="button"><svg class="ic"><use href="#i-globe"/></svg><span>صفحه چت GLM (z.ai)</span></button>
+            <span class="zai-badge" id="zaiBadge">بدون کلید API</span>
+          </div>
+
+          <div class="chat-wrap glass" id="quickWrap">
             <div class="chat-msgs" id="chatMsgs" aria-live="polite"></div>
             <form id="chatBar" class="chat-bar" autocomplete="off">
-              <input id="chatInput" type="text" placeholder="پیامت را بنویس… مثلاً: یک فرمان برای باز کردن تلگرام بساز" />
+              <input id="chatInput" type="text" placeholder="پیامت را بنویس… مثلاً: چطور حافظه رم رو بهینه کنم؟" />
               <button type="submit" class="cmd-send" aria-label="ارسال"><svg class="ic"><use href="#i-send"/></svg></button>
             </form>
           </div>
-          <p class="set-note chat-note">آوا می‌تواند فرمان‌های جدید بسازد؛ هر فرمان پیش از ذخیره‌شدن و اجرا، تأیید تو را می‌خواهد.</p>
+
+          <div class="zai-wrap glass" id="zaiWrap" hidden>
+            <webview id="zaiWeb" class="zai-web" src="https://chat.z.ai/" partition="persist:ai"
+                     allowpopups useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"></webview>
+            <p class="zai-hint">یک بار وارد حسابت شو — نشست ذخیره می‌ماند و «چت سریع» و دستیار صوتی هم بدون کلید API به همین حساب وصل می‌شوند.</p>
+          </div>
+          <p class="set-note chat-note">آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.</p>
         </section>
       </main>
     </div>
@@ -315,7 +329,7 @@
         <i class="sb-sep"></i>
         <span class="sb-item num" id="sbClock">--:--</span>
         <i class="sb-sep"></i>
-        <span class="sb-item">AVA v0.5.0</span>
+        <span class="sb-item">AVA v0.6.0</span>
       </div>
     </footer>
   </div>
@@ -340,13 +354,13 @@
       <div class="about-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
       <div class="about-title"><b>آوا</b><span>دستیار صوتی ویندوز</span></div>
     </div>
-    <p class="about-desc">نسخه ۰.۵ — تشخیص گفتار واقعی فارسی (موتور وب + GLM-ASR ابری)، چت با هوش مصنوعی GLM و ساخت فرمان جدید با تأیید تو، اکولایزر با صدای واقعی میکروفون، آپدیت خودکار از GitHub، تنظیمات کامل میکروفون و TTS و اجرای واقعی فرمان‌ها.</p>
+    <p class="about-desc">نسخه ۰.۶ — تشخیص گفتار واقعی فارسی با موتور رایگان گوگل (بدون هیچ کلیدی)، چت با هوش مصنوعی GLM متصل به حساب z.ai تو (بدون کلید API)، پاسخ تحلیلی به سوالات پیچیده، ساخت فرمان جدید با تأیید تو، اکولایزر با صدای واقعی میکروفون، آپدیت خودکار از GitHub، تنظیمات کامل میکروفون و TTS.</p>
     <div class="about-keys">
       <div><span>گوش دادن</span><span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></span></div>
       <div><span>کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span>بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span>نسخه ۰.۵</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span>نسخه ۰.۶</span></div>
   </div>
 
   <script src="js/app.js"></script>
