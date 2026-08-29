@@ -247,7 +247,7 @@ app.whenReady().then(async () => {
         pingVoice: appjs.includes('پینگ') && appjs.includes('pingVoiceReply'),
         extPane: html.includes('data-pane="ext"') && !html.includes('data-pane="dns"'),
         modelInputs: html.includes('optGeminiModel') && html.includes('optOpenaiModel') && appjs.includes('settings.geminiModel'),
-        geminiFirst: /await tryGemini\(\); if \(r\) return r;/.test(appjs) && appjs.includes('gemini-flash-latest'),
+        geminiFirst: /let r = await tryGemini\(\); if \(r\) return tag\(r, 'Gemini'\);/.test(appjs) && appjs.includes('gemini-flash-latest'),
         tooltipGone: !css.includes('rail-item::after'),
         widgetDrag: appjs.includes('widgetDismissedFor') && appjs.includes('pointerdown'),
         micBusyGuard: appjs.includes("t('mic.busy')") && css.includes('orbShake'),
@@ -555,6 +555,118 @@ app.whenReady().then(async () => {
     const badgeHidden = await probe(`document.querySelector('#btnUpdBadge').hidden`);
     ok('update badge hidden until update', badgeHidden === true);
     } catch (e) { console.log('SKIP | music page | ' + String(e && e.message).slice(0, 50)); }
+
+    // 8.9 v0.17 — AI-class STT + Discord v2 + darklite: static markers
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v17 = {
+        geminiSttIpc: mainjs.includes("ipcMain.handle('stt:gemini'") && mainjs.includes('inline_data'),
+        whisperSttIpc: mainjs.includes("ipcMain.handle('stt:whisper'") && mainjs.includes('/audio/transcriptions'),
+        sttBridge: preload.includes("'stt:gemini'") && preload.includes("'stt:whisper'"),
+        sttChain: /function buildCloudChain\(/.test(appjs) && appjs.includes("if (geminiSttReady()) c.push('gemini')") && appjs.includes("if (whisperSttReady()) c.push('whisper')"),
+        sttUi: html.includes('optWhisperBase') && html.includes('optWhisperKey') && html.includes('optWhisperModel') && appjs.includes('whisperBase'),
+        dcDeepLink: mainjs.includes('discord://discord.com/channels/@me/') && mainjs.includes('function discordPsScript('),
+        dcBg: mainjs.includes("PostMessage($child, 0x100") && mainjs.includes('Chrome_RenderWidgetHostHWND'),
+        dcRestore: mainjs.includes('function Restore-Focus') && mainjs.includes('GetForegroundWindow()'),
+        dcContacts: html.includes('id="dcAddForm"') && html.includes('dcContactsList') && appjs.includes('function resolveDiscordContact('),
+        dcPane: html.includes('data-pane="discord"') && html.includes('optDiscordBg') && html.includes('btnDcProbe'),
+        darklite: css.includes('[data-theme="darklite"]') && html.includes('value="darklite"') && /'darklite'\]\.includes\(th\)|\['light', 'lite', 'darklite'\]/.test(appjs),
+        flatOrb: css.includes('body.perf-nofx .orb {\n  background: #0ea572;') && css.includes('body.perf-nofx .orb-glass,'),
+        minimalPlayer: css.includes('.np-hole { display: none; }') && css.includes('.np-disc {\n  width: 84px; height: 84px; border-radius: 16px;'),
+        engineBadge: appjs.includes('msg-engine') && appjs.includes("return tag(r, 'Gemini')"),
+        noKeyWarn: html.includes('geminiNoKeyWarn') && appjs.includes('geminiNoKeyWarn'),
+      };
+      ok('v0.17 stt:gemini + stt:whisper IPC', v17.geminiSttIpc && v17.whisperSttIpc && v17.sttBridge);
+      ok('v0.17 cloud chain gemini→whisper→glm→google', v17.sttChain);
+      ok('v0.17 whisper settings UI', v17.sttUi);
+      ok('v0.17 discord deep link + bg PostMessage', v17.dcDeepLink && v17.dcBg && v17.dcRestore);
+      ok('v0.17 discord contacts + settings pane', v17.dcContacts && v17.dcPane);
+      ok('v0.17 darklite theme wired', v17.darklite);
+      ok('v0.17 flat mic orb (perf mode)', v17.flatOrb);
+      ok('v0.17 minimal player pass', v17.minimalPlayer);
+      ok('v0.17 engine badge + no-key warning', v17.engineBadge && v17.noKeyWarn);
+    } catch (e) { console.log('SKIP | v0.17 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.95 v0.17 — runtime: engine options, whisper inputs, discord contacts CRUD, darklite theme
+    try {
+      const stt = await probe(`(() => ({
+        opts: [...document.querySelectorAll('#optSttEngine option')].map((o) => o.value),
+        bridgeGem: !!(window.ava && ava.stt && ava.stt.gemini),
+        bridgeWh: !!(window.ava && ava.stt && ava.stt.whisper),
+        wbase: !!document.querySelector('#optWhisperBase'),
+        wkey: !!document.querySelector('#optWhisperKey'),
+        wmodel: !!document.querySelector('#optWhisperModel'),
+      }))()`);
+      ok('stt options include gemini/whisper', stt.opts.includes('gemini') && stt.opts.includes('whisper'), JSON.stringify(stt.opts));
+      ok('stt gemini/whisper bridge exposed', stt.bridgeGem && stt.bridgeWh);
+      ok('whisper inputs in DOM', stt.wbase && stt.wkey && stt.wmodel);
+
+      /* discord pane + contacts add/delete (runtime CRUD) */
+      const navOk = await probe(`(() => {
+        const b = document.querySelector('.set-nav-item[data-pane="discord"]');
+        if (b) b.click();
+        return { nav: !!b, pane: !!document.querySelector('.set-pane[data-pane="discord"]') };
+      })()`);
+      await new Promise((r) => setTimeout(r, 250));
+      const dc = await probe(`(() => {
+        const pane = document.querySelector('.set-pane[data-pane="discord"]');
+        return {
+          active: !!(pane && pane.classList.contains('active')),
+          form: !!document.querySelector('#dcAddForm'),
+          bg: !!document.querySelector('#optDiscordBg'),
+          probe: !!document.querySelector('#btnDcProbe'),
+          empty: !!(document.querySelector('#dcContactsList') && document.querySelector('#dcContactsList').textContent.trim().length),
+        };
+      })()`);
+      ok('discord settings pane opens', navOk.nav && navOk.pane && dc.active, JSON.stringify(navOk));
+      ok('discord contacts form + bg + probe', dc.form && dc.bg && dc.probe && dc.empty);
+      await probe(`(() => {
+        document.querySelector('#dcName').value = 'تست علی';
+        document.querySelector('#dcUserId').value = '123456789012345678';
+        document.querySelector('#dcAddForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        return 'added';
+      })()`);
+      await new Promise((r) => setTimeout(r, 250));
+      const ct = await probe(`(() => {
+        const rows = document.querySelectorAll('#dcContactsList .dc-contact');
+        const stored = JSON.parse(localStorage.getItem('ava.discordContacts') || '[]');
+        const del = document.querySelector('#dcContactsList .dc-del');
+        if (del) del.click();
+        return { n: rows.length, stored: stored.length, firstName: stored[0] ? stored[0].name : '' };
+      })()`);
+      ok('discord contact add renders', ct.n === 1 && ct.stored === 1 && ct.firstName === 'تست علی', JSON.stringify(ct));
+      const afterDel = await probe(`JSON.parse(localStorage.getItem('ava.discordContacts') || '[]').length`);
+      ok('discord contact delete works', afterDel === 0, String(afterDel));
+
+      /* darklite theme apply + restore */
+      const dl = await probe(`(() => {
+        const sel = document.querySelector('#optTheme');
+        if (![...sel.options].some((o) => o.value === 'darklite')) return { opt: false };
+        sel.value = 'darklite';
+        sel.dispatchEvent(new Event('change'));
+        return {
+          opt: true,
+          theme: document.body.getAttribute('data-theme'),
+          nofx: document.body.classList.contains('perf-nofx'),
+          noanim: document.body.classList.contains('perf-noanim'),
+          bg: getComputedStyle(document.body).backgroundColor,
+        };
+      })()`);
+      ok('darklite theme applies flat dark', dl.opt && dl.theme === 'darklite' && dl.nofx && dl.noanim && dl.bg === 'rgb(16, 20, 24)', JSON.stringify(dl));
+      await probe(`(() => {
+        localStorage.setItem('ava.theme', JSON.stringify('dark'));
+        localStorage.setItem('ava.noAnim', 'false');
+        localStorage.setItem('ava.noFx', 'false');
+        document.body.removeAttribute('data-theme');
+        document.body.classList.remove('perf-nofx', 'perf-noanim');
+        return 'restored';
+      })()`);
+    } catch (e) { console.log('SKIP | v0.17 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 9. v0.16.2 — TDZ regression: cold boot with safeMode/noFx preset must survive.
     // User crash report v0.16.1: applyPerf() ran at boot before `let vizRaf` (app.js:4936)

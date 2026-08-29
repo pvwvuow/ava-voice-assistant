@@ -241,13 +241,27 @@
               <!-- تشخیص گفتار -->
               <div class="set-pane" data-pane="stt">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب گوگل (دقیق‌ترین)؛ اگر در دسترس نبود گوگل رایگان و بعد GLM ابری</span></span>
+                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب (زنده)؛ بعد موتورهای AI کلاس حرفه‌ای: جمنای، Whisper، GLM و گوگل رایگان</span></span>
                   <select id="optSttEngine" class="set-select">
                     <option value="auto" data-i18n="set.stt.auto">خودکار (پیشنهادی)</option>
                     <option value="web" data-i18n="set.stt.web">فقط موتور وب گوگل</option>
+                    <option value="gemini" data-i18n="set.stt.gemini">فقط Gemini Audio — دقیق‌ترین (کلید جمنای)</option>
+                    <option value="whisper" data-i18n="set.stt.whisper">فقط Whisper — سریع (Groq/OpenAI)</option>
                     <option value="google" data-i18n="set.stt.google">فقط گوگل رایگان HTTP (نیاز به فیلترشکن)</option>
                     <option value="glm" data-i18n="set.stt.glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
                   </select>
+                </div>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.stt.wbase">آدرس سرور Whisper (سازگار با OpenAI)</b><span data-i18n="set.stt.wbaseHint">پیش‌فرض: Groq — whisper-large-v3-turbo رایگان و بسیار سریع است؛ آدرس OpenAI یا سرور محلی whisper.cpp هم می‌گذاری</span></span>
+                  <input type="text" id="optWhisperBase" class="set-input" dir="ltr" value="https://api.groq.com/openai/v1" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.stt.wkey">کلید Whisper</b><span data-i18n="set.stt.wkeyHint">کلید رایگان از console.groq.com بگیر — سریع‌ترین ترنسکریپتی که تا حالا تجربه می‌کنی</span></span>
+                  <input type="password" id="optWhisperKey" class="set-input" data-i18n-ph="set.stt.wkeyPh" placeholder="gsk_…" autocomplete="off" dir="ltr" />
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.wmodel">مدل Whisper</b><span data-i18n="set.stt.wmodelHint">whisper-large-v3-turbo (پیش‌فرض)، whisper-large-v3 یا هر مدلی که سرورت پشتیبانی کند</span></span>
+                  <input type="text" id="optWhisperModel" class="set-input" dir="ltr" value="whisper-large-v3-turbo" autocomplete="off" spellcheck="false" />
                 </div>
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.stt.lang">زبان گفتار</b><span data-i18n="set.stt.langHint">زبانی که با آن فرمان می‌گویی — تشخیص با همین زبان انجام می‌شود</span></span>
@@ -312,13 +326,42 @@
                 </div>
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="ext.discord">کنترل دیسکورد با صدا</b><span data-i18n="ext.discordHint">زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد</span></span>
-                  <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
+                  <div class="ext-actions">
+                    <button class="chip sm" id="btnDcSettings" type="button"><svg class="ic"><use href="#i-gear"/></svg><span data-i18n="set.dc.open">تنظیمات</span></button>
+                    <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
+                  </div>
                 </div>
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.ext.open">مدیریت افزونه‌ها</b><span data-i18n="set.ext.openHint">صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی</span></span>
                   <button class="chip" id="btnOpenExtPage"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ext.openBtn">باز کردن افزونه‌ها</span></button>
                 </div>
                 <p class="set-note" data-i18n="set.ext.note2">به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.</p>
+              </div>
+
+              <!-- دیسکورد (v0.17) — مخاطبین و اجرای بک‌گراند -->
+              <div class="set-pane" data-pane="discord">
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.dc.contacts">مخاطبین دیسکورد</b><span data-i18n="set.dc.contactsHint">برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID</span></span>
+                  <form id="dcAddForm" class="tc-add" autocomplete="off">
+                    <input type="text" id="dcName" class="set-input" data-i18n-ph="set.dc.namePh" placeholder="اسم ساده (مثلاً: علی)" maxlength="40" />
+                    <input type="text" id="dcUserId" class="set-input" dir="ltr" data-i18n-ph="set.dc.idPh" placeholder="Discord User ID — ۱۷/۱۸ رقم" inputmode="numeric" />
+                    <button type="submit" class="chip sm" id="dcAddBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dc.add">افزودن</span></button>
+                  </form>
+                  <div id="dcContactsList" class="dc-list"></div>
+                </div>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.bg">اجرای بک‌گراند (وسط بازی)</b><span data-i18n="set.dc.bgHint">کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود</span></span>
+                  <span class="sw"><input type="checkbox" id="optDiscordBg"/><i></i></span>
+                </label>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.cal">مکان دکمهٔ تماس (فالبک)</b><span data-i18n="set.dc.calHint">وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند</span></span>
+                  <div class="dc-cal">
+                    <input type="number" id="optDiscordCallDx" class="set-input num" min="10" max="320" value="46" aria-label="X" />
+                    <input type="number" id="optDiscordCallDy" class="set-input num" min="10" max="220" value="52" aria-label="Y" />
+                    <button class="chip sm" id="btnDcProbe" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.dc.probe">آزمایش</span></button>
+                  </div>
+                </div>
+                <p class="set-note" data-i18n="set.dc.note">فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.</p>
               </div>
 
               <!-- بهینه‌سازی (v0.15) -->
@@ -332,8 +375,8 @@
                   <span class="sw"><input type="checkbox" id="optNoFx"/><i></i></span>
                 </div>
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.perf.theme">تم سبک (سیستم ضعیف)</b><span data-i18n="set.perf.themeHint">ظاهر ساده و صاف با رنگ‌های ثابت — بدون شیشه و گرادیان سنگین، ولی همچنان تمیز و مرتب</span></span>
-                  <button class="chip" id="btnLiteTheme"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.perf.themeBtn">فعال‌سازی تم سبک</span></button>
+                  <span class="set-info"><b data-i18n="set.perf.theme">تم‌های سبک (سیستم ضعیف)</b><span data-i18n="set.perf.themeHint">هر بار کلیک، یک قدم جلو: سبک روشن → سبک تیره → بازگشت — ظاهر ساده و صاف بدون شیشه و گرادیان سنگین</span></span>
+                  <button class="chip" id="btnLiteTheme"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.perf.themeBtn">تغییر تم سبک</span></button>
                 </div>
                 <p class="set-note" data-i18n="set.perf.note">تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.</p>
               </div>
@@ -379,7 +422,7 @@
                   </select>
                 </div>
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ai.provider">موتور هوش مصنوعی</b><span data-i18n="set.ai.providerHint">«خودکار»: به ترتیب حساب GLM، کلید GLM، کلید Gemini و بعد OpenAI امتحان می‌شود — یا یکی را ثابت انتخاب کن</span></span>
+                  <span class="set-info"><b data-i18n="set.ai.provider">موتور هوش مصنوعی</b><span data-i18n="set.ai.providerHint">«خودکار»: اول جمنای (کلید داشته باشی)، بعد حساب GLM، بعد کلید GLM و در آخر OpenAI — پاسخ‌ها نشان می‌دهند کدام موتور جواب داده</span></span>
                   <select id="optAiProvider" class="set-select">
                     <option value="auto" data-i18n="set.ai.pAuto">خودکار (پیشنهادی)</option>
                     <option value="zai" data-i18n="set.ai.pZai">حساب GLM (z.ai)</option>
@@ -392,6 +435,7 @@
                   <span class="set-info"><b data-i18n="set.ai.geminiKey">کلید API گوگل جمنای (اختیاری)</b><span data-i18n="set.ai.geminiKeyHint">برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com</span></span>
                   <input type="password" id="optGeminiKey" class="set-input" data-i18n-ph="set.ai.geminiPh" placeholder="AIza…" autocomplete="off" dir="ltr" />
                 </div>
+                <p class="set-note warn-note" id="geminiNoKeyWarn" hidden data-i18n="set.ai.noKeyWarn">مدل جمنای ذخیره شده ولی کلید نداری — بدون کلید، جمنای نه در چت جواب می‌دهد نه در تشخیص گفتار؛ موتور بعدی (GLM) جایگزین می‌شود.</p>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.ai.openaiKey">کلید API اوپن‌ای‌آی (اختیاری)</b><span data-i18n="set.ai.openaiKeyHint">از platform.openai.com — با GPT جواب می‌دهد</span></span>
                   <input type="password" id="optOpenaiKey" class="set-input" data-i18n-ph="set.ai.openaiPh" placeholder="sk-…" autocomplete="off" dir="ltr" />
@@ -438,7 +482,8 @@
                   <select id="optTheme" class="set-select">
                     <option value="dark" data-i18n="set.app.dark">تیره (زمردی)</option>
                     <option value="light" data-i18n="set.app.light">روشن (بنفش و کهربایی)</option>
-                    <option value="lite" data-i18n="set.app.lite">سبک (سیستم ضعیف)</option>
+                    <option value="lite" data-i18n="set.app.lite">سبک روشن (سیستم ضعیف)</option>
+                    <option value="darklite" data-i18n="set.app.darklite">سبک تیره (سیستم ضعیف)</option>
                   </select>
                 </div>
                 <label class="set-row">
@@ -492,6 +537,7 @@
               <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
               <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
               <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
+              <button class="set-nav-item" data-pane="discord" type="button"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.nav.discord">دیسکورد</span></button>
               <button class="set-nav-item" data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
               <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
               <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
@@ -856,7 +902,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span>v0.13.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.17.0</span></div>
   </div>
 
   <script src="js/app.js"></script>

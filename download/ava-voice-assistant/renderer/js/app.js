@@ -125,9 +125,9 @@
     'set.perf.animHint': ['همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر', 'All motion is silenced — great for weak laptops and battery'],
     'set.perf.fx': ['افکت‌های پس‌زمینه', 'Background effects'],
     'set.perf.fxHint': ['ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند', 'Removes particles, aurora and the orb halo; glass becomes simple'],
-    'set.perf.theme': ['تم سبک (سیستم ضعیف)', 'Lite theme (weak PC)'],
-    'set.perf.themeHint': ['ظاهر ساده و صاف با رنگ‌های ثابت — بدون شیشه و گرادیان سنگین، ولی همچنان تمیز و مرتب', 'Flat, simple look with solid colors — no heavy glass or gradients, still clean'],
-    'set.perf.themeBtn': ['فعال‌سازی تم سبک', 'Enable lite theme'],
+    'set.perf.theme': ['تم‌های سبک (سیستم ضعیف)', 'Lite themes (weak PC)'],
+    'set.perf.themeHint': ['هر بار کلیک، یک قدم جلو: سبک روشن → سبک تیره → بازگشت — ظاهر صاف بدون شیشه و گرادیان سنگین', 'Each click cycles: lite light → lite dark → back — flat look, no heavy glass or gradients'],
+    'set.perf.themeBtn': ['تغییر تم سبک', 'Cycle lite theme'],
     'set.perf.note': ['تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.', 'The lite theme also trims effects and animations by itself; for a lighter touch just use the two switches above.'],
     'set.ai.save': ['ذخیره تنظیمات هوش مصنوعی', 'Save AI settings'],
     'toast.savedAll': ['همهٔ تنظیمات هوش مصنوعی ذخیره شد ✓', 'All AI settings saved ✓'],
@@ -165,10 +165,36 @@
     'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
+    'disc.dmOnly': ['پیام‌رسان دیسکورد باز شد ولی دکمهٔ تماس پیدا نشد — مختصات دکمه را در تنظیمات دیسکورد آزمایش/تنظیم کن', 'Discord DM opened but the call button was not found — calibrate it in Discord settings'],
     'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
     'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
     'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
     'disc.callBtn': ['زنگ بزن', 'Call'],
+    /* ---------- v0.17 — تنظیمات دیسکورد ---------- */
+    'set.nav.discord': ['دیسکورد', 'Discord'],
+    'set.dc.open': ['تنظیمات', 'Settings'],
+    'set.dc.contacts': ['مخاطبین دیسکورد', 'Discord contacts'],
+    'set.dc.contactsHint': ['برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID', 'Save a simple name for friends with awkward IDs, then say "call …". To get the ID: enable Settings › Advanced › Developer Mode in Discord, right-click the user → Copy User ID'],
+    'set.dc.namePh': ['اسم ساده (مثلاً: علی)', 'Simple name (e.g. Ali)'],
+    'set.dc.idPh': ['Discord User ID — ۱۷/۱۸ رقم', 'Discord User ID — 17/18 digits'],
+    'set.dc.add': ['افزودن', 'Add'],
+    'set.dc.empty': ['هنوز مخاطبی نداری — اسم ساده + آی‌دی دیسکورد را وارد کن', 'No contacts yet — add a simple name + Discord ID'],
+    'set.dc.call': ['زنگ بزن', 'Call'],
+    'set.dc.del': ['حذف مخاطب', 'Delete contact'],
+    'set.dc.deleted': ['مخاطب «{x}» حذف شد', 'Contact "{x}" removed'],
+    'set.dc.needBoth': ['هم اسم و هم آی‌دی دیسکورد را وارد کن', 'Enter both a name and the Discord ID'],
+    'set.dc.badId': ['آی‌دی دیسکورد فقط عدد است (۱۷ یا ۱۸ رقم)', 'A Discord ID is all digits (17–18 of them)'],
+    'set.dc.added': ['مخاطب «{x}» ذخیره شد ✓ — حالا بگو «به {x} زنگ بزن»', 'Contact "{x}" saved ✓ — now say "call {x}"'],
+    'set.dc.bg': ['اجرای بک‌گراند (وسط بازی)', 'Background mode (mid-game)'],
+    'set.dc.bgHint': ['کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود', 'Keys are sent to Discord without activating its window so your game stays intact — turn it off if nothing happens'],
+    'set.dc.bgOn': ['حالت بک‌گراند روشن شد — دیسکورد وسط بازی پاپ‌آپ نمی‌شود', 'Background mode on — Discord will not pop up mid-game'],
+    'set.dc.bgOff': ['حالت بک‌گراند خاموش شد — اجرا با فوکوس مستقیم', 'Background mode off — commands run with direct focus'],
+    'set.dc.cal': ['مکان دکمهٔ تماس (فالبک)', 'Call button position (fallback)'],
+    'set.dc.calHint': ['وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند', 'When the call button cannot be found, AVA clicks this far from the top-right corner — "Probe" moves the mouse there for checking'],
+    'set.dc.probe': ['آزمایش', 'Probe'],
+    'set.dc.probing': ['نشانگر موس به مکان دکمهٔ تماس می‌رود…', 'Moving the mouse to the call button position…'],
+    'set.dc.probed': ['نشانگر روی مکان دکمهٔ تماس قرار گرفت — درست است؟ عدد X/Y را اگر لازم است عوض کن', 'Mouse is now on the call button spot — adjust X/Y if it is off'],
+    'set.dc.note': ['فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.', 'Commands: "call Ali", "hang up", "mute Discord", "deafen Discord", "answer", "decline". For hangup/answer/decline bind once in Discord › Settings › Keybinds: Disconnect = Ctrl+Shift+H, Answer = Ctrl+Shift+A, Decline = Ctrl+Shift+E; Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work by default.'],
     'disc.namePh': ['اسم دوستت در دیسکورد…', "Your friend's Discord name…"],
     'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
     'dnsp.title': ['DNS Changer', 'DNS Changer'],
@@ -239,7 +265,7 @@
     'set.app.theme': ['تم ظاهری', 'Appearance theme'],
     'set.app.themeHint': ['تیره زمردی یا روشن بنفش/کهربایی — از دکمه خورشید/ماه نوار بالا هم عوض می‌شود', 'Dark emerald or light violet/amber — also via the sun/moon button in the title bar'],
     'set.app.dark': ['تیره (زمردی)', 'Dark (emerald)'], 'set.app.light': ['روشن (بنفش و کهربایی)', 'Light (violet & amber)'],
-    'set.app.lite': ['سبک (سیستم ضعیف)', 'Lite (weak PC)'],
+    'set.app.lite': ['سبک روشن (سیستم ضعیف)', 'Lite light (weak PC)'], 'set.app.darklite': ['سبک تیره (سیستم ضعیف)', 'Lite dark (weak PC)'],
     'set.app.safe': ['حالت امن (اگر برنامه درست کار نمی‌کند)', 'Safe mode (if the app misbehaves)'],
     'set.app.safeHint': ['افکت‌های سنگین (شیشه، گرادیان، انیمیشن) خاموش می‌شوند تا روی هر سیستمی برنامه سالم کار کند', 'Heavy effects (glass, gradients, animation) turn off so the app works on any system'],
     'set.app.errCopy': ['گزارش خطاها', 'Error report'],
@@ -280,7 +306,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۶ — پلیر موزیک از نو ساخته شد: چیدمان دوکارت (کنسول پخش با دیسک وینیل چرخان و ویژوالایزر + پلی‌لیست ستونی با اسکرول داخلی)، فیکس مدل جمنای — مدل تایپیِ تو اولویت دارد و اگر منسوخ شده باشد خودکار مدل تازه امتحان می‌شود — و افزونهٔ کنترل دیسکورد با صدا: «به فلانی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، جواب و رد تماس.', 'v0.16 — music player rebuilt as a two-card deck (spinning vinyl console + column playlist), Gemini model fix (your typed model first, auto-fallback to the newest flash when retired), and the new Discord voice extension: call friends by name, hang up, mute, answer or decline calls.'],
+    'about.desc': ['نسخه ۰.۱۷ — تشخیص گفتار کلاس AI (الگوی سایت‌های حرفه‌ای تایپ صوتی): موتور Gemini Audio با همان کلید جمنای خودت + Whisper سازگار با OpenAI (پیش‌فرض Groq، سریع‌ترین) — کنترل دیسکورد کامل شد: تماس واقعی با مخاطبین اسم‌دار («به علی زنگ بزن» با آی‌دی ذخیره‌شده)، حالت بک‌گراند مخصوص وسط بازی و صفحهٔ تنظیمات اختصاصی — اولویت اول پاسخ‌ها با جمنای + نشان موتور پاسخ‌دهنده — دکمهٔ میکروفون فلت در حالت بهینه‌سازی — پلیر مینیمال‌تر و تم تیرهٔ سبک برای سیستم ضعیف.', 'v0.17 — AI-class speech recognition (like pro voice-typing sites): Gemini Audio with your own key + OpenAI-compatible Whisper (Groq default, blazing fast) — Discord control completed: real calling with named contacts, background mode for mid-game use, full settings page — Gemini-first AI replies with an engine badge — flat mic button in performance mode — more minimal player and a flat dark theme for weak PCs.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -299,6 +325,20 @@
     'mic.noAccess': ['میکروفون: بدون دسترسی', 'Mic: no access'],
     'eng.web': ['موتور: وب گوگل (دقیق‌ترین) — فالبک خودکار', 'Engine: Google web (best) — auto fallback'],
     'eng.google': ['موتور: گوگل رایگان', 'Engine: free Google'], 'eng.glm': ['موتور: GLM-ASR ابری', 'Engine: cloud GLM-ASR'],
+    /* v0.17 — موتورهای کلاس AI */
+    'eng.gemini': ['موتور: Gemini Audio (دقت AI)', 'Engine: Gemini Audio (AI-grade)'], 'eng.whisper': ['موتور: Whisper (سریع)', 'Engine: Whisper (fast)'],
+    'stt.tryGemini': ['تبدیل صدا با جمنای…', 'Transcribing with Gemini…'],
+    'stt.tryWhisper': ['تبدیل صدا با Whisper…', 'Transcribing with Whisper…'],
+    'set.stt.gemini': ['فقط Gemini Audio — دقیق‌ترین (کلید جمنای)', 'Gemini Audio only — most accurate (Gemini key)'],
+    'set.stt.whisper': ['فقط Whisper — سریع (Groq/OpenAI)', 'Whisper only — fastest (Groq/OpenAI)'],
+    'set.stt.wbase': ['آدرس سرور Whisper (سازگار با OpenAI)', 'Whisper server base URL (OpenAI-compatible)'],
+    'set.stt.wbaseHint': ['پیش‌فرض: Groq — whisper-large-v3-turbo رایگان و بسیار سریع است؛ آدرس OpenAI یا سرور محلی whisper.cpp هم می‌گذاری', 'Default Groq — free whisper-large-v3-turbo; OpenAI or a local whisper.cpp server URL also works'],
+    'set.stt.wkey': ['کلید Whisper', 'Whisper API key'],
+    'set.stt.wkeyHint': ['کلید رایگان از console.groq.com بگیر — سریع‌ترین ترنسکریپتی که تا حالا تجربه می‌کنی', 'Grab a free key at console.groq.com — the fastest transcription you have ever tried'],
+    'set.stt.wkeyPh': ['gsk_…', 'gsk_…'],
+    'set.stt.wmodel': ['مدل Whisper', 'Whisper model'],
+    'set.stt.wmodelHint': ['whisper-large-v3-turbo (پیش‌فرض)، whisper-large-v3 یا هر مدلی که سرورت پشتیبانی کند', 'whisper-large-v3-turbo (default), whisper-large-v3, or any model your server supports'],
+    'set.ai.noKeyWarn': ['مدل جمنای ذخیره شده ولی کلید نداری — بدون کلید، جمنای نه در چت جواب می‌دهد نه در تشخیص گفتار؛ موتور بعدی (GLM) جایگزین می‌شود.', 'A Gemini model is saved but there is no key — without a key Gemini answers nothing in chat or speech; GLM takes over.'],
     'eng.demo': ['موتور: حالت دمو', 'Engine: demo mode'], 'eng.none': ['موتور: تنظیم نشده', 'Engine: not set'],
     'tag.ready': ['آماده', 'Ready'], 'tag.working': ['در حال انجام…', 'Working…'], 'tag.done': ['اجرا شد', 'Ran'], 'tag.fail': ['اجرا نشد', 'Failed'],
     'tag.reply': ['پاسخ آوا', 'AVA reply'], 'tag.custom': ['فرمان سفارشی', 'Custom command'], 'tag.demo': ['شبیه‌سازی دمو', 'Demo simulation'],
@@ -317,6 +357,7 @@
     'toast.autoOn': ['بررسی خودکار فعال شد', 'Auto check enabled'], 'toast.autoOff': ['بررسی خودکار خاموش شد', 'Auto check disabled'],
     'toast.langChanged': ['زبان برنامه عوض شد', 'App language changed'],
     'toast.themeLight': ['تم روشن فعال شد', 'Light theme on'], 'toast.themeDark': ['تم تیره فعال شد', 'Dark theme on'],
+    'toast.themeDarkLite': ['تم تیرهٔ سبک فعال شد — مخصوص سیستم ضعیف', 'Flat dark theme on — made for weak PCs'],
     'toast.dnsqSaved': ['DNS «{x}» ذخیره شد', 'DNS "{x}" saved'],
     'toast.dnsApplyUac': ['پنجره تأیید مدیر (UAC) ویندوز را تأیید کن', 'Confirm the Windows UAC prompt'],
     'toast.dnsResetUac': ['برای بازگردانی DNS به حالت خودکار، UAC را تأیید کن', 'Confirm UAC to reset DNS to automatic'],
@@ -810,6 +851,15 @@
     /* v0.13: انتخاب مدل — flash-latest همیشه جدیدترین فلاش جمنای است */
     geminiModel: store.get('geminiModel', 'gemini-flash-latest'),
     openaiModel: store.get('openaiModel', 'gpt-4o-mini'),
+    /* v0.17 — موتورهای STT کلاس AI */
+    whisperBase: store.get('whisperBase', 'https://api.groq.com/openai/v1'),
+    whisperKey: store.get('whisperKey', ''),
+    whisperModel: store.get('whisperModel', 'whisper-large-v3-turbo'),
+    /* v0.17 — افزونهٔ دیسکورد: مخاطبین و اجرای بک‌گراند */
+    discordContacts: store.get('discordContacts', []), /* [{id, name, userId, note}] */
+    discordBg: store.get('discordBg', true),           /* بدون به‌هم‌ریختن بازی */
+    discordCallDx: store.get('discordCallDx', 46),     /* فاصلهٔ دکمهٔ تماس از راست */
+    discordCallDy: store.get('discordCallDy', 52),     /* فاصله از بالا */
     micId: store.get('micId', ''),
     handsFree: store.get('handsFree', false),
     wakeWord: store.get('wakeWord', true),
@@ -1013,10 +1063,12 @@
      تعریف تابع‌های viz پایین فایل می‌ماند (hoist کامل دارند). */
   let vizCtx = null, vizAnalyser = null, vizData = null, vizRaf = 0, vizTick = false;
 
-  /* ---------- تم روشن/تیره/سبک (v0.15) + بهینه‌سازی ---------- */
+  /* ---------- تم روشن/تیره/سبک (v0.15) + تیرهٔ سبک v0.17 + بهینه‌سازی ---------- */
+  const flatTheme = () => (settings.theme === 'lite' || settings.theme === 'darklite');
   function applyTheme() {
     if (settings.theme === 'light') document.body.setAttribute('data-theme', 'light');
     else if (settings.theme === 'lite') document.body.setAttribute('data-theme', 'lite');
+    else if (settings.theme === 'darklite') document.body.setAttribute('data-theme', 'darklite');
     else document.body.removeAttribute('data-theme');
     const ti = $('#themeIcon');
     if (ti) ti.setAttribute('href', settings.theme === 'dark' ? '#i-sun' : '#i-moon');
@@ -1025,21 +1077,21 @@
   /* کلیدهای بهینه‌سازی: بدون انیمیشن / بدون افکت (v0.15) + حالت امن (v0.16.1) */
   function applyPerf() {
     body.classList.toggle('perf-noanim', !!settings.noAnim || !!settings.safeMode);
-    body.classList.toggle('perf-nofx', !!settings.noFx || settings.theme === 'lite' || !!settings.safeMode);
+    body.classList.toggle('perf-nofx', !!settings.noFx || flatTheme() || !!settings.safeMode);
     body.classList.toggle('safe-orb', !!settings.safeMode); /* دیسک شیشه‌ای → ساده و صاف */
     /* try/catch اضافی: هیچ خطایی از این مسیر نباید بوت را بکشد (سپر دوم بعد از فیکس TDZ) */
-    if (typeof vizStop === 'function' && (settings.noFx || settings.theme === 'lite' || settings.safeMode)) { try { vizStop(); } catch (_) { /* noop */ } }
+    if (typeof vizStop === 'function' && (settings.noFx || flatTheme() || settings.safeMode)) { try { vizStop(); } catch (_) { /* noop */ } }
   }
   function syncPerfUI() {
     if (optNoAnim) optNoAnim.checked = !!settings.noAnim;
     if (optNoFx) optNoFx.checked = !!settings.noFx;
-    if (btnLiteTheme) btnLiteTheme.classList.toggle('active', settings.theme === 'lite');
+    if (btnLiteTheme) btnLiteTheme.classList.toggle('active', flatTheme());
   }
   function setTheme(th, silent = false) {
-    settings.theme = th === 'light' ? 'light' : (th === 'lite' ? 'lite' : 'dark');
+    settings.theme = ['light', 'lite', 'darklite'].includes(th) ? th : 'dark';
     store.set('theme', settings.theme);
-    /* تم سبک خودش انیمیشن و افکت را کم می‌کند (برگشت به تم دیگر، کلیدها سرجایشان می‌مانند) */
-    if (settings.theme === 'lite') {
+    /* تم‌های سبک خودشان انیمیشن و افکت را کم می‌کنند (برگشت به تم دیگر، کلیدها سرجایشان می‌مانند) */
+    if (flatTheme()) {
       settings.noAnim = true;
       settings.noFx = true;
       store.set('noAnim', true);
@@ -1049,7 +1101,7 @@
     applyTheme();
     syncPerfUI();
     if (optTheme) optTheme.value = settings.theme;
-    if (!silent) toast(settings.theme === 'light' ? t('toast.themeLight') : (settings.theme === 'lite' ? t('toast.themeLite') : t('toast.themeDark')), '#i-sun');
+    if (!silent) toast(settings.theme === 'light' ? t('toast.themeLight') : (settings.theme === 'lite' ? t('toast.themeLite') : (settings.theme === 'darklite' ? t('toast.themeDarkLite') : t('toast.themeDark'))), '#i-sun');
   }
   const btnTheme = $('#btnTheme');
   if (btnTheme) btnTheme.addEventListener('click', () => setTheme(settings.theme === 'dark' ? 'light' : 'dark'));
@@ -1680,45 +1732,49 @@
       .trim();
     const en = /\b(discord)\b/i.test(t0);
     const fa = /دیسکورد|دیسبورد|دیسکوردُ/.test(t0);
+    const ctx = discordCtx();
     /* قطع تماس — «تماس/زنگ/کال» + قطع/ببند/کات */
     if (/(تماس|زنگ|کال|کال)[^.]{0,14}(قطع|ببند|کات|تموم)/.test(t0) || /(قطع|ببند)[^.]{0,8}(تماس|زنگ|کال)/.test(t0)) {
       if (!fa && !en) return null;
-      const r = await bridge.discord.cmd({ action: 'hangup' }).catch(() => null);
+      const r = await bridge.discord.cmd({ action: 'hangup', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.hangup') : ((r && r.error) || t('disc.fail'));
     }
     /* رد تماس */
     if (/(تماس|زنگ|کال)[^.]{0,10}رد/.test(t0) || /رد[^.]{0,6}(تماس|زنگ|کال)/.test(t0)) {
       if (!fa && !en) return null;
-      const r = await bridge.discord.cmd({ action: 'decline' }).catch(() => null);
+      const r = await bridge.discord.cmd({ action: 'decline', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.decline') : ((r && r.error) || t('disc.fail'));
     }
     /* جواب تماس */
     if (/(تماس|زنگ|کال)[^.]{0,10}(جواب|برار|برگردن)/.test(t0) || /جواب[^.]{0,8}(تماس|زنگ|کال)/.test(t0)) {
       if (!fa && !en) return null;
-      const r = await bridge.discord.cmd({ action: 'answer' }).catch(() => null);
+      const r = await bridge.discord.cmd({ action: 'answer', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.answer') : ((r && r.error) || t('disc.fail'));
     }
     /* بی‌صدای کل (deafen) — «صدای دیسکورد رو قطع/کرافت کن» */
     if (/صدای?[^.]{0,8}(دیسکورد|discord)/.test(t0) && /(قطع|بیصدا|بی صدا|کرافت)/.test(t0)) {
-      const r = await bridge.discord.cmd({ action: 'deafen' }).catch(() => null);
+      const r = await bridge.discord.cmd({ action: 'deafen', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.deafened') : ((r && r.error) || t('disc.fail'));
     }
     /* میوت میکروفون — «دیسکورد رو میوت کن» / «میکروفون دیسکورد قطع» */
     if (fa || en) {
       if (/(میوت|مایوت|بیصدا|بی صدا)/.test(t0) || (/میکروفون/.test(t0) && /قطع/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
-        const r = await bridge.discord.cmd({ action: 'mute' }).catch(() => null);
+        const r = await bridge.discord.cmd({ action: 'mute', ...ctx }).catch(() => null);
         return r && r.ok ? t('disc.muted') : ((r && r.error) || t('disc.fail'));
       }
     }
-    /* تماس با نام: «به علی زنگ بزن» / «در دیسکورد به علی تماس بگیر» / «کال کن علی» */
+    /* تماس با نام: «به علی زنگ بزن» / «در دیسکورد به علی تماس بگیر» / «کال کن علی»
+       v0.17 — اول مخاطبین ذخیره‌شده (اسم ساده → آی‌دی) تطبیق می‌شوند؛
+       اگر مخاطب پیدا شد تماس با دیپ‌لینک مستقیم انجام می‌شود */
     const callRe = [/(?:در\s*)?(?:دیسکورد|discord)[^.]{0,10}?(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)\s*(?:به|برای)?\s+(.+)/];
     if (/(زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/.test(t0)) {
       let nm = null;
       for (const re of callRe) { const m = re.exec(t0); if (m && m[1]) { nm = m[1]; break; } }
       if (nm || fa || en) {
         nm = (nm || '').replace(/(توی|در|با|و|رو|را|برام|برای)\s*$/g, '').replace(/["«»]/g, '').trim();
-        const r = await bridge.discord.cmd({ action: 'call', name: nm }).catch(() => null);
-        if (r && r.ok) return t('disc.calling', { x: nm || '…' });
+        const ct = resolveDiscordContact(nm);
+        const r = await bridge.discord.cmd({ action: 'call', name: ct ? ct.name : nm, userId: ct ? ct.userId : '', ...ctx }).catch(() => null);
+        if (r && r.ok) return t('disc.calling', { x: ct ? ct.name : (nm || '…') });
         return (r && r.error) || t('disc.fail');
       }
     }
@@ -2156,36 +2212,50 @@
   const GLM_ON_LVL = 16;      // آستانه تشخیص شروع حرف (میانگین طیف)
 
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
+  /* v0.17 — موتورهای کلاس AI (الگوی typeo/iotype): ترنسکریپت با مدل هوش مصنوعی */
+  const geminiSttReady = () => !!(bridge && bridge.stt && bridge.stt.gemini && settings.geminiKey);
+  const whisperSttReady = () => !!(bridge && bridge.stt && bridge.stt.whisper && settings.whisperKey);
 
   function refreshEngineUI() {
     const eng = settings.sttEngine || 'auto';
     const webUsable = SRC && !srBroken;
-    if (webUsable && eng !== 'google' && eng !== 'glm') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.web')}`;
-    else if (googleReady() && eng !== 'web' && eng !== 'glm') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.google')}`;
-    else if (glmReady() && eng !== 'web' && eng !== 'google') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.glm')}`;
+    if (webUsable && eng !== 'google' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.web')}`;
+    else if (geminiSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.gemini')}`;
+    else if (whisperSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'gemini') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.whisper')}`;
+    else if (googleReady() && eng !== 'web' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.google')}`;
+    else if (glmReady() && eng !== 'web' && eng !== 'google' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.glm')}`;
     else if (settings.demoMode) sbEngine.innerHTML = `<i class="dot warn"></i>${t('eng.demo')}`;
     else sbEngine.innerHTML = `<i class="dot err"></i>${t('eng.none')}`;
   }
 
-  /* زنجیره موتورها فقط آنلاین: وب گوگل → گوگل رایگان (HTTP) → GLM-ASR ابری
+  /* زنجیرهٔ ابری (v0.17): جمنای → Whisper → GLM → گوگل رایگان
      موتور آفلاین ضعیف در نسخه ۰.۹ کامل حذف شده است. */
+  function buildCloudChain() {
+    const eng = settings.sttEngine || 'auto';
+    if (eng === 'gemini') return geminiSttReady() ? ['gemini'] : [];
+    if (eng === 'whisper') return whisperSttReady() ? ['whisper'] : [];
+    if (eng === 'glm') return glmReady() ? ['glm'] : [];
+    if (eng === 'google') return googleReady() ? ['google'] : [];
+    /* خودکار: دقیق‌ترین موتور در دسترس جلوتر */
+    const c = [];
+    if (geminiSttReady()) c.push('gemini');
+    if (whisperSttReady()) c.push('whisper');
+    if (glmReady()) c.push('glm');
+    if (googleReady()) c.push('google');
+    return c;
+  }
   function resolveEngine() {
     const eng = settings.sttEngine || 'auto';
     if (eng === 'web') return (SRC && !srBroken) ? 'web' : null;
-    if (eng === 'google') return googleReady() ? 'google' : null;
-    if (eng === 'glm') return glmReady() ? 'glm' : null;
-    /* خودکار: دقیق‌ترین موتور در دسترس */
+    if (eng === 'gemini' || eng === 'whisper' || eng === 'glm' || eng === 'google') return buildCloudChain()[0] || null;
+    /* خودکار: اول وب (فوری و زنده)، بعد موتورهای ابری AI */
     if (SRC && !srBroken) return 'web';
-    if (googleReady()) return 'google';
-    if (glmReady()) return 'glm';
-    return null;
+    return buildCloudChain()[0] || null;
   }
 
   /* بعد از موتور وب، نوبت کدام موتور برسد (فالبک زنجیره‌ای) */
   function nextEngineAfterWeb() {
-    if (googleReady()) return 'google';
-    if (glmReady()) return 'glm';
-    return null;
+    return buildCloudChain()[0] || null;
   }
 
   /* فالبک هوشمند: اگر موتور وب از دسترس خارج شد، بدون دخالت کاربر
@@ -2196,8 +2266,8 @@
     refreshEngineUI();
     if (state !== 'listening') return;
     const nxt = nextEngineAfterWeb();
-    if (nxt === 'google') { statusText.textContent = t('stt.webFail'); startGoogleListen(); }
-    else if (nxt === 'glm') { startGlmListen(); }
+    /* همهٔ موتورهای ابری از همان ضبط‌کنندهٔ تطبیقی مشترک استفاده می‌کنند */
+    if (nxt) { statusText.textContent = t('stt.webFail'); startCloudListen(); }
     else { setState('idle'); statusText.innerHTML = IDLE_HINT; }
   }
 
@@ -2350,7 +2420,8 @@
   }
 
   function startGoogleListen() {
-    if (!googleReady()) { noEngine(t('stt.noEngineApp')); return; }
+    /* ضبط‌کنندهٔ تطبیقی مشترک همهٔ موتورهای ابری (گوگل/جمنای/Whisper/GLM) */
+    if (!buildCloudChain().length) { noEngine(t('stt.noEngineApp')); return; }
     attachMic().then((ok) => {
       /* اگر کاربر وسط کار دکمه را زده و گوش‌دادن تمام شده، ضبط نساز */
       if (!ok) { noEngine(t('stt.micMissing')); return; }
@@ -2436,37 +2507,60 @@
       sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
       if (dictation.active) setTimeout(rearmDictation, 1500);
     };
-    /* فالبک WAV → GLM-ASR: اگر گوگل جواب نداد، همان صدا به GLM می‌رود */
-    const glmWavFallback = async (why) => {
-      if (!glmReady() || settings.sttEngine === 'google') { finishIdle(why); return; }
-      statusText.textContent = t('stt.fallbackGlm');
-      try {
-        const wav = pcmToWavBlob(pcm16, 16000);
-        const buf = new Uint8Array(await wav.arrayBuffer());
-        if (buf.length < 900) { finishIdle(why); return; }
-        const r2 = await bridge.stt.transcribe({ buf, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
-        if (r2 && r2.ok && r2.text) {
-          const tx = r2.text.trim();
-          if (dictation.active) dictateHandle(tx);
-          else handleUtterance(tx);
-        } else {
-          finishIdle(why);
-        }
-      } catch (_) { finishIdle(why); }
+    /* v0.17 — پیمایش زنجیرهٔ ابری: جمنای → Whisper → GLM → گوگل رایگان
+       همان صدا (WAV/PCM) به تک‌تک موتورهای زنجیره می‌رود تا جواب بگیرد؛
+       دقیق‌ترین‌ها (کلاس AI — الگوی typeo/iotype) جلوتر هستند */
+    const chain = buildCloudChain();
+    const pcmBytes = new Uint8Array(pcm16.buffer);
+    const wavBlob = pcmToWavBlob(pcm16, 16000);
+    const wavSend = async () => {
+      const b = new Uint8Array(await wavBlob.arrayBuffer());
+      return b.length < 900 ? null : b;
     };
-    bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, key: settings.googleKey || '', lang })
-      .then((r) => {
-        if (r && r.ok && r.text) {
-          const tx = r.text.trim();
-          if (dictation.active) dictateHandle(tx);
-          else handleUtterance(tx);
-        } else {
-          toast((r && r.error) || t('stt.googleEmpty'), '#i-info');
-          glmWavFallback(t('stt.convFail', { x: (r && r.error) || '—' }));
-        }
-      })
-      .catch(() => glmWavFallback(t('stt.connFail')));
+    const runEngine = async (eng) => {
+      if (eng === 'gemini') {
+        statusText.textContent = t('stt.tryGemini');
+        const b = await wavSend();
+        if (!b) return { ok: false };
+        return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR' });
+      }
+      if (eng === 'whisper') {
+        statusText.textContent = t('stt.tryWhisper');
+        const b = await wavSend();
+        if (!b) return { ok: false };
+        return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
+      }
+      if (eng === 'glm') {
+        statusText.textContent = t('stt.fallbackGlm');
+        const b = await wavSend();
+        if (!b) return { ok: false };
+        return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
+      }
+      statusText.textContent = t('status.googleConv');
+      return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang });
+    };
+    const runChain = async (i, why) => {
+      if (state === 'idle') return; /* کاربر لغو کرد */
+      const eng = chain[i];
+      if (!eng) { finishIdle(why || t('stt.convFail', { x: '—' })); return; }
+      let r = null;
+      try { r = await runEngine(eng); } catch (_) { r = { ok: false, error: t('stt.connFail') }; }
+      if (r && r.ok && r.text) {
+        const tx = r.text.trim();
+        if (dictation.active) dictateHandle(tx);
+        else handleUtterance(tx);
+        return;
+      }
+      const isLast = (i + 1 >= chain.length);
+      if (r && r.error && isLast) toast(String(r.error).slice(0, 150), '#i-info');
+      runChain(i + 1, (r && r.error) ? t('stt.convFail', { x: r.error }) : why);
+    };
+    if (!chain.length) { finishIdle(t('stt.noEngineApp')); return; }
+    runChain(0, '');
   }
+
+  /* نام مستعار — ضبط‌کنندهٔ تطبیقی مشترک همهٔ موتورهای ابری */
+  const startCloudListen = startGoogleListen;
 
   /* --- موتور GLM-ASR: ضبط واقعی + ارسال به سرور + تبدیل به فرمان --- */
   function startGlmListen() {
@@ -3705,7 +3799,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.16.2';
+  let appVersion = '0.17.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -3809,13 +3903,39 @@
   }));
   applyExtensions();
 
-  /* ---------- کنترل دستی دیسکورد (v0.16) — دکمه‌های کارت افزونه ---------- */
-  async function runDiscordCmd(action, name, okMsg) {
+  /* ---------- کنترل دستی دیسکورد (v0.17) — مخاطبین + بک‌گراند + مختصات ---------- */
+  function discordCtx() {
+    return {
+      bg: !!settings.discordBg,
+      dx: Number(settings.discordCallDx) || 46,
+      dy: Number(settings.discordCallDy) || 52,
+    };
+  }
+  async function runDiscordCmd(action, name, okMsg, userId) {
     if (!bridge || !bridge.discord) return toast('کنترل دیسکورد فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
     toast(t('disc.working'), '#i-smile');
-    const r = await bridge.discord.cmd({ action, name }).catch((e) => ({ ok: false, error: String(e) }));
-    if (r && r.ok) toast(okMsg || t('disc.done'), '#i-check');
-    else toast((r && r.error) || t('disc.fail'), '#i-info');
+    const r = await bridge.discord.cmd({ action, name, userId, ...discordCtx() }).catch((e) => ({ ok: false, error: String(e) }));
+    if (r && r.ok) {
+      /* شفاف‌سازی: در حالت بک‌گراند کلیدها به دیسکورد فرستاده می‌شوند ولی
+         قابل تأیید نیست — اگر اثری دیدی نشد، حالت بک‌گراند را خاموش کن */
+      const res = String((r && r.result) || '');
+      if (res === 'OK:DM_OPENED') toast(t('disc.dmOnly'), '#i-info');
+      else toast(okMsg || t('disc.done'), '#i-check');
+    } else toast((r && r.error) || t('disc.fail'), '#i-info');
+    return r;
+  }
+  /* یافتن مخاطب از نام گفته‌شده — تطبیق دقیق، شروع، و شامل‌بودن دوطرفه */
+  function resolveDiscordContact(spoken) {
+    const list = Array.isArray(settings.discordContacts) ? settings.discordContacts : [];
+    if (!spoken) return null;
+    const s = String(spoken).trim().toLowerCase().replace(/[\u200c\s]+/g, ' ');
+    if (!s) return null;
+    let hit = list.find((c) => String(c.name).trim().toLowerCase() === s);
+    if (hit) return hit;
+    hit = list.find((c) => String(c.name).trim().toLowerCase().startsWith(s) || s.startsWith(String(c.name).trim().toLowerCase()));
+    if (hit) return hit;
+    hit = list.find((c) => s.includes(String(c.name).trim().toLowerCase()) || String(c.name).trim().toLowerCase().includes(s));
+    return hit || null;
   }
   const dcBtn = (id, action, msg) => {
     const b = $(id);
@@ -3832,7 +3952,92 @@
   if (btnDcCall) btnDcCall.addEventListener('click', async () => {
     const nm = (dcCallName && dcCallName.value || '').trim();
     if (!nm) { toast(t('disc.needName'), '#i-info'); return; }
-    await runDiscordCmd('call', nm, t('disc.calling', { x: nm }));
+    const ct = resolveDiscordContact(nm);
+    await runDiscordCmd('call', ct ? ct.name : nm, t('disc.calling', { x: ct ? ct.name : nm }), ct ? ct.userId : '');
+  });
+  /* دکمهٔ باز کردن تنظیمات دیسکورد از کارت افزونه */
+  const btnDcSettings = $('#btnDcSettings');
+  if (btnDcSettings) btnDcSettings.addEventListener('click', () => {
+    showView('settings');
+    showSettingsPane('discord');
+  });
+
+  /* ---------- تنظیمات دیسکورد (v0.17): مخاطبین، بک‌گراند، مختصات ---------- */
+  const dcAddForm = $('#dcAddForm');
+  const dcName = $('#dcName');
+  const dcUserId = $('#dcUserId');
+  const dcContactsList = $('#dcContactsList');
+  const optDiscordBg = $('#optDiscordBg');
+  const optDiscordCallDx = $('#optDiscordCallDx');
+  const optDiscordCallDy = $('#optDiscordCallDy');
+  function renderDiscordContacts() {
+    if (!dcContactsList) return;
+    const list = Array.isArray(settings.discordContacts) ? settings.discordContacts : [];
+    dcContactsList.innerHTML = '';
+    if (!list.length) {
+      dcContactsList.innerHTML = `<div class="dc-empty">${t('set.dc.empty')}</div>`;
+      return;
+    }
+    list.forEach((c) => {
+      const row = document.createElement('div');
+      row.className = 'dc-contact';
+      row.innerHTML = `
+        <div class="dc-ct-info"><b></b><span class="num" dir="ltr"></span></div>
+        <div class="dc-ct-actions">
+          <button type="button" class="chip sm dc-call"><svg class="ic"><use href="#i-tts"/></svg><span>${t('set.dc.call')}</span></button>
+          <button type="button" class="chip sm danger dc-del" title="${t('set.dc.del')}"><svg class="ic"><use href="#i-close"/></svg></button>
+        </div>`;
+      row.querySelector('.dc-ct-info b').textContent = c.name;
+      row.querySelector('.dc-ct-info span').textContent = c.userId;
+      row.querySelector('.dc-call').addEventListener('click', async () => {
+        await runDiscordCmd('call', c.name, t('disc.calling', { x: c.name }), c.userId);
+      });
+      row.querySelector('.dc-del').addEventListener('click', () => {
+        settings.discordContacts = settings.discordContacts.filter((x) => x.id !== c.id);
+        store.set('discordContacts', settings.discordContacts);
+        renderDiscordContacts();
+        toast(t('set.dc.deleted', { x: c.name }), '#i-close');
+      });
+      dcContactsList.appendChild(row);
+    });
+  }
+  if (dcAddForm) dcAddForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nm = (dcName && dcName.value || '').trim();
+    const uid = (dcUserId && dcUserId.value || '').trim();
+    if (!nm || !uid) { toast(t('set.dc.needBoth'), '#i-info'); return; }
+    if (!/^\d{5,25}$/.test(uid)) { toast(t('set.dc.badId'), '#i-info'); return; }
+    if (!Array.isArray(settings.discordContacts)) settings.discordContacts = [];
+    settings.discordContacts.push({ id: 'c' + Date.now().toString(36), name: nm, userId: uid, note: '' });
+    store.set('discordContacts', settings.discordContacts);
+    if (dcName) dcName.value = '';
+    if (dcUserId) dcUserId.value = '';
+    renderDiscordContacts();
+    toast(t('set.dc.added', { x: nm }), '#i-check');
+  });
+  if (optDiscordBg) optDiscordBg.addEventListener('change', () => {
+    settings.discordBg = optDiscordBg.checked;
+    store.set('discordBg', settings.discordBg);
+    toast(settings.discordBg ? t('set.dc.bgOn') : t('set.dc.bgOff'), '#i-smile');
+  });
+  const bindDxy = (el, key) => {
+    if (!el) return;
+    el.addEventListener('change', () => {
+      const v = Math.max(10, Math.min(320, Number(el.value) || 46));
+      settings[key] = v;
+      el.value = String(v);
+      store.set(key, v);
+    });
+  };
+  bindDxy(optDiscordCallDx, 'discordCallDx');
+  bindDxy(optDiscordCallDy, 'discordCallDy');
+  const btnDcProbe = $('#btnDcProbe');
+  if (btnDcProbe) btnDcProbe.addEventListener('click', async () => {
+    if (!bridge || !bridge.discord) return toast('فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+    toast(t('set.dc.probing'), '#i-smile');
+    const r = await bridge.discord.cmd({ action: 'probe', ...discordCtx() }).catch((e) => ({ ok: false, error: String(e) }));
+    if (r && r.ok) toast(t('set.dc.probed'), '#i-check');
+    else toast((r && r.error) || t('disc.fail'), '#i-info');
   });
 
   /* ---------- کلیدهای بهینه‌سازی (v0.15) ---------- */
@@ -3848,7 +4053,7 @@
     applyPerf();
     toast(settings.noFx ? t('toast.noFxOn') : t('toast.noFxOff'), '#i-pulse');
   });
-  if (btnLiteTheme) btnLiteTheme.addEventListener('click', () => setTheme(settings.theme === 'lite' ? 'dark' : 'lite'));
+  if (btnLiteTheme) btnLiteTheme.addEventListener('click', () => setTheme(settings.theme === 'dark' ? 'lite' : (settings.theme === 'lite' ? 'darklite' : 'dark')));
 
   /* ---------- حالت امن + گزارش خطاها (v0.16.1) ---------- */
   const optSafeMode = $('#optSafeMode');
@@ -3932,6 +4137,18 @@
     if (optOpenaiKey) optOpenaiKey.value = settings.openaiKey || '';
     if (optGeminiModel) optGeminiModel.value = settings.geminiModel || 'gemini-flash-latest';
     if (optOpenaiModel) optOpenaiModel.value = settings.openaiModel || 'gpt-4o-mini';
+    /* v0.17 — Whisper سازگار با OpenAI + مخاطبین دیسکورد
+       (lookup مستقیم DOM — نه constهای بعدی که TDZ می‌خورند) */
+    const owb = $('#optWhisperBase'); if (owb) owb.value = settings.whisperBase || 'https://api.groq.com/openai/v1';
+    const owk = $('#optWhisperKey'); if (owk) owk.value = settings.whisperKey || '';
+    const owm = $('#optWhisperModel'); if (owm) owm.value = settings.whisperModel || 'whisper-large-v3-turbo';
+    if (typeof renderDiscordContacts === 'function') renderDiscordContacts();
+    const odb = $('#optDiscordBg'); if (odb) odb.checked = !!settings.discordBg;
+    const odx = $('#optDiscordCallDx'); if (odx) odx.value = String(settings.discordCallDx || 46);
+    const ody = $('#optDiscordCallDy'); if (ody) ody.value = String(settings.discordCallDy || 52);
+    /* هشدار «مدل جمنای بدون کلید» — ریشهٔ سردرگمی قبلی کاربر */
+    const gnkw = $('#geminiNoKeyWarn');
+    if (gnkw) gnkw.hidden = !(settings.geminiModel && !settings.geminiKey);
     updateHandsFreeUI();
     refreshEngineUI();
     fillVoiceSelect();
@@ -4055,6 +4272,14 @@
       optGlmKey.focus();
       toast(LANG === 'en' ? 'The GLM engine needs a key — or pick "Auto"/"Free Google"' : 'موتور GLM به کلید نیاز دارد — یا موتور «خودکار»/«گوگل رایگان» را انتخاب کن', '#i-key');
     }
+    if (settings.sttEngine === 'gemini' && !settings.geminiKey) {
+      const k = $('#optGeminiKey'); if (k) k.focus();
+      toast(LANG === 'en' ? 'Gemini speech needs your free Gemini key (AI settings)' : 'موتور جمنای به کلید رایگان جمنای نیاز دارد — از بخش هوش مصنوعی واردش کن', '#i-key');
+    }
+    if (settings.sttEngine === 'whisper' && !settings.whisperKey) {
+      const k = $('#optWhisperKey'); if (k) k.focus();
+      toast(LANG === 'en' ? 'Whisper needs an API key (Groq is free)' : 'Whisper به کلید API نیاز دارد — Groq پلن رایگان دارد؛ کلید را پایین وارد کن', '#i-key');
+    }
   });
 
   optGlmKey.addEventListener('change', () => {
@@ -4082,6 +4307,25 @@
     store.set('googleKey', settings.googleKey);
     refreshEngineUI();
     toast(settings.googleKey ? t('toast.gKeySaved') : t('toast.gKeyCleared'), '#i-key');
+  });
+
+  /* v0.17 — تنظیمات Whisper سازگار با OpenAI (Groq/OpenAI/سرور محلی) */
+  const optWhisperBase = $('#optWhisperBase');
+  const optWhisperKey = $('#optWhisperKey');
+  const optWhisperModel = $('#optWhisperModel');
+  if (optWhisperKey) optWhisperKey.addEventListener('change', () => {
+    settings.whisperKey = optWhisperKey.value.trim();
+    store.set('whisperKey', settings.whisperKey);
+    refreshEngineUI();
+    toast(settings.whisperKey ? t('toast.keySaved') : t('toast.keyCleared'), '#i-key');
+  });
+  if (optWhisperBase) optWhisperBase.addEventListener('change', () => {
+    settings.whisperBase = optWhisperBase.value.trim() || 'https://api.groq.com/openai/v1';
+    store.set('whisperBase', settings.whisperBase);
+  });
+  if (optWhisperModel) optWhisperModel.addEventListener('change', () => {
+    settings.whisperModel = optWhisperModel.value.trim() || 'whisper-large-v3-turbo';
+    store.set('whisperModel', settings.whisperModel);
   });
 
   btnGoZai.addEventListener('click', () => {
@@ -4479,16 +4723,18 @@
       return (await bridge.ai.openai({ key: settings.openaiKey, model: settings.openaiModel || 'gpt-4o-mini', messages: msgs }).catch(() => null)) || false;
     };
 
-    if (prov === 'zai') { const r = await tryZai(); if (r) return r; }
-    else if (prov === 'glm') { const r = await tryGlm(); if (r) return r; }
-    else if (prov === 'gemini') { const r = await tryGemini(); if (r) return r; }
-    else if (prov === 'openai') { const r = await tryOpenai(); if (r) return r; }
+    /* v0.17 — اولویت اول با جمنای (خواست کاربر) + برچسب موتور پاسخ‌دهنده */
+    const tag = (r, via) => (r ? Object.assign({}, r, { via }) : r);
+    if (prov === 'zai') { const r = await tryZai(); if (r) return tag(r, 'GLM'); }
+    else if (prov === 'glm') { const r = await tryGlm(); if (r) return tag(r, 'GLM API'); }
+    else if (prov === 'gemini') { const r = await tryGemini(); if (r) return tag(r, 'Gemini'); }
+    else if (prov === 'openai') { const r = await tryOpenai(); if (r) return tag(r, 'OpenAI'); }
     else {
-      /* خودکار (v0.13 — خواست کاربر): اول Gemini، بعد حساب GLM، بعد کلید GLM، در آخر OpenAI */
-      let r = await tryGemini(); if (r) return r;
-      r = await tryZai(); if (r) return r;
-      r = await tryGlm(); if (r) return r;
-      r = await tryOpenai(); if (r) return r;
+      /* خودکار: اول Gemini، بعد حساب GLM، بعد کلید GLM، در آخر OpenAI */
+      let r = await tryGemini(); if (r) return tag(r, 'Gemini');
+      r = await tryZai(); if (r) return tag(r, 'GLM');
+      r = await tryGlm(); if (r) return tag(r, 'GLM API');
+      r = await tryOpenai(); if (r) return tag(r, 'OpenAI');
     }
 
     if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
@@ -4515,6 +4761,7 @@
         const { reply, add } = parseAdd(r.text);
         chatHist.push({ role: 'assistant', content: r.text });
         const msgEl = addMsg('bot', reply || '…');
+        if (r.via) { const ch = document.createElement('span'); ch.className = 'msg-engine'; ch.textContent = r.via; msgEl.appendChild(ch); }
         speak(reply);
         if (add) renderCmdCard(msgEl, add);
       }
@@ -4590,7 +4837,8 @@
         chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: r.text });
         setState('success');
         statusText.textContent = t('ai.got');
-        rcTag.textContent = add ? t('tag.aiCmd') : t('tag.ai');
+        /* نشان موتور پاسخ‌دهنده — شفاف بودن اولویت جمنای */
+        rcTag.textContent = (add ? t('tag.aiCmd') : t('tag.ai')) + (r.via ? ' · ' + r.via : '');
         typeText(rcReply, reply || '…');
         speak(reply);
         if (add) {

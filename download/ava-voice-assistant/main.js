@@ -1554,6 +1554,93 @@ ipcMain.handle('stt:transcribe', async (_e, p) => {
   }
 });
 
+/* ---------- موتورهای STT کلاس AI (v0.17) ----------
+   الگویی که سایت‌های تایپ صوتی حرفه‌ای (مثل typeo/iotype) استفاده می‌کنند:
+   ترنسکریپت با مدل هوش مصنوعی، نه تشخیص مرورگری.
+   ۱) stt:gemini  — صدا (WAV) داخل generateContent به جمنای می‌رود؛
+      با همان کلید جمنای کاربر کار می‌کند (بدون ثبت‌نام اضافه) و برای فارسی
+      خیلی دقیق است. زنجیرهٔ مدل مثل ai:gemini: مدل کاربر → flash-latest → …
+   ۲) stt:whisper — هر سرور سازگار با OpenAI /audio/transcriptions:
+      Groq (whisper-large-v3-turbo — سریع‌ترین، پلن رایگان)، OpenAI،
+      یا سرور محلی whisper.cpp — کاربر آدرس/کلید/مدل را در تنظیمات می‌گذارد. */
+function geminiModelChain(userModel) {
+  return [...new Set([
+    String(userModel || '').trim(),
+    'gemini-flash-latest',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+  ])].filter(Boolean);
+}
+
+ipcMain.handle('stt:gemini', async (_e, p) => {
+  const { buf, key, model, lang } = p || {};
+  const keys = splitKeys(key);
+  if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده — از تنظیمات › هوش مصنوعی واردش کن' };
+  if (!buf || !buf.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
+  const b64 = Buffer.from(buf).toString('base64');
+  const prompt =
+    'Transcribe this audio recording verbatim. ' +
+    `The spoken language is ${String(lang || 'fa-IR')} unless it is clearly another language. ` +
+    'Return ONLY the transcription text with correct punctuation and Persian spacing (نیم‌فاصله where appropriate). No commentary, no quotes.';
+  let lastErr = null;
+  for (const k of keys) {
+    for (const mdl of geminiModelChain(model)) {
+      try {
+        const body = {
+          contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: b64 } }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 2048 },
+        };
+        /* thinkingConfig فقط برای نسل 2.5/3 معتبر است — بقیه بدونش */
+        if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(45000) }
+        );
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
+          lastErr = `Gemini-ASR: ${String(msg).slice(0, 120)}`;
+          continue;
+        }
+        const cand = j && j.candidates && j.candidates[0];
+        const text = cand && cand.content && cand.content.parts
+          ? cand.content.parts.map((x) => x.text || '').join('').trim()
+          : '';
+        if (!text) { lastErr = 'Gemini-ASR: پاسخ خالی بود'; continue; }
+        return { ok: true, text, model: mdl };
+      } catch (e) { lastErr = netErr(e); }
+    }
+  }
+  return { ok: false, error: (lastErr || 'Gemini-ASR پاسخ نداد') };
+});
+
+ipcMain.handle('stt:whisper', async (_e, p) => {
+  const { buf, base, key, model, lang } = p || {};
+  if (!key) return { ok: false, error: 'کلید Whisper تنظیم نشده — از تنظیمات › تشخیص گفتار واردش کن' };
+  if (!buf || !buf.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
+  const url = trimBase(base) + '/audio/transcriptions';
+  try {
+    const form = new FormData();
+    form.append('file', new Blob([Buffer.from(buf)], { type: 'audio/wav' }), 'ava-audio.wav');
+    form.append('model', String(model || 'whisper-large-v3-turbo').trim());
+    form.append('response_format', 'json');
+    if (lang) form.append('language', String(lang).split('-')[0]);
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${String(key).trim()}` },
+      body: form,
+      signal: AbortSignal.timeout(45000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
+      return { ok: false, error: `Whisper: ${msg}` };
+    }
+    const text = String((j && j.text) || '').trim();
+    return { ok: !!text, text, error: text ? undefined : 'متنی از صدا استخراج نشد' };
+  } catch (e) { return { ok: false, error: netErr(e) }; }
+});
+
 /* ============================================================
    TTS گوگل (v0.11) — صدای زن طبیعی برای خواندن پاسخ‌های آوا
    از موتور رسمی ترجمه گوگل استفاده می‌کنیم (همان صدایی که در
@@ -1759,52 +1846,158 @@ ipcMain.handle('custom:run', (_e, script) => {
   });
 });
 
-/* ---------- افزونهٔ کنترل دیسکورد (v0.16) ----------
-   بدون توکن رسمی — با فوکوس‌کردن پنجرهٔ دیسکورد و کلیدهای میان‌بر:
-   • mute/deafen: کلیدهای پیش‌فرض دیسکورد (Ctrl+Shift+M / Ctrl+Shift+D)
-   • hangup/answer/decline: کلیدهای دلخواه کاربر (در Discord → Settings →
-     Keybinds باید اکشن‌های Disconnect/Answer/Decline را به همین کلیدها وصل کند)
-   • call: باز کردن دیالوگ Quick Switcher (Ctrl+K)، چسباندن نام مخاطب و Enter،
-     سپس تلاش برای کلیکِ دکمهٔ «Start Voice Call» با UIAutomation */
-ipcMain.handle('discord:cmd', (_e, p) => {
-  const { action, name } = p || {};
-  const A = String(action || '');
+/* ---------- افزونهٔ کنترل دیسکورد (v0.17 — بازنویسی کامل) ----------
+   دو حالت اجرا:
+   • fg (فورگراند): فوکوس به دیسکورد → اکشن → فوکوس به پنجرهٔ قبلی برمی‌گردد
+     (وسط بازی فقط چند ثانیه فوکوس جابه‌جا می‌شود و برمی‌گردد)
+   • bg (بک‌گراند — بدون به‌هم‌ریختن بازی): کلیدها/کلیک با PostMessage به
+     «Chrome_RenderWidgetHostHWND» پنجرهٔ دیسکورد فرستاده می‌شوند؛ پنجره اصلاً
+     فعال نمی‌شود. UIAutomation هم بدون فوکوس کار می‌کند.
+   تماس واقعی (فیکس «به صفحه مخاطب می‌رود ولی تماس نمی‌گیرد»):
+   • اگر آی‌دی مخاطب را داشته باشیم (از مدیریت مخاطبین): دیپ‌لینک
+     discord://discord.com/channels/@me/<id> صفحهٔ DM را مستقیم باز می‌کند و
+     بعد دکمهٔ «Start Voice Call» با UIA پیدا و کلیک می‌شود (اول Invoke، بعد
+     کلیک روی مرکز مستطیل دکمه، بعد فالبک مختصات دستی dx/dy).
+   • بدون آی‌دی: Quick Switcher (Ctrl+K) با نام.
+   دکمهٔ تماس هم با نام انگلیسی و هم فارسی («تماس صوتی/شروع تماس») پیدا می‌شود. */
+function discordPsScript(action, mode, name, dx, dy) {
   const nm = String(name || '').replace(/['’`]/g, '');
-  const ps = `
+  return `
 $ErrorActionPreference = 'SilentlyContinue'
-$sig = @'
-[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
-[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-[DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace AvaDc2 {
+  public struct RECT { public int Left, Top, Right, Bottom; }
+  public struct POINT { public int X, Y; }
+  public class W {
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT r);
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint cButtons, UIntPtr dwExtraInfo);
+    [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern IntPtr FindWindowEx(IntPtr p, IntPtr c, string cls, string win);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wp, IntPtr lp);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT p);
+  }
+}
 '@
-Add-Type -MemberDefinition $sig -Name W -Namespace AvaDc | Out-Null
 $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
 if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
-[AvaDc.W]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null
-[AvaDc.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [AvaDc.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
-Start-Sleep -Milliseconds 120
-[AvaDc.W]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
-Start-Sleep -Milliseconds 450
-$ws = New-Object -ComObject WScript.Shell
-$action = '${A.replace(/'/g, "")}'
+$hwnd = $proc.MainWindowHandle
+$child = [AvaDc2.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
+if ($child -eq [IntPtr]::Zero) { $child = $hwnd }
+$mode = '${mode}'
+$bg = ($mode -eq 'bg')
+$prevFg = [AvaDc2.W]::GetForegroundWindow()
+$sc = @{ 0x11 = 0x1D; 0x10 = 0x2A; 0x4D = 0x32; 0x44 = 0x20; 0x48 = 0x23; 0x41 = 0x1E; 0x45 = 0x12; 0x4B = 0x25; 0x56 = 0x2F; 0x0D = 0x1C }
+function Send-BgCombo([int[]]$vks) {
+  foreach ($v in $vks) {
+    $s = $sc[$v]; if (-not $s) { $s = 0 }
+    $lp = [long]1 -bor ([long]$s -shl 16)
+    [AvaDc2.W]::PostMessage($child, 0x100, [IntPtr]$v, [IntPtr]$lp) | Out-Null
+  }
+  Start-Sleep -Milliseconds 60
+  for ($i = $vks.Length - 1; $i -ge 0; $i--) {
+    $s = $sc[$vks[$i]]; if (-not $s) { $s = 0 }
+    $lp = [long]0xC0000001 -bor ([long]$s -shl 16)
+    [AvaDc2.W]::PostMessage($child, 0x101, [IntPtr]$vks[$i], [IntPtr]$lp) | Out-Null
+  }
+}
+function Send-BgClick([int]$sx, [int]$sy) {
+  $o = New-Object AvaDc2.POINT; $o.X = 0; $o.Y = 0
+  [AvaDc2.W]::ClientToScreen($child, [ref]$o) | Out-Null
+  $lp = [long](($sy - $o.Y) -shl 16) -bor [long](($sx - $o.X) -band 0xFFFF)
+  [AvaDc2.W]::PostMessage($child, 0x201, [IntPtr]1, [IntPtr]$lp) | Out-Null
+  Start-Sleep -Milliseconds 90
+  [AvaDc2.W]::PostMessage($child, 0x202, [IntPtr]0, [IntPtr]$lp) | Out-Null
+}
+function Send-FgClick([int]$sx, [int]$sy) {
+  [AvaDc2.W]::SetCursorPos($sx, $sy) | Out-Null
+  Start-Sleep -Milliseconds 70
+  [AvaDc2.W]::mouse_event(0x02, 0, 0, 0, [UIntPtr]::Zero)
+  Start-Sleep -Milliseconds 60
+  [AvaDc2.W]::mouse_event(0x04, 0, 0, 0, [UIntPtr]::Zero)
+}
+function Click-At([int]$sx, [int]$sy) { if ($bg) { Send-BgClick $sx $sy } else { Send-FgClick $sx $sy } }
+function Focus-Discord {
+  [AvaDc2.W]::ShowWindow($hwnd, 9) | Out-Null
+  [AvaDc2.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [AvaDc2.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+  Start-Sleep -Milliseconds 120
+  [AvaDc2.W]::SetForegroundWindow($hwnd) | Out-Null
+  Start-Sleep -Milliseconds 450
+}
+function Restore-Focus {
+  if ($bg) { return }
+  if ($prevFg -ne [IntPtr]::Zero -and $prevFg -ne $hwnd) {
+    [AvaDc2.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [AvaDc2.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 100
+    [AvaDc2.W]::SetForegroundWindow($prevFg) | Out-Null
+  }
+}
+function Try-CallClick {
+  # دکمهٔ تماس: اول UIA (بدون فوکوس هم کار می‌کند)، بعد مختصات دستی
+  try {
+    Add-Type -AssemblyName UIAutomationClient | Out-Null
+    Add-Type -AssemblyName UIAutomationTypes | Out-Null
+    $root = [System.Windows.Automation.AutomationElement]::RootElement
+    $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
+    $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+    if ($win) {
+      $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+      $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
+      foreach ($pass in 1, 2) {
+        foreach ($b in $btns) {
+          $bn = ''
+          try { $bn = $b.Current.Name } catch {}
+          if (-not $bn) { continue }
+          if ($bn -match 'Video|ویدیو|دوربین|End|قطع|Screen|اشتراک') { continue }
+          $ok = $false
+          if ($pass -eq 1) { $ok = ($bn -match 'Start Voice Call|Voice Call|تماس صوتی|شروع تماس|صوتی') }
+          else { $ok = ($bn -match 'Call|تماس') }
+          if (-not $ok) { continue }
+          try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch {}
+          try {
+            $r = $b.Current.BoundingRectangle
+            $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
+            Click-At $cx $cy
+            Restore-Focus
+            return 'OK:CALLING'
+          } catch {}
+        }
+      }
+    }
+  } catch {}
+  # فالبک مختصات دستی: گوشهٔ بالا-راست پنجره (سرستون DM)
+  $r2 = New-Object AvaDc2.RECT
+  [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
+  $tx = $r2.Right - ${dx}
+  $ty = $r2.Top + ${dy}
+  if ($tx -gt $r2.Left -and $ty -gt $r2.Top) {
+    Click-At $tx $ty
+    Restore-Focus
+    return 'OK:CALL_CLICKED'
+  }
+  Restore-Focus
+  return 'OK:DM_OPENED'
+}
+$action = '${action}'
 switch ($action) {
-  'focus'   { Write-Output 'OK' }
-  'mute'    { $ws.SendKeys('^+m'); Start-Sleep -Milliseconds 250; Write-Output 'OK:MUTE' }
-  'deafen'  { $ws.SendKeys('^+d'); Start-Sleep -Milliseconds 250; Write-Output 'OK:DEAFEN' }
-  'hangup'  { $ws.SendKeys('^+h'); Start-Sleep -Milliseconds 250; Write-Output 'OK:HANGUP' }
-  'answer'  { $ws.SendKeys('^+a'); Start-Sleep -Milliseconds 250; Write-Output 'OK:ANSWER' }
-  'decline' { $ws.SendKeys('^+e'); Start-Sleep -Milliseconds 250; Write-Output 'OK:DECLINE' }
-  'call' {
-    $name = '${nm.replace(/'/g, "")}'
-    if ($name) { Set-Clipboard -Value $name | Out-Null }
-    $ws.SendKeys('^k'); Start-Sleep -Milliseconds 1000
-    if ($name) { $ws.SendKeys('^v'); Start-Sleep -Milliseconds 900 }
-    $ws.SendKeys('{ENTER}'); Start-Sleep -Milliseconds 1600
+  'focus'    { if (-not $bg) { Focus-Discord }; Write-Output 'OK' }
+  'mute'     { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x4D) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+m'); Start-Sleep -Milliseconds 250 }; Write-Output 'OK:MUTE' }
+  'deafen'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x44) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+d'); Start-Sleep -Milliseconds 250 }; Write-Output 'OK:DEAFEN' }
+  'hangup'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x48) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+h'); Start-Sleep -Milliseconds 250 }; Restore-Focus; Write-Output 'OK:HANGUP' }
+  'answer'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x41) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+a'); Start-Sleep -Milliseconds 250 }; Restore-Focus; Write-Output 'OK:ANSWER' }
+  'decline'  { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x45) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+e'); Start-Sleep -Milliseconds 250 }; Restore-Focus; Write-Output 'OK:DECLINE' }
+  'probe' {
+    # آزمایش مکان‌یابی دکمهٔ تماس — فقط نشانگر موس حرکت می‌کند، کلیکی در کار نیست
     try {
       Add-Type -AssemblyName UIAutomationClient | Out-Null
       Add-Type -AssemblyName UIAutomationTypes | Out-Null
       $root = [System.Windows.Automation.AutomationElement]::RootElement
-      $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $proc.MainWindowHandle)
+      $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
       $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
       if ($win) {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
@@ -1812,23 +2005,75 @@ switch ($action) {
         foreach ($b in $btns) {
           $bn = ''
           try { $bn = $b.Current.Name } catch {}
-          if ($bn -match 'Start Voice Call|^Voice Call$|Join Voice|Call') {
-            ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke()
-            Write-Output 'OK:CALLING'
+          if ($bn -match 'Video|ویدیو|End|قطع') { continue }
+          if ($bn -match 'Start Voice Call|Voice Call|تماس صوتی|شروع تماس|Call|تماس') {
+            $r = $b.Current.BoundingRectangle
+            $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
+            [AvaDc2.W]::SetCursorPos($cx, $cy) | Out-Null
+            Write-Output "OK:PROBE:$cx,$cy"
             exit
           }
         }
       }
-      Write-Output 'OK:DM_OPENED'
-    } catch { Write-Output 'OK:DM_OPENED' }
+    } catch {}
+    $r2 = New-Object AvaDc2.RECT
+    [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
+    $tx = $r2.Right - ${dx}; $ty = $r2.Top + ${dy}
+    [AvaDc2.W]::SetCursorPos($tx, $ty) | Out-Null
+    Write-Output "OK:PROBE-FB:$tx,$ty"
+  }
+  'clickcall' {
+    # DM از قبل با دیپ‌لینک باز شده — فقط دکمهٔ تماس را بزن
+    Start-Sleep -Milliseconds 900
+    Write-Output (Try-CallClick)
+  }
+  'callswitch' {
+    $name = '${nm.replace(/'/g, "")}'
+    if (-not $name) { Write-Output 'ERR:NONAME'; exit }
+    Set-Clipboard -Value $name | Out-Null
+    if ($bg) {
+      Send-BgCombo @(0x11, 0x4B)
+      Start-Sleep -Milliseconds 1100
+      Send-BgCombo @(0x11, 0x56)
+      Start-Sleep -Milliseconds 900
+      Send-BgCombo @(0x0D)
+      Start-Sleep -Milliseconds 1700
+    } else {
+      Focus-Discord
+      $ws = New-Object -ComObject WScript.Shell
+      $ws.SendKeys('^k'); Start-Sleep -Milliseconds 1000
+      $ws.SendKeys('^v'); Start-Sleep -Milliseconds 900
+      $ws.SendKeys('{ENTER}'); Start-Sleep -Milliseconds 1700
+    }
+    Write-Output (Try-CallClick)
   }
   default { Write-Output 'ERR:UNKNOWN' }
 }`.trim();
+}
 
+ipcMain.handle('discord:cmd', async (_e, p) => {
+  const { action, name, userId, bg, dx, dy } = p || {};
+  const A = String(action || '');
+  const mode = bg ? 'bg' : 'fg';
+  const dxN = Math.max(10, Math.min(320, Number(dx) || 46));
+  const dyN = Math.max(10, Math.min(220, Number(dy) || 52));
+  /* تماس با مخاطب ثبت‌شده: دیپ‌لینک مستقیم DM را باز می‌کند (بدون Ctrl+K)،
+     بعد دکمهٔ «شروع تماس» کلیک می‌شود — فیکس «به صفحه می‌رود ولی زنگ نمی‌زند» */
+  if (A === 'call' && userId && /^\d{5,25}$/.test(String(userId).trim())) {
+    try { await shell.openExternal(`discord://discord.com/channels/@me/${String(userId).trim()}`); } catch (_) { /* noop */ }
+    await new Promise((r) => setTimeout(r, 2600));
+    return runDiscordPs('clickcall', mode, '', dxN, dyN);
+  }
+  const psAction = A === 'call' ? 'callswitch' : A;
+  return runDiscordPs(psAction, mode, String(name || ''), dxN, dyN);
+});
+
+function runDiscordPs(psAction, mode, nm, dxN, dyN) {
+  const ps = discordPsScript(psAction, mode, nm, dxN, dyN);
   const encoded = Buffer.from(ps, 'utf16le').toString('base64');
   return new Promise((resolve) => {
     exec(`powershell -NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
-      { windowsHide: true, timeout: 45000, maxBuffer: 1024 * 512 },
+      { windowsHide: true, timeout: 60000, maxBuffer: 1024 * 512 },
       (err, stdout) => {
         const out = String(stdout || '').trim();
         if (err && !out) return resolve({ ok: false, error: String(err.message || 'PowerShell اجرا نشد').slice(0, 160) });
@@ -1836,13 +2081,14 @@ switch ($action) {
           const msgs = {
             'ERR:NO_DISCORD': 'دیسکورد باز نیست — اول دیسکورد را باز کن',
             'ERR:UNKNOWN': 'فرمان دیسکورد شناخته نشد',
+            'ERR:NONAME': 'نام مخاطب پیدا نشد — در تنظیمات دیسکورد مخاطب بساز یا نام را کامل بگو',
           };
           return resolve({ ok: false, error: msgs[out] || out });
         }
         resolve({ ok: true, result: out || 'OK' });
       });
   });
-});
+}
 
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {

@@ -111,10 +111,14 @@ contextBridge.exposeInMainWorld('ava', {
     google: (payload) => ipcRenderer.invoke('tts:google', payload),
   },
 
-  /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید) */
+  /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید)
+     v0.17: موتورهای کلاس AI — جمنای (با کلید جمنای خودت) و Whisper سازگار
+     با OpenAI (Groq/OpenAI/سرور محلی) — همان الگوی سایت‌های تایپ صوتی حرفه‌ای */
   stt: {
     transcribe: (payload) => ipcRenderer.invoke('stt:transcribe', payload),
     google: (payload) => ipcRenderer.invoke('stt:google', payload),
+    gemini: (payload) => ipcRenderer.invoke('stt:gemini', payload),
+    whisper: (payload) => ipcRenderer.invoke('stt:whisper', payload),
   },
 
   /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */
