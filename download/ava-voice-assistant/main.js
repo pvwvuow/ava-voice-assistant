@@ -1,12 +1,63 @@
 /**
  * آوا — دستیار صوتی ویندوز
- * Electron main process (نسخه ۰.۴ — آپدیت خودکار، تنظیمات سیستمی، ضبط صدا)
+ * Electron main process (نسخه ۰.۷ — تشخیص گفتار آفلاین، حالت بی‌دست، آب‌وهوا، تنظیمات فایلی)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net } = require('electron');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+/* ---------- پروتکل امن ava:// ----------
+   رابط کاربری از ava://app بارگذاری می‌شود تا:
+   ۱) Web Worker موتور آفلاین هم‌مبعا باشد (فایل:// ورکر را می‌بندد)
+   ۲) مدل تشخیص گفتار و WASM با MIME درست سرو شود
+   باید «قبل از» آماده شدن اپ ثبت شود. */
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'ava', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.onnx': 'application/octet-stream',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
+
+function serveAvaFile(reqUrl) {
+  try {
+    const u = new URL(reqUrl);
+    if (u.host !== 'app') return new Response('not found', { status: 404 });
+    const root = __dirname;
+    const rel = decodeURIComponent(u.pathname).replace(/^\/+/, '');
+    const file = path.normalize(path.join(root, rel || 'renderer/index.html'));
+    if (!file.startsWith(root)) return new Response('forbidden', { status: 403 });
+    const data = fs.readFileSync(file);
+    const type = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
+    const headers = {
+      'Content-Type': type,
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache',
+    };
+    /* فقط برای سند اصلی: COOP/COEP → crossOriginIsolated=true →
+       SharedArrayBuffer در دسترس → WASM چندنخی و تشخیص گفتار ۲ تا ۴ برابر سریع‌تر.
+       بقیه فایل‌ها (و پاپ‌آپ‌های https مثل ورود گوگل) تحت تأثیر قرار نمی‌گیرند. */
+    if (file.endsWith('index.html')) {
+      headers['Cross-Origin-Opener-Policy'] = 'same-origin';
+      headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+    }
+    return new Response(data, { status: 200, headers });
+  } catch (_) {
+    return new Response('not found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+}
 
 /* electron-updater (فقط وقتی پکیج نصب باشد — خطا را ساکت رد می‌کنیم) */
 let autoUpdater = null;
@@ -73,7 +124,7 @@ function createWindow() {
     },
   });
 
-  win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  win.loadURL('ava://app/renderer/index.html');
   win.once('ready-to-show', () => win.show());
 
   win.on('maximize', () => win.webContents.send('win:maximized-changed', true));
@@ -209,6 +260,21 @@ const COMMANDS = {
   vol_up:   { cmd: PS_KEY('AF', 6),  fa: 'بلندی صدا +' },
   vol_down: { cmd: PS_KEY('AE', 6),  fa: 'بلندی صدا -' },
   vol_mute: { cmd: PS_KEY('AD', 1),  fa: 'بی‌صدا' },
+  /* تنظیم دقیق درصد صدا: ۵۰ پله پایین (هر پله ٪۲) + بالا آوردن تا درصد خواسته */
+  vol_set: {
+    cmd: (a) => {
+      const pct = Math.max(0, Math.min(100, Math.round(Number(a) || 0)));
+      const steps = Math.min(50, Math.round(pct / 2));
+      return (
+        'powershell -NoProfile -Command "' +
+        `Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; ` +
+        '1..50 | ForEach-Object { [W.N]::keybd_event(0xAE,0,0,0); [W.N]::keybd_event(0xAE,0,2,0) }; ' +
+        (steps > 0 ? `1..${steps} | ForEach-Object { [W.N]::keybd_event(0xAF,0,0,0); [W.N]::keybd_event(0xAF,0,2,0) }; ` : '') +
+        'Write-Output ok"'
+      );
+    },
+    fa: 'تنظیم دقیق صدا',
+  },
 };
 
 ipcMain.handle('sys:run', (_e, id, arg) => {
@@ -336,6 +402,71 @@ ipcMain.handle('sys:save-audio', async (_e, data) => {
 });
 
 /* ============================================================
+   تنظیمات ماندگار در فایل (userData/ava-settings.json)
+   — منبع حقیقت تنظیمات فایل است تا آپدیت و تعویض مببع UI چیزی از دست نرود
+   ============================================================ */
+function settingsFile() {
+  try { return path.join(app.getPath('userData'), 'ava-settings.json'); } catch (_) { return null; }
+}
+ipcMain.handle('settings:load', () => {
+  const f = settingsFile();
+  if (!f) return {};
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return {}; }
+});
+ipcMain.handle('settings:save', (_e, obj) => {
+  const f = settingsFile();
+  if (!f || !obj || typeof obj !== 'object') return false;
+  try {
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(obj, null, 2));
+    return true;
+  } catch (_) { return false; }
+});
+
+/* ============================================================
+   آب‌وهوا — Open-Meteo (بدون هیچ کلید API)
+   ============================================================ */
+const WMO_FA = {
+  0: 'صاف', 1: 'عمدتاً صاف', 2: 'کمی ابری', 3: 'ابری', 45: 'مه‌آلود', 48: 'مه یخ‌زده',
+  51: 'نم‌نم سبک', 53: 'نم‌نم', 55: 'نم‌نم سنگین', 56: 'نم‌نم یخ‌زده', 57: 'نم‌نم یخ‌زده سنگین',
+  61: 'باران سبک', 63: 'باران', 65: 'باران شدید', 66: 'باران یخ‌زده', 67: 'باران یخ‌زده شدید',
+  71: 'برف سبک', 73: 'برف', 75: 'برف سنگین', 77: 'دانه‌های برف',
+  80: 'رگبار سبک', 81: 'رگبار', 82: 'رگبار شدید', 85: 'رگبار برف', 86: 'رگبار برف سنگین',
+  95: 'رعد و برق', 96: 'رعد و برق با تندباز', 99: 'رعد و برق شدید',
+};
+ipcMain.handle('sys:weather', async (_e, city) => {
+  const c = String(city || 'تهران').trim().slice(0, 60) || 'تهران';
+  try {
+    const gr = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(c)}&count=1&language=fa&format=json`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    const gj = await gr.json().catch(() => ({}));
+    const g = gj && gj.results && gj.results[0];
+    if (!g) return { ok: false, error: `شهری به نام «${c}» پیدا نشد — نام شهر را واضح‌تر بگو` };
+    const fr = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    const fj = await fr.json().catch(() => ({}));
+    const cur = fj && fj.current;
+    if (!cur) return { ok: false, error: 'داده آب‌وهوا نرسید — چند لحظه بعد دوباره امتحان کن' };
+    return {
+      ok: true,
+      name: g.name || c,
+      temp: Math.round(cur.temperature_2m),
+      feels: Math.round(cur.apparent_temperature),
+      hum: Math.round(cur.relative_humidity_2m),
+      wind: Math.round(cur.wind_speed_10m),
+      desc: WMO_FA[cur.weather_code] || 'نامشخص',
+    };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ============================================================
    هوش مصنوعی GLM — چت + تشخیص گفتار ابری (GLM-ASR)
    کلید API فقط در همین پروسه استفاده می‌شود و جایی لاگ نمی‌شود.
    base پیش‌فرض: https://api.z.ai/api/paas/v4  (سازگار با open.bigmodel.cn)
@@ -348,7 +479,6 @@ const netErr = (e) => {
   }
   return m.slice(0, 140);
 };
-
 ipcMain.handle('ai:chat', async (_e, p) => {
   const { base, key, model, messages, temperature } = p || {};
   if (!key) return { ok: false, error: 'کلید GLM تنظیم نشده — از تنظیمات واردش کن' };
@@ -364,6 +494,7 @@ ipcMain.handle('ai:chat', async (_e, p) => {
         max_tokens: 1024,
         stream: false,
       }),
+      signal: AbortSignal.timeout(60000),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -398,7 +529,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
     let mdl = String(model || '').trim();
     if (!mdl) {
       try {
-        const mr = await fetch(`${ZAI}/api/models`, { headers: auth });
+        const mr = await fetch(`${ZAI}/api/models`, { headers: auth, signal: AbortSignal.timeout(15000) });
         const mj = await mr.json().catch(() => ({}));
         const ids = ((mj && mj.data) || []).map((m) => String(m && m.id)).filter(Boolean);
         mdl =
@@ -417,6 +548,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
         temperature: 0.6,
         stream: false,
       }),
+      signal: AbortSignal.timeout(60000),
     });
     const ct = String(r.headers.get('content-type') || '');
     let text = '';
@@ -545,6 +677,9 @@ ipcMain.handle('custom:run', (_e, script) => {
 
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
+  /* سرو کردن رابط کاربری و مدل‌ها از ava://app */
+  try { protocol.handle('ava', (req) => { try { console.log('AVA_REQ:' + req.url); } catch (_) {} return serveAvaFile(req.url); }); } catch (e) { console.error('ava protocol:', e); }
+
   setupMicPermission();
   createWindow();
   setupAutoUpdater();
@@ -556,6 +691,14 @@ app.whenReady().then(() => {
         if (win.isMinimized()) win.restore();
         win.show();
         win.webContents.send('ava:toggle-listen');
+      }
+    });
+    // میانبر سراسری حالت بی‌دست (گوش دائمی + کلمه بیدارباش)
+    globalShortcut.register('CommandOrControl+Alt+A', () => {
+      if (win) {
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.webContents.send('ava:toggle-handsfree');
       }
     });
   } catch (e) {

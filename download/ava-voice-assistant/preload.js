@@ -34,13 +34,17 @@ contextBridge.exposeInMainWorld('ava', {
     saveAudio: (buf) => ipcRenderer.invoke('sys:save-audio', buf),
     /* نسخه واقعی برنامه */
     info: () => ipcRenderer.invoke('app:info'),
+    /* آب‌وهوا از Open-Meteo (بدون کلید) */
+    weather: (city) => ipcRenderer.invoke('sys:weather', city),
   },
 
-  /* تنظیمات سیستمی برنامه */
+  /* تنظیمات سیستمی برنامه + ماندگاری تنظیمات در فایل */
   settings: {
     flags: () => ipcRenderer.invoke('app:flags'),
     setAlwaysOnTop: (on) => ipcRenderer.invoke('app:set-always-on-top', on),
     setLoginItem: (on) => ipcRenderer.invoke('app:set-login-item', on),
+    load: () => ipcRenderer.invoke('settings:load'),
+    save: (obj) => ipcRenderer.invoke('settings:save', obj),
   },
 
   /* به‌روزرسان خودکار (electron-updater) */
@@ -69,8 +73,9 @@ contextBridge.exposeInMainWorld('ava', {
     run: (script) => ipcRenderer.invoke('custom:run', script),
   },
 
-  /* رویدادهای صوتی — نقطه اتصال موتور صوتی در نسخه‌های بعد */
+  /* رویدادهای صوتی — میانبرهای سراسری */
   voice: {
     onToggleListen: (cb) => ipcRenderer.on('ava:toggle-listen', () => cb()),
+    onToggleHandsFree: (cb) => ipcRenderer.on('ava:toggle-handsfree', () => cb()),
   },
 });

@@ -897,3 +897,71 @@ body.has-card #wave { height: 0; opacity: 0; }
   .confirm { width: calc(100vw - 36px); }
 }
 
+
+/* ---------- v0.7: حالت بی‌دست + تاریخچه ---------- */
+.handsfree-toggle {
+  position: relative;
+  margin: -6px auto 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  opacity: 0.72;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.handsfree-toggle:hover { opacity: 1; }
+.handsfree-toggle.active {
+  opacity: 1;
+  border-color: rgba(52, 211, 153, 0.65);
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.35), 0 6px 22px rgba(16, 185, 129, 0.25);
+}
+.hf-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  flex: 0 0 auto;
+}
+.handsfree-toggle.active .hf-dot {
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.9);
+  animation: hfPulse 1.6s ease-in-out infinite;
+}
+@keyframes hfPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.6; }
+}
+
+.history-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 46vh; overflow: auto;
+  padding: 2px;
+}
+.history-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.history-item:hover {
+  background: rgba(52, 211, 153, 0.09);
+  border-color: rgba(52, 211, 153, 0.35);
+  transform: translateY(-1px);
+}
+.history-item .h-txt {
+  flex: 1; min-width: 0;
+  font-size: 12px; color: #e5e7eb;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-align: right;
+}
+.history-item .h-time {
+  font-size: 10px; color: rgba(255, 255, 255, 0.4);
+  flex: 0 0 auto;
+  direction: ltr;
+}
+.history-item .h-ok {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex: 0 0 auto;
+}
+.history-item .h-ok.ok { background: #34d399; }
+.history-item .h-ok.fail { background: #f87171; }

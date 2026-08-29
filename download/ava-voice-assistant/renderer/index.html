@@ -46,6 +46,8 @@
       <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
       <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2l1.9 5.6L19.5 9l-4.4 3.6L16.5 18 12 14.8 7.5 18l1.4-5.4L4.5 9l5.6-1.4z"/></symbol>
       <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19a4.5 4.5 0 0 0 .42-8.98 7 7 0 0 0-13.36 2.2A4 4 0 0 0 6 19.5z"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="12" y2="12"/><line x1="14" y1="14" x2="12" y2="12"/></symbol>
     </defs>
   </svg>
 
@@ -88,7 +90,7 @@
         <nav class="rail-nav" aria-label="ناوبری">
           <button class="rail-item active" id="btnHome" data-tip="خانه صوتی"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnChat" data-tip="چت با هوش مصنوعی GLM (بدون کلید)"><svg class="ic"><use href="#i-chat"/></svg></button>
-          <button class="rail-item locked" data-tip="مانیتور سیستم — به‌زودی"><svg class="ic"><use href="#i-pulse"/></svg></button>
+          <button class="rail-item" id="btnHistory" data-tip="تاریخچه فرمان‌ها"><svg class="ic"><use href="#i-history"/></svg></button>
           <button class="rail-item locked" data-tip="افزونه‌ها — به‌زودی"><svg class="ic"><use href="#i-grid"/></svg></button>
         </nav>
         <div class="rail-bottom">
@@ -131,6 +133,11 @@
             <span id="statusText">برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd></span>
           </div>
 
+          <!-- تاگل حالت بی‌دست: گوش دائمی + کلمه بیدارباش «آوا» -->
+          <button id="btnHandsFree" class="chip handsfree-toggle" type="button" aria-pressed="false" title="حالت بی‌دست (Ctrl+Alt+A) — با گفتن «آوا …» فرمان بده">
+            <svg class="ic"><use href="#i-wave"/></svg><span>حالت بی‌دست</span><i class="hf-dot"></i>
+          </button>
+
           <canvas id="wave" aria-hidden="true"></canvas>
 
           <!-- فرمان‌های سریع -->
@@ -139,9 +146,11 @@
             <button class="chip" data-cmd="نت‌پد را باز کن"><svg class="ic"><use href="#i-note"/></svg><span>نت‌پد</span></button>
             <button class="chip" data-cmd="ماشین‌حساب را باز کن"><svg class="ic"><use href="#i-calc"/></svg><span>ماشین‌حساب</span></button>
             <button class="chip" data-cmd="صدا را بلندتر کن"><svg class="ic"><use href="#i-volume"/></svg><span>صدا بلندتر</span></button>
+            <button class="chip" data-cmd="صدا رو ۴۰ کن"><svg class="ic"><use href="#i-volume"/></svg><span>صدا ۴۰٪</span></button>
             <button class="chip" data-cmd="یک اسکرین‌شات بگیر"><svg class="ic"><use href="#i-camera"/></svg><span>اسکرین‌شات</span></button>
+            <button class="chip" data-cmd="آب و هوای تهران"><svg class="ic"><use href="#i-cloud"/></svg><span>آب‌وهوا</span></button>
+            <button class="chip" data-cmd="پنج ضربدر هفت چند میشه"><svg class="ic"><use href="#i-calc"/></svg><span>محاسبه</span></button>
             <button class="chip" data-cmd="تایمر ۵ دقیقه‌ای بذار"><svg class="ic"><use href="#i-timer"/></svg><span>تایمر ۵ دقیقه</span></button>
-            <button class="chip" data-cmd="جستجوی آب و هوا"><svg class="ic"><use href="#i-search"/></svg><span>جستجوی آب‌وهوا</span></button>
             <button class="chip" data-cmd="موسیقی پخش کن"><svg class="ic"><use href="#i-music"/></svg><span>موسیقی</span></button>
             <button class="chip" data-cmd="وضعیت سیستم را بگو"><svg class="ic"><use href="#i-pulse"/></svg><span>وضعیت سیستم</span></button>
             <button class="chip" data-cmd="شروع ضبط صدا"><svg class="ic"><use href="#i-mic"/></svg><span>ضبط صدا</span></button>
@@ -204,14 +213,23 @@
           <div class="set-group glass">
             <h3><svg class="ic"><use href="#i-wave"/></svg> تشخیص گفتار (تبدیل صدا به متن)</h3>
             <div class="set-row">
-              <span class="set-info"><b>موتور تشخیص گفتار</b><span>«خودکار»: اول موتور وب، بعد گوگل رایگان — بدون هیچ کلیدی</span></span>
+              <span class="set-info"><b>موتور تشخیص گفتار</b><span>«خودکار»: اول موتور آفلاین داخلی (بدون اینترنت)، بعد موتور وب و گوگل</span></span>
               <select id="optSttEngine" class="set-select">
                 <option value="auto">خودکار (پیشنهادی)</option>
+                <option value="whisper">فقط موتور آفلاین (بدون اینترنت)</option>
                 <option value="web">فقط موتور وب</option>
-                <option value="google">فقط گوگل رایگان</option>
+                <option value="google">فقط گوگل رایگان (نیاز به اینترنت/فیلترشکن)</option>
                 <option value="glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
               </select>
             </div>
+            <label class="set-row">
+              <span class="set-info"><b>حالت بی‌دست (گوش دائمی)</b><span>آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A</span></span>
+              <span class="sw"><input type="checkbox" id="optHandsFree"/><i></i></span>
+            </label>
+            <label class="set-row">
+              <span class="set-info"><b>کلمه بیدارباش «آوا»</b><span>در حالت بی‌دست، فقط فرمان‌هایی که با «آوا» شروع شوند اجرا شوند (غیرفعال = هر حرفی که می‌گویی اجرا می‌شود)</span></span>
+              <span class="sw"><input type="checkbox" id="optWakeWord"/><i></i></span>
+            </label>
             <div class="set-row col">
               <span class="set-info"><b>کلید اختصاصی گوگل (اختیاری)</b><span>خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی</span></span>
               <input type="password" id="optGoogleKey" class="set-input" placeholder="خالی = رایگان و بدون کلید" autocomplete="off" dir="ltr" />
@@ -220,7 +238,7 @@
               <span class="set-info"><b>حالت نمایشی (دمو)</b><span>اگر موتوری در دسترس نبود، فرمان نمونه اجرا شود — پیش‌فرض: خاموش</span></span>
               <span class="sw"><input type="checkbox" id="optDemo"/><i></i></span>
             </label>
-            <p class="set-note" id="sttNote">تشخیص گفتار فارسی با موتور رایگان گوگل انجام می‌شود — هیچ توکنی لازم نیست؛ فقط اینترنت (و اگر گوگل در منطقه‌ات محدود است، فیلترشکن) کافی است.</p>
+            <p class="set-note" id="sttNote">موتور آفلاین Whisper داخل خود برنامه است: تشخیص فارسی بدون اینترنت، بدون فیلترشکن و بدون هیچ کلیدی. اگر بخواهی می‌توانی موتور وب یا گوگل را هم فعال کنی.</p>
           </div>
 
           <div class="set-group glass">
@@ -282,6 +300,22 @@
               <button class="chip" data-url="https://github.com/pvwvuow/ava-voice-assistant/releases/latest"><svg class="ic"><use href="#i-download"/></svg><span>دانلود آخرین نسخه</span></button>
             </div>
             <p class="set-note">نصب نسخه جدید فقط با یک کلیک: «نصب و راه‌اندازی مجدد» — بدون دانلود دستی.</p>
+          </div>
+        </section>
+
+        <!-- صفحه تاریخچه فرمان‌ها -->
+        <section id="historyPage" class="settings" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-history"/></svg> تاریخچه فرمان‌ها</h2>
+            <button class="chip" id="btnHistoryBack"><svg class="ic"><use href="#i-send"/></svg><span>بازگشت به خانه</span></button>
+          </header>
+          <div class="set-group glass">
+            <div class="set-row">
+              <span class="set-info"><b>فرمان‌های اخیر</b><span>روی هر فرمان بزنی دوباره اجرا می‌شود</span></span>
+              <button class="chip sm" id="btnHistoryClear"><svg class="ic"><use href="#i-trash"/></svg><span>پاک‌سازی</span></button>
+            </div>
+            <div id="historyList" class="history-list"></div>
+            <p class="set-note" id="historyEmpty">هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.</p>
           </div>
         </section>
 

@@ -44,6 +44,17 @@
   const optDemo = $('#optDemo');
   const optAiModel = $('#optAiModel');
 
+  /* ---------- عناصر حالت بی‌دست و تاریخچه (v0.7) ---------- */
+  const optHandsFree = $('#optHandsFree');
+  const optWakeWord = $('#optWakeWord');
+  const btnHandsFree = $('#btnHandsFree');
+  const historyPage = $('#historyPage');
+  const btnHistory = $('#btnHistory');
+  const btnHistoryBack = $('#btnHistoryBack');
+  const btnHistoryClear = $('#btnHistoryClear');
+  const historyList = $('#historyList');
+  const historyEmpty = $('#historyEmpty');
+
   /* ---------- عناصر چت هوش مصنوعی ---------- */
   const chatPage = $('#chatPage');
   const btnChat = $('#btnChat');
@@ -97,10 +108,12 @@
   const IDLE_HINT = 'برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
   const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!';
 
-  /* ---------- تنظیمات (localStorage) ---------- */
+  /* ---------- تنظیمات (فایل userData + میرور localStorage) ----------
+     با جابجایی مببع UI از فایل به ava://، localStorage از صفر شروع می‌شد؛
+     حالا فایل ava-settings.json منبع حقیقت است و چیزی از دست نمی‌رود. */
   const store = {
     get(k, d) { try { const v = localStorage.getItem('ava.' + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
-    set(k, v) { try { localStorage.setItem('ava.' + k, JSON.stringify(v)); } catch (_) { /* noop */ } },
+    set(k, v) { try { localStorage.setItem('ava.' + k, JSON.stringify(v)); } catch (_) { /* noop */ } persistSettings(); },
   };
   const settings = {
     tts: store.get('tts', true),
@@ -113,7 +126,35 @@
     glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
     glmModel: store.get('glmModel', 'glm-4.6'),
     micId: store.get('micId', ''),
+    handsFree: store.get('handsFree', false),
+    wakeWord: store.get('wakeWord', true),
   };
+  let customCmds = store.get('customCmds', []);
+  let history = store.get('history', []);
+
+  let persistTimer = null;
+  function persistSettings() {
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      if (!bridge || !bridge.settings || !bridge.settings.save) return;
+      try { bridge.settings.save({ ...settings, customCmds, history }); } catch (_) { /* noop */ }
+    }, 600);
+  }
+  (async () => {
+    /* بارگذاری تنظیمات ذخیره‌شده در فایل — بعد از تعریف کامل صفحه */
+    if (!bridge || !bridge.settings || !bridge.settings.load) return;
+    try {
+      const f = await bridge.settings.load();
+      if (f && typeof f === 'object' && Object.keys(f).length) {
+        Object.keys(settings).forEach((k) => { if (f[k] !== undefined) settings[k] = f[k]; });
+        if (Array.isArray(f.customCmds) && f.customCmds.length) { customCmds = f.customCmds; store.set('customCmds', customCmds); }
+        if (Array.isArray(f.history)) { history = f.history; store.set('history', history); }
+        refreshEngineUI();
+        renderCustomChips();
+        updateHandsFreeUI();
+      }
+    } catch (_) { /* noop */ }
+  })();
   const glmReady = () => !!(settings.glmKey && bridge && bridge.stt);
 
   /* ---------- پاسخ گفتاری واقعی (TTS) ---------- */
@@ -428,6 +469,58 @@
     'دنیا بدون کامپیوتر چه شکلی بود؟ کسی نمی‌داند؛ هیچ‌کس آن‌قدر صبر نکرد!',
   ];
 
+  /* --- آب‌وهوا واقعی (Open-Meteo، بدون کلید — درخواست از پروسه اصلی) --- */
+  const WX_STRIP =
+    /(لطفا|لطفاً|آب[\s\u200C]*و[\s\u200C]*هوا(ی)?|اب[\s\u200C]*و[\s\u200C]*هوا(ی)?|هوا(ی)?|درجه(ی)?|دما(ی)?|چطوره?|چند\s*درجه|چنده|چیه|چیکار|امروز|الان|فردا|بگو|بده|شهر|است|می\s*خوام|weather|در|تو|رو|یک|یه)/gi;
+
+  async function weatherReply(c) {
+    if (!bridge || !bridge.system || !bridge.system.weather) {
+      return 'پیش‌بینی آب‌وهوا فقط داخل نرم‌افزار ویندوزی کار می‌کند.';
+    }
+    let city = String(c || '')
+      .replace(WX_STRIP, ' ')
+      .replace(/[0-9۰-۹?؟!.,،:;]+/g, ' ')
+      .replace(/[\s\u200C]+/g, ' ')
+      .trim();
+    const r = await bridge.system.weather(city || 'تهران');
+    if (r && r.ok) {
+      return `آب‌وهوای ${r.name}: ${r.desc}، دما حدود ${faNum(r.temp)} درجه (احساس واقعی ${faNum(r.feels)})، رطوبت ${faNum(r.hum)}٪ و باد ${faNum(r.wind)} کیلومتر بر ساعت.`;
+    }
+    return (r && r.error) || 'آب‌وهوا الان در دسترس نیست — چند لحظه بعد دوباره بگو.';
+  }
+
+  /* --- ماشین‌حساب صوتی: تبدیل جمله فارسی به عبارت ریاضی امن --- */
+  const FA_WORD_NUM = {
+    صفر: 0, یک: 1, دو: 2, سه: 3, چهار: 4, پنج: 5, شش: 6, هفت: 7, هشت: 8, نه: 9, ده: 10,
+    یازده: 11, دوازده: 12, سیزده: 13, چهارده: 14, پانزده: 15, پونزده: 15, شانزده: 16, هفده: 17, هجده: 18, نوزده: 19,
+    بیست: 20, سی: 30, چهل: 40, پنجاه: 50, شصت: 60, هفتاد: 70, هشتاد: 80, نود: 90, صد: 100, هزار: 1000,
+  };
+  function parseMath(c) {
+    let s = faToEn(String(c)).toLowerCase();
+    s = s.replace(/(هزار|صد|نود|هشتاد|هفتاد|شصت|پنجاه|چهل|سی|بیست|نوزده|هجده|هفده|شانزده|پونزده|پانزده|چهارده|سیزده|دوازده|یازده|ده|نه|هشت|هفت|شش|پنج|چهار|سه|دو|یک|صفر)/g,
+      (w) => ` ${FA_WORD_NUM[w]} `);
+    s = s
+      .replace(/به\s*علاوه|بعلاوه|بهم\s*اضافه|جمع|plus/g, '+')
+      .replace(/منهای|منها|منها|لا\s*منها/g, '-')
+      .replace(/ضرب\s*در|ضربدر|ضرب|times/g, '*')
+      .replace(/تقسیم\s*بر|تقسیم|divided/g, '/')
+      .replace(/چند\s*می\s*شود|چند\s*میشه|چندمه|چنده|مساوی|محاسبه|حساب\s*کن|به\s*من\s*بگو|میشه|می\s*شود|درصد/g, ' ');
+    s = s.replace(/[^0-9+\-*/().\s]/g, '').replace(/\s+/g, '');
+    if (!s || !/[+\-*/]/.test(s)) return null;
+    if (!/^[0-9+\-*/().]+$/.test(s)) return null;
+    if (/\d{8,}/.test(s)) return null;
+    let val;
+    try { val = Function('"use strict";return (' + s + ')')(); } catch (_) { return null; }
+    if (typeof val !== 'number' || !isFinite(val)) return null;
+    return { expr: s, val };
+  }
+  function calcReply(c) {
+    const m = parseMath(c);
+    if (!m) return 'این محاسبه را متوجه نشدم — مثلاً بگو «پنج ضربدر هفت چند میشه» یا «۱۲ به علاوه ۳۰».';
+    const v = Math.round(m.val * 1000) / 1000;
+    return `${faNum(m.expr.replace(/\*/g, '×').replace(/\//g, '÷'))} می‌شود ${faNum(String(v))}؛ حساب کردم!`;
+  }
+
   const RULES = [
     /* --- برنامه‌های ویندوز --- */
     { k: /کروم|مرورگر/, t: 'باز کردن کروم', i: '#i-globe', run: 'open_chrome', r: () => 'مرورگر کروم باز شد. خوش بگذره!' },
@@ -443,9 +536,8 @@
     { k: /یوتیوب|youtube/i, t: 'باز کردن یوتیوب', i: '#i-music', run: 'open_youtube', r: () => 'یوتیوب باز شد.' },
     { k: /موسیقی|آهنگ|موزیک/, t: 'پخش موسیقی', i: '#i-music', run: 'open_music', r: () => 'یوتیوب موزیک باز شد؛ آهنگ دلخواهت را بزن.' },
     {
-      k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?چطور|درجه[\s\u200C]?هوا|weather/i, t: 'جستجوی آب‌وهوا', i: '#i-search',
-      run: 'web_search', arg: () => 'آب و هوای امروز',
-      r: () => 'آب‌وهوای امروز را در گوگل جستجو کردم.',
+      k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?(چطور|چنده|چی|چیکار)|درجه[\s\u200C]?هوا|چند\s?درجه|دما|weather/i, t: 'آب‌وهوا', i: '#i-cloud',
+      r: (c) => weatherReply(c),
     },
     {
       k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
@@ -476,11 +568,17 @@
     { k: /(صدا|ولوم|بلندی).{0,12}(بلند|زیاد|بالا|بده)/i, t: 'بلندتر کردن صدا', i: '#i-volume', run: 'vol_up', r: () => 'صدای سیستم را بلندتر کردم.' },
     { k: /(صدا|ولوم|بلندی).{0,12}(کم|پایین|آرام)/i, t: 'کم کردن صدا', i: '#i-volume', run: 'vol_down', r: () => 'صدای سیستم را کمتر کردم.' },
     {
-      k: /صدا|بلندی|ولوم/, t: 'تنظیم صدا', i: '#i-volume',
-      r: (c) => {
-        const m = faToEn(c).match(/\d+/);
-        return `بلندی صدا روی ${faNum(m ? Math.min(100, +m[0]) : 50)}٪ تنظیم شد (تنظیم دقیق درصد در نسخه بعدی).`;
-      },
+      k: /(صدا|ولوم|بلندی)[^0-9۰-۹]{0,12}[0-9۰-۹]+|[0-9۰-۹]+[^0-9۰-۹]{0,8}(درصد)?[\s\u200C]*(صدا|ولوم)/, t: 'تنظیم دقیق صدا', i: '#i-volume',
+      run: 'vol_set',
+      arg: (c) => { const m = faToEn(c).match(/\d+/); return m ? Math.min(100, +m[0]) : 50; },
+      r: (c) => { const m = faToEn(c).match(/\d+/); return `بلندی صدا روی ${faNum(m ? Math.min(100, +m[0]) : 50)}٪ تنظیم شد.`; },
+    },
+    { k: /صدا|بلندی|ولوم/, t: 'تنظیم صدا', i: '#i-volume', r: (c) => `بلندی صدا روی ${faNum(faToEn(c).match(/\d+/) ? Math.min(100, +faToEn(c).match(/\d+/)[0]) : 50)}٪ تنظیم شد.` },
+
+    /* --- ماشین‌حساب صوتی (قبل از جستجو تا قاطی نشود) --- */
+    {
+      k: /(?=.*(ضرب|تقسیم|علاوه|بعلاوه|منهای|منها|جمع|چند\s?میشه|چنده))(?=.*(\d|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|بیست|سی|چهل|پنجاه|شصت|هفتاد|هشتاد|نود|صد|هزار))/, t: 'محاسبه', i: '#i-calc',
+      r: (c) => calcReply(c),
     },
 
     /* --- اطلاعات --- */
@@ -595,9 +693,14 @@
     return reply;
   }
 
+  /* cmdBusy: جلوگیری از اجرای دوباره فرمان در حین اجرای فرمان قبلی.
+     توجه: state=processing بعد از تشخیص گفتار کاملاً طبیعی است و
+     نباید فرمان را رد کند (باگ قدیمی که جواب‌های گوگل/GLM را ساکت دور می‌ریخت). */
+  let cmdBusy = false;
   async function runCommand(cmd) {
     if (!cmd) return;
-    if (state === 'processing') return;
+    if (cmdBusy) return;
+    cmdBusy = true;
     if (state === 'listening') stopListening(false);
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
 
@@ -626,7 +729,10 @@
       typeText(rcReply, reply);
       speak(reply);
       if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
+      pushHistory(cmd, !/نشده|نمی‌شود/.test(rcTag.textContent || ''));
+      handsFreeRearm();
       setTimeout(() => {
+        cmdBusy = false;
         if (state === 'success') {
           setState('idle');
           statusText.innerHTML = IDLE_HINT;
@@ -649,19 +755,27 @@
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
 
   function refreshEngineUI() {
-    if (SRC && !srBroken && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
-    else if (googleReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
-    else if (glmReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
+    try { window.__avaAsrReady = asrReady; window.__avaAsrBroken = asrBroken; } catch (_) { /* noop */ }
+    if (whisperReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm')
+      sbEngine.innerHTML = asrReady
+        ? '<i class="dot ok"></i>موتور: آفلاین Whisper — بدون اینترنت'
+        : '<i class="dot warn"></i>موتور: آفلاین (در حال آماده‌سازی…)';
+    else if (SRC && !srBroken && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm' && settings.sttEngine !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
+    else if (googleReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'glm' && settings.sttEngine !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
+    else if (glmReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google' && settings.sttEngine !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
     else if (settings.demoMode) sbEngine.innerHTML = '<i class="dot warn"></i>موتور: حالت دمو';
     else sbEngine.innerHTML = '<i class="dot err"></i>موتور: تنظیم نشده';
   }
 
   function resolveEngine() {
-    const webOK = !!(SRC && !srBroken);
-    if (settings.sttEngine === 'web') return webOK ? 'web' : null;
-    if (settings.sttEngine === 'google') return googleReady() ? 'google' : null;
-    if (settings.sttEngine === 'glm') return glmReady() ? 'glm' : null;
-    if (webOK) return 'web';
+    const eng = settings.sttEngine || 'auto';
+    if (eng === 'whisper') return whisperReady() ? 'whisper' : null;
+    if (eng === 'web') return (SRC && !srBroken) ? 'web' : null;
+    if (eng === 'google') return googleReady() ? 'google' : null;
+    if (eng === 'glm') return glmReady() ? 'glm' : null;
+    /* خودکار: اول موتور آفلاین داخلی، بعد وب، بعد گوگل، بعد GLM */
+    if (whisperReady()) return 'whisper';
+    if (SRC && !srBroken) return 'web';
     if (googleReady()) return 'google';
     if (glmReady()) return 'glm';
     return null;
@@ -910,6 +1024,261 @@
     return '';
   }
 
+  /* ============================================================
+     موتور آفلاین Whisper — کاملاً داخل برنامه، بدون اینترنت
+     ورکر + مدل باندل‌شده → بدون فیلترشکن، بدون کلید، بدون ارسال صدا به سرور
+     ============================================================ */
+  const whisperReady = () => !!(bridge && window.Worker && !asrBroken);
+  let asrWorker = null, asrReady = false, asrBroken = false, asrSeq = 0, asrCreating = false;
+  const asrPending = new Map();
+
+  /* ورکر ماژول با Blob ساخته می‌شود — لود مستقیم اسکریپت ورکر از پروتکل سفارشی
+     در Chromium با COEP مشکل دارد، ولی Blob-Module-Worker همیشه کار می‌کند؛
+     خود اسکریپت ورکر کتابخانه را با URL مطلق ava://app/... ایمپورت می‌کند. */
+  function asrEnsure(done) {
+    if (asrBroken) { if (done) done(null); return; }
+    if (asrWorker) { if (done) done(asrWorker); return; }
+    if (asrCreating) { setTimeout(() => asrEnsure(done), 300); return; }
+    if (!window.Worker) { asrBroken = true; refreshEngineUI(); if (done) done(null); return; }
+    asrCreating = true;
+    (async () => {
+      try {
+        const url = new URL('js/asr.module.js', location.href).href;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const code = await resp.text();
+        const w = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })), { type: 'module' });
+        w.onmessage = (e) => {
+          const d = e.data || {};
+          if (d.type === 'ready') { asrReady = true; refreshEngineUI(); return; }
+          if (d.type === 'loaderror' || d.type === 'boot-error') {
+            asrBroken = true; refreshEngineUI();
+            try { console.warn('[AVA ASR]', d.error || 'load failed'); } catch (_) { /* noop */ }
+            return;
+          }
+          if (d.type === 'result') {
+            const cb = asrPending.get(d.id);
+            asrPending.delete(d.id);
+            if (cb) cb(d);
+          }
+        };
+        w.onerror = (e) => {
+          asrBroken = true; refreshEngineUI();
+          try { console.warn('[AVA ASR] worker error:', String((e && e.message) || 'unknown').slice(0, 200)); } catch (_) { /* noop */ }
+        };
+        asrWorker = w;
+        asrCreating = false;
+        refreshEngineUI();
+        w.postMessage({ type: 'load' }); /* پیش‌بارگذاری مدل */
+        if (done) done(w);
+      } catch (err) {
+        asrBroken = true;
+        asrCreating = false;
+        refreshEngineUI();
+        try { console.warn('[AVA ASR] create failed:', String((err && err.message) || err).slice(0, 200)); } catch (_) { /* noop */ }
+        if (done) done(null);
+      }
+    })();
+  }
+
+  function asrRecognize(pcm) {
+    return new Promise((resolve) => {
+      if (asrBroken || !asrWorker) { resolve({ ok: false, error: 'موتور آفلاین در دسترس نیست' }); return; }
+      const id = ++asrSeq;
+      asrPending.set(id, resolve);
+      try {
+        asrWorker.postMessage({ type: 'recognize', id, pcm }, [pcm.buffer]);
+      } catch (_) {
+        asrPending.delete(id);
+        resolve({ ok: false, error: 'ارسال صدا به موتور ممکن نشد' });
+        return;
+      }
+      setTimeout(() => {
+        if (asrPending.has(id)) {
+          asrPending.delete(id);
+          resolve({ ok: false, error: 'تبدیل گفتار بیش از حد طول کشید' });
+        }
+      }, 30000);
+    });
+  }
+
+  /* --- کپچر هوشمند صدا: کف نویز تطبیقی + تشخیص پایان فرمان (VAD) --- */
+  const WC_MAX_MS = 12000;   // بیشینه ضبط هر فرمان
+  const WC_SIL_MS = 1400;    // سکوت لازم برای پایان (تحمل فاصله کلمات)
+  const WC_MIN_MS = 400;     // کمینه طول گفتار معتبر
+  const WC_IDLE_MS = 8000;   // اگر هیچ حرفی نشنید
+  let wCap = null;
+
+  function startWhisperListen() {
+    asrEnsure((w) => {
+      if (!w) { noEngine('موتور آفلاین فقط داخل نرم‌افزار فعال است'); return; }
+      if (state !== 'listening') return; /* کاربر منصرف شده */
+      attachMic().then((ok) => {
+      if (!ok) { noEngine('میکروفون در دسترس نیست'); return; }
+      try {
+        if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
+        const src = audioCtx.createMediaStreamSource(micStream);
+        const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+        const sink = audioCtx.createGain();
+        sink.gain.value = 0; // بی‌صدا — فقط پردازش
+        src.connect(proc); proc.connect(sink); sink.connect(audioCtx.destination);
+        wCap = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, started: Date.now(), floor: 0.008, maxT: null };
+        proc.onaudioprocess = (e) => {
+          if (!wCap) return;
+          const f = e.inputBuffer.getChannelData(0);
+          wCap.chunks.push(new Float32Array(f));
+          let sum = 0, n = 0;
+          for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
+          const rms = Math.sqrt(sum / Math.max(1, n));
+          /* کف نویز تطبیقی: در سکوت، آستانه خودش را با محیط تنظیم می‌کند */
+          if (!wCap.spoke) wCap.floor = Math.max(0.004, wCap.floor * 0.985 + rms * 0.015);
+          const thr = Math.max(0.013, wCap.floor * 3);
+          const now = Date.now();
+          if (rms > thr) {
+            if (!wCap.spoke && state === 'listening') statusText.textContent = 'شنیدم… بعد از سکوت، خودم تبدیلش می‌کنم (آفلاین)';
+            wCap.spoke = true;
+            wCap.lastVoice = now;
+          } else if (wCap.spoke && now - wCap.lastVoice > WC_SIL_MS) {
+            stopWhisperRec();
+          } else if (!wCap.spoke && now - wCap.started > WC_IDLE_MS) {
+            stopWhisperRec();
+          }
+        };
+        wCap.maxT = setTimeout(() => stopWhisperRec(), WC_MAX_MS);
+      } catch (_) {
+        wCap = null;
+        noEngine('شروع گوش دادن آفلاین ممکن نشد');
+      }
+      });
+    });
+  }
+
+  function stopWhisperRec() {
+    if (!wCap) return;
+    const cap = wCap;
+    wCap = null;
+    clearTimeout(cap.maxT);
+    try { cap.proc.disconnect(); } catch (_) { /* noop */ }
+    try { cap.src.disconnect(); } catch (_) { /* noop */ }
+    try { cap.sink.disconnect(); } catch (_) { /* noop */ }
+    const rate = (audioCtx && audioCtx.sampleRate) || 48000;
+    const totalMs = (cap.chunks.length * 4096 * 1000) / rate;
+    if (!cap.spoke || totalMs < WC_MIN_MS) {
+      statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
+      setTimeout(() => {
+        if (state === 'listening') {
+          setState('idle');
+          statusText.innerHTML = IDLE_HINT;
+          orbIcon.setAttribute('href', '#i-mic');
+          sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+        }
+        handsFreeRearm();
+      }, 1500);
+      return;
+    }
+    setState('processing');
+    statusText.textContent = 'در حال تبدیل گفتار (آفلاین)…';
+    const merged = new Float32Array(cap.chunks.reduce((a, c) => a + c.length, 0));
+    let off = 0;
+    for (const c of cap.chunks) { merged.set(c, off); off += c.length; }
+    const pcm16k = downsampleF32(merged, rate, 16000);
+    const pcm = trimSilenceEdges(pcm16k, 16000);
+    asrRecognize(pcm).then((r) => {
+      if (r && r.ok && r.text) {
+        handleUtterance(r.text.trim());
+      } else {
+        setState('idle');
+        statusText.textContent = 'تبدیل آفلاین ممکن نشد: ' + ((r && r.error) || 'نامشخص');
+        orbIcon.setAttribute('href', '#i-mic');
+        sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+        toast((r && r.error) || 'موتور آفلاین پاسخی نداد', '#i-info');
+        handsFreeRearm();
+      }
+    });
+  }
+
+  /* بریدن سکوت ابتدا/انتهای صدا → تشخیص سریع‌تر و دقیق‌تر */
+  function trimSilenceEdges(f32, rate) {
+    const win = Math.max(1, Math.floor(rate * 0.02));
+    const loud = (i) => {
+      let sum = 0;
+      const end = Math.min(f32.length, i + win);
+      for (let j = i; j < end; j++) sum += f32[j] * f32[j];
+      return Math.sqrt(sum / Math.max(1, end - i));
+    };
+    let s = 0, e = f32.length;
+    while (s < f32.length && loud(s) < 0.008) s += win;
+    while (e - win > s && loud(e - win) < 0.008) e -= win;
+    const pad = Math.floor(rate * 0.08);
+    s = Math.max(0, s - pad);
+    e = Math.min(f32.length, e + pad);
+    if (e - s < rate * 0.2) return f32;
+    return f32.slice(s, e);
+  }
+
+  /* ============================================================
+     پردازش گفته‌ها + حالت بی‌دست (کلمه بیدارباش «آوا»)
+     ============================================================ */
+  function handleUtterance(text) {
+    let cmd = text;
+    if (settings.handsFree && settings.wakeWord) {
+      const m = text.match(/^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|ava)[\s،,:-]*(.*)$/i);
+      if (!m) {
+        /* بدون کلمه بیدارباش → نادیده بگیر و به گوش دادن ادامه بده */
+        setState('idle');
+        statusText.textContent = 'بگو «آوا …» تا فرمانت را اجرا کنم';
+        handsFreeRearm();
+        return;
+      }
+      cmd = (m[2] || '').trim();
+      if (!cmd) {
+        setState('idle');
+        statusText.textContent = 'بله؟';
+        speak('بله؟');
+        handsFreeRearm();
+        return;
+      }
+    }
+    runCommand(cmd);
+  }
+
+  /* در حالت بی‌دست، بعد از هر فرمان/خطا دوباره گوش می‌دهیم */
+  function handsFreeRearm() {
+    if (!settings.handsFree) return;
+    setTimeout(() => {
+      if (!settings.handsFree) return;
+      if (state !== 'idle') return;
+      try {
+        if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) {
+          handsFreeRearm(); return; /* تا صدای خود آوا تمام شود */
+        }
+      } catch (_) { /* noop */ }
+      startListening();
+    }, 700);
+  }
+
+  function setHandsFree(on) {
+    settings.handsFree = !!on;
+    store.set('handsFree', settings.handsFree);
+    updateHandsFreeUI();
+    if (settings.handsFree) {
+      toast('حالت بی‌دست روشن شد — بگو «آوا …»', '#i-wave');
+      if (state === 'idle') startListening();
+    } else {
+      toast('حالت بی‌دست خاموش شد', '#i-wave');
+      if (state === 'listening') stopListening();
+    }
+  }
+
+  function updateHandsFreeUI() {
+    if (btnHandsFree) {
+      btnHandsFree.classList.toggle('active', !!settings.handsFree);
+      btnHandsFree.setAttribute('aria-pressed', settings.handsFree ? 'true' : 'false');
+    }
+    if (optHandsFree) optHandsFree.checked = !!settings.handsFree;
+    if (optWakeWord) optWakeWord.checked = !!settings.wakeWord;
+  }
+
   /* --- وقتی هیچ موتوری نیست: پیام صادقانه (+ دمو فقط اگر کاربر روشن کرده) --- */
   function noEngine(reason) {
     setState('idle');
@@ -927,6 +1296,7 @@
   let listenTimer = null;
   function startListening() {
     if (state === 'processing') return;
+    if (state === 'listening') return; /* از بی‌دست دوباره فراخوانی شده */
     clearTimeout(listenTimer);
     setState('listening');
     body.classList.remove('has-card');
@@ -939,6 +1309,10 @@
     if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
 
     const eng = resolveEngine();
+    if (eng === 'whisper') {
+      startWhisperListen();
+      return;
+    }
     if (eng === 'web') {
       try {
         rec = makeRec();
@@ -992,6 +1366,14 @@
       try { g.src.disconnect(); } catch (_) { /* noop */ }
       try { g.sink.disconnect(); } catch (_) { /* noop */ }
     }
+    if (wCap) {
+      const cap = wCap;
+      wCap = null;
+      clearTimeout(cap.maxT);
+      try { cap.proc.disconnect(); } catch (_) { /* noop */ }
+      try { cap.src.disconnect(); } catch (_) { /* noop */ }
+      try { cap.sink.disconnect(); } catch (_) { /* noop */ }
+    }
     clearTimeout(gMaxT); gMaxT = null;
     /* میکروفون روشن می‌ماند تا اکولایزر همیشه به صدای واقعی واکنش نشان دهد */
     orbIcon.setAttribute('href', '#i-mic');
@@ -1029,6 +1411,7 @@
       if (!confirmBox.hidden) hideConfirm();
       else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
+      else if (historyPage && !historyPage.hidden) showView('home');
       else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
     }
@@ -1040,18 +1423,77 @@
     b.addEventListener('click', () => toast('این بخش در نسخه بعدی اضافه می‌شود', '#i-info'))
   );
 
-  /* ============================================================
-     ناوبری: خانه / تنظیمات / چت
+  /* ---------- تاریخچه فرمان‌ها ---------- */
+  function pushHistory(cmd, ok = true) {
+    const t = String(cmd || '').trim();
+    if (!t) return;
+    if (history[0] && history[0].t === t) return; /* تکرار پشت‌سرهم ثبت نشود */
+    history.unshift({ t, ok: !!ok, at: Date.now() });
+    history = history.slice(0, 40);
+    store.set('history', history);
+  }
+  function renderHistory() {
+    if (!historyList) return;
+    historyList.innerHTML = '';
+    if (historyEmpty) historyEmpty.hidden = history.length > 0;
+    history.forEach((h) => {
+      const it = document.createElement('div');
+      it.className = 'history-item';
+      const dot = document.createElement('i');
+      dot.className = 'h-ok ' + (h.ok ? 'ok' : 'fail');
+      const txt = document.createElement('span');
+      txt.className = 'h-txt';
+      txt.textContent = h.t;
+      const tm = document.createElement('span');
+      tm.className = 'h-time';
+      try { tm.textContent = timeFmt.format(new Date(h.at)); } catch (_) { tm.textContent = ''; }
+      it.appendChild(dot); it.appendChild(txt); it.appendChild(tm);
+      it.addEventListener('click', () => {
+        showView('home');
+        runCommand(h.t);
+      });
+      historyList.appendChild(it);
+    });
+  }
+  if (btnHistory) btnHistory.addEventListener('click', () => {
+    renderHistory();
+    showView('history');
+  });
+  if (btnHistoryBack) btnHistoryBack.addEventListener('click', () => showView('home'));
+  if (btnHistoryClear) btnHistoryClear.addEventListener('click', () => {
+    history = [];
+    store.set('history', history);
+    renderHistory();
+    toast('تاریخچه پاک شد', '#i-trash');
+  });
+
+  /* ---------- تاگل‌های حالت بی‌دست ---------- */
+  if (btnHandsFree) btnHandsFree.addEventListener('click', () => setHandsFree(!settings.handsFree));
+  if (optHandsFree) optHandsFree.addEventListener('change', () => setHandsFree(optHandsFree.checked));
+  if (optWakeWord) optWakeWord.addEventListener('change', () => {
+    settings.wakeWord = optWakeWord.checked;
+    store.set('wakeWord', settings.wakeWord);
+    toast(settings.wakeWord
+      ? 'کلمه بیدارباش «آوا» فعال است'
+      : 'هر گفتاری بدون کلمه بیدارباش اجرا می‌شود — مراقب سوءتفاهم باش!', '#i-wave');
+  });
+  if (bridge && bridge.voice && bridge.voice.onToggleHandsFree) {
+    bridge.voice.onToggleHandsFree(() => setHandsFree(!settings.handsFree));
+  }
+
+  /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.6.3';
+  let appVersion = '0.7.0';
 
   function showView(v) {
     settingsPage.hidden = v !== 'settings';
     chatPage.hidden = v !== 'chat';
+    if (historyPage) historyPage.hidden = v !== 'history';
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
     btnChat.classList.toggle('active', v === 'chat');
+    if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     $('#main').scrollTop = 0;
     if (v === 'settings') refreshSettingsUI();
     if (v === 'chat') {
@@ -1086,6 +1528,7 @@
     optGlmKey.value = settings.glmKey || '';
     optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
+    updateHandsFreeUI();
     refreshEngineUI();
     fillVoiceSelect();
     listMicDevices();
@@ -1292,7 +1735,6 @@
   /* ============================================================
      فرمان‌های سفارشی (ساخته‌شده با هوش مصنوعی) + مودال تأیید
      ============================================================ */
-  let customCmds = store.get('customCmds', []);
   let confirmResolve = null;
   const chipsBox = $('#chips');
 
@@ -1400,7 +1842,7 @@
     '<<<END>>>\n' +
     'قواعد action:\n' +
     '- type=open_url: باز کردن وب‌سایت؛ value آدرس کامل https\n' +
-    '- type=run: اجرای فرمان آماده؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, recycle_empty\n' +
+    '- type=run: اجرای فرمان آماده؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, vol_set, recycle_empty\n' +
     '- type=ps: اسکریپت کوتاه تک‌خطی و غیرمخرب PowerShell\n' +
     'مثال: اگر کاربر گفت «فرمان باز کردن تلگرام بساز»، بلوک را با open_url و آدرس https://web.telegram.org بساز.';
 
@@ -1605,12 +2047,16 @@
         statusText.textContent = r && r.needLogin ? 'اتصال AI برقرار نیست' : 'پاسخی نرسید';
         rcTag.textContent = 'هوش مصنوعی';
         typeText(rcReply, (r && r.error) || 'پاسخی نرسید. از صفحه «چت با هوش مصنوعی» امتحان کن.');
+        pushHistory(cmd, false);
       }
     } catch (_) {
       setState('success');
       rcTag.textContent = 'هوش مصنوعی';
       typeText(rcReply, 'اتصال به هوش مصنوعی برقرار نشد.');
+      pushHistory(cmd, false);
     }
+    handsFreeRearm();
+    cmdBusy = false;
     setTimeout(() => {
       if (state === 'success') {
         setState('idle');
@@ -1653,8 +2099,11 @@
   statusText.innerHTML = IDLE_HINT;
   refreshEngineUI();
   renderCustomChips();
+  updateHandsFreeUI();
   /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
   setTimeout(() => { attachMic(); }, 1200);
+  /* پیش‌بارگذاری موتور آفلاین — تا اولین فرمان فوری جواب بدهد */
+  if (bridge && window.Worker) setTimeout(() => asrEnsure(), 2000);
   setTimeout(() => {
     toast(canRun ? 'آوا آماده است — اجرای واقعی فرمان‌ها فعال است' : 'آوا آماده است — پیش‌نمایش رابط کاربری', '#i-wave');
   }, 900);
