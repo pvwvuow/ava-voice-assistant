@@ -1,6 +1,9 @@
 /* ============================================================
-   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه ۰.۲)
+   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه ۰.۴)
    - تشخیص گفتار واقعی (Web Speech API) با فالبک به حالت دمو
+   - پاسخ گفتاری واقعی (TTS) + ویژوالایزر با صدای واقعی میکروفون
+   - ضبط واقعی صدا و ذخیره در Music/AVA (از طریق پل امن)
+   - صفحه تنظیمات: همیشه‌روون، اجرای خودکار با ویندوز، آپدیت خودکار
    - اجرای واقعی فرمان‌های ویندوز از طریق پل امن sys:run
    - در مرورگر (پیش‌نمایش): شبیه‌سازی کامل
    ============================================================ */
@@ -12,6 +15,24 @@
   const SRC = window.SpeechRecognition || window.webkitSpeechRecognition || null;
   const canRun = !!(bridge && bridge.system && bridge.system.run);
 
+  /* ---------- عناصر صفحه تنظیمات ---------- */
+  const hero = document.querySelector('.hero');
+  const settingsPage = $('#settingsPage');
+  const btnHome = $('#btnHome');
+  const btnSettings = $('#btnSettings');
+  const btnSettingsBack = $('#btnSettingsBack');
+  const optTop = $('#optTop');
+  const optLogin = $('#optLogin');
+  const optTts = $('#optTts');
+  const optVoice = $('#optVoice');
+  const optAutoUpdate = $('#optAutoUpdate');
+  const updText = $('#updText');
+  const updNote = $('#updNote');
+  const updProgress = $('#updProgress');
+  const updBar = $('#updBar');
+  const btnCheckUpdate = $('#btnCheckUpdate');
+  const btnInstallUpdate = $('#btnInstallUpdate');
+
   /* ---------- عناصر ---------- */
   const body = document.body;
   const btnMin = $('#btnMin');
@@ -22,7 +43,7 @@
   const orbIcon = $('#orbIcon');
   const statusText = $('#statusText');
   const wave = $('#wave');
-  const chips = [...document.querySelectorAll('.chip')];
+  const chips = [...document.querySelectorAll('.chip[data-cmd]')];
   const respCard = $('#respCard');
   const rcTag = $('#rcTag');
   const rcHeard = $('#rcHeard');
@@ -42,6 +63,38 @@
 
   const IDLE_HINT = 'برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
   const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم؛ ولی مثلاً می‌تونی بگی «کروم را باز کن»، «تایمر ۱۰ دقیقه‌ای بذار»، «جستجوی آب و هوا» یا «یک جوک بگو».';
+
+  /* ---------- تنظیمات (localStorage) ---------- */
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('ava.' + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+    set(k, v) { try { localStorage.setItem('ava.' + k, JSON.stringify(v)); } catch (_) { /* noop */ } },
+  };
+  const settings = {
+    tts: store.get('tts', true),
+    voiceURI: store.get('voiceURI', ''),
+    autoUpdate: store.get('autoUpdate', true),
+  };
+
+  /* ---------- پاسخ گفتاری واقعی (TTS) ---------- */
+  function speak(text) {
+    if (!settings.tts || !text || !('speechSynthesis' in window)) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(String(text).replace(/[«»]/g, '').slice(0, 320));
+      const voices = speechSynthesis.getVoices() || [];
+      if (settings.voiceURI) {
+        const sel = voices.find((v) => v.voiceURI === settings.voiceURI);
+        if (sel) u.voice = sel;
+      } else {
+        const fa = voices.find((v) => /^fa[\-_]?/i.test(v.lang) || /persian|فارسی/i.test(v.name));
+        if (fa) u.voice = fa;
+      }
+      u.lang = (u.voice && u.voice.lang) || 'fa-IR';
+      u.rate = 0.98;
+      u.pitch = 1;
+      speechSynthesis.speak(u);
+    } catch (_) { /* noop */ }
+  }
 
   /* ---------- ابزار ---------- */
   const faNum = (v) => String(v).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
@@ -105,6 +158,78 @@
   window.addEventListener('resize', resizeWave);
   resizeWave();
 
+  /* ---------- میکروفون واقعی: تحلیل طیف برای ویژوالایزر + ضبط فایل ---------- */
+  let micStream = null, audioCtx = null, analyser = null, micData = null, micLive = false;
+  let mediaRec = null, recChunks = [], isRecording = false;
+
+  async function attachMic() {
+    if (analyser) return true;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      audioCtx = new AC();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.78;
+      src.connect(analyser);
+      micData = new Uint8Array(analyser.frequencyBinCount);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function detachMic() {
+    if (isRecording) return; /* حین ضبط، استریم نباید بسته شود */
+    if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
+    if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
+    analyser = null; micData = null; micLive = false;
+  }
+
+  async function startAudioRec() {
+    if (isRecording) return 'ضبط از قبل در جریان است؛ بگو «توقف ضبط» تا ذخیره‌اش کنم.';
+    if (!window.MediaRecorder) return 'ضبط صدا در این محیط پشتیبانی نمی‌شود.';
+    const ok = await attachMic();
+    if (!ok) return 'دسترسی به میکروفون ممکن نشد؛ مجوز میکروفون را در ویندوز بررسی کن.';
+    try {
+      recChunks = [];
+      mediaRec = new MediaRecorder(micStream);
+      mediaRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+      mediaRec.start();
+      isRecording = true;
+      micLive = true;
+      sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
+      statusText.textContent = 'در حال ضبط صدایت… برای پایان بگو «توقف ضبط»';
+      return 'ضبط شروع شد! هر وقت خواستی بگو «توقف ضبط» تا در پوشه Music ذخیره‌اش کنم.';
+    } catch (_) {
+      return 'شروع ضبط ممکن نشد.';
+    }
+  }
+
+  async function stopAudioRec() {
+    if (!isRecording || !mediaRec || mediaRec.state === 'inactive') return 'ضبط فعالی وجود ندارد.';
+    const stopped = new Promise((res) => { mediaRec.onstop = res; });
+    try { mediaRec.stop(); } catch (_) { /* noop */ }
+    await stopped;
+    isRecording = false;
+    sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+    const blob = new Blob(recChunks, { type: (mediaRec && mediaRec.mimeType) || 'audio/webm' });
+    recChunks = [];
+    if (state !== 'listening') { micLive = false; detachMic(); }
+    if (!blob.size) return 'صدایی ضبط نشده بود!';
+    if (canRun && bridge.system.saveAudio) {
+      try {
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        const r = await bridge.system.saveAudio(buf);
+        if (r && r.ok) return `ضبط ذخیره شد در: ${r.path}`;
+        return `ذخیره ممکن نشد: ${(r && r.error) || 'خطای نامشخص'}`;
+      } catch (_) { /* ادامه به پاسخ مرورگری */ }
+    }
+    return `ضبط انجام شد (${faNum(Math.round(blob.size / 1024))} کیلوبایت)؛ ذخیره واقعی فایل فقط داخل نرم‌افزار ویندوزی است.`;
+  }
+
   const N = 52;
   const levels = new Array(N).fill(0.1);
   let t0 = 0, energy = 0.1;
@@ -129,13 +254,22 @@
     const startX = (W - (N * bw + (N - 1) * gap)) / 2;
     for (let i = 0; i < N; i++) {
       const env = Math.sin((Math.PI * i) / (N - 1));
-      const n =
-        Math.sin(t0 * 2.1 + i * 0.55) * 0.5 +
-        Math.sin(t0 * 3.7 + i * 1.3) * 0.3 +
-        Math.sin(t0 * 0.7 + i * 0.21) * 0.2;
-      const amp = energy * env * (0.32 + 0.68 * Math.abs(n));
-      const jitter = energy > 0.2 ? Math.random() * 0.13 * energy : 0;
-      const lvl = Math.max(0.04, Math.min(1, amp + jitter));
+      let lvl;
+      if (micLive && micData) {
+        /* صدای واقعی میکروفون: تبدیل طیف فرکانسی به ۵۲ میله */
+        const bins = Math.floor(micData.length * 0.72);
+        const bi = Math.min(micData.length - 1, Math.floor(Math.pow(i / N, 1.55) * bins));
+        const raw = micData[bi] / 255;
+        lvl = Math.max(0.05, Math.min(1, raw * 1.6 * (0.35 + 0.65 * env)));
+      } else {
+        const n =
+          Math.sin(t0 * 2.1 + i * 0.55) * 0.5 +
+          Math.sin(t0 * 3.7 + i * 1.3) * 0.3 +
+          Math.sin(t0 * 0.7 + i * 0.21) * 0.2;
+        const amp = energy * env * (0.32 + 0.68 * Math.abs(n));
+        const jitter = energy > 0.2 ? Math.random() * 0.13 * energy : 0;
+        lvl = Math.max(0.04, Math.min(1, amp + jitter));
+      }
       levels[i] += (lvl - levels[i]) * 0.25;
       const bh = Math.max(3, levels[i] * (H - 8));
       const g = ctx.createLinearGradient(0, mid - bh / 2, 0, mid + bh / 2);
@@ -207,6 +341,10 @@
     { k: /اسکرین\s?شات|اسکرین|عکس.{0,8}(صفحه|نمایشگر)|screenshot/i, t: 'اسکرین‌شات', i: '#i-camera', run: 'screenshot', r: () => 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
     { k: /مینیمایز|کوچک.{0,8}(کن)|دسکتاپ|پنجره‌ها/, t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
     { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین/, t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => 'صفحه قفل شد؛ بدرود!' },
+
+    /* --- ضبط صدا (واقعی) --- */
+    { k: /(شروع|بگیر).{0,8}ضبط|ضبط.{0,8}(صدا|شروع)/, t: 'شروع ضبط صدا', i: '#i-mic', r: () => startAudioRec() },
+    { k: /توقف.{0,8}ضبط|پایان.{0,8}ضبط|ضبط.{0,8}(تموم|کافی)|قطع.{0,8}ضبط/, t: 'پایان ضبط صدا', i: '#i-mic', r: () => stopAudioRec() },
 
     /* --- صدا --- */
     { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت)|میوت|mute|بی[\s\u200C]?صدا/i, t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => 'صدا قطع شد.' },
@@ -285,6 +423,7 @@
       rcHeard.textContent = 'تایمر';
       rcReply.textContent = 'زمان تمام شد؛ یادت بودیم!';
       respCard.classList.add('show');
+      speak('زمان تایر تمام شد؛ خبرت کردم!');
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
     }, mins * 60000);
     const label = unit === 'ثانیه' ? faNum(Math.round(mins * 60)) : faNum(+(mins.toFixed(1)));
@@ -326,8 +465,10 @@
   }
 
   async function runCommand(cmd) {
+    if (!cmd) return;
     if (state === 'processing') return;
     if (state === 'listening') stopListening(false);
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
 
     setState('processing');
     statusText.textContent = 'در حال انجام…';
@@ -347,6 +488,7 @@
       setState('success');
       statusText.textContent = 'انجام شد';
       typeText(rcReply, reply);
+      speak(reply);
       if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
       setTimeout(() => {
         if (state === 'success') {
@@ -414,6 +556,7 @@
     orbIcon.setAttribute('href', '#i-stop');
     sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
     gotFinal = false;
+    attachMic().then((ok) => { if (ok && (state === 'listening' || isRecording)) micLive = true; });
 
     if (SRC && !srBroken) {
       try {
@@ -444,6 +587,8 @@
     clearTimeout(listenTimer);
     if (rec && recActive) { try { rec.stop(); } catch (_) { /* noop */ } }
     recActive = false;
+    micLive = false;
+    if (!isRecording) detachMic();
     orbIcon.setAttribute('href', '#i-mic');
     sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
     if (reset) {
@@ -477,6 +622,7 @@
       cmdInput.focus();
     } else if (e.key === 'Escape') {
       if (!about.hidden) about.hidden = true;
+      else if (!settingsPage.hidden) showSettings(false);
       else if (state === 'listening') stopListening();
     }
   });
@@ -485,6 +631,189 @@
   /* ---------- آیتم‌های قفل‌شده سایدبار ---------- */
   document.querySelectorAll('.rail-item.locked').forEach((b) =>
     b.addEventListener('click', () => toast('این بخش در نسخه بعدی اضافه می‌شود', '#i-info'))
+  );
+
+  /* ============================================================
+     صفحه تنظیمات
+     ============================================================ */
+  let appVersion = '0.4.0';
+
+  function showSettings(on) {
+    settingsPage.hidden = !on;
+    hero.style.display = on ? 'none' : '';
+    btnHome.classList.toggle('active', !on);
+    btnSettings.classList.toggle('active', on);
+    $('#main').scrollTop = 0;
+    if (on) refreshSettingsUI();
+  }
+  btnSettings.addEventListener('click', () => showSettings(settingsPage.hidden));
+  btnHome.addEventListener('click', () => showSettings(false));
+  btnSettingsBack.addEventListener('click', () => showSettings(false));
+
+  function loadAppVersion() {
+    const render = () => { updText.textContent = `نسخه فعلی: v${faNum(appVersion)}`; };
+    if (bridge && bridge.system && bridge.system.info) {
+      bridge.system.info().then((i) => {
+        appVersion = (i && i.version) || appVersion;
+        render();
+      }).catch(render);
+    } else {
+      render();
+    }
+  }
+
+  function refreshSettingsUI() {
+    optTts.checked = !!settings.tts;
+    optAutoUpdate.checked = !!settings.autoUpdate;
+    fillVoiceSelect();
+    loadAppVersion();
+    if (bridge && bridge.settings) {
+      bridge.settings.flags().then((f) => {
+        optTop.checked = !!(f && f.alwaysOnTop);
+        optLogin.checked = !!(f && f.loginItem);
+      }).catch(() => { /* noop */ });
+    } else {
+      optTop.checked = false;
+      optLogin.checked = false;
+    }
+  }
+
+  const needApp = () => toast('این گزینه فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+
+  optTts.addEventListener('change', () => {
+    settings.tts = optTts.checked;
+    store.set('tts', settings.tts);
+    if (settings.tts) speak('پاسخ گفتاری فعال شد');
+    else if (window.speechSynthesis) speechSynthesis.cancel();
+  });
+
+  optAutoUpdate.addEventListener('change', () => {
+    settings.autoUpdate = optAutoUpdate.checked;
+    store.set('autoUpdate', settings.autoUpdate);
+    if (bridge && bridge.updater) bridge.updater.setAuto(settings.autoUpdate);
+    toast(settings.autoUpdate ? 'بررسی خودکار فعال شد' : 'بررسی خودکار خاموش شد', '#i-refresh');
+  });
+
+  optTop.addEventListener('change', async () => {
+    if (!bridge || !bridge.settings) { optTop.checked = false; needApp(); return; }
+    try {
+      const v = await bridge.settings.setAlwaysOnTop(optTop.checked);
+      optTop.checked = !!v;
+      toast(v ? 'آوا حالا همیشه روون است' : 'حالت همیشه‌روون خاموش شد', '#i-power');
+    } catch (_) { optTop.checked = false; }
+  });
+
+  optLogin.addEventListener('change', async () => {
+    if (!bridge || !bridge.settings) { optLogin.checked = false; needApp(); return; }
+    try {
+      const v = await bridge.settings.setLoginItem(optLogin.checked);
+      if (v === null || v === undefined) {
+        optLogin.checked = false;
+        toast('در این محیط قابل اعمال نیست', '#i-info');
+      } else {
+        optLogin.checked = !!v;
+        toast(v ? 'اجرای خودکار با ویندوز فعال شد' : 'اجرای خودکار خاموش شد', '#i-power');
+      }
+    } catch (_) { optLogin.checked = false; }
+  });
+
+  /* --- انتخاب صدای گوینده --- */
+  function fillVoiceSelect() {
+    if (!('speechSynthesis' in window)) {
+      optVoice.innerHTML = '<option value="">بدون موتور گفتار</option>';
+      optVoice.disabled = true;
+      return;
+    }
+    optVoice.disabled = false;
+    const voices = speechSynthesis.getVoices() || [];
+    const faFirst = [...voices].sort((a, b) => (/^fa/i.test(b.lang) ? 1 : 0) - (/^fa/i.test(a.lang) ? 1 : 0));
+    let html = '<option value="">خودکار (فارسی اگر نصب باشد)</option>';
+    faFirst.forEach((v) => {
+      const sel = settings.voiceURI === v.voiceURI ? ' selected' : '';
+      html += `<option value="${v.voiceURI}"${sel}>${v.name} — ${v.lang}</option>`;
+    });
+    optVoice.innerHTML = voices.length ? html : '<option value="">صدایی یافت نشد</option>';
+  }
+  optVoice.addEventListener('change', () => {
+    settings.voiceURI = optVoice.value || '';
+    store.set('voiceURI', settings.voiceURI);
+    speak('سلام! من آوا هستم.');
+  });
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = fillVoiceSelect;
+    setTimeout(fillVoiceSelect, 300);
+  }
+
+  /* --- به‌روزرسانی --- */
+  function setUpdUI(s) {
+    updProgress.hidden = true;
+    btnInstallUpdate.hidden = true;
+    if (btnCheckUpdate) btnCheckUpdate.disabled = false;
+    switch (s && s.state) {
+      case 'checking':
+        updNote.textContent = 'در حال بررسی نسخه جدید…';
+        break;
+      case 'available':
+        updNote.textContent = `نسخه جدید v${faNum(s.version || '')} پیدا شد — در حال دانلود…`;
+        updProgress.hidden = false;
+        updBar.style.width = '6%';
+        break;
+      case 'downloading':
+        updNote.textContent = `در حال دانلود: ${faNum(s.percent || 0)}٪`;
+        updProgress.hidden = false;
+        updBar.style.width = `${Math.max(4, s.percent || 0)}%`;
+        break;
+      case 'ready':
+        updNote.textContent = `نسخه v${faNum(s.version || '')} آماده نصب است`;
+        btnInstallUpdate.hidden = false;
+        toast('نسخه جدید آماده نصب است — از تنظیمات نصبش کن', '#i-download');
+        break;
+      case 'none':
+        updNote.textContent = 'آخرین نسخه را داری ✓';
+        break;
+      case 'dev':
+        updNote.textContent = 'در حالت توسعه (npm start) به‌روزرسان غیرفعال است؛ خروجی نصب‌شده کار می‌کند';
+        break;
+      case 'error':
+        updNote.textContent = 'خطا در بروزرسانی: ' + String(s.message || '').slice(0, 90);
+        break;
+      default:
+        updNote.textContent = 'اتصال خودکار به GitHub Releases';
+    }
+  }
+
+  if (bridge && bridge.updater) {
+    bridge.updater.onStatus(setUpdUI);
+    if (bridge.updater.setAuto) bridge.updater.setAuto(settings.autoUpdate);
+    btnCheckUpdate.addEventListener('click', async () => {
+      btnCheckUpdate.disabled = true;
+      updNote.textContent = 'در حال بررسی نسخه جدید…';
+      const r = await bridge.updater.check().catch(() => ({ ok: false, error: 'اتصال برقرار نشد' }));
+      btnCheckUpdate.disabled = false;
+      if (r && r.dev) setUpdUI({ state: 'dev' });
+      else if (r && !r.ok) setUpdUI({ state: 'error', message: r.error });
+      else if (r && r.ok) setUpdUI({ state: 'checking' });
+    });
+    btnInstallUpdate.addEventListener('click', () => {
+      toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
+      bridge.updater.install();
+    });
+  } else {
+    btnCheckUpdate.addEventListener('click', () => toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh'));
+    btnInstallUpdate.addEventListener('click', needApp);
+  }
+
+  /* --- پیوندها (باز شدن در مرورگر پیش‌فرض) --- */
+  document.querySelectorAll('#settingsPage [data-url]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const url = b.dataset.url;
+      if (bridge && bridge.system && bridge.system.openUrl) {
+        const r = await bridge.system.openUrl(url);
+        if (!r || !r.ok) toast('باز کردن لینک ممکن نشد', '#i-info');
+      } else {
+        window.open(url, '_blank');
+      }
+    })
   );
 
   /* ---------- پاپ‌آپ درباره ---------- */

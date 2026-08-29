@@ -28,6 +28,27 @@ contextBridge.exposeInMainWorld('ava', {
     stats: () => ipcRenderer.invoke('sys:stats'),
     /* اجرای واقعی فرمان‌ها — فقط شناسه‌های فهرست سفید در main.js */
     run: (id, arg) => ipcRenderer.invoke('sys:run', id, arg),
+    /* باز کردن لینک خارجی در مرورگر پیش‌فرض (فقط https) */
+    openUrl: (u) => ipcRenderer.invoke('sys:open-url', u),
+    /* ذخیره فایل ضبط صدا در Music/AVA */
+    saveAudio: (buf) => ipcRenderer.invoke('sys:save-audio', buf),
+    /* نسخه واقعی برنامه */
+    info: () => ipcRenderer.invoke('app:info'),
+  },
+
+  /* تنظیمات سیستمی برنامه */
+  settings: {
+    flags: () => ipcRenderer.invoke('app:flags'),
+    setAlwaysOnTop: (on) => ipcRenderer.invoke('app:set-always-on-top', on),
+    setLoginItem: (on) => ipcRenderer.invoke('app:set-login-item', on),
+  },
+
+  /* به‌روزرسان خودکار (electron-updater) */
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    setAuto: (on) => ipcRenderer.invoke('updater:set-auto', on),
+    onStatus: (cb) => ipcRenderer.on('updater:status', (_e, s) => cb(s)),
   },
 
   /* رویدادهای صوتی — نقطه اتصال موتور صوتی در نسخه‌های بعد */

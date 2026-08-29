@@ -87,3 +87,25 @@ Stage Summary:
 - کاربر از این به بعد فقط: .\push.cmd "پیام" → پوش خودکار | .\push.cmd "پیام" -Release → تگ + بیلد CI + EXE در GitHub Releases
 - ارور Cannot detect repository در سه لایه حل شد: repository در package.json + تزریق خودکار در push.ps1 + مرحله fix در workflow
 - نسخه 0.3.0 آماده انتشار؛ کاربر باید فایل‌ها را روی سیستم ویندوزی‌اش کپی و push.cmd را اجرا کند
+
+---
+Task ID: 5
+Agent: main (Super Z)
+Task: نسخه 0.4.0 — آپدیت خودکار داخل برنامه (electron-updater) + تنظیمات سیستمی + TTS + ضبط واقعی صدا + بامپ خودکار نسخه در push.ps1
+
+Work Log:
+- از گزارش کاربر استفاده شد: ریپوی واقعی pvwvuow/ava-voice-assistant در package.json و README جایگزین placeholder شد؛ درس پروکسی گیت به push.ps1 اضافه شد (هشدار http.proxy)
+- package.json: version 0.4.0 + dependencies: electron-updater ^6.3.9 + repository واقعی
+- main.js: setupAutoUpdater (autoDownload + autoInstallOnAppQuit + رویدادها → updater:status + چک خودکار ۱۲ ثانیه بعد از شروع با فلگ autoCheckEnabled) + IPCهای جدید: updater:check/install/set-auto، app:flags، app:set-always-on-top، app:set-login-item، sys:open-url (فقط https با safeUrl)، sys:save-audio (ذخیره webm در Music/AVA)، app:info (نسخه واقعی). require الکترون-آپدیتر با try/catch تا بدون نصب ماژول هم برنامه بالا بیاید
+- preload.js: ava.settings (flags/setAlwaysOnTop/setLoginItem) + ava.updater (check/install/setAuto/onStatus) + system.openUrl/saveAudio/info
+- index.html: صفحه تنظیمات کامل (رفتار برنامه / صدا و TTS / به‌روزرسانی / پیوندها) + آیکون‌های i-refresh، i-download، i-power، i-tts + دکمه gear از قفل درآمد (btnSettings) + btnHome + چیپ «ضبط صدا» (۱۱ چیپ) + نسخه ۰.۴ در badge/statusbar/about
+- app.js: store (localStorage) + speak() با انتخاب خودکار صدای فارسی + hook در runCommand و پایان تایمر + attachMic/detachMic با getUserMedia و AnalyserNode → ویژوالایزر ۵۲ میله‌ای با صدای واقعی (فالبک سینتتیک) + startAudioRec/stopAudioRec با MediaRecorder و ذخیره واقعی از طریق پل + ۲ قانون فرمان ضبط + منطق کامل صفحه تنظیمات (سوییچ‌ها با فالبک مرورگر، انتخاب گوینده، UI آپدیتر با setUpdUI هفت‌حالته، پیوندها با openUrl)
+- styles.css: استایل صفحه تنظیمات + سوییچ RTL + نوار پیشرفت دانلود + [hidden]{display:none!important} (رفع باگ دیده‌شدن دکمه chip مخفی) + ریسپانسیو ۶۸۰px
+- push.ps1 بازنویسی: پارامتر -Version + بامپ خودکار patch قبل از کامیت در Release (0.4.0→0.4.1) + تگ از نسخه جدید + هشدار پروکسی گیت + پیام پیش‌فرض Release vX
+- باگ‌های کشف و رفع‌شده در تست: (۱) دکمه‌های [hidden] با display:inline-flex دیده می‌شدند، (۲) چیپ‌های تنظیمات در لیست chips اولیه بودند و runCommand(undefined) صدا می‌زدند → سلکتور .chip[data-cmd] + گارد !cmd
+- تست مرورگری 640x780: صفحه تنظیمات کامل رندر شد (نسخه فعلی v۰.۴.۰، سوییچ‌ها، سلکت صدا)، فرمان‌های «شروع ضبط/توقف ضبط» پاسخ درست، ذخیره TTS در localStorage، بدون خطای کنسول
+
+Stage Summary:
+- جریان انتشار آینده: .\push.cmd "پیام" -Release → بامپ خودکار نسخه + تگ + بیلد CI + انتشار در Releases + آپدیت خودکار برنامه‌های نصب‌شده
+- برنامه از داخل خودش آپدیت می‌شود (تنظیمات → به‌روزرسانی)
+- نسخه 0.4.0 آماده: کاربر باید کل پوشه را روی ویندوز کپی و .\push.cmd "v0.4.0" -Release بزند

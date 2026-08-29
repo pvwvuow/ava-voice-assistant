@@ -1,11 +1,16 @@
 /**
  * آوا — دستیار صوتی ویندوز
- * Electron main process (نسخه ۰.۲ — اجرای واقعی فرمان‌های ویندوز)
+ * Electron main process (نسخه ۰.۴ — آپدیت خودکار، تنظیمات سیستمی، ضبط صدا)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell } = require('electron');
 const { exec } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+/* electron-updater (فقط وقتی پکیج نصب باشد — خطا را ساکت رد می‌کنیم) */
+let autoUpdater = null;
+try { ({ autoUpdater } = require('electron-updater')); } catch (_) { autoUpdater = null; }
 
 let win = null;
 
@@ -166,10 +171,107 @@ ipcMain.handle('sys:stats', () => ({
   hostname: os.hostname(),
 }));
 
+/* ---------- IPC: اطلاعات برنامه (نسخه واقعی) ---------- */
+ipcMain.handle('app:info', () => ({
+  version: app.getVersion(),
+  packaged: app.isPackaged,
+  electron: process.versions.electron,
+}));
+
+/* ---------- به‌روزرسان خودکار (electron-updater + GitHub Releases) ---------- */
+const sendUI = (ch, payload) => {
+  if (win && !win.isDestroyed()) win.webContents.send(ch, payload);
+};
+
+let autoCheckEnabled = true; // از تنظیمات UI قابل خاموش‌کردن است
+
+function setupAutoUpdater() {
+  if (!autoUpdater || !app.isPackaged) return; // در حالت dev (npm start) غیرفعال
+  try {
+    autoUpdater.autoDownload = true;        // دانلود خودکار پس از پیدا شدن نسخه جدید
+    autoUpdater.autoInstallOnAppQuit = true; // نصب هنگام بستن برنامه اگر کاربر نصب فوری نزند
+    autoUpdater.on('checking-for-update', () => sendUI('updater:status', { state: 'checking' }));
+    autoUpdater.on('update-available', (i) => sendUI('updater:status', { state: 'available', version: i && i.version }));
+    autoUpdater.on('update-not-available', () => sendUI('updater:status', { state: 'none' }));
+    autoUpdater.on('download-progress', (p) => sendUI('updater:status', { state: 'downloading', percent: Math.round(p.percent || 0) }));
+    autoUpdater.on('update-downloaded', (i) => sendUI('updater:status', { state: 'ready', version: i && i.version }));
+    autoUpdater.on('error', (e) => sendUI('updater:status', { state: 'error', message: String((e && e.message) || e) }));
+    /* بررسی خودکار ۱۲ ثانیه بعد از باز شدن برنامه (اگر کاربر خاموشش نکرده باشد) */
+    setTimeout(() => {
+      if (autoCheckEnabled) autoUpdater.checkForUpdates().catch(() => {});
+    }, 12000);
+  } catch (_) { /* noop */ }
+}
+
+ipcMain.handle('updater:set-auto', (_e, on) => {
+  autoCheckEnabled = !!on;
+  return autoCheckEnabled;
+});
+
+ipcMain.handle('updater:check', async () => {
+  if (!autoUpdater) return { ok: false, error: 'ماژول electron-updater نصب نیست' };
+  if (!app.isPackaged) return { ok: false, dev: true, error: 'در حالت توسعه به‌روزرسان غیرفعال است' };
+  try {
+    await autoUpdater.checkForUpdates();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
+
+ipcMain.handle('updater:install', () => {
+  if (autoUpdater && app.isPackaged) autoUpdater.quitAndInstall(false, true);
+});
+
+/* ---------- IPC: تنظیمات سیستمی ---------- */
+ipcMain.handle('app:flags', () => ({
+  alwaysOnTop: win ? !!win.isAlwaysOnTop() : false,
+  loginItem: (() => { try { return app.getLoginItemSettings().openAtLogin; } catch (_) { return false; } })(),
+}));
+
+ipcMain.handle('app:set-always-on-top', (_e, on) => {
+  if (win) win.setAlwaysOnTop(!!on, 'screen-saver');
+  return win ? !!win.isAlwaysOnTop() : false;
+});
+
+ipcMain.handle('app:set-login-item', (_e, on) => {
+  try {
+    app.setLoginItemSettings({ openAtLogin: !!on });
+    return app.getLoginItemSettings().openAtLogin;
+  } catch (_) {
+    return null;
+  }
+});
+
+/* ---------- IPC: باز کردن لینک خارجی (فقط https امن) ---------- */
+ipcMain.handle('sys:open-url', (_e, u) => {
+  const s = safeUrl(u);
+  if (!s) return { ok: false, error: 'آدرس نامعتبر است' };
+  shell.openExternal(s);
+  return { ok: true };
+});
+
+/* ---------- IPC: ذخیره فایل ضبط صدا در Music/AVA ---------- */
+ipcMain.handle('sys:save-audio', async (_e, data) => {
+  try {
+    const buf = Buffer.from(new Uint8Array(data));
+    if (!buf.length) return { ok: false, error: 'فایل خالی است' };
+    const dir = path.join(os.homedir(), 'Music', 'AVA');
+    await fs.promises.mkdir(dir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const file = path.join(dir, `AVA-Record-${stamp}.webm`);
+    await fs.promises.writeFile(file, buf);
+    return { ok: true, path: file };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
+
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
   setupMicPermission();
   createWindow();
+  setupAutoUpdater();
 
   // میانبر سراسری گوش دادن (Push-to-talk)
   try {

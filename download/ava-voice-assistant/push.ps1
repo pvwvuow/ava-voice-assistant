@@ -3,18 +3,21 @@
 #  ------------------------------------------------------------
 #  Normal push:          .\push.ps1 "my update message"
 #  Push + new release:   .\push.ps1 "my update message" -Release
+#  Release + custom ver: .\push.ps1 "my update" -Release -Version 0.5.0
 #
 #  What it does automatically:
 #   1. Reads your GitHub remote and injects the correct
 #      "repository" field into package.json
-#      (this fixes the electron-builder error:
-#       "Cannot detect repository by .git/config")
-#   2. Syncs .gitignore and the CI workflow to the repo root
-#   3. Never tracks node_modules / dist
-#   4. Commits (default message = date/time) and pushes
-#   5. With -Release: tags the version from package.json
-#      (e.g. v0.3.0) so GitHub Actions builds the installer
-#      and publishes it to GitHub Releases automatically
+#      (fixes electron-builder "Cannot detect repository")
+#   2. Warns if a wrong git proxy is configured
+#      (fixes "Failed to connect to github.com port 443")
+#   3. Syncs .gitignore and the CI workflow to the repo root
+#   4. Never tracks node_modules / dist
+#   5. Commits (default message = date/time) and pushes
+#   6. With -Release: bumps the patch version in package.json
+#      (0.4.0 -> 0.4.1) or uses -Version, then tags vX.Y.Z so
+#      GitHub Actions builds the installer and publishes it
+#      to GitHub Releases automatically
 #
 #  Tip: use push.cmd if PowerShell blocks scripts:
 #       .\push.cmd "my update" -Release
@@ -22,7 +25,8 @@
 param(
   [Parameter(Position = 0)]
   [string]$Message = "",
-  [switch]$Release
+  [switch]$Release,
+  [string]$Version = ""
 )
 
 Set-Location $PSScriptRoot
@@ -31,6 +35,15 @@ function Fail($m) { Write-Host "[X] $m" -ForegroundColor Red;   exit 1 }
 function Ok($m)   { Write-Host "[OK] $m" -ForegroundColor Green }
 function Info($m) { Write-Host "[i]  $m" -ForegroundColor Cyan }
 function Warn($m) { Write-Host "[!]  $m" -ForegroundColor Yellow }
+
+function Get-PkgVersion {
+  if (Get-Command node -ErrorAction SilentlyContinue) {
+    return ((node -p "require('./package.json').version").Trim())
+  }
+  $raw = Get-Content package.json -Raw
+  if ($raw -match '"version"\s*:\s*"([^"]+)"') { return $Matches[1] }
+  return "0.0.0"
+}
 
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor DarkGray
@@ -44,12 +57,12 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 
 $root = git rev-parse --show-toplevel 2>$null
 if (-not $root) {
-  Fail "This folder is not inside a git repository. One-time setup:`n    git init`n    git remote add origin https://github.com/USERNAME/ava-voice-assistant.git"
+  Fail "This folder is not inside a git repository. One-time setup:`n    git init`n    git remote add origin https://github.com/pvwvuow/ava-voice-assistant.git"
 }
 
 $remote = git remote get-url origin 2>$null
 if (-not $remote) {
-  Fail "No 'origin' remote found. One-time setup:`n    git remote add origin https://github.com/USERNAME/ava-voice-assistant.git"
+  Fail "No 'origin' remote found. One-time setup:`n    git remote add origin https://github.com/pvwvuow/ava-voice-assistant.git"
 }
 Info "remote: $remote"
 
@@ -67,6 +80,39 @@ if ($remote -match 'github\.com[/:]') {
   }
 } else {
   Warn "remote is not GitHub - skipping repository auto-fix"
+}
+
+# ---------- 2b) git proxy check (past incident: wrong proxy blocked github.com:443) ----------
+$proxy = git config --get http.proxy 2>$null
+if ($proxy) {
+  Warn "git http.proxy is set to '$proxy'"
+  Warn "if push fails with 'Failed to connect to github.com port 443', run:"
+  Warn "    git config --global --unset http.proxy"
+}
+
+# ---------- 2c) release: bump version BEFORE commit ----------
+$newVer = $null
+if ($Release) {
+  $cur = Get-PkgVersion
+  if ($Version) {
+    $newVer = $Version
+  } else {
+    $parts = $cur.Split('.')
+    if ($parts.Count -eq 3) {
+      $parts[2] = [string]([int]$parts[2] + 1)
+      $newVer = ($parts -join '.')
+    } else { $newVer = $cur }
+  }
+  if (Get-Command node -ErrorAction SilentlyContinue) {
+    $env:AVA_VER = $newVer
+    node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=process.env.AVA_VER;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
+    if ($LASTEXITCODE -eq 0) { Ok "version: $cur -> $newVer (written to package.json)" }
+    else { Warn "could not bump version - will tag as v$cur"; $newVer = $cur }
+  } else {
+    Warn "node not found - version stays $cur"
+    $newVer = $cur
+  }
+  if (-not $Message) { $Message = "Release v$newVer" }
 }
 
 # ---------- 3) sync .gitignore + CI workflow to repo root ----------
@@ -117,9 +163,8 @@ if ($LASTEXITCODE -ne 0) {
 Ok "pushed to origin/$branch"
 
 # ---------- 7) optional: tag + release ----------
-if ($Release) {
-  $ver = (node -p "require('./package.json').version")
-  $tag = "v$ver"
+if ($Release -and $newVer) {
+  $tag = "v$newVer"
   git tag -d $tag 2>$null
   git push origin ":refs/tags/$tag" 2>$null
   git tag $tag
@@ -131,6 +176,7 @@ if ($Release) {
   Info "GitHub Actions is now building the Windows installer (~5 min)"
   Info "watch it here: https://github.com/$slug/actions"
   Info "users download from: https://github.com/$slug/releases/latest"
+  Info "installed apps update themselves automatically (electron-updater)"
 }
 
 Write-Host ""
