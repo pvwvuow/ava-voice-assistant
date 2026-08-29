@@ -27,6 +27,8 @@
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
     'nav.chat': ['چت با هوش مصنوعی GLM (بدون کلید)', 'Chat with GLM AI (no API key)'],
+    'nav.ext': ['افزونه‌ها — DNS Changer، پلیر موزیک و بیشتر', 'Extensions — DNS Changer, music player and more'],
+    'nav.dnsExt': ['DNS Changer — مدیریت کامل DNS', 'DNS Changer — full DNS management'],
     'nav.history': ['تاریخچه فرمان‌ها', 'Command history'], 'nav.plugins': ['افزونه‌ها — به‌زودی', 'Plugins — soon'],
     'nav.about': ['درباره آوا', 'About AVA'], 'nav.settings': ['تنظیمات', 'Settings'],
     'hero.sub': ['فرمانت را بگو تا برایت انجامش بدهم.', 'Say the word and I will do it for you.'],
@@ -40,6 +42,46 @@
     'set.nav.voice': ['صدا و پاسخ', 'Voice & replies'], 'set.nav.ai': ['هوش مصنوعی', 'AI'],
     'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
     'set.nav.ext': ['افزونه‌ها', 'Extensions'],
+    'set.nav.perf': ['بهینه‌سازی', 'Optimization'],
+    'set.ext.dns': ['افزونهٔ DNS Changer', 'DNS Changer extension'],
+    'set.ext.dnsHint': ['با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند', 'When on, its button stays in the side rail and opens full DNS management'],
+    'set.ext.music': ['افزونهٔ پلیر موزیک', 'Music player extension'],
+    'set.ext.musicHint': ['تا وقتی فعالش نکنی در ستون نمی‌آید و برنامه سبک‌تر می‌ماند', 'Until you enable it, it stays out of the rail and the app stays light'],
+    'set.ext.open': ['مدیریت افزونه‌ها', 'Manage extensions'],
+    'set.ext.openHint': ['صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی', 'The extensions page: enable, open, and new cards in future releases'],
+    'set.ext.openBtn': ['باز کردن افزونه‌ها', 'Open extensions'],
+    'set.ext.note2': ['به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.', 'More extensions like Weather and Timer will arrive on this page soon.'],
+    'set.perf.anim': ['انیمیشن‌ها', 'Animations'],
+    'set.perf.animHint': ['همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر', 'All motion is silenced — great for weak laptops and battery'],
+    'set.perf.fx': ['افکت‌های پس‌زمینه', 'Background effects'],
+    'set.perf.fxHint': ['ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند', 'Removes particles, aurora and the orb halo; glass becomes simple'],
+    'set.perf.theme': ['تم سبک (سیستم ضعیف)', 'Lite theme (weak PC)'],
+    'set.perf.themeHint': ['ظاهر ساده و صاف با رنگ‌های ثابت — بدون شیشه و گرادیان سنگین، ولی همچنان تمیز و مرتب', 'Flat, simple look with solid colors — no heavy glass or gradients, still clean'],
+    'set.perf.themeBtn': ['فعال‌سازی تم سبک', 'Enable lite theme'],
+    'set.perf.note': ['تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.', 'The lite theme also trims effects and animations by itself; for a lighter touch just use the two switches above.'],
+    'set.ai.save': ['ذخیره تنظیمات هوش مصنوعی', 'Save AI settings'],
+    'toast.savedAll': ['همهٔ تنظیمات هوش مصنوعی ذخیره شد ✓', 'All AI settings saved ✓'],
+    'toast.themeLite': ['تم سبک فعال شد — برای سیستم‌های ضعیف', 'Lite theme on — made for weak PCs'],
+    'toast.extOn': ['افزونهٔ {x} فعال شد — دکمه‌اش به ستون کنار آمد', '{x} extension enabled — added to the rail'],
+    'toast.extOff': ['افزونهٔ {x} خاموش شد', '{x} extension disabled'],
+    'toast.noAnimOn': ['انیمیشن‌ها خاموش شد — سبک‌تر از همیشه', 'Animations off — lighter than ever'],
+    'toast.noAnimOff': ['انیمیشن‌ها روشن شد', 'Animations back on'],
+    'toast.noFxOn': ['افکت‌های پس‌زمینه خاموش شد', 'Background effects off'],
+    'toast.noFxOff': ['افکت‌های پس‌زمینه روشن شد', 'Background effects on'],
+    'music.pausedFling': ['ویجت بسته شد — پخش متوقف شد', 'Widget dismissed — playback paused'],
+    'ext.title': ['افزونه‌ها', 'Extensions'],
+    'ext.hint': ['افزونه‌ها بخش‌های اضافهٔ آوا هستند؛ هر کدام را فعال کنی دکمه‌اش به ستون کنار می‌آید و وقتی لازمشان نداری برنامه سبک و جمع‌وجور می‌ماند.', 'Extensions are optional AVA modules; enabling one adds its button to the side rail, keeping the app light otherwise.'],
+    'ext.dns': ['DNS Changer', 'DNS Changer'],
+    'ext.dnsDesc': ['تغییر سریع DNS با کلیک یا صدا، پروفایل نام‌دار بی‌نهایت، پینگ سرعت و وضعیت لحظه‌ای اتصال', 'Fast DNS switching by click or voice, named profiles, speed ping and live status'],
+    'ext.music': ['پلیر موزیک', 'Music player'],
+    'ext.musicDesc': ['پلی‌لیست از پوشهٔ خودت با کاور، ویژوالایزر زنده، ویجت صفحه اصلی و کنترل صوتی', 'Playlist from your own folder with covers, live visualizer, home widget and voice control'],
+    'ext.open': ['باز کردن', 'Open'],
+    'ext.soon': ['به‌زودی', 'Soon'],
+    'ext.soonWeather': ['آب‌وهوا', 'Weather'],
+    'ext.soonDesc': ['وضعیت هوا و پیش‌بینی چند روز آینده — با فرمان صوتی', 'Current weather and multi-day forecast — by voice'],
+    'ext.soonTimer': ['تایمر و پومودورو', 'Timer & Pomodoro'],
+    'ext.soonDesc2': ['تایمر صوتی، شمارش معکوس و حالت تمرکز', 'Voice timer, countdown and focus mode'],
+    'dnsp.title': ['DNS Changer', 'DNS Changer'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
     'set.mic.checking': ['دسترسی میکروفون بررسی می‌شود…', 'Checking microphone access…'],
     'set.mic.default': ['پیش‌فرض ویندوز', 'Windows default'],
@@ -107,6 +149,7 @@
     'set.app.theme': ['تم ظاهری', 'Appearance theme'],
     'set.app.themeHint': ['تیره زمردی یا روشن بنفش/کهربایی — از دکمه خورشید/ماه نوار بالا هم عوض می‌شود', 'Dark emerald or light violet/amber — also via the sun/moon button in the title bar'],
     'set.app.dark': ['تیره (زمردی)', 'Dark (emerald)'], 'set.app.light': ['روشن (بنفش و کهربایی)', 'Light (violet & amber)'],
+    'set.app.lite': ['سبک (سیستم ضعیف)', 'Lite (weak PC)'],
     'set.app.top': ['همیشه روی همه پنجره‌ها', 'Always on top'], 'set.app.topHint': ['پنجره آوا روی برنامه‌های دیگر باقی بماند', 'Keep the AVA window above other apps'],
     'set.app.login': ['اجرای خودکار با ویندوز', 'Start with Windows'], 'set.app.loginHint': ['آوا هنگام روشن شدن سیستم بالا بیاید', 'Launch AVA when the system boots'],
     'set.app.links': ['پیوندها', 'Links'], 'set.app.linksHint': ['ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود', 'Opens the repo and the latest download in your browser'],
@@ -137,7 +180,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۳ — پینگ DNSها با پاپ‌آپ شیشه‌ای («پینگ دی ان اس هامو»)، بخش افزونه‌ها در تنظیمات، انتخاب مدل جمنای/OpenAI، اولویت جمنای در حالت خودکار AI، فیکس رفتار دکمه میکروفون و مانیتور/قفل، ویجت موزیک قابل بستن با کشیدن، باز کردن برنامه‌ها با صدا، یادآوری‌های صوتی، پلیر موزیک و آپدیت دلتا.', 'v0.13 — glass DNS ping popup ("ping my DNS"), Extensions settings section, Gemini/OpenAI model picker, Gemini-first AI auto chain, mic button & monitor/lock fixes, dismissible music widget, open apps by voice, voice reminders, music player, and in-app delta updates.'],
+    'about.desc': ['نسخه ۰.۱۵ — سیستم افزونه‌ها: DNS Changer و پلیر موزیک به‌صورت افزونه در ستون کنار (تا فعالشان نکنی برنامه سبک می‌ماند)، صفحهٔ اختصاصی DNS با مدیریت کامل، بخش بهینه‌سازی با کلید انیمیشن/افکت و تم سبک برای سیستم‌های ضعیف، دکمهٔ میکروفون شیشه‌ای با نور متحرک زیر موس، ویژوالایزر زندهٔ موزیک و پلی‌لیست بهتر، پاز شدن پخش با پرت کردن ویجت، فیکس دکمهٔ تم، فیکس حلقهٔ محو در پس‌زمینه، نمایش نسخهٔ واقعی برنامه و ذخیرهٔ تنظیمات هوش مصنوعی با یک دکمه.', 'v0.15 — Extensions system (DNS Changer & music player as rail extensions), dedicated DNS page, optimization pane (animations/effects off + lite theme), glass mic button with mouse-following glare, live music visualizer, fling-to-pause widget, theme button fix, ghost ring fix, real version labels and one-click AI settings save.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -546,6 +589,20 @@
   const optOpenaiModel = $('#optOpenaiModel');
   const musicPage = $('#musicPage');
   const btnMusic = $('#btnMusic');
+  /* v0.15 — افزونه‌ها و صفحه‌های جدید */
+  const btnExt = $('#btnExt');
+  const btnDnsExt = $('#btnDnsExt');
+  const extPage = $('#extPage');
+  const dnsPage = $('#dnsPage');
+  const extDnsOpt = $('#extDnsOpt');
+  const extMusicOpt = $('#extMusicOpt');
+  const extDnsToggle = $('#extDnsToggle');
+  const extMusicToggle = $('#extMusicToggle');
+  const optNoAnim = $('#optNoAnim');
+  const optNoFx = $('#optNoFx');
+  const btnLiteTheme = $('#btnLiteTheme');
+  const btnSaveAi = $('#btnSaveAi');
+  const mViz = $('#mViz');
   const btnMusicBack = $('#btnMusicBack');
   const btnMusicFolder = $('#btnMusicFolder');
   const mFolder = $('#mFolder');
@@ -662,6 +719,11 @@
     musicShuffle: store.get('musicShuffle', false),
     musicRepeat: store.get('musicRepeat', 'off'),
     lastMusicFolder: store.get('lastMusicFolder', ''),
+    /* v0.15 — افزونه‌ها و بهینه‌سازی */
+    extDns: store.get('extDns', true),      /* DNS Changer پیش‌فرض روشن */
+    extMusic: store.get('extMusic', false), /* موزیک تا کاربر فعالش نکند در ستون نمی‌آید */
+    noAnim: store.get('noAnim', false),
+    noFx: store.get('noFx', false),
   };
   let customCmds = store.get('customCmds', []);
   let history = store.get('history', []);
@@ -839,24 +901,47 @@
   tickClock();
   setInterval(tickClock, 15000);
 
-  /* ---------- تم روشن/تیره ---------- */
+  /* ---------- تم روشن/تیره/سبک (v0.15) + بهینه‌سازی ---------- */
   function applyTheme() {
     if (settings.theme === 'light') document.body.setAttribute('data-theme', 'light');
+    else if (settings.theme === 'lite') document.body.setAttribute('data-theme', 'lite');
     else document.body.removeAttribute('data-theme');
     const ti = $('#themeIcon');
-    if (ti) ti.setAttribute('href', settings.theme === 'light' ? '#i-moon' : '#i-sun');
+    if (ti) ti.setAttribute('href', settings.theme === 'dark' ? '#i-sun' : '#i-moon');
     refreshWaveColors(); /* رنگ اکولایزر با تم همگام شود */
   }
+  /* کلیدهای بهینه‌سازی: بدون انیمیشن / بدون افکت (v0.15) */
+  function applyPerf() {
+    body.classList.toggle('perf-noanim', !!settings.noAnim);
+    body.classList.toggle('perf-nofx', !!settings.noFx || settings.theme === 'lite');
+    if (typeof vizStop === 'function' && (settings.noFx || settings.theme === 'lite')) vizStop();
+  }
+  function syncPerfUI() {
+    if (optNoAnim) optNoAnim.checked = !!settings.noAnim;
+    if (optNoFx) optNoFx.checked = !!settings.noFx;
+    if (btnLiteTheme) btnLiteTheme.classList.toggle('active', settings.theme === 'lite');
+  }
   function setTheme(th, silent = false) {
-    settings.theme = th === 'light' ? 'light' : 'dark';
+    settings.theme = th === 'light' ? 'light' : (th === 'lite' ? 'lite' : 'dark');
     store.set('theme', settings.theme);
+    /* تم سبک خودش انیمیشن و افکت را کم می‌کند (برگشت به تم دیگر، کلیدها سرجایشان می‌مانند) */
+    if (settings.theme === 'lite') {
+      settings.noAnim = true;
+      settings.noFx = true;
+      store.set('noAnim', true);
+      store.set('noFx', true);
+    }
+    applyPerf();
     applyTheme();
+    syncPerfUI();
     if (optTheme) optTheme.value = settings.theme;
-    if (!silent) toast(settings.theme === 'light' ? t('toast.themeLight') : t('toast.themeDark'), '#i-sun');
+    if (!silent) toast(settings.theme === 'light' ? t('toast.themeLight') : (settings.theme === 'lite' ? t('toast.themeLite') : t('toast.themeDark')), '#i-sun');
   }
   const btnTheme = $('#btnTheme');
-  if (btnTheme) btnTheme.addEventListener('click', () => setTheme(settings.theme === 'light' ? 'dark' : 'light'));
+  if (btnTheme) btnTheme.addEventListener('click', () => setTheme(settings.theme === 'dark' ? 'light' : 'dark'));
+  applyPerf();
   applyTheme();
+  syncPerfUI();
 
   /* ---------- کنترل‌های پنجره ---------- */
   const browserHint = () => toast('این دکمه فقط داخل نرم‌افزار الکترون واقعی کار می‌کند', '#i-info');
@@ -3091,6 +3176,39 @@
     toggleListen();
   });
 
+  /* v0.15 — برق شیشهٔ دکمه میکروفون: نور با حرکت موس روی شیشه می‌لغزد
+     (متغیرها روی orbStage ست می‌شوند تا هم .orb-glass و هم .orb-rim ارث ببرند) */
+  (() => {
+    const gst = $('#orbStage');
+    if (!gst || !orb) return;
+    let glareRaf = 0;
+    gst.addEventListener('pointermove', (e) => {
+      if (glareRaf) return;
+      glareRaf = requestAnimationFrame(() => {
+        glareRaf = 0;
+        try {
+          const r = orb.getBoundingClientRect();
+          if (!r.width || !r.height) return;
+          const x = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100));
+          const y = Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100));
+          gst.style.setProperty('--gx', x.toFixed(1) + '%');
+          gst.style.setProperty('--gy', y.toFixed(1) + '%');
+          gst.style.setProperty('--gx2', (100 - x).toFixed(1) + '%');
+          gst.style.setProperty('--gy2', (100 - y).toFixed(1) + '%');
+          const ang = (Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI;
+          gst.style.setProperty('--ga', (ang + 90).toFixed(1) + 'deg');
+        } catch (_) { /* noop */ }
+      });
+    }, { passive: true });
+    gst.addEventListener('pointerleave', () => {
+      gst.style.setProperty('--gx', '32%');
+      gst.style.setProperty('--gy', '24%');
+      gst.style.setProperty('--gx2', '68%');
+      gst.style.setProperty('--gy2', '76%');
+      gst.style.setProperty('--ga', '215deg');
+    });
+  })();
+
   /* تیلت سه‌بعدی اورب با حرکت موس — عمق حرفه‌ای صفحه اصلی */
   (() => {
     const st = $('#orbStage');
@@ -3206,6 +3324,8 @@
       else if (historyPage && !historyPage.hidden) showView('home');
       else if (dictPage && !dictPage.hidden) showView('home');
       else if (musicPage && !musicPage.hidden) showView('home');
+      else if (extPage && !extPage.hidden) showView('home');   /* v0.15 */
+      else if (dnsPage && !dnsPage.hidden) showView('home');    /* v0.15 */
       else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
     }
@@ -3395,7 +3515,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.10.0';
+  let appVersion = '0.15.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -3420,6 +3540,8 @@
     if (historyPage) historyPage.hidden = v !== 'history';
     if (dictPage) dictPage.hidden = v !== 'dict';
     if (musicPage) musicPage.hidden = v !== 'music';
+    if (extPage) extPage.hidden = v !== 'ext';   /* v0.15 */
+    if (dnsPage) dnsPage.hidden = v !== 'dns';   /* v0.15 */
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
@@ -3427,14 +3549,17 @@
     if (btnDict) btnDict.classList.toggle('active', v === 'dict');
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     if (btnMusic) btnMusic.classList.toggle('active', v === 'music');
-    /* ویجت موزیک فقط روی صفحه اصلی دیده می‌شود */
-    if (musicWidget) musicWidget.hidden = v !== 'home' || !(music.tracks && music.tracks.length && music.cur >= 0);
+    if (btnExt) btnExt.classList.toggle('active', v === 'ext');
+    if (btnDnsExt) btnDnsExt.classList.toggle('active', v === 'dns');
+    /* ویجت موزیک فقط روی صفحه اصلی و فقط وقتی افزونهٔ موزیک فعال است */
+    if (musicWidget) musicWidget.hidden = v !== 'home' || !settings.extMusic || !(music.tracks && music.tracks.length && music.cur >= 0);
     $('#main').scrollTop = 0;
     if (v === 'settings') {
       showSettingsPane(settings.settingsPane || 'mic');
       refreshSettingsUI();
       if ((settings.settingsPane || 'mic') === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
     }
+    if (v === 'dns' && bridge && bridge.dns) refreshDnsCurrent(); /* v0.15 — وضعیت DNS در صفحهٔ اختصاصی */
     if (v === 'chat') {
       if (!chatMsgs.childElementCount) chatWelcome();
       setTimeout(() => chatInput.focus(), 150);
@@ -3447,8 +3572,83 @@
   btnChat.addEventListener('click', () => showView(chatPage.hidden ? 'chat' : 'home'));
   btnChatBack.addEventListener('click', () => showView('home'));
 
+  /* ---------- افزونه‌ها (v0.15) — DNS Changer و پلیر موزیک در ستون کنار ---------- */
+  function applyExtensions() {
+    const dnsOn = settings.extDns !== false; /* پیش‌فرض: روشن */
+    const musOn = !!settings.extMusic;       /* پیش‌فرض: خاموش — برنامه سبک می‌ماند */
+    if (btnDnsExt) btnDnsExt.hidden = !dnsOn;
+    if (btnMusic) btnMusic.hidden = !musOn;
+    [extDnsOpt, extDnsToggle].forEach((el) => { if (el) el.checked = dnsOn; });
+    [extMusicOpt, extMusicToggle].forEach((el) => { if (el) el.checked = musOn; });
+    if (!musOn) {
+      try { if (typeof mAudio !== 'undefined' && mAudio && !mAudio.paused) mAudio.pause(); } catch (_) { /* noop */ }
+      if (musicWidget) musicWidget.hidden = true;
+    }
+  }
+  if (btnExt) btnExt.addEventListener('click', () => showView(extPage && !extPage.hidden ? 'home' : 'ext'));
+  if (btnDnsExt) btnDnsExt.addEventListener('click', () => showView('dns'));
+  [$('#btnExtBack'), $('#btnDnsPageBack')].forEach((b) => { if (b) b.addEventListener('click', () => showView('home')); });
+  const btnOpenExtPage = $('#btnOpenExtPage');
+  if (btnOpenExtPage) btnOpenExtPage.addEventListener('click', () => showView('ext'));
+  const btnOpenDnsExt = $('#btnOpenDnsExt');
+  if (btnOpenDnsExt) btnOpenDnsExt.addEventListener('click', () => showView('dns'));
+  const btnOpenMusicExt = $('#btnOpenMusicExt');
+  if (btnOpenMusicExt) btnOpenMusicExt.addEventListener('click', () => {
+    if (!settings.extMusic) { settings.extMusic = true; store.set('extMusic', true); applyExtensions(); }
+    showView('music');
+  });
+  [extDnsOpt, extDnsToggle].forEach((el) => el && el.addEventListener('change', () => {
+    settings.extDns = el.checked;
+    store.set('extDns', settings.extDns);
+    applyExtensions();
+    toast(el.checked ? t('toast.extOn', { x: 'DNS Changer' }) : t('toast.extOff', { x: 'DNS Changer' }), '#i-shield');
+  }));
+  [extMusicOpt, extMusicToggle].forEach((el) => el && el.addEventListener('change', () => {
+    settings.extMusic = el.checked;
+    store.set('extMusic', settings.extMusic);
+    applyExtensions();
+    toast(el.checked ? t('toast.extOn', { x: t('ext.music') }) : t('toast.extOff', { x: t('ext.music') }), '#i-music');
+  }));
+  applyExtensions();
+
+  /* ---------- کلیدهای بهینه‌سازی (v0.15) ---------- */
+  if (optNoAnim) optNoAnim.addEventListener('change', () => {
+    settings.noAnim = optNoAnim.checked;
+    store.set('noAnim', settings.noAnim);
+    applyPerf();
+    toast(settings.noAnim ? t('toast.noAnimOn') : t('toast.noAnimOff'), '#i-pulse');
+  });
+  if (optNoFx) optNoFx.addEventListener('change', () => {
+    settings.noFx = optNoFx.checked;
+    store.set('noFx', settings.noFx);
+    applyPerf();
+    toast(settings.noFx ? t('toast.noFxOn') : t('toast.noFxOff'), '#i-pulse');
+  });
+  if (btnLiteTheme) btnLiteTheme.addEventListener('click', () => setTheme(settings.theme === 'lite' ? 'dark' : 'lite'));
+
+  /* ---------- دکمهٔ ذخیرهٔ تنظیمات هوش مصنوعی (v0.15) ---------- */
+  if (btnSaveAi) btnSaveAi.addEventListener('click', () => {
+    settings.glmKey = ((optGlmKey && optGlmKey.value) || '').trim();
+    store.set('glmKey', settings.glmKey);
+    if (optAiModel) { settings.glmModel = optAiModel.value || 'glm-4.6'; store.set('glmModel', settings.glmModel); }
+    if (optAiProvider) { settings.aiProvider = optAiProvider.value || 'auto'; store.set('aiProvider', settings.aiProvider); }
+    if (optGeminiKey) { settings.geminiKey = optGeminiKey.value.trim(); store.set('geminiKey', settings.geminiKey); }
+    if (optOpenaiKey) { settings.openaiKey = optOpenaiKey.value.trim(); store.set('openaiKey', settings.openaiKey); }
+    if (optGeminiModel) { settings.geminiModel = optGeminiModel.value.trim() || 'gemini-flash-latest'; optGeminiModel.value = settings.geminiModel; store.set('geminiModel', settings.geminiModel); }
+    if (optOpenaiModel) { settings.openaiModel = optOpenaiModel.value.trim() || 'gpt-4o-mini'; optOpenaiModel.value = settings.openaiModel; store.set('openaiModel', settings.openaiModel); }
+    toast(t('toast.savedAll'), '#i-check');
+  });
+
   function loadAppVersion() {
-    const render = () => { updText.textContent = t('upd.current', { x: faNum(appVersion) }); };
+    const render = () => {
+      if (updText) updText.textContent = t('upd.current', { x: faNum(appVersion) });
+      /* v0.15 — نسخهٔ واقعی برنامه در نوار بالا و پایین (قبلاً متن ثابت «۰.۱۱» بود) */
+      const vShort = 'v' + String(appVersion || '').replace(/^v/, '');
+      const tb = $('#tbVersion');
+      if (tb) tb.textContent = vShort;
+      const sb = $('#sbVersion');
+      if (sb) sb.textContent = 'AVA ' + vShort;
+    };
     if (bridge && bridge.system && bridge.system.info) {
       bridge.system.info().then((i) => {
         appVersion = (i && i.version) || appVersion;
@@ -3460,6 +3660,8 @@
   }
 
   function refreshSettingsUI() {
+    if (typeof applyExtensions === 'function') applyExtensions();
+    if (typeof syncPerfUI === 'function') syncPerfUI();
     optTts.checked = !!settings.tts;
     optAutoUpdate.checked = !!settings.autoUpdate;
     optDemo.checked = !!settings.demoMode;
@@ -4292,7 +4494,7 @@
       row.className = 'm-row' + (tIdx === music.cur ? ' current' : '');
       row.dataset.idx = String(tIdx);
       row.innerHTML =
-        `<span class="m-idx num">${tIdx === music.cur && music.playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(tIdx + 1)}</span>` +
+        `<span class="m-idx num">${tIdx === music.cur && music.playing ? '<span class="eqbars"><i></i><i></i><i></i></span>' : faNum(tIdx + 1)}</span>` +
         `<span class="m-thumb">${tr.cover ? `<img src="${tr.cover}" alt=""/>` : '<svg class="ic"><use href="#i-music"/></svg>'}` +
         `<span class="m-hovplay"><svg class="ic"><use href="#i-play"/></svg></span></span>` +
         `<span class="m-tt"><b></b><span class="m-ar"></span></span>` +
@@ -4374,7 +4576,7 @@
         if (oldW) oldW.remove();
         if (tr.cover) mwCover.insertAdjacentHTML('afterbegin', coverHtml);
       }
-      if (musicWidget) musicWidget.hidden = music.widgetDismissedFor === music.cur; /* با درگ بسته شده — تا آهنگ بعدی */
+      if (musicWidget) musicWidget.hidden = !settings.extMusic || music.widgetDismissedFor === music.cur; /* افزونهٔ موزیک خاموش یا با درگ بسته شده → مخفی */
     } else {
       if (musicWidget) musicWidget.hidden = true;
     }
@@ -4384,7 +4586,7 @@
       rowEl.classList.toggle('current', i === music.cur);
       rowEl.classList.toggle('playing-row', playing && i === music.cur);
       const idx = rowEl.querySelector('.m-idx');
-      if (idx) idx.innerHTML = i === music.cur && playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(i + 1);
+      if (idx) idx.innerHTML = i === music.cur && playing ? '<span class="eqbars"><i></i><i></i><i></i></span>' : faNum(i + 1);
     });
   }
 
@@ -4429,8 +4631,8 @@
 
   if (mAudio) {
     mAudio.volume = settings.musicVol;
-    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); });
-    mAudio.addEventListener('pause', () => { music.playing = false; updatePlayerUI(); });
+    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); vizStart(); });
+    mAudio.addEventListener('pause', () => { music.playing = false; updatePlayerUI(); vizStop(); });
     mAudio.addEventListener('ended', () => {
       if (music.repeat === 'one') playTrack(music.cur);
       else musicNext(true);
@@ -4483,6 +4685,83 @@
       }) : null;
     } catch (_) { /* noop */ }
   }
+
+  /* ---------- ویژوالایزر زندهٔ موزیک (v0.15) ----------
+     AnalyserNode روی همان <audio>؛ فقط هنگام پخش رسم می‌شود (~۳۰fps برای CPU کم)
+     و با کلیدهای بهینه‌سازی/تم سبک کلاً خاموش می‌ماند. */
+  let vizCtx = null, vizAnalyser = null, vizData = null, vizRaf = 0, vizTick = false;
+  function vizEnsure() {
+    if (vizAnalyser) return true;
+    if (!mViz) return false;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      vizCtx = vizCtx || new AC();
+      const src = vizCtx.createMediaElementSource(mAudio); /* فقط یک بار مجاز است */
+      vizAnalyser = vizCtx.createAnalyser();
+      vizAnalyser.fftSize = 256;
+      vizAnalyser.smoothingTimeConstant = 0.82;
+      src.connect(vizAnalyser);
+      vizAnalyser.connect(vizCtx.destination);
+      vizData = new Uint8Array(vizAnalyser.frequencyBinCount);
+      return true;
+    } catch (_) { vizAnalyser = null; return false; }
+  }
+  function vizResize() {
+    if (!mViz) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const w = mViz.clientWidth || 480;
+    const h = mViz.clientHeight || 64;
+    if (mViz.width !== Math.round(w * dpr) || mViz.height !== Math.round(h * dpr)) {
+      mViz.width = Math.round(w * dpr);
+      mViz.height = Math.round(h * dpr);
+    }
+  }
+  function vizDraw() {
+    vizRaf = 0;
+    if (!vizAnalyser || !mViz || mAudio.paused) { if (mViz) mViz.classList.remove('on'); return; }
+    vizTick = !vizTick;
+    if (vizTick) { vizRaf = requestAnimationFrame(vizDraw); return; } /* ~۳۰ فریم بر ثانیه */
+    try {
+      vizResize();
+      const g = mViz.getContext('2d');
+      const W = mViz.width, H = mViz.height;
+      vizAnalyser.getByteFrequencyData(vizData);
+      g.clearRect(0, 0, W, H);
+      const acc = (getComputedStyle(document.body).getPropertyValue('--acc-rgb') || '16, 185, 129').trim();
+      const bars = 52;
+      const bw = W / bars;
+      for (let i = 0; i < bars; i++) {
+        const vi = Math.floor((i / bars) * vizData.length * 0.72); /* فرکانس‌های خیلی بالا را کنار می‌گذاریم */
+        const v = (vizData[vi] || 0) / 255;
+        const bh = Math.max(2 * (window.devicePixelRatio || 1), v * H * 0.88);
+        const x = i * bw + bw * 0.2;
+        const w2 = bw * 0.6;
+        const grad = g.createLinearGradient(0, (H - bh) / 2, 0, (H + bh) / 2);
+        grad.addColorStop(0, `rgba(${acc}, 0.95)`);
+        grad.addColorStop(0.5, `rgba(${acc}, 0.38)`);
+        grad.addColorStop(1, `rgba(${acc}, 0.95)`);
+        g.fillStyle = grad;
+        const y = (H - bh) / 2;
+        if (g.roundRect) { g.beginPath(); g.roundRect(x, y, w2, bh, Math.min(w2 / 2, 4)); g.fill(); }
+        else g.fillRect(x, y, w2, bh);
+      }
+    } catch (_) { /* noop */ }
+    vizRaf = requestAnimationFrame(vizDraw);
+  }
+  function vizStart() {
+    if (!mViz || settings.noFx || settings.noAnim || settings.theme === 'lite') { if (mViz) mViz.classList.remove('on'); return; }
+    if (!vizEnsure()) return;
+    try { if (vizCtx && vizCtx.state === 'suspended') vizCtx.resume().catch(() => {}); } catch (_) { /* noop */ }
+    vizResize();
+    mViz.classList.add('on');
+    if (!vizRaf) vizRaf = requestAnimationFrame(vizDraw);
+  }
+  function vizStop() {
+    if (vizRaf) { cancelAnimationFrame(vizRaf); vizRaf = 0; }
+    if (mViz) mViz.classList.remove('on');
+  }
+  window.addEventListener('resize', () => { if (vizRaf) vizResize(); });
 
   async function handleMusicFolder(ev) {
     const files = Array.from((ev.target && ev.target.files) || []).filter((f) => AUDIO_EXT.test(f.name));
@@ -4614,6 +4893,8 @@
           music.widgetDismissedFor = music.cur;
         }, 300);
         toast(t('music.widgetOff'), '#i-music');
+        /* v0.15 — پرت کردن ویجت = پاز پخش */
+        try { if (!mAudio.paused) { mAudio.pause(); toast(t('music.pausedFling'), '#i-pause'); } } catch (_) { /* noop */ }
       } else {
         musicWidget.style.transition = 'transform 0.25s cubic-bezier(0.22, 1.2, 0.36, 1), opacity 0.25s ease';
         musicWidget.style.transform = '';

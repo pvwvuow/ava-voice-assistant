@@ -1,13 +1,15 @@
 /**
- * Smoke test for AVA v0.14.0 — boots the app under Xvfb, checks
+ * Smoke test for AVA v0.15.0 — boots the app under Xvfb, checks
  * v0.11 UI elements (titlebar physical layout, update badge, music
  * page, live text, new settings), suggestion rotation, theme +
  * language switching, v0.12 additions (phonetic app-open, reminders,
  * scanner bridges, key rotation), v0.13 additions (Extensions
  * pane, DNS ping popup, Gemini/OpenAI model inputs, removed rail
- * tooltip, mic busy feedback, dismissible music widget, monitor fix)
- * and v0.14 additions: 3-layer bulletproof updater (smart check,
- * 3-route direct GitHub check, direct download IPC, updater.log).
+ * tooltip, mic busy feedback, dismissible music widget, monitor fix),
+ * v0.14 additions (3-layer bulletproof updater) and v0.15 additions:
+ * extensions system (DNS Changer + music player in the rail), DNS
+ * page, optimization pane (no-anim/no-fx/lite theme), orb glass
+ * glare, music visualizer, fling-to-pause, dynamic version labels.
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -304,6 +306,64 @@ app.whenReady().then(async () => {
       }))()`);
       ok('manual download button in DOM (hidden)', upd.btn && upd.hidden === true, JSON.stringify(upd));
     } catch (e) { console.log('SKIP | manual dl button | ' + String(e && e.message).slice(0, 50)); }
+
+    // 5.57 v0.15 — extensions system, perf pane, lite theme, glass glare,
+    // visualizer, fling-pause, theme-btn fix, ghost-ring fix, version labels
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v15 = {
+        themeBtnNoDrag: css.includes('padding-left: 8px; -webkit-app-region: no-drag'),
+        ghostRingFix: css.includes('body.app-blur .orb-ring { opacity: 0 !important; }'),
+        orbGlareCss: css.includes('radial-gradient(46% 38% at var(--gx)') && appjs.includes("setProperty('--gx'"),
+        orbGlareJs: appjs.includes("setProperty('--gx'") && appjs.includes("setProperty('--ga'"),
+        extPages: html.includes('id="extPage"') && html.includes('id="dnsPage"') && html.includes('id="btnExt"') && html.includes('id="btnDnsExt"'),
+        extCards: html.includes('id="extDnsToggle"') && html.includes('id="extMusicToggle"') && html.includes('id="btnOpenDnsExt"') && html.includes('id="btnOpenMusicExt"'),
+        extLogic: appjs.includes('function applyExtensions(') && appjs.includes("store.set('extMusic'") && appjs.includes("settings.extDns !== false"),
+        perfToggles: html.includes('id="optNoAnim"') && html.includes('id="optNoFx"') && html.includes('id="btnLiteTheme"'),
+        perfCss: css.includes('body.perf-noanim') && css.includes('body.perf-nofx'),
+        liteTheme: css.includes('[data-theme="lite"]') && appjs.includes("settings.theme === 'lite'") && html.includes('value="lite"'),
+        vizCanvas: html.includes('id="mViz"') && appjs.includes('createMediaElementSource') && appjs.includes('function vizStart()') && appjs.includes('function vizStop()'),
+        eqbars: appjs.includes('class="eqbars"') && css.includes('.eqbars i'),
+        flingPause: appjs.includes('music.pausedFling'),
+        aiSaveBtn: html.includes('id="btnSaveAi"') && appjs.includes("toast(t('toast.savedAll')"),
+        versionIds: html.includes('id="tbVersion"') && html.includes('id="sbVersion"') && appjs.includes("$('#tbVersion')"),
+        oldVersionTextGone: !/<span class="tb-badge">v0\.11<\/span>/.test(html) && !/>AVA v0\.11\.0<\/span>/.test(html),
+        dnsMgmtMovedToPage: html.includes('id="dnsAddForm"') && /id="dnsPage"[\s\S]*id="dnsAddForm"/.test(html),
+      };
+      ok('theme button no-drag fix', v15.themeBtnNoDrag);
+      ok('ghost ring on blur fixed', v15.ghostRingFix);
+      ok('orb glass glare (css+js)', v15.orbGlareCss && v15.orbGlareJs);
+      ok('extensions pages + rail buttons', v15.extPages);
+      ok('extension cards + toggles', v15.extCards);
+      ok('extensions logic (default dns on / music off)', v15.extLogic);
+      ok('optimization toggles in settings', v15.perfToggles && v15.perfCss);
+      ok('lite theme for weak PCs', v15.liteTheme);
+      ok('music visualizer (canvas+analyser)', v15.vizCanvas);
+      ok('playlist playing-bars', v15.eqbars);
+      ok('widget fling pauses music', v15.flingPause);
+      ok('AI settings save button', v15.aiSaveBtn);
+      ok('dynamic version labels', v15.versionIds && v15.oldVersionTextGone);
+      ok('full DNS management lives on dnsPage', v15.dnsMgmtMovedToPage);
+    } catch (e) { console.log('SKIP | v0.15 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 5.58 v0.15 — DOM probes: rail buttons respect extension defaults
+    try {
+      const ext = await probe(`(() => ({
+        extBtn: !!document.querySelector('#btnExt'),
+        extPage: !!document.querySelector('#extPage') && document.querySelector('#extPage').hidden,
+        dnsPage: !!document.querySelector('#dnsPage') && document.querySelector('#dnsPage').hidden,
+        dnsRailVisible: !document.querySelector('#btnDnsExt').hidden,
+        musicRailHidden: document.querySelector('#btnMusic').hidden,
+        viz: !!document.querySelector('#mViz'),
+        perfPane: !!document.querySelector('.set-nav-item[data-pane="perf"]'),
+        liteOpt: !!document.querySelector('#optTheme option[value="lite"]'),
+      }))()`);
+      ok('extensions UI in DOM (dns on / music off)', ext.extBtn && ext.extPage && ext.dnsPage && ext.dnsRailVisible && ext.musicRailHidden, JSON.stringify(ext));
+      ok('viz canvas + perf pane + lite option in DOM', ext.viz && ext.perfPane && ext.liteOpt);
+    } catch (e) { console.log('SKIP | v0.15 dom | ' + String(e && e.message).slice(0, 50)); }
 
     // 5.6 v0.13 — toggleListen busy guard: simulate processing state click
     try {

@@ -25,6 +25,7 @@
       <symbol id="i-restore" viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"/></symbol>
       <symbol id="i-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
       <symbol id="i-send" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
       <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
       <symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
       <symbol id="i-mute" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
@@ -89,7 +90,7 @@
         <div class="tb-brand">
           <div class="tb-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
           <span class="tb-name">آوا</span>
-          <span class="tb-badge">v0.11</span>
+          <span class="tb-badge num" id="tbVersion">v—</span>
         </div>
         <button class="tb-btn tb-theme" id="btnTheme" aria-label="تم روشن/تیره" data-i18n-tip="tb.theme"><svg class="ic"><use id="themeIcon" href="#i-sun"/></svg></button>
       </div>
@@ -113,7 +114,9 @@
           <button class="rail-item active" id="btnHome" data-i18n-tip="nav.home"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnDict" data-i18n-tip="nav.dict"><svg class="ic"><use href="#i-type"/></svg></button>
           <button class="rail-item" id="btnChat" data-i18n-tip="nav.chat"><svg class="ic"><use href="#i-chat"/></svg></button>
-          <button class="rail-item" id="btnMusic" data-i18n-tip="nav.music"><svg class="ic"><use href="#i-music"/></svg><i class="rail-ind"></i></button>
+          <button class="rail-item" id="btnExt" data-i18n-tip="nav.ext"><svg class="ic"><use href="#i-grid"/></svg><i class="rail-ind"></i></button>
+          <button class="rail-item" id="btnDnsExt" data-i18n-tip="nav.dnsExt" hidden><svg class="ic"><use href="#i-shield"/></svg></button>
+          <button class="rail-item" id="btnMusic" data-i18n-tip="nav.music" hidden><svg class="ic"><use href="#i-music"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnHistory" data-i18n-tip="nav.history"><svg class="ic"><use href="#i-history"/></svg></button>
         </nav>
         <div class="rail-bottom">
@@ -299,42 +302,35 @@
               <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
               <div class="set-pane" data-pane="ext">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ext.ping">پینگ DNSها</b><span data-i18n="set.ext.pingHint">سرعت پاسخ همه DNSهای ذخیره‌شده‌ات را می‌سنجد تا بهترین را انتخاب کنی — با صدا هم: «پینگ دی ان اس هامو»</span></span>
-                  <button class="chip" id="btnDnsPing"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.ext.pingBtn">پینگ بگیر</span></button>
+                  <span class="set-info"><b data-i18n="set.ext.dns">افزونهٔ DNS Changer</b><span data-i18n="set.ext.dnsHint">با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند</span></span>
+                  <span class="sw"><input type="checkbox" id="extDnsOpt"/><i></i></span>
                 </div>
-                <p class="set-note" data-i18n="set.ext.note">این بخش مخصوص امکانات خاص است؛ اگر لازمشان نداری می‌توانی نادیده‌شان بگیری. مدیریت کامل DNS و ابزارهای خاص این‌جا جمع شده‌اند.</p>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.music">افزونهٔ پلیر موزیک</b><span data-i18n="set.ext.musicHint">تا وقتی فعالش نکنی در ستون نمی‌آید و برنامه سبک‌تر می‌ماند</span></span>
+                  <span class="sw"><input type="checkbox" id="extMusicOpt"/><i></i></span>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.open">مدیریت افزونه‌ها</b><span data-i18n="set.ext.openHint">صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی</span></span>
+                  <button class="chip" id="btnOpenExtPage"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ext.openBtn">باز کردن افزونه‌ها</span></button>
+                </div>
+                <p class="set-note" data-i18n="set.ext.note2">به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.</p>
+              </div>
 
-                <!-- مدیریت DNS (قبل‌تر پنله جدا بود) -->
+              <!-- بهینه‌سازی (v0.15) -->
+              <div class="set-pane" data-pane="perf">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dns.state">وضعیت فعلی</b><span data-i18n="set.dns.stateHint">«دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار (DHCP) برمی‌گرداند</span></span>
-                  <button class="chip sm" id="btnDnsReset"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.dns.reset">بازگردانی خودکار</span></button>
+                  <span class="set-info"><b data-i18n="set.perf.anim">انیمیشن‌ها</b><span data-i18n="set.perf.animHint">همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر</span></span>
+                  <span class="sw"><input type="checkbox" id="optNoAnim"/><i></i></span>
                 </div>
-                <div class="dns-current" id="dnsCurrentBox">در حال خواندن…</div>
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dns.quick">افزودن سریع DNS</b><span data-i18n="set.dns.quickHint">فرم شیشه‌ای کوچک داخل صفحه اصلی: اسم + دو آی‌پی + فعال‌سازی فوری — با فرمان صوتی «تنظیم دی ان اس جدید» هم باز می‌شود</span></span>
-                  <button class="chip" id="btnQuickDns"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.quickBtn">فرم DNS جدید</span></button>
+                  <span class="set-info"><b data-i18n="set.perf.fx">افکت‌های پس‌زمینه</b><span data-i18n="set.perf.fxHint">ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند</span></span>
+                  <span class="sw"><input type="checkbox" id="optNoFx"/><i></i></span>
                 </div>
-                <form id="dnsAddForm" class="dns-form" autocomplete="off">
-                  <input type="hidden" id="dnsEditId" value="" />
-                  <div class="dns-fields">
-                    <input type="text" id="dnsName" class="set-input" data-i18n-ph="set.dns.namePh" placeholder="اسم DNS (مثلاً: الکترو، کاری‌ام، …)" />
-                    <input type="text" id="dnsPrimary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p1Ph" placeholder="DNS اول (Preferred) — 78.157.42.100" />
-                    <input type="text" id="dnsSecondary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p2Ph" placeholder="DNS دوم (Alternate) — اختیاری" />
-                  </div>
-                  <div class="set-links">
-                    <button type="submit" class="chip" id="dnsSaveBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.save">ذخیره DNS</span></button>
-                    <button type="button" class="chip" id="dnsCancelEdit" hidden><svg class="ic"><use href="#i-close"/></svg><span data-i18n="set.dns.cancelEdit">لغو ویرایش</span></button>
-                  </div>
-                </form>
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dns.builtin">DNSهای معروف (یک‌کلیکی)</b><span data-i18n="set.dns.builtinHint">برای افزودن به فهرست‌ت کلیک کن — فعال‌سازی با دکمه «فعال‌سازی»</span></span>
-                  <div class="set-links" id="dnsBuiltins"></div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.theme">تم سبک (سیستم ضعیف)</b><span data-i18n="set.perf.themeHint">ظاهر ساده و صاف با رنگ‌های ثابت — بدون شیشه و گرادیان سنگین، ولی همچنان تمیز و مرتب</span></span>
+                  <button class="chip" id="btnLiteTheme"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.perf.themeBtn">فعال‌سازی تم سبک</span></button>
                 </div>
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dns.mine">فهرست DNSهای من</b><span data-i18n="set.dns.mineHint">بدون محدودیت — فعال‌سازی، ویرایش و حذف</span></span>
-                  <div id="dnsProfilesList" class="dns-list"></div>
-                </div>
-                <p class="set-note" data-i18n="set.dns.note">فرمان صوتی: «دی ان اس الکترو» یا «دی اناس شکن» → مستقیم اعمال می‌شود؛ «دی ان اس شماره ۱» → پروفایل اول تو؛ «تنظیم دی ان اس جدید» → فرم شیشه‌ای. اعمال DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند.</p>
+                <p class="set-note" data-i18n="set.perf.note">تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.</p>
               </div>
 
               <!-- صدا و پاسخ گفتاری -->
@@ -416,6 +412,9 @@
                     <option value="gpt-4.1"></option>
                   </datalist>
                 </div>
+                <div class="set-links">
+                  <button class="chip" id="btnSaveAi"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="set.ai.save">ذخیره تنظیمات هوش مصنوعی</span></button>
+                </div>
                 <p class="set-note" data-i18n="set.ai.note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به هوش مصنوعی می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
               </div>
 
@@ -433,6 +432,7 @@
                   <select id="optTheme" class="set-select">
                     <option value="dark" data-i18n="set.app.dark">تیره (زمردی)</option>
                     <option value="light" data-i18n="set.app.light">روشن (بنفش و کهربایی)</option>
+                    <option value="lite" data-i18n="set.app.lite">سبک (سیستم ضعیف)</option>
                   </select>
                 </div>
                 <label class="set-row">
@@ -478,6 +478,7 @@
               <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
               <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
               <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
+              <button class="set-nav-item" data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
               <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
               <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
               <button class="set-nav-item" data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
@@ -582,6 +583,7 @@
               <input type="range" id="mSeek" min="0" max="1000" value="0" />
               <span class="m-time num" id="mDur">0:00</span>
             </div>
+            <canvas id="mViz" height="64" aria-hidden="true"></canvas>
             <div class="m-controls">
               <button class="m-ctl" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
               <button class="m-ctl big" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
@@ -602,6 +604,98 @@
           <div class="m-list" id="mList"></div>
           <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
         </section>
+
+        <!-- ============ صفحهٔ افزونه‌ها (v0.15) ============ -->
+        <section id="extPage" class="musicpage" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-grid"/></svg> <span data-i18n="ext.title">افزونه‌ها</span></h2>
+            <div class="music-top-actions">
+              <button class="chip" id="btnExtBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
+            </div>
+          </header>
+          <p class="set-note" data-i18n="ext.hint">افزونه‌ها بخش‌های اضافهٔ آوا هستند؛ هر کدام را فعال کنی دکمه‌اش به ستون کنار می‌آید و وقتی لازمشان نداری برنامه سبک و جمع‌وجور می‌ماند.</p>
+          <div class="ext-grid">
+            <div class="ext-card glass" id="extCardDns">
+              <div class="ext-ico"><svg class="ic"><use href="#i-shield"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.dns">DNS Changer</b>
+                <span data-i18n="ext.dnsDesc">تغییر سریع DNS با کلیک یا صدا، پروفایل نام‌دار بی‌نهایت، پینگ سرعت و وضعیت لحظه‌ای اتصال</span>
+              </div>
+              <div class="ext-actions">
+                <span class="sw"><input type="checkbox" id="extDnsToggle" aria-label="فعال‌سازی DNS Changer"/><i></i></span>
+                <button class="chip sm" id="btnOpenDnsExt"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="ext.open">باز کردن</span></button>
+              </div>
+            </div>
+            <div class="ext-card glass" id="extCardMusic">
+              <div class="ext-ico"><svg class="ic"><use href="#i-music"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.music">پلیر موزیک</b>
+                <span data-i18n="ext.musicDesc">پلی‌لیست از پوشهٔ خودت با کاور، ویژوالایزر زنده، ویجت صفحه اصلی و کنترل صوتی</span>
+              </div>
+              <div class="ext-actions">
+                <span class="sw"><input type="checkbox" id="extMusicToggle" aria-label="فعال‌سازی پلیر موزیک"/><i></i></span>
+                <button class="chip sm" id="btnOpenMusicExt"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="ext.open">باز کردن</span></button>
+              </div>
+            </div>
+            <div class="ext-card glass soon">
+              <div class="ext-ico"><svg class="ic"><use href="#i-cloud"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.soonWeather">آب‌وهوا</b>
+                <span data-i18n="ext.soonDesc">وضعیت هوا و پیش‌بینی چند روز آینده — با فرمان صوتی</span>
+              </div>
+              <div class="ext-actions"><span class="soon-chip" data-i18n="ext.soon">به‌زودی</span></div>
+            </div>
+            <div class="ext-card glass soon">
+              <div class="ext-ico"><svg class="ic"><use href="#i-timer"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.soonTimer">تایمر و پومودورو</b>
+                <span data-i18n="ext.soonDesc2">تایمر صوتی، شمارش معکوس و حالت تمرکز</span>
+              </div>
+              <div class="ext-actions"><span class="soon-chip" data-i18n="ext.soon">به‌زودی</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ صفحهٔ DNS Changer (v0.15) — مدیریت کامل ============ -->
+        <section id="dnsPage" class="musicpage" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-shield"/></svg> <span data-i18n="dnsp.title">DNS Changer</span></h2>
+            <div class="music-top-actions">
+              <button class="chip" id="btnDnsPing"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.ext.pingBtn">پینگ بگیر</span></button>
+              <button class="chip" id="btnDnsPageBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
+            </div>
+          </header>
+          <div class="set-row">
+            <span class="set-info"><b data-i18n="set.dns.state">وضعیت فعلی</b><span data-i18n="set.dns.stateHint">«دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار (DHCP) برمی‌گرداند</span></span>
+            <button class="chip sm" id="btnDnsReset"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.dns.reset">بازگردانی خودکار</span></button>
+          </div>
+          <div class="dns-current" id="dnsCurrentBox">در حال خواندن…</div>
+          <div class="set-row">
+            <span class="set-info"><b data-i18n="set.dns.quick">افزودن سریع DNS</b><span data-i18n="set.dns.quickHint">فرم شیشه‌ای کوچک داخل صفحه اصلی: اسم + دو آی‌پی + فعال‌سازی فوری — با فرمان صوتی «تنظیم دی ان اس جدید» هم باز می‌شود</span></span>
+            <button class="chip" id="btnQuickDns"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.quickBtn">فرم DNS جدید</span></button>
+          </div>
+          <form id="dnsAddForm" class="dns-form" autocomplete="off">
+            <input type="hidden" id="dnsEditId" value="" />
+            <div class="dns-fields">
+              <input type="text" id="dnsName" class="set-input" data-i18n-ph="set.dns.namePh" placeholder="اسم DNS (مثلاً: الکترو، کاری‌ام، …)" />
+              <input type="text" id="dnsPrimary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p1Ph" placeholder="DNS اول (Preferred) — 78.157.42.100" />
+              <input type="text" id="dnsSecondary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p2Ph" placeholder="DNS دوم (Alternate) — اختیاری" />
+            </div>
+            <div class="set-links">
+              <button type="submit" class="chip" id="dnsSaveBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.save">ذخیره DNS</span></button>
+              <button type="button" class="chip" id="dnsCancelEdit" hidden><svg class="ic"><use href="#i-close"/></svg><span data-i18n="set.dns.cancelEdit">لغو ویرایش</span></button>
+            </div>
+          </form>
+          <div class="set-row col">
+            <span class="set-info"><b data-i18n="set.dns.builtin">DNSهای معروف (یک‌کلیکی)</b><span data-i18n="set.dns.builtinHint">برای افزودن به فهرست‌ت کلیک کن — فعال‌سازی با دکمه «فعال‌سازی»</span></span>
+            <div class="set-links" id="dnsBuiltins"></div>
+          </div>
+          <div class="set-row col">
+            <span class="set-info"><b data-i18n="set.dns.mine">فهرست DNSهای من</b><span data-i18n="set.dns.mineHint">بدون محدودیت — فعال‌سازی، ویرایش و حذف</span></span>
+            <div id="dnsProfilesList" class="dns-list"></div>
+          </div>
+          <p class="set-note" data-i18n="set.dns.note">فرمان صوتی: «دی ان اس الکترو» یا «دی اناس شکن» → مستقیم اعمال می‌شود؛ «دی ان اس شماره ۱» → پروفایل اول تو؛ «تنظیم دی ان اس جدید» → فرم شیشه‌ای. اعمال DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند.</p>
+        </section>
       </main>
     </div>
 
@@ -618,7 +712,7 @@
         <i class="sb-sep"></i>
         <span class="sb-item num" id="sbClock">--:--</span>
         <i class="sb-sep"></i>
-        <span class="sb-item">AVA v0.11.0</span>
+        <span class="sb-item num" id="sbVersion">AVA v—</span>
       </div>
     </footer>
   </div>
