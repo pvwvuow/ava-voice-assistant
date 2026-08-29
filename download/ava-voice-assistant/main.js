@@ -1638,7 +1638,17 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
-  const models = [...new Set([String(model || 'gemini-2.0-flash'), 'gemini-2.0-flash-lite'])].filter(Boolean);
+  /* زنجیرهٔ مدل: اول مدلِ انتخابی کاربر، بعد جدیدترین فلاش (نام مستعار همیشه‌سبز)
+     و بعد نسل‌های قدیمی‌تر به‌عنوان فالبک — اگر مدلی منسوخ شده باشد (404)، خودکار
+     مدل بعدی امتحان می‌شود تا «دیگر در دسترس نیست» دیگر به کاربر نرسد. */
+  const models = [...new Set([
+    String(model || '').trim(),
+    'gemini-flash-latest',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+  ])].filter(Boolean);
   let lastErr = null;
   /* چرخش کلید × مدل: کلید محدود/خراب → کلید بعدی؛ مدل نبود → مدل بعدی */
   for (const k of keys) {
@@ -1682,7 +1692,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
       }
     }
   }
-  return { ok: false, error: lastErr || 'هیچ کلید Gemini جواب نداد' };
+  return { ok: false, error: (lastErr || 'هیچ کلید Gemini جواب نداد') + ` (مدل‌های امتحان‌شده: ${models.join('، ')})` };
 });
 
 ipcMain.handle('ai:openai', async (_e, p) => {
@@ -1737,6 +1747,91 @@ ipcMain.handle('custom:run', (_e, script) => {
         resolve({ ok: true, out: ((stdout || '') + (stderr ? `\n${stderr}` : '')).trim().slice(0, 500) });
       }
     });
+  });
+});
+
+/* ---------- افزونهٔ کنترل دیسکورد (v0.16) ----------
+   بدون توکن رسمی — با فوکوس‌کردن پنجرهٔ دیسکورد و کلیدهای میان‌بر:
+   • mute/deafen: کلیدهای پیش‌فرض دیسکورد (Ctrl+Shift+M / Ctrl+Shift+D)
+   • hangup/answer/decline: کلیدهای دلخواه کاربر (در Discord → Settings →
+     Keybinds باید اکشن‌های Disconnect/Answer/Decline را به همین کلیدها وصل کند)
+   • call: باز کردن دیالوگ Quick Switcher (Ctrl+K)، چسباندن نام مخاطب و Enter،
+     سپس تلاش برای کلیکِ دکمهٔ «Start Voice Call» با UIAutomation */
+ipcMain.handle('discord:cmd', (_e, p) => {
+  const { action, name } = p || {};
+  const A = String(action || '');
+  const nm = String(name || '').replace(/['’`]/g, '');
+  const ps = `
+$ErrorActionPreference = 'SilentlyContinue'
+$sig = @'
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+[DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+'@
+Add-Type -MemberDefinition $sig -Name W -Namespace AvaDc | Out-Null
+$proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
+[AvaDc.W]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null
+[AvaDc.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [AvaDc.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+Start-Sleep -Milliseconds 120
+[AvaDc.W]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
+Start-Sleep -Milliseconds 450
+$ws = New-Object -ComObject WScript.Shell
+$action = '${A.replace(/'/g, "")}'
+switch ($action) {
+  'focus'   { Write-Output 'OK' }
+  'mute'    { $ws.SendKeys('^+m'); Start-Sleep -Milliseconds 250; Write-Output 'OK:MUTE' }
+  'deafen'  { $ws.SendKeys('^+d'); Start-Sleep -Milliseconds 250; Write-Output 'OK:DEAFEN' }
+  'hangup'  { $ws.SendKeys('^+h'); Start-Sleep -Milliseconds 250; Write-Output 'OK:HANGUP' }
+  'answer'  { $ws.SendKeys('^+a'); Start-Sleep -Milliseconds 250; Write-Output 'OK:ANSWER' }
+  'decline' { $ws.SendKeys('^+e'); Start-Sleep -Milliseconds 250; Write-Output 'OK:DECLINE' }
+  'call' {
+    $name = '${nm.replace(/'/g, "")}'
+    if ($name) { Set-Clipboard -Value $name | Out-Null }
+    $ws.SendKeys('^k'); Start-Sleep -Milliseconds 1000
+    if ($name) { $ws.SendKeys('^v'); Start-Sleep -Milliseconds 900 }
+    $ws.SendKeys('{ENTER}'); Start-Sleep -Milliseconds 1600
+    try {
+      Add-Type -AssemblyName UIAutomationClient | Out-Null
+      Add-Type -AssemblyName UIAutomationTypes | Out-Null
+      $root = [System.Windows.Automation.AutomationElement]::RootElement
+      $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $proc.MainWindowHandle)
+      $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+      if ($win) {
+        $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+        $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
+        foreach ($b in $btns) {
+          $bn = ''
+          try { $bn = $b.Current.Name } catch {}
+          if ($bn -match 'Start Voice Call|^Voice Call$|Join Voice|Call') {
+            ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke()
+            Write-Output 'OK:CALLING'
+            exit
+          }
+        }
+      }
+      Write-Output 'OK:DM_OPENED'
+    } catch { Write-Output 'OK:DM_OPENED' }
+  }
+  default { Write-Output 'ERR:UNKNOWN' }
+}`.trim();
+
+  const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+  return new Promise((resolve) => {
+    exec(`powershell -NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
+      { windowsHide: true, timeout: 45000, maxBuffer: 1024 * 512 },
+      (err, stdout) => {
+        const out = String(stdout || '').trim();
+        if (err && !out) return resolve({ ok: false, error: String(err.message || 'PowerShell اجرا نشد').slice(0, 160) });
+        if (/^ERR:/.test(out)) {
+          const msgs = {
+            'ERR:NO_DISCORD': 'دیسکورد باز نیست — اول دیسکورد را باز کن',
+            'ERR:UNKNOWN': 'فرمان دیسکورد شناخته نشد',
+          };
+          return resolve({ ok: false, error: msgs[out] || out });
+        }
+        resolve({ ok: true, result: out || 'OK' });
+      });
   });
 });
 

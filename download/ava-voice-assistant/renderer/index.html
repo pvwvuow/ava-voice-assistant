@@ -26,6 +26,7 @@
       <symbol id="i-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
       <symbol id="i-send" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
       <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
       <symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
       <symbol id="i-mute" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
@@ -310,6 +311,10 @@
                   <span class="sw"><input type="checkbox" id="extMusicOpt"/><i></i></span>
                 </div>
                 <div class="set-row">
+                  <span class="set-info"><b data-i18n="ext.discord">کنترل دیسکورد با صدا</b><span data-i18n="ext.discordHint">زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد</span></span>
+                  <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
+                </div>
+                <div class="set-row">
                   <span class="set-info"><b data-i18n="set.ext.open">مدیریت افزونه‌ها</b><span data-i18n="set.ext.openHint">صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی</span></span>
                   <button class="chip" id="btnOpenExtPage"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ext.openBtn">باز کردن افزونه‌ها</span></button>
                 </div>
@@ -396,6 +401,7 @@
                   <input type="text" id="optGeminiModel" class="set-input" list="geminiModelList" dir="ltr" data-i18n-ph="set.ai.geminiModelPh" placeholder="gemini-flash-latest" autocomplete="off" />
                   <datalist id="geminiModelList">
                     <option value="gemini-flash-latest"></option>
+                    <option value="gemini-3.5-flash-lite"></option>
                     <option value="gemini-2.5-flash"></option>
                     <option value="gemini-2.5-flash-lite"></option>
                     <option value="gemini-2.0-flash"></option>
@@ -557,7 +563,9 @@
           <p class="set-note chat-note" data-i18n="chat.note">آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.</p>
         </section>
 
-        <!-- ============ صفحه پلیر موزیک (v0.11) ============ -->
+        <!-- ============ صفحه پلیر موزیک (بازطراحی v0.16) ============
+             چیدمان دوکارتِ عرض‌ثابت: کنسول پخش + پلی‌لیست ستونی —
+             هیچ المانی تا انتهای صفحه کشیده نمی‌شود. -->
         <section id="musicPage" class="musicpage" hidden>
           <header class="set-top">
             <h2><svg class="ic"><use href="#i-music"/></svg> <span data-i18n="music.title">پلیر موزیک</span></h2>
@@ -568,41 +576,56 @@
           </header>
           <input type="file" id="mFolder" webkitdirectory multiple hidden />
 
-          <div class="music-hero glass">
-            <div class="m-now">
-              <div class="m-cover" id="mCover"><svg class="ic"><use href="#i-disc"/></svg><span class="m-cover-shine"></span></div>
-              <div class="m-meta">
-                <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>
-                <span id="mArtist" data-i18n="music.pickHint">یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود</span>
-                <div class="m-eq" id="mEq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-              </div>
-              <div class="m-count glass" id="mCount" hidden></div>
-            </div>
-            <div class="m-seek-row">
-              <span class="m-time num" id="mCur">0:00</span>
-              <input type="range" id="mSeek" min="0" max="1000" value="0" />
-              <span class="m-time num" id="mDur">0:00</span>
-            </div>
-            <canvas id="mViz" height="64" aria-hidden="true"></canvas>
-            <div class="m-controls">
-              <button class="m-ctl" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
-              <button class="m-ctl big" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
-              <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
-              <button class="m-ctl big" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
-              <button class="m-ctl" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
-              <span class="m-vol-wrap"><button type="button" class="m-ctl sm" id="mMute" aria-label="قطع/وصل صدا" data-i18n-tip="music.mute"><svg class="ic"><use id="mMuteIcon" href="#i-volume"/></svg></button><input type="range" id="mVol" min="0" max="100" value="80" /></span>
-            </div>
-          </div>
+          <div class="music-deck">
 
-          <div class="m-list-head">
-            <div class="m-search">
-              <svg class="ic"><use href="#i-search"/></svg>
-              <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
+            <!-- کنسول پخش — کارت راست -->
+            <div class="np-card glass">
+              <div class="np-disc-wrap">
+                <div class="np-disc" id="mCover">
+                  <svg class="ic"><use href="#i-disc"/></svg>
+                  <i class="np-hole"></i>
+                </div>
+                <div class="np-head">
+                  <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>
+                  <span id="mArtist" data-i18n="music.pickHint">یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود</span>
+                  <div class="np-chips">
+                    <span class="m-count" id="mCount" hidden></span>
+                    <div class="m-eq" id="mEq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+                  </div>
+                </div>
+              </div>
+              <canvas id="mViz" height="56" aria-hidden="true"></canvas>
+              <div class="m-seek-row">
+                <span class="m-time num" id="mCur">0:00</span>
+                <input type="range" id="mSeek" min="0" max="1000" value="0" />
+                <span class="m-time num" id="mDur">0:00</span>
+              </div>
+              <div class="m-controls">
+                <button class="m-ctl" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
+                <button class="m-ctl big" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
+                <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
+                <button class="m-ctl big" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
+                <button class="m-ctl" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
+              </div>
+              <div class="np-vol">
+                <span class="m-vol-wrap"><button type="button" class="m-ctl sm" id="mMute" aria-label="قطع/وصل صدا" data-i18n-tip="music.mute"><svg class="ic"><use id="mMuteIcon" href="#i-volume"/></svg></button><input type="range" id="mVol" min="0" max="100" value="80" /></span>
+              </div>
             </div>
-            <span class="m-hint" data-i18n="music.hint">با صدا هم می‌گویی: «موزیک پخش کن»، «آهنگ بعدی»، «آهنگ قبلی»، «موزیک پاز»</span>
+
+            <!-- پلی‌لیست — کارت چپ با اسکرول داخلی -->
+            <div class="pl-card glass">
+              <div class="pl-head">
+                <div class="m-search">
+                  <svg class="ic"><use href="#i-search"/></svg>
+                  <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
+                </div>
+              </div>
+              <div class="m-list" id="mList"></div>
+              <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
+            </div>
+
           </div>
-          <div class="m-list" id="mList"></div>
-          <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
+          <p class="m-hint" data-i18n="music.hint">با صدا هم می‌گویی: «موزیک پخش کن»، «آهنگ بعدی»، «آهنگ قبلی»، «موزیک پاز»</p>
         </section>
 
         <!-- ============ صفحهٔ افزونه‌ها (v0.15) ============ -->
@@ -635,6 +658,31 @@
               <div class="ext-actions">
                 <span class="sw"><input type="checkbox" id="extMusicToggle" aria-label="فعال‌سازی پلیر موزیک"/><i></i></span>
                 <button class="chip sm" id="btnOpenMusicExt"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="ext.open">باز کردن</span></button>
+              </div>
+            </div>
+            <div class="ext-card glass dc-card" id="extCardDiscord">
+              <div class="ext-body dc-full">
+                <div class="dc-title-row">
+                  <div class="ext-ico"><svg class="ic"><use href="#i-smile"/></svg></div>
+                  <div class="dc-title-txt">
+                    <b data-i18n="ext.discord">کنترل دیسکورد با صدا</b>
+                    <span data-i18n="ext.discordDesc">«به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»</span>
+                  </div>
+                  <span class="sw"><input type="checkbox" id="extDiscordToggle" aria-label="فعال‌سازی کنترل دیسکورد"/><i></i></span>
+                </div>
+                <div class="dc-actions" id="dcActions">
+                  <button class="chip sm" id="btnDcMute"><svg class="ic"><use href="#i-mute"/></svg><span data-i18n="disc.muteBtn">میوت</span></button>
+                  <button class="chip sm" id="btnDcDeafen"><svg class="ic"><use href="#i-volume"/></svg><span data-i18n="disc.deafenBtn">بی‌صدا کردن کل</span></button>
+                  <button class="chip sm" id="btnDcAnswer"><svg class="ic"><use href="#i-phone"/></svg><span data-i18n="disc.answerBtn">جواب تماس</span></button>
+                  <button class="chip sm" id="btnDcDecline"><svg class="ic"><use href="#i-close"/></svg><span data-i18n="disc.declineBtn">رد تماس</span></button>
+                  <button class="chip sm" id="btnDcHangup"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="disc.hangupBtn">قطع تماس</span></button>
+                  <button class="chip sm" id="btnDcFocus"><svg class="ic"><use href="#i-window"/></svg><span data-i18n="disc.focusBtn">فوکوس دیسکورد</span></button>
+                </div>
+                <div class="dc-call-row">
+                  <input type="text" id="dcCallName" class="set-input" data-i18n-ph="disc.namePh" placeholder="اسم دوستت در دیسکورد…" autocomplete="off" />
+                  <button class="chip" id="btnDcCall"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="disc.callBtn">زنگ بزن</span></button>
+                </div>
+                <p class="set-note" data-i18n="disc.hint">برای «قطع/جواب/رد تماس» یک‌بار در دیسکورد: Settings › Keybinds — اکشن Disconnect از Voice Channel را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار. میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) پیش‌فرض دیسکورد کار می‌کنند.</p>
               </div>
             </div>
             <div class="ext-card glass soon">

@@ -90,6 +90,11 @@ contextBridge.exposeInMainWorld('ava', {
     launch: (app) => ipcRenderer.invoke('apps:launch', app),
   },
 
+  /* افزونهٔ کنترل دیسکورد (v0.16) */
+  discord: {
+    cmd: (p) => ipcRenderer.invoke('discord:cmd', p),
+  },
+
   /* یادآوری‌ها (v0.12) — تیک پس‌زمینه در پروسه اصلی؛ رویداد due به رندرر می‌آید */
   reminders: {
     add: (p) => ipcRenderer.invoke('reminders:add', p),

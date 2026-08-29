@@ -81,6 +81,26 @@
     'ext.soonDesc': ['وضعیت هوا و پیش‌بینی چند روز آینده — با فرمان صوتی', 'Current weather and multi-day forecast — by voice'],
     'ext.soonTimer': ['تایمر و پومودورو', 'Timer & Pomodoro'],
     'ext.soonDesc2': ['تایمر صوتی، شمارش معکوس و حالت تمرکز', 'Voice timer, countdown and focus mode'],
+    'ext.discord': ['کنترل دیسکورد با صدا', 'Voice-controlled Discord'],
+    'ext.discordDesc': ['«به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»', '"Call Ali", "hang up", "mute Discord" — calls, end, mute, answer'],
+    'ext.discordHint': ['زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد', 'Call friends, hang up, mute and answer calls — via Discord keybinds'],
+    'disc.working': ['در حال اجرای فرمان دیسکورد…', 'Running the Discord command…'],
+    'disc.done': ['انجام شد ✓', 'Done ✓'],
+    'disc.fail': ['فرمان دیسکورد اجرا نشد', 'Discord command failed'],
+    'disc.muted': ['میکروفون دیسکورد قطع/وصل شد ✓', 'Discord mic toggled ✓'],
+    'disc.deafened': ['صدای دیسکورد قطع/وصل شد ✓', 'Discord sound toggled ✓'],
+    'disc.hangup': ['تماس قطع شد ✓', 'Call disconnected ✓'],
+    'disc.answer': ['تماس جواب داده شد ✓', 'Call answered ✓'],
+    'disc.decline': ['تماس رد شد ✓', 'Call declined ✓'],
+    'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
+    'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
+    'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
+    'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
+    'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
+    'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
+    'disc.callBtn': ['زنگ بزن', 'Call'],
+    'disc.namePh': ['اسم دوستت در دیسکورد…', "Your friend's Discord name…"],
+    'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
     'dnsp.title': ['DNS Changer', 'DNS Changer'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
     'set.mic.checking': ['دسترسی میکروفون بررسی می‌شود…', 'Checking microphone access…'],
@@ -180,7 +200,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۵ — سیستم افزونه‌ها: DNS Changer و پلیر موزیک به‌صورت افزونه در ستون کنار (تا فعالشان نکنی برنامه سبک می‌ماند)، صفحهٔ اختصاصی DNS با مدیریت کامل، بخش بهینه‌سازی با کلید انیمیشن/افکت و تم سبک برای سیستم‌های ضعیف، دکمهٔ میکروفون شیشه‌ای با نور متحرک زیر موس، ویژوالایزر زندهٔ موزیک و پلی‌لیست بهتر، پاز شدن پخش با پرت کردن ویجت، فیکس دکمهٔ تم، فیکس حلقهٔ محو در پس‌زمینه، نمایش نسخهٔ واقعی برنامه و ذخیرهٔ تنظیمات هوش مصنوعی با یک دکمه.', 'v0.15 — Extensions system (DNS Changer & music player as rail extensions), dedicated DNS page, optimization pane (animations/effects off + lite theme), glass mic button with mouse-following glare, live music visualizer, fling-to-pause widget, theme button fix, ghost ring fix, real version labels and one-click AI settings save.'],
+    'about.desc': ['نسخه ۰.۱۶ — پلیر موزیک از نو ساخته شد: چیدمان دوکارت (کنسول پخش با دیسک وینیل چرخان و ویژوالایزر + پلی‌لیست ستونی با اسکرول داخلی)، فیکس مدل جمنای — مدل تایپیِ تو اولویت دارد و اگر منسوخ شده باشد خودکار مدل تازه امتحان می‌شود — و افزونهٔ کنترل دیسکورد با صدا: «به فلانی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، جواب و رد تماس.', 'v0.16 — music player rebuilt as a two-card deck (spinning vinyl console + column playlist), Gemini model fix (your typed model first, auto-fallback to the newest flash when retired), and the new Discord voice extension: call friends by name, hang up, mute, answer or decline calls.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -407,7 +427,7 @@
 
     /* --- v0.13: انتخاب مدل + فیدبک دکمه میکروفون --- */
     'set.ai.geminiModel': ['مدل جمنای', 'Gemini model'],
-    'set.ai.geminiModelHint': ['مدل پیش‌فرض: flash-latest (همیشه جدیدترین فلاش) — اگر منسوخ شد از همین‌جا عوضش کن', 'Default: flash-latest (always the newest flash) — change it here whenever a model retires'],
+    'set.ai.geminiModelHint': ['هر مدلی تایپ کن — اگر مدل منسوخ شده باشد، آوا خودکار با جدیدترین فلاش جواب می‌دهد', 'Type any model — if it has retired, AVA automatically falls back to the newest flash'],
     'set.ai.geminiModelPh': ['gemini-flash-latest', 'gemini-flash-latest'],
     'set.ai.openaiModel': ['مدل OpenAI', 'OpenAI model'],
     'set.ai.openaiModelHint': ['می‌توانی هر مدلی بنویسی؛ پیشنهادها از منوی پایین ورودی هم می‌آید', 'Type any model name; suggestions appear below the input'],
@@ -598,6 +618,8 @@
   const extMusicOpt = $('#extMusicOpt');
   const extDnsToggle = $('#extDnsToggle');
   const extMusicToggle = $('#extMusicToggle');
+  const extDiscordOpt = $('#extDiscordOpt');
+  const extDiscordToggle = $('#extDiscordToggle');
   const optNoAnim = $('#optNoAnim');
   const optNoFx = $('#optNoFx');
   const btnLiteTheme = $('#btnLiteTheme');
@@ -722,6 +744,7 @@
     /* v0.15 — افزونه‌ها و بهینه‌سازی */
     extDns: store.get('extDns', true),      /* DNS Changer پیش‌فرض روشن */
     extMusic: store.get('extMusic', false), /* موزیک تا کاربر فعالش نکند در ستون نمی‌آید */
+    extDiscord: store.get('extDiscord', true), /* کنترل دیسکورد — به‌خواست کاربر روشن */
     noAnim: store.get('noAnim', false),
     noFx: store.get('noFx', false),
   };
@@ -1552,6 +1575,65 @@
   }
 
   /* نیت «باز کن» بود؟ برنامه پیدا شد؟ اجرا کن — وگرنه null (AI پاسخ می‌دهد) */
+  /* ============================================================
+     افزونهٔ کنترل دیسکورد (v0.16) — فرمان‌های صوتی:
+     «به علی زنگ بزن / در دیسکورد تماس بگیر»، «تماس رو قطع کن»،
+     «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد کن»
+     ============================================================ */
+  async function tryDiscordCmd(raw) {
+    if (settings.extDiscord === false) return null;
+    if (!bridge || !bridge.discord) return null;
+    const t0 = String(raw || '')
+      .replace(/(لطفا|لطفاً)/g, '')
+      .replace(/[\u200C]/g, ' ')
+      .trim();
+    const en = /\b(discord)\b/i.test(t0);
+    const fa = /دیسکورد|دیسبورد|دیسکوردُ/.test(t0);
+    /* قطع تماس — «تماس/زنگ/کال» + قطع/ببند/کات */
+    if (/(تماس|زنگ|کال|کال)[^.]{0,14}(قطع|ببند|کات|تموم)/.test(t0) || /(قطع|ببند)[^.]{0,8}(تماس|زنگ|کال)/.test(t0)) {
+      if (!fa && !en) return null;
+      const r = await bridge.discord.cmd({ action: 'hangup' }).catch(() => null);
+      return r && r.ok ? t('disc.hangup') : ((r && r.error) || t('disc.fail'));
+    }
+    /* رد تماس */
+    if (/(تماس|زنگ|کال)[^.]{0,10}رد/.test(t0) || /رد[^.]{0,6}(تماس|زنگ|کال)/.test(t0)) {
+      if (!fa && !en) return null;
+      const r = await bridge.discord.cmd({ action: 'decline' }).catch(() => null);
+      return r && r.ok ? t('disc.decline') : ((r && r.error) || t('disc.fail'));
+    }
+    /* جواب تماس */
+    if (/(تماس|زنگ|کال)[^.]{0,10}(جواب|برار|برگردن)/.test(t0) || /جواب[^.]{0,8}(تماس|زنگ|کال)/.test(t0)) {
+      if (!fa && !en) return null;
+      const r = await bridge.discord.cmd({ action: 'answer' }).catch(() => null);
+      return r && r.ok ? t('disc.answer') : ((r && r.error) || t('disc.fail'));
+    }
+    /* بی‌صدای کل (deafen) — «صدای دیسکورد رو قطع/کرافت کن» */
+    if (/صدای?[^.]{0,8}(دیسکورد|discord)/.test(t0) && /(قطع|بیصدا|بی صدا|کرافت)/.test(t0)) {
+      const r = await bridge.discord.cmd({ action: 'deafen' }).catch(() => null);
+      return r && r.ok ? t('disc.deafened') : ((r && r.error) || t('disc.fail'));
+    }
+    /* میوت میکروفون — «دیسکورد رو میوت کن» / «میکروفون دیسکورد قطع» */
+    if (fa || en) {
+      if (/(میوت|مایوت|بیصدا|بی صدا)/.test(t0) || (/میکروفون/.test(t0) && /قطع/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
+        const r = await bridge.discord.cmd({ action: 'mute' }).catch(() => null);
+        return r && r.ok ? t('disc.muted') : ((r && r.error) || t('disc.fail'));
+      }
+    }
+    /* تماس با نام: «به علی زنگ بزن» / «در دیسکورد به علی تماس بگیر» / «کال کن علی» */
+    const callRe = [/(?:در\s*)?(?:دیسکورد|discord)[^.]{0,10}?(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)\s*(?:به|برای)?\s+(.+)/];
+    if (/(زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/.test(t0)) {
+      let nm = null;
+      for (const re of callRe) { const m = re.exec(t0); if (m && m[1]) { nm = m[1]; break; } }
+      if (nm || fa || en) {
+        nm = (nm || '').replace(/(توی|در|با|و|رو|را|برام|برای)\s*$/g, '').replace(/["«»]/g, '').trim();
+        const r = await bridge.discord.cmd({ action: 'call', name: nm }).catch(() => null);
+        if (r && r.ok) return t('disc.calling', { x: nm || '…' });
+        return (r && r.error) || t('disc.fail');
+      }
+    }
+    return null;
+  }
+
   async function tryAppOpen(cmd) {
     if (!APP_OPEN_RE.test(cmd)) return null;
     const name = extractAppName(cmd);
@@ -1855,6 +1937,23 @@
       return;
     }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
+    /* کنترل دیسکورد (v0.16) — قبل از DNS/برنامه تا «زنگ بزن» قاطی نشود */
+    if (/زنگ\s*بزن|تماس\s*بگیر|کال\s*کن|دیسکورد|discord|میکروفون[^.]{0,10}(قطع|میوت)/i.test(raw)) {
+      const dr = await tryDiscordCmd(raw);
+      if (dr) {
+        if (cmdBusy) return;
+        setState('success');
+        statusText.textContent = t('status.done');
+        body.classList.add('has-card');
+        rcHeard.textContent = `«${raw}»`;
+        rcTag.textContent = 'DISCORD';
+        typeText(rcReply, dr);
+        speak(dr);
+        pushHistory(raw, true);
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+        return;
+      }
+    }
     /* پینگ DNSها (v0.13) — قبل از مسیر کلاسیک DNS تا «پینگ دی ان اس» قاطی نشود */
     if (/پینگ[^.]{0,16}(دی\s?ان\s?اس|dns)|(دی\s?ان\s?اس|dns)[^.]{0,12}پینگ|پینگ\s?(بگیر|نشون|بده)|dns.{0,10}ping|ping.{0,10}dns/i.test(raw)) {
       if (cmdBusy) return;
@@ -3515,7 +3614,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.15.0';
+  let appVersion = '0.16.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -3580,6 +3679,8 @@
     if (btnMusic) btnMusic.hidden = !musOn;
     [extDnsOpt, extDnsToggle].forEach((el) => { if (el) el.checked = dnsOn; });
     [extMusicOpt, extMusicToggle].forEach((el) => { if (el) el.checked = musOn; });
+    const dcOn = settings.extDiscord !== false;
+    [extDiscordOpt, extDiscordToggle].forEach((el) => { if (el) el.checked = dcOn; });
     if (!musOn) {
       try { if (typeof mAudio !== 'undefined' && mAudio && !mAudio.paused) mAudio.pause(); } catch (_) { /* noop */ }
       if (musicWidget) musicWidget.hidden = true;
@@ -3609,7 +3710,39 @@
     applyExtensions();
     toast(el.checked ? t('toast.extOn', { x: t('ext.music') }) : t('toast.extOff', { x: t('ext.music') }), '#i-music');
   }));
+  [extDiscordOpt, extDiscordToggle].forEach((el) => el && el.addEventListener('change', () => {
+    settings.extDiscord = el.checked;
+    store.set('extDiscord', settings.extDiscord);
+    applyExtensions();
+    toast(el.checked ? t('toast.extOn', { x: t('ext.discord') }) : t('toast.extOff', { x: t('ext.discord') }), '#i-smile');
+  }));
   applyExtensions();
+
+  /* ---------- کنترل دستی دیسکورد (v0.16) — دکمه‌های کارت افزونه ---------- */
+  async function runDiscordCmd(action, name, okMsg) {
+    if (!bridge || !bridge.discord) return toast('کنترل دیسکورد فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+    toast(t('disc.working'), '#i-smile');
+    const r = await bridge.discord.cmd({ action, name }).catch((e) => ({ ok: false, error: String(e) }));
+    if (r && r.ok) toast(okMsg || t('disc.done'), '#i-check');
+    else toast((r && r.error) || t('disc.fail'), '#i-info');
+  }
+  const dcBtn = (id, action, msg) => {
+    const b = $(id);
+    if (b) b.addEventListener('click', () => runDiscordCmd(action, '', msg));
+  };
+  dcBtn('#btnDcMute', 'mute', t('disc.muted'));
+  dcBtn('#btnDcDeafen', 'deafen', t('disc.deafened'));
+  dcBtn('#btnDcHangup', 'hangup', t('disc.hangup'));
+  dcBtn('#btnDcAnswer', 'answer', t('disc.answer'));
+  dcBtn('#btnDcDecline', 'decline', t('disc.decline'));
+  dcBtn('#btnDcFocus', 'focus', t('disc.focused'));
+  const btnDcCall = $('#btnDcCall');
+  const dcCallName = $('#dcCallName');
+  if (btnDcCall) btnDcCall.addEventListener('click', async () => {
+    const nm = (dcCallName && dcCallName.value || '').trim();
+    if (!nm) { toast(t('disc.needName'), '#i-info'); return; }
+    await runDiscordCmd('call', nm, t('disc.calling', { x: nm }));
+  });
 
   /* ---------- کلیدهای بهینه‌سازی (v0.15) ---------- */
   if (optNoAnim) optNoAnim.addEventListener('change', () => {

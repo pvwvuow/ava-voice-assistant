@@ -1,5 +1,5 @@
 /**
- * Smoke test for AVA v0.15.0 — boots the app under Xvfb, checks
+ * Smoke test for AVA v0.16.0 — boots the app under Xvfb, checks
  * v0.11 UI elements (titlebar physical layout, update badge, music
  * page, live text, new settings), suggestion rotation, theme +
  * language switching, v0.12 additions (phonetic app-open, reminders,
@@ -9,7 +9,9 @@
  * v0.14 additions (3-layer bulletproof updater) and v0.15 additions:
  * extensions system (DNS Changer + music player in the rail), DNS
  * page, optimization pane (no-anim/no-fx/lite theme), orb glass
- * glare, music visualizer, fling-to-pause, dynamic version labels.
+ * glare, music visualizer, fling-to-pause, dynamic version labels and
+ * v0.16 additions: rebuilt two-card music deck, Gemini model chain fix
+ * and the Discord voice-control extension (call/hangup/mute/answer).
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -364,6 +366,47 @@ app.whenReady().then(async () => {
       ok('extensions UI in DOM (dns on / music off)', ext.extBtn && ext.extPage && ext.dnsPage && ext.dnsRailVisible && ext.musicRailHidden, JSON.stringify(ext));
       ok('viz canvas + perf pane + lite option in DOM', ext.viz && ext.perfPane && ext.liteOpt);
     } catch (e) { console.log('SKIP | v0.15 dom | ' + String(e && e.message).slice(0, 50)); }
+
+    // 5.59 v0.16 — music player rebuild, gemini chain fix, discord extension
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v16 = {
+        geminiChain: mainjs.includes("'gemini-flash-latest',") && mainjs.includes("'gemini-2.5-flash',") && mainjs.includes('مدل‌های امتحان‌شده'),
+        geminiDatalist: html.includes('gemini-3.5-flash-lite'),
+        discordIpc: mainjs.includes("ipcMain.handle('discord:cmd'") && preload.includes("'discord:cmd'") && mainjs.includes('Start Voice Call'),
+        discordUI: html.includes('id="extDiscordToggle"') && html.includes('id="btnDcMute"') && html.includes('id="btnDcCall"') && html.includes('id="dcCallName"'),
+        discordVoice: appjs.includes('function tryDiscordCmd(') && appjs.includes("rcTag.textContent = 'DISCORD'"),
+        discordLogic: appjs.includes("settings.extDiscord") && appjs.includes("action: 'call'"),
+        musicDeck: html.includes('music-deck') && html.includes('np-card') && html.includes('pl-card') && html.includes('np-disc'),
+        musicDeckCss: css.includes('.music-deck') && css.includes('.np-disc') && css.includes('.pl-card'),
+        musicIdsKept: ['mCover', 'mTitle', 'mArtist', 'mEq', 'mCount', 'mSeek', 'mViz', 'mList', 'mSearch', 'mEmpty'].every((id) => html.includes(`id="${id}"`)),
+      };
+      ok('gemini model chain (user model → flash-latest → older)', v16.geminiChain && v16.geminiDatalist);
+      ok('discord control IPC (UIAutomation call)', v16.discordIpc);
+      ok('discord card + manual controls in DOM', v16.discordUI);
+      ok('discord voice commands', v16.discordVoice && v16.discordLogic);
+      ok('music player rebuilt as two-card deck', v16.musicDeck && v16.musicDeckCss);
+      ok('music player keeps all functional IDs', v16.musicIdsKept);
+    } catch (e) { console.log('SKIP | v0.16 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 5.60 v0.16 — discord card + deck in DOM
+    try {
+      const dc = await probe(`(() => ({
+        card: !!document.querySelector('#extCardDiscord'),
+        toggle: !!document.querySelector('#extDiscordToggle'),
+        callName: !!document.querySelector('#dcCallName'),
+        deck: !!document.querySelector('.music-deck'),
+        disc: !!document.querySelector('.np-disc'),
+        pl: !!document.querySelector('.pl-card'),
+        hole: !!document.querySelector('.np-hole'),
+      }))()`);
+      ok('discord controls + music deck in DOM', dc.card && dc.toggle && dc.callName && dc.deck && dc.disc && dc.pl && dc.hole, JSON.stringify(dc));
+    } catch (e) { console.log('SKIP | v0.16 dom | ' + String(e && e.message).slice(0, 50)); }
 
     // 5.6 v0.13 — toggleListen busy guard: simulate processing state click
     try {
