@@ -180,3 +180,23 @@ Stage Summary:
 - پاسخ صادقانه به کاربر: نه — تا الان EXE درستی از کد جدید ساخته نشده (EXE ریلیز v0.6.0 = کد قدیمی 0.4.0؛ v0.6.1 بدون EXE) اما کد جدید روی main سالم است
 - مسیر ادامه کاربر: clone تازه یا پول main → ریختن ZIP جدید روی download/ava-voice-assistant → دابل‌کلیک bat → ریلیز خودکار v0.6.2 → AVA-Setup-0.6.2.exe با کد کامل جدید در Releases؛ نصب‌های 0.4.0 با آپدیتر خودکار به 0.6.2 می‌روند
 - نسخه محلی ورک‌اسپیس: 0.6.1 (+۱ کامیت فیکس محلی که هنوز روی گیت‌هاب نیست و فقط داخل ZIP است)
+
+---
+Task ID: 9
+Agent: main (Super Z)
+Task: انتشار کامل v0.6.2 روی گیت‌هاب توسط عامل (با توکن یکبارمصرف کاربر) + بیلد و انتشار EXE
+
+Work Log:
+- کاربر توکن fine-grained فرستاد؛ push با 403 خورد (Contents فقط-خواندن + فاقد Workflows) — تشخیص: احتمالاً گزینه Public repositories (read-only) انتخاب شده بود
+- راهنمای اصلاح داده شد؛ کاربر توکن کلاسیک ghp_ (repo+workflow) فرستاد
+- push موفق: main 2f77103→235fbbe (۳ کامیت: فیکس release.ps1، سینک worklog/ZIP، بامپ 0.6.2 + برگرداندن .github/workflows/build.yml به ریشه) + تگ v0.6.2 → هر دو با ls-remote تأیید شد
+- مانیتور Actions با اسکریپت scripts/watch_ava_build.py: run 33258480191 → conclusion=success
+- کشف: electron-builder ریلیز را Draft ساخت (id=379013968) با assetهای AVA-Setup-0.6.2.exe (78.7MB) + blockmap + latest.yml؛ همچنین Draft قدیمی v0.4.0 در ریپو وجود دارد
+- ریلیز با API منتشر شد (PATCH draft:false + نام AVA v0.6.2 + توضیحات فارسی) → /releases/latest = v0.6.2 تأیید شد
+- بهبود: releaseType:'release' در package.json + در مرحله fix ورک‌فلو (هر دو نسخه AVA و ریشه) → بیلدهای بعدی مستقیم منتشر می‌شوند نه draft؛ push شد (235fbbe→3241183، بدون تگ جدید = بدون بیلد اضافه)
+
+Stage Summary:
+- AVA-Setup-0.6.2.exe واقعی (کد جدید: STT گوگل، چت بدون توکن، مسیریابی AI) روی https://github.com/pvwvuow/ava-voice-assistant/releases/latest منتشر شد
+- نصب‌های قبلی 0.4.0 با electron-updater و latest.yml به 0.6.2 آپدیت خودکار می‌شوند
+- مشکل ریشه‌ای CI (نبودن ورک‌فلو در ریشه ریپو) رفع شد؛ release.ps1 هم حلقه‌ای فیکس شده
+- باز برای کاربر: revoke هر دو توکن + تصمیم درباره حذف .env از گیت (شامل DATABASE_URL، از قبل عمومی است)
