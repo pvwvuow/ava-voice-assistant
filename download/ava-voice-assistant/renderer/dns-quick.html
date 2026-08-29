@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>DNS جدید — آوا</title>
+  <style>
+    @font-face { font-family: 'Vazirmatn'; src: url('fonts/Vazirmatn-Regular.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Vazirmatn'; src: url('fonts/Vazirmatn-Bold.woff2') format('woff2'); font-weight: 700; }
+    @font-face { font-family: 'Vazirmatn'; src: url('fonts/Vazirmatn-ExtraBold.woff2') format('woff2'); font-weight: 800; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: Vazirmatn, 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(160deg, #0a0e10 0%, #0c1411 55%, #0a0e10 100%);
+      color: #e8efec;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      -webkit-app-region: no-drag;
+      user-select: none;
+    }
+    /* نوار عنوان — قابل کشیدن */
+    .qbar {
+      -webkit-app-region: drag;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.02);
+    }
+    .qbar b { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 800; }
+    .qbar b i {
+      width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+      background: linear-gradient(135deg, #10b981, #047857);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-style: normal; font-size: 12px; color: #04110c; font-weight: 900;
+    }
+    .qbar button {
+      -webkit-app-region: no-drag;
+      width: 26px; height: 26px; border-radius: 8px; border: none; cursor: pointer;
+      background: rgba(255,255,255,0.06); color: #cfd8d3; font-size: 13px; line-height: 1;
+    }
+    .qbar button:hover { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .qbody { flex: 1; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+    .qhint { font-size: 11px; color: #8fa39a; line-height: 1.9; }
+    .qfield { display: flex; flex-direction: column; gap: 5px; }
+    .qfield label { font-size: 11.5px; font-weight: 700; color: #9fb3aa; }
+    .qfield input {
+      padding: 10px 12px; border-radius: 11px;
+      background: rgba(4, 10, 8, 0.65);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: #e8efec; font-family: inherit; font-size: 13px; outline: none;
+      transition: border-color .15s ease;
+    }
+    .qfield input:focus { border-color: rgba(52, 211, 153, 0.55); box-shadow: 0 0 0 3px rgba(16,185,129,0.08); }
+    .qfield input::placeholder { color: #5c6f67; }
+    .qactions { display: flex; gap: 8px; margin-top: 2px; }
+    .qbtn {
+      flex: 1; padding: 10px 8px; border-radius: 12px; cursor: pointer;
+      font-family: inherit; font-size: 12.5px; font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05); color: #cfd8d3;
+      transition: transform .1s ease, background .15s ease;
+    }
+    .qbtn:hover { background: rgba(255,255,255,0.09); }
+    .qbtn:active { transform: scale(0.97); }
+    .qbtn.primary {
+      border-color: rgba(52, 211, 153, 0.55);
+      background: linear-gradient(135deg, rgba(16,185,129,0.9), rgba(4,120,87,0.9));
+      color: #04110c;
+    }
+    .qbtn.primary:hover { background: linear-gradient(135deg, #10b981, #059669); }
+    .qstatus { min-height: 30px; font-size: 11.5px; line-height: 1.8; text-align: center; border-radius: 10px; padding: 5px 8px; }
+    .qstatus.err { color: #fca5a5; background: rgba(239,68,68,0.1); }
+    .qstatus.ok { color: #6ee7b7; background: rgba(16,185,129,0.12); }
+    .qstatus:empty { display: none; }
+    .qnote { font-size: 10px; color: #5c6f67; line-height: 1.8; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="qbar">
+    <b><i>+</i> DNS جدید</b>
+    <button id="qClose" title="بستن">✕</button>
+  </div>
+  <div class="qbody">
+    <p class="qhint">اسم دلخواه بگذار تا بعداً با صدا صدا زدنش همان DNS ست شود — مثلاً بگو: «دی ان اس کاریام».</p>
+    <div class="qfield">
+      <label>اسم این DNS</label>
+      <input type="text" id="qName" placeholder="مثلاً: الکترو، خانه، کاری‌ام…" />
+    </div>
+    <div class="qfield">
+      <label>DNS اول (Preferred)</label>
+      <input type="text" id="qP1" dir="ltr" placeholder="78.157.42.100" inputmode="decimal" />
+    </div>
+    <div class="qfield">
+      <label>DNS دوم (Alternate) — اختیاری</label>
+      <input type="text" id="qP2" dir="ltr" placeholder="78.157.42.101" inputmode="decimal" />
+    </div>
+    <div class="qstatus" id="qStatus"></div>
+    <div class="qactions">
+      <button class="qbtn primary" id="qSave">ذخیره</button>
+      <button class="qbtn" id="qCancel">بی‌خیال</button>
+    </div>
+    <p class="qnote">ذخیره فقط به فهرست DNSهای تو اضافه می‌کند؛ اعمال واقعی بعداً با صدا یا دکمه فعال‌سازی و با تأیید مدیر (UAC) انجام می‌شود.</p>
+  </div>
+  <script>
+    (function () {
+      'use strict';
+      var $ = function (s) { return document.querySelector(s); };
+      var ava = window.ava || null;
+      var st = $('#qStatus');
+      function showErr(m) { st.className = 'qstatus err'; st.textContent = m; }
+      function showOk(m) { st.className = 'qstatus ok'; st.textContent = m; }
+      function closeWin() {
+        if (ava && ava.dns && ava.dns.quickClose) ava.dns.quickClose();
+        else window.close();
+      }
+      $('#qClose').addEventListener('click', closeWin);
+      $('#qCancel').addEventListener('click', closeWin);
+      $('#qSave').addEventListener('click', function () {
+        var name = ($('#qName').value || '').trim();
+        var p1 = ($('#qP1').value || '').trim();
+        var p2 = ($('#qP2').value || '').trim();
+        var IP_OK = function (v) { return /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(v); };
+        st.textContent = '';
+        if (!name) { showErr('اسم DNS را بنویس — بعداً با همان اسم صدا می‌زنی.'); $('#qName').focus(); return; }
+        if (!IP_OK(p1)) { showErr('آی‌پی اول معتبر نیست — مثال: 78.157.42.100'); $('#qP1').focus(); return; }
+        if (p2 && !IP_OK(p2)) { showErr('آی‌پی دوم معتبر نیست.'); $('#qP2').focus(); return; }
+        if (!ava || !ava.dns || !ava.dns.quickSave) {
+          showErr('ذخیره فقط داخل نرم‌افزار ویندوزی آوا کار می‌کند.');
+          return;
+        }
+        ava.dns.quickSave({ name: name, primary: p1, secondary: p2 }).then(function (r) {
+          if (r && r.ok) {
+            showOk('ذخیره شد ✓ — از این به بعد بگو «دی ان اس ' + name + '» تا فعالش کنم.');
+            $('#qSave').disabled = true;
+            setTimeout(closeWin, 1400);
+          } else {
+            showErr((r && r.error) || 'ذخیره ممکن نشد.');
+          }
+        }).catch(function () { showErr('ذخیره ممکن نشد.'); });
+      });
+      /* اینتر = ذخیره، اِسکیپ = بستن */
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); $('#qSave').click(); }
+        else if (e.key === 'Escape') { closeWin(); }
+      });
+      $('#qName').focus();
+    })();
+  </script>
+</body>
+</html>

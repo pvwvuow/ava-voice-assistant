@@ -606,6 +606,40 @@ body.has-card #wave { height: 0; opacity: 0; }
   display: flex; flex-direction: column; gap: 22px;
 }
 .settings[hidden] { display: none; }
+
+/* v0.9 — ناوبری لیستی سمت چپ + پنل تخت (بدون کادر و بدون تیتر بالای بخش) */
+.set-layout { display: flex; gap: 20px; align-items: flex-start; }
+.set-panes { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.set-pane { display: none; flex-direction: column; gap: 4px; }
+.set-pane.active { display: flex; animation: paneIn 0.18s ease; }
+@keyframes paneIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+.set-nav {
+  width: 158px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 8px 4px;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.07);
+}
+.set-nav-item {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text2); font-family: inherit; font-size: 12.5px; font-weight: 600;
+  text-align: start;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.set-nav-item .ic { width: 16px; height: 16px; flex-shrink: 0; }
+.set-nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
+.set-nav-item.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.17), rgba(4, 120, 87, 0.1));
+  color: var(--acc2);
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.22);
+}
+
 .set-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .set-top h2 { display: flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 800; }
 .set-top h2 .ic { width: 20px; height: 20px; color: var(--acc2); }
@@ -687,6 +721,14 @@ body.has-card #wave { height: 0; opacity: 0; }
   .settings { padding: 14px 12px 20px; }
   .set-top h2 { font-size: 17px; }
   .set-select { max-width: 140px; }
+  .set-layout { flex-direction: column-reverse; gap: 12px; }
+  .set-nav {
+    width: 100%; flex-direction: row; overflow-x: auto;
+    border-inline-start: none;
+    border-block-end: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 4px 2px 8px;
+  }
+  .set-nav-item { width: auto; flex-shrink: 0; padding: 7px 10px; }
 }
 
 /* ============================================================

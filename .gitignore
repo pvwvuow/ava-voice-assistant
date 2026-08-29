@@ -52,3 +52,7 @@ prompt
 server.log
 # Skills directory
 /skills/
+# agent scratch (not part of the app)
+tool-results/
+worklog.md
+agent-ctx/

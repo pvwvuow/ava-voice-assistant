@@ -71,9 +71,7 @@
   const tcValue = $('#tcValue');
   const tcAdd = $('#tcAdd');
 
-  /* ---------- عناصر مدیریت DNS (v0.8) ---------- */
-  const dnsPage = $('#dnsPage');
-  const btnDnsBack = $('#btnDnsBack');
+  /* ---------- عناصر مدیریت DNS (v0.9) ---------- */
   const dnsCurrentBox = $('#dnsCurrentBox');
   const dnsProfilesList = $('#dnsProfilesList');
   const dnsAddForm = $('#dnsAddForm');
@@ -84,7 +82,7 @@
   const dnsEditId = $('#dnsEditId');
   const dnsCancelEdit = $('#dnsCancelEdit');
   const dnsBuiltins = $('#dnsBuiltins');
-  const btnOpenDns = $('#btnOpenDns');
+  const btnQuickDns = $('#btnQuickDns');
 
   /* ---------- عناصر چت هوش مصنوعی ---------- */
   const chatPage = $('#chatPage');
@@ -152,8 +150,6 @@
     autoUpdate: store.get('autoUpdate', true),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
-    sttQuality: store.get('sttQuality', 'tiny'),
-    webFirst: store.get('webFirst', true),
     googleKey: store.get('googleKey', ''),
     glmKey: store.get('glmKey', ''),
     glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
@@ -825,40 +821,23 @@
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
 
   function refreshEngineUI() {
-    try { window.__avaAsrReady = asrReady; window.__avaAsrBroken = asrBroken; } catch (_) { /* noop */ }
     const eng = settings.sttEngine || 'auto';
     const webUsable = SRC && !srBroken;
-    const webFirstNow = eng === 'web' || (eng === 'auto' && settings.webFirst && webUsable);
-    if (webFirstNow) sbEngine.innerHTML = '<i class="dot ok"></i>موتور: وب گوگل (دقیق‌ترین) — فالبک آفلاین خودکار';
-    else if (whisperReady() && eng !== 'web' && eng !== 'google' && eng !== 'glm')
-      sbEngine.innerHTML = asrReady
-        ? `<i class="dot ok"></i>موتور: آفلاین Whisper ${settings.sttQuality !== 'tiny' ? '(کیفیت بالا)' : ''} — بدون اینترنت`
-        : '<i class="dot warn"></i>موتور: آفلاین (در حال آماده‌سازی…)';
-    else if (webUsable && eng !== 'google' && eng !== 'glm' && eng !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
-    else if (googleReady() && eng !== 'web' && eng !== 'glm' && eng !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
-    else if (glmReady() && eng !== 'web' && eng !== 'google' && eng !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
+    if (webUsable && eng !== 'google' && eng !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: وب گوگل (دقیق‌ترین) — فالبک خودکار';
+    else if (googleReady() && eng !== 'web' && eng !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
+    else if (glmReady() && eng !== 'web' && eng !== 'google') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
     else if (settings.demoMode) sbEngine.innerHTML = '<i class="dot warn"></i>موتور: حالت دمو';
     else sbEngine.innerHTML = '<i class="dot err"></i>موتور: تنظیم نشده';
   }
 
+  /* زنجیره موتورها فقط آنلاین: وب گوگل → گوگل رایگان (HTTP) → GLM-ASR ابری
+     موتور آفلاین ضعیف در نسخه ۰.۹ کامل حذف شده است. */
   function resolveEngine() {
     const eng = settings.sttEngine || 'auto';
-    if (eng === 'whisper') return whisperReady() ? 'whisper' : null;
     if (eng === 'web') return (SRC && !srBroken) ? 'web' : null;
     if (eng === 'google') return googleReady() ? 'google' : null;
     if (eng === 'glm') return glmReady() ? 'glm' : null;
-    /* خودکار — «اولویت با دقت»: موتور وب گوگل (دقیق‌ترین برای فارسی) اول
-       امتحان می‌شود؛ اگر در دسترس نبود/خطا داد، خودکار به موتور آفلاین
-       Whisper (بدون اینترنت) و بعد گوگل HTTP و GLM برمی‌گردیم. */
-    if (settings.webFirst) {
-      if (SRC && !srBroken) return 'web';
-      if (whisperReady()) return 'whisper';
-      if (googleReady()) return 'google';
-      if (glmReady()) return 'glm';
-      return null;
-    }
-    /* «اولویت با پایداری»: موتور آفلاین اول */
-    if (whisperReady()) return 'whisper';
+    /* خودکار: دقیق‌ترین موتور در دسترس */
     if (SRC && !srBroken) return 'web';
     if (googleReady()) return 'google';
     if (glmReady()) return 'glm';
@@ -867,7 +846,6 @@
 
   /* بعد از موتور وب، نوبت کدام موتور برسد (فالبک زنجیره‌ای) */
   function nextEngineAfterWeb() {
-    if (whisperReady()) return 'whisper';
     if (googleReady()) return 'google';
     if (glmReady()) return 'glm';
     return null;
@@ -881,8 +859,7 @@
     refreshEngineUI();
     if (state !== 'listening') return;
     const nxt = nextEngineAfterWeb();
-    if (nxt === 'whisper') { statusText.textContent = 'موتور وب در دسترس نبود — سوییچ به موتور آفلاین…'; startWhisperListen(); }
-    else if (nxt === 'google') { statusText.textContent = 'موتور وب در دسترس نبود — سوییچ به گوگل…'; startGoogleListen(); }
+    if (nxt === 'google') { statusText.textContent = 'موتور وب در دسترس نبود — سوییچ به گوگل…'; startGoogleListen(); }
     else if (nxt === 'glm') { startGlmListen(); }
     else { setState('idle'); statusText.innerHTML = IDLE_HINT; orbIcon.setAttribute('href', '#i-mic'); }
   }
@@ -921,20 +898,16 @@
         clearTimeout(webWatchdog);
         stopListening(false);
         if (dictation.active) dictateHandle(final.trim(), { interimEl: true });
-        else runCommand(final.trim());
+        else handleUtterance(final.trim());
       }
     };
     r.onerror = (e) => {
       if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) {
         clearTimeout(webWatchdog);
         recActive = false;
-        /* فالبک خودکار: آفلاین Whisper → گوگل رایگان → GLM ابری */
+        /* فالبک خودکار: گوگل رایگان (HTTP) → GLM ابری */
         if (state === 'listening' && (settings.sttEngine === 'auto')) {
           fallbackFromWeb();
-        } else if (state === 'listening' && settings.sttEngine === 'web' && whisperReady()) {
-          srBroken = true;
-          refreshEngineUI();
-          startWhisperListen();
         } else if (['network', 'service-not-allowed'].includes(e.error)) {
           srBroken = true;
           refreshEngineUI();
@@ -1070,13 +1043,13 @@
     for (const c of g.chunks) { merged.set(c, off); off += c.length; }
     const rate = (audioCtx && audioCtx.sampleRate) || 48000;
     const normed = normalizeLoudness(downsampleF32(merged, rate, 16000));
-    const pcm16 = f32ToI16(normed);
+    const pcm16 = f32ToI16(trimSilenceEdges(normed, 16000));
     bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, key: settings.googleKey || '', lang: 'fa-IR' })
       .then((r) => {
         if (r && r.ok && r.text) {
           const t = r.text.trim();
           if (dictation.active) dictateHandle(t);
-          else runCommand(t);
+          else handleUtterance(t);
         } else {
           setState('idle');
           statusText.textContent = 'تبدیل گوگل ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
@@ -1160,7 +1133,7 @@
       if (r && r.ok && r.text) {
         const t = r.text.trim();
         if (dictation.active) dictateHandle(t);
-        else runCommand(t);
+        else handleUtterance(t);
       } else {
         setState('idle');
         statusText.textContent = 'تبدیل گفتار ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
@@ -1184,187 +1157,8 @@
     return '';
   }
 
-  /* ============================================================
-     موتور آفلاین Whisper — کاملاً داخل برنامه، بدون اینترنت
-     ورکر + مدل باندل‌شده → بدون فیلترشکن، بدون کلید، بدون ارسال صدا به سرور
-     ============================================================ */
-  const whisperReady = () => !!(bridge && window.Worker && !asrBroken);
-  let asrWorker = null, asrReady = false, asrBroken = false, asrSeq = 0, asrCreating = false;
-  const asrPending = new Map();
-
-  /* ورکر ماژول با Blob ساخته می‌شود — لود مستقیم اسکریپت ورکر از پروتکل سفارشی
-     در Chromium با COEP مشکل دارد، ولی Blob-Module-Worker همیشه کار می‌کند؛
-     خود اسکریپت ورکر کتابخانه را با URL مطلق ava://app/... ایمپورت می‌کند. */
-  function asrEnsure(done) {
-    if (asrBroken) { if (done) done(null); return; }
-    if (asrWorker) { if (done) done(asrWorker); return; }
-    if (asrCreating) { setTimeout(() => asrEnsure(done), 300); return; }
-    if (!window.Worker) { asrBroken = true; refreshEngineUI(); if (done) done(null); return; }
-    asrCreating = true;
-    (async () => {
-      try {
-        const url = new URL('js/asr.module.js', location.href).href;
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const code = await resp.text();
-        const w = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })), { type: 'module' });
-        w.onmessage = (e) => {
-          const d = e.data || {};
-          if (d.type === 'ready') { asrReady = true; refreshEngineUI(); return; }
-          if (d.type === 'loaderror' || d.type === 'boot-error') {
-            asrBroken = true; refreshEngineUI();
-            try { console.warn('[AVA ASR]', d.error || 'load failed'); } catch (_) { /* noop */ }
-            return;
-          }
-          if (d.type === 'result') {
-            const cb = asrPending.get(d.id);
-            asrPending.delete(d.id);
-            if (cb) cb(d);
-          }
-        };
-        w.onerror = (e) => {
-          asrBroken = true; refreshEngineUI();
-          try { console.warn('[AVA ASR] worker error:', String((e && e.message) || 'unknown').slice(0, 200)); } catch (_) { /* noop */ }
-        };
-        asrWorker = w;
-        asrCreating = false;
-        refreshEngineUI();
-        const mdl = settings.sttQuality === 'base' ? 'Xenova/whisper-base'
-          : settings.sttQuality === 'small' ? 'Xenova/whisper-small' : 'whisper-tiny';
-        w.postMessage({ type: 'load', model: mdl }); /* پیش‌بارگذاری مدل — باکیفیت‌تر فقط با فرمان کاربر */
-        if (done) done(w);
-      } catch (err) {
-        asrBroken = true;
-        asrCreating = false;
-        refreshEngineUI();
-        try { console.warn('[AVA ASR] create failed:', String((err && err.message) || err).slice(0, 200)); } catch (_) { /* noop */ }
-        if (done) done(null);
-      }
-    })();
-  }
-
-  function asrRecognize(pcm) {
-    return new Promise((resolve) => {
-      if (asrBroken || !asrWorker) { resolve({ ok: false, error: 'موتور آفلاین در دسترس نیست' }); return; }
-      const id = ++asrSeq;
-      asrPending.set(id, resolve);
-      try {
-        asrWorker.postMessage({ type: 'recognize', id, pcm }, [pcm.buffer]);
-      } catch (_) {
-        asrPending.delete(id);
-        resolve({ ok: false, error: 'ارسال صدا به موتور ممکن نشد' });
-        return;
-      }
-      setTimeout(() => {
-        if (asrPending.has(id)) {
-          asrPending.delete(id);
-          resolve({ ok: false, error: 'تبدیل گفتار بیش از حد طول کشید' });
-        }
-      }, 30000);
-    });
-  }
-
-  /* --- کپچر هوشمند صدا: کف نویز تطبیقی + تشخیص پایان فرمان (VAD) --- */
-  const WC_MAX_MS = 12000;   // بیشینه ضبط هر فرمان
-  const WC_SIL_MS = 1400;    // سکوت لازم برای پایان (تحمل فاصله کلمات)
-  const WC_MIN_MS = 400;     // کمینه طول گفتار معتبر
-  const WC_IDLE_MS = 8000;   // اگر هیچ حرفی نشنید
-  let wCap = null;
-
-  function startWhisperListen() {
-    asrEnsure((w) => {
-      if (!w) { noEngine('موتور آفلاین فقط داخل نرم‌افزار فعال است'); return; }
-      if (state !== 'listening') return; /* کاربر منصرف شده */
-      attachMic().then((ok) => {
-      if (!ok) { noEngine('میکروفون در دسترس نیست'); return; }
-      try {
-        if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
-        const src = audioCtx.createMediaStreamSource(micStream);
-        const proc = audioCtx.createScriptProcessor(4096, 1, 1);
-        const sink = audioCtx.createGain();
-        sink.gain.value = 0; // بی‌صدا — فقط پردازش
-        src.connect(proc); proc.connect(sink); sink.connect(audioCtx.destination);
-        wCap = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, started: Date.now(), floor: 0.008, maxT: null };
-        proc.onaudioprocess = (e) => {
-          if (!wCap) return;
-          const f = e.inputBuffer.getChannelData(0);
-          wCap.chunks.push(new Float32Array(f));
-          let sum = 0, n = 0;
-          for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
-          const rms = Math.sqrt(sum / Math.max(1, n));
-          /* کف نویز تطبیقی: در سکوت، آستانه خودش را با محیط تنظیم می‌کند */
-          if (!wCap.spoke) wCap.floor = Math.max(0.004, wCap.floor * 0.985 + rms * 0.015);
-          const thr = Math.max(0.013, wCap.floor * 3);
-          const now = Date.now();
-          if (rms > thr) {
-            if (!wCap.spoke && state === 'listening') statusText.textContent = 'شنیدم… بعد از سکوت، خودم تبدیلش می‌کنم (آفلاین)';
-            wCap.spoke = true;
-            wCap.lastVoice = now;
-          } else if (wCap.spoke && now - wCap.lastVoice > WC_SIL_MS) {
-            stopWhisperRec();
-          } else if (!wCap.spoke && now - wCap.started > WC_IDLE_MS) {
-            stopWhisperRec();
-          }
-        };
-        wCap.maxT = setTimeout(() => stopWhisperRec(), WC_MAX_MS);
-      } catch (_) {
-        wCap = null;
-        noEngine('شروع گوش دادن آفلاین ممکن نشد');
-      }
-      });
-    });
-  }
-
-  function stopWhisperRec() {
-    if (!wCap) return;
-    const cap = wCap;
-    wCap = null;
-    clearTimeout(cap.maxT);
-    try { cap.proc.disconnect(); } catch (_) { /* noop */ }
-    try { cap.src.disconnect(); } catch (_) { /* noop */ }
-    try { cap.sink.disconnect(); } catch (_) { /* noop */ }
-    const rate = (audioCtx && audioCtx.sampleRate) || 48000;
-    const totalMs = (cap.chunks.length * 4096 * 1000) / rate;
-    if (!cap.spoke || totalMs < WC_MIN_MS) {
-      statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
-      setTimeout(() => {
-        if (dictation.active) { rearmDictation(); return; }
-        if (state === 'listening') {
-          setState('idle');
-          statusText.innerHTML = IDLE_HINT;
-          orbIcon.setAttribute('href', '#i-mic');
-          sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
-        }
-        handsFreeRearm();
-      }, 1500);
-      return;
-    }
-    setState('processing');
-    statusText.textContent = 'در حال تبدیل گفتار (آفلاین)…';
-    const merged = new Float32Array(cap.chunks.reduce((a, c) => a + c.length, 0));
-    let off = 0;
-    for (const c of cap.chunks) { merged.set(c, off); off += c.length; }
-    const pcm16k = downsampleF32(merged, rate, 16000);
-    const trimmed = trimSilenceEdges(pcm16k, 16000);
-    const pcm = normalizeLoudness(trimmed);
-    asrRecognize(pcm).then((r) => {
-      if (r && r.ok && r.text) {
-        const t = r.text.trim();
-        if (dictation.active) dictateHandle(t);
-        else handleUtterance(t);
-      } else {
-        setState('idle');
-        statusText.textContent = 'تبدیل آفلاین ممکن نشد: ' + ((r && r.error) || 'نامشخص');
-        orbIcon.setAttribute('href', '#i-mic');
-        sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
-        toast((r && r.error) || 'موتور آفلاین پاسخی نداد', '#i-info');
-        if (dictation.active) { setTimeout(rearmDictation, 1200); return; }
-        handsFreeRearm();
-      }
-    });
-  }
-
-  /* بریدن سکوت ابتدا/انتهای صدا → تشخیص سریع‌تر و دقیق‌تر */
+  /* بریدن سکوت ابتدا/انتهای صدا → تشخیص سریع‌تر و دقیق‌تر
+     (حالا برای موتور گوگل HTTP هم استفاده می‌شود) */
   function trimSilenceEdges(f32, rate) {
     const win = Math.max(1, Math.floor(rate * 0.02));
     const loud = (i) => {
@@ -1658,11 +1452,25 @@
     return (r && r.error) || 'اعمال DNS ممکن نشد.';
   }
 
+  /* پنجره کوچک «DNS جدید» — فقط همین کار را می‌کند: اسم + دو آی‌پی + ذخیره */
+  function openDnsQuick() {
+    if (bridge && bridge.dns && bridge.dns.quickOpen) {
+      bridge.dns.quickOpen().catch(() => {});
+      return 'پنجره کوچک «DNS جدید» باز شد — اسم و دو آی‌پی را وارد کن و ذخیره کن.';
+    }
+    /* پیش‌نمایش مرورگر: پنل DNS داخل تنظیمات */
+    showView('settings');
+    showSettingsPane('dns');
+    refreshDnsCurrent();
+    return 'افزودن DNS در پنل «DNS و شبکه» تنظیمات باز شد.';
+  }
+
   async function dnsHandle(cmd) {
     const n = normFa(cmd);
-    /* باز کردن صفحه مدیریت */
+    /* باز کردن مدیر کامل DNS داخل تنظیمات (v0.9: فقط از تنظیمات) */
     const openManager = (msg) => {
-      showView('dns');
+      showView('settings');
+      showSettingsPane('dns');
       refreshDnsCurrent();
       return msg;
     };
@@ -1675,9 +1483,21 @@
       }
       return 'ریست DNS فقط داخل نرم‌افزار ویندوزی کار می‌کند.';
     }
-    /* افزودن DNS جدید (صفحه) */
-    if (/جدید|اضافه|ادد|تعریف|ثبت|بساز|بساز براش/.test(n)) {
-      return openManager('صفحه افزودن DNS باز شد — نام و دو آی‌پی را وارد کن و ذخیره کن.');
+    /* افزودن DNS جدید → اگر اسم شناخته‌شده‌ای داخل جمله بود (مثل:
+       «دی ان اس الکترو رو اضافه کن») اول سرچ و ثبت در فهرست می‌شود؛
+       وگرنه فقط پنجره کوچک «DNS جدید» باز می‌شود: اسم + دو آی‌پی */
+    if (/جدید|اضافه|ادد|تعریف|ثبت|بساز|تنظیم/.test(n)) {
+      const cand = n
+        .replace(/دی\s?ان\s?اس|dns|دک?ی?ان?س|رو|را|به|تو|ست\s*کن|تنظیم|فعال|وصل|کن|بده|استفاده|از|همون|همان|شروع|بزن|جدید|اضافه|ادد|تعریف|ثبت|بساز|پروفایل|لیست|فهرست/gi, ' ')
+        .replace(/[\s\u200C]+/g, ' ')
+        .trim();
+      const known = cand && cand.length >= 2 ? findDnsProfile(cand) : null;
+      if (known) {
+        const user = ensureUserProfile(known);
+        const ips = (user || known).ips || [];
+        return `«${known.name}» را پیدا کردم و در فهرست DNSهایت ثبتش کردم (${faNum(ips.join(' و '))}) — هر وقت خواستی بگو «دی ان اس ${known.name}» تا فعالش کنم.`;
+      }
+      return openDnsQuick();
     }
     /* شماره‌دار: پروفایل‌های ذخیره‌شده کاربر */
     const mNum = n.match(/شماره\s*(\d{1,2}|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|اول|دوم|سوم)/);
@@ -1838,10 +1658,6 @@
     if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
 
     const eng = resolveEngine();
-    if (eng === 'whisper') {
-      startWhisperListen();
-      return;
-    }
     if (eng === 'web') {
       try {
         rec = makeRec();
@@ -1895,14 +1711,6 @@
       try { g.src.disconnect(); } catch (_) { /* noop */ }
       try { g.sink.disconnect(); } catch (_) { /* noop */ }
     }
-    if (wCap) {
-      const cap = wCap;
-      wCap = null;
-      clearTimeout(cap.maxT);
-      try { cap.proc.disconnect(); } catch (_) { /* noop */ }
-      try { cap.src.disconnect(); } catch (_) { /* noop */ }
-      try { cap.sink.disconnect(); } catch (_) { /* noop */ }
-    }
     clearTimeout(gMaxT); gMaxT = null;
     /* میکروفون روشن می‌ماند تا اکولایزر همیشه به صدای واقعی واکنش نشان دهد */
     orbIcon.setAttribute('href', '#i-mic');
@@ -1941,7 +1749,6 @@
       else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
       else if (historyPage && !historyPage.hidden) showView('home');
-      else if (dnsPage && !dnsPage.hidden) showView('home');
       else if (dictPage && !dictPage.hidden) showView('home');
       else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
@@ -2095,8 +1902,7 @@
   });
 
   /* ---------- مدیریت DNS: فرم، ذخیره، باز کردن صفحه ---------- */
-  if (btnOpenDns) btnOpenDns.addEventListener('click', () => showView('dns'));
-  if (btnDnsBack) btnDnsBack.addEventListener('click', () => showView('home'));
+  if (btnQuickDns) btnQuickDns.addEventListener('click', () => openDnsQuick());
   if (dnsSaveBtn) dnsSaveBtn.addEventListener('click', (e) => {
     e.preventDefault();
     const name = (dnsName.value || '').trim();
@@ -2132,14 +1938,29 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.8.0';
+  let appVersion = '0.9.0';
+
+  /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
+  const setNavItems = [...document.querySelectorAll('.set-nav-item')];
+  const setPanes = [...document.querySelectorAll('.set-pane')];
+  function showSettingsPane(id) {
+    let hit = false;
+    setNavItems.forEach((b) => {
+      const on = b.dataset.pane === id;
+      b.classList.toggle('active', on);
+      if (on) hit = true;
+    });
+    if (!hit && setNavItems[0]) { id = setNavItems[0].dataset.pane; setNavItems[0].classList.add('active'); }
+    setPanes.forEach((p) => p.classList.toggle('active', p.dataset.pane === id));
+    store.set('settingsPane', id);
+  }
+  setNavItems.forEach((b) => b.addEventListener('click', () => showSettingsPane(b.dataset.pane)));
 
   function showView(v) {
     settingsPage.hidden = v !== 'settings';
     chatPage.hidden = v !== 'chat';
     if (historyPage) historyPage.hidden = v !== 'history';
     if (dictPage) dictPage.hidden = v !== 'dict';
-    if (dnsPage) dnsPage.hidden = v !== 'dns';
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
@@ -2147,8 +1968,11 @@
     if (btnDict) btnDict.classList.toggle('active', v === 'dict');
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     $('#main').scrollTop = 0;
-    if (v === 'settings') refreshSettingsUI();
-    if (v === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
+    if (v === 'settings') {
+      showSettingsPane(store.get('settingsPane', 'mic'));
+      refreshSettingsUI();
+      if (store.get('settingsPane', 'mic') === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
+    }
     if (v === 'chat') {
       if (!chatMsgs.childElementCount) chatWelcome();
       setTimeout(() => chatInput.focus(), 150);
@@ -2178,8 +2002,6 @@
     optAutoUpdate.checked = !!settings.autoUpdate;
     optDemo.checked = !!settings.demoMode;
     optSttEngine.value = settings.sttEngine || 'auto';
-    if (optSttQuality) optSttQuality.value = settings.sttQuality || 'tiny';
-    if (optWebFirst) optWebFirst.checked = !!settings.webFirst;
     if (optDictTarget) optDictTarget.value = settings.dictTarget || 'box';
     optGlmKey.value = settings.glmKey || '';
     optGoogleKey.value = settings.googleKey || '';
@@ -2251,29 +2073,6 @@
       optGlmKey.focus();
       toast('موتور GLM به کلید نیاز دارد — یا موتور «خودکار»/«گوگل رایگان» را انتخاب کن', '#i-key');
     }
-  });
-
-  if (optSttQuality) optSttQuality.addEventListener('change', () => {
-    const prev = settings.sttQuality;
-    settings.sttQuality = optSttQuality.value || 'tiny';
-    store.set('sttQuality', settings.sttQuality);
-    if (settings.sttQuality !== prev && asrWorker) {
-      /* مدل فعال عوض شد → موتور آفلاین با مدل جدید (یا فالبک داخلی) ری‌لود می‌شود */
-      asrReady = false;
-      asrWorker.postMessage({ type: 'load', model: settings.sttQuality === 'base' ? 'Xenova/whisper-base' : settings.sttQuality === 'small' ? 'Xenova/whisper-small' : 'whisper-tiny' });
-      if (settings.sttQuality !== 'tiny') toast('در حال آماده‌سازی مدل باکیفیت‌تر — اولین بار چند ده مگابایت دانلود می‌شود', '#i-download');
-    }
-    toast(settings.sttQuality === 'tiny' ? 'کیفیت آفلاین: سریع (مدل کوچک داخلی)' : 'کیفیت آفلاین: دقت بالاتر (مدل بزرگ‌تر)', '#i-wave');
-    refreshEngineUI();
-  });
-
-  if (optWebFirst) optWebFirst.addEventListener('change', () => {
-    settings.webFirst = !!optWebFirst.checked;
-    store.set('webFirst', settings.webFirst);
-    refreshEngineUI();
-    toast(settings.webFirst
-      ? 'اولویت با دقت: موتور وب گوگل اول امتحان می‌شود، اگر نبود آفلاین'
-      : 'اولویت با پایداری: موتور آفلاین داخلی اول است', '#i-wave');
   });
 
   optGlmKey.addEventListener('change', () => {
@@ -2532,7 +2331,9 @@
   let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
   let zaiToken = '';   // توکن نشست حساب z.ai — از webview خوانده می‌شود
 
-  const aiConnected = () => !!zaiToken || !!settings.glmKey;
+  /* در برنامه واقعی همیشه می‌توان AI را صدا زد؛ پل GLM خودش نشست حساب
+     را در پنجره مخفی پیدا می‌کند (وگرنه پیام ورود نشان می‌دهد). */
+  const aiConnected = () => !!(bridge && bridge.ai);
 
   function chatWelcome() {
     const ready = aiConnected();
@@ -2601,20 +2402,29 @@
     zaiWeb.addEventListener('did-stop-loading', () => setTimeout(() => checkZaiToken(), 800));
   }
 
-  /* --- ارسال پیام: اول نشست z.ai، بعد کلید GLM --- */
+  /* --- ارسال پیام: پل نشست z.ai (اولویت) → کلید GLM --- */
   async function aiAsk(text) {
     const msgs = [{ role: 'system', content: AI_SYSTEM }, ...chatHist.slice(-8), { role: 'user', content: text }];
-    if (zaiToken && bridge && bridge.ai && bridge.ai.zaiChat) {
-      const r = await bridge.ai.zaiChat({ token: zaiToken, messages: msgs });
-      if (r && r.ok) return r;
-      if (r && r.needLogin) { zaiToken = ''; setZaiBadge(false, 'نشست منقضی شد — دوباره وارد شو'); }
-      if (r && !settings.glmKey) return r; // خطای z.ai را نشان بده
+    if (bridge && bridge.ai && bridge.ai.zaiChat) {
+      /* توکن لازم نیست — پل خودش از پنجره مخفیِ نشست حساب، توکن را می‌خواند */
+      const r = await bridge.ai.zaiChat({ token: zaiToken || '', messages: msgs });
+      if (r && r.ok) {
+        setZaiBadge(true);
+        return r;
+      }
+      if (r && r.needLogin) {
+        zaiToken = '';
+        setZaiBadge(false, 'برای چت، در تب «صفحه چت GLM» وارد حسابت شو');
+        if (!settings.glmKey) return r;
+      } else if (r && !settings.glmKey) {
+        return r; // خطای z.ai را نشان بده
+      }
     }
     if (settings.glmKey && bridge && bridge.ai && bridge.ai.chat) {
       return bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs });
     }
     if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
-    return { ok: false, needLogin: true, error: 'برای چت بدون کلید، اول در تب «صفحه چت GLM» وارد حسابت شو' };
+    return { ok: false, needLogin: true, error: 'برای چت، اول در تب «صفحه چت GLM» وارد حسابت شو' };
   }
 
   async function handleChatSend(v) {
@@ -2788,8 +2598,16 @@
   updateDictToggleUI();
   /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
   setTimeout(() => { attachMic(); }, 1200);
-  /* پیش‌بارگذاری موتور آفلاین — تا اولین فرمان فوری جواب بدهد */
-  if (bridge && window.Worker) setTimeout(() => asrEnsure(), 2000);
+  /* همگام‌سازی فهرست DNS وقتی از پنجره کوچک «DNS جدید» ذخیره شد */
+  if (bridge && bridge.dns && bridge.dns.onProfilesUpdated) {
+    bridge.dns.onProfilesUpdated((list) => {
+      if (!Array.isArray(list)) return;
+      settings.dnsProfiles = list;
+      store.set('dnsProfiles', settings.dnsProfiles);
+      renderDnsProfiles();
+      toast('فهرست DNS به‌روز شد (ذخیره از پنجره DNS جدید)', '#i-shield');
+    });
+  }
   setTimeout(() => {
     toast(canRun ? 'آوا آماده است — اجرای واقعی فرمان‌ها فعال است' : 'آوا آماده است — پیش‌نمایش رابط کاربری', '#i-wave');
   }, 900);

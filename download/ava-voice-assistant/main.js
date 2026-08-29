@@ -1,6 +1,7 @@
 /**
  * آوا — دستیار صوتی ویندوز
- * Electron main process (نسخه ۰.۷ — تشخیص گفتار آفلاین، حالت بی‌دست، آب‌وهوا، تنظیمات فایلی)
+ * Electron main process (نسخه ۰.۹ — فقط موتورهای آنلاین تشخیص گفتار،
+ * پنجره کوچک «DNS جدید»، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
 const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net } = require('electron');
 const { exec } = require('child_process');
@@ -9,9 +10,8 @@ const path = require('path');
 const os = require('os');
 
 /* ---------- پروتکل امن ava:// ----------
-   رابط کاربری از ava://app بارگذاری می‌شود تا:
-   ۱) Web Worker موتور آفلاین هم‌مبعا باشد (فایل:// ورکر را می‌بندد)
-   ۲) مدل تشخیص گفتار و WASM با MIME درست سرو شود
+   رابط کاربری از ava://app بارگذاری می‌شود تا فایل‌های برنامه
+   با MIME درست و بدون مجوز اضافه سرو شوند.
    باید «قبل از» آماده شدن اپ ثبت شود. */
 protocol.registerSchemesAsPrivileged([
   { scheme: 'ava', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
@@ -41,19 +41,14 @@ function serveAvaFile(reqUrl) {
     if (!file.startsWith(root)) return new Response('forbidden', { status: 403 });
     const data = fs.readFileSync(file);
     const type = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
-    const headers = {
-      'Content-Type': type,
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'no-cache',
-    };
-    /* فقط برای سند اصلی: COOP/COEP → crossOriginIsolated=true →
-       SharedArrayBuffer در دسترس → WASM چندنخی و تشخیص گفتار ۲ تا ۴ برابر سریع‌تر.
-       بقیه فایل‌ها (و پاپ‌آپ‌های https مثل ورود گوگل) تحت تأثیر قرار نمی‌گیرند. */
-    if (file.endsWith('index.html')) {
-      headers['Cross-Origin-Opener-Policy'] = 'same-origin';
-      headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
-    }
-    return new Response(data, { status: 200, headers });
+    return new Response(data, {
+      status: 200,
+      headers: {
+        'Content-Type': type,
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+      },
+    });
   } catch (_) {
     return new Response('not found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
@@ -563,6 +558,80 @@ ipcMain.handle('dns:reset', async () => {
 });
 
 /* ============================================================
+   پنجره کوچک «DNS جدید» — فقط همین: اسم + دو آی‌پی + ذخیره
+   با فرمان صوتی «تنظیم دی‌ان‌اس جدید» / «دی‌ان‌اس جدید» باز می‌شود.
+   ذخیره در همان فایل تنظیمات (ava-settings.json) انجام می‌شود و
+   پنجره اصلی با رویداد dns:profiles-updated فوراً به‌روز می‌شود.
+   ============================================================ */
+let dnsWin = null;
+
+function openDnsQuickWindow() {
+  if (dnsWin && !dnsWin.isDestroyed()) {
+    dnsWin.show();
+    dnsWin.focus();
+    return { ok: true, existed: true };
+  }
+  dnsWin = new BrowserWindow({
+    width: 400,
+    height: 480,
+    useContentSize: true,
+    show: false,
+    frame: false,
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    backgroundColor: '#0a0e10',
+    title: 'DNS جدید — آوا',
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      spellcheck: false,
+    },
+  });
+  dnsWin.setAlwaysOnTop(true, 'screen-saver');
+  dnsWin.loadURL('ava://app/renderer/dns-quick.html');
+  dnsWin.once('ready-to-show', () => { if (dnsWin && !dnsWin.isDestroyed()) dnsWin.show(); });
+  dnsWin.on('closed', () => { dnsWin = null; });
+  return { ok: true, existed: false };
+}
+
+ipcMain.handle('dns:quick-open', () => {
+  try { return openDnsQuickWindow(); } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+});
+
+ipcMain.handle('dns:quick-close', () => {
+  if (dnsWin && !dnsWin.isDestroyed()) dnsWin.close();
+  return { ok: true };
+});
+
+ipcMain.handle('dns:quick-save', (_e, p) => {
+  const name = String((p && p.name) || '').trim().slice(0, 40);
+  const p1 = String((p && p.primary) || '').trim();
+  const p2 = String((p && p.secondary) || '').trim();
+  if (!name) return { ok: false, error: 'اسم DNS را بنویس' };
+  if (!DNS_IP_OK(p1)) return { ok: false, error: 'آی‌پی اول معتبر نیست (مثال: 78.157.42.100)' };
+  if (p2 && !DNS_IP_OK(p2)) return { ok: false, error: 'آی‌پی دوم معتبر نیست' };
+  try {
+    const f = settingsFile();
+    let data = {};
+    try { data = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { /* noop */ }
+    const list = Array.isArray(data.dnsProfiles) ? data.dnsProfiles : [];
+    const rec = { id: Date.now(), name, ips: p2 ? [p1, p2] : [p1] };
+    list.push(rec);
+    data.dnsProfiles = list;
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(data, null, 2));
+    if (win && !win.isDestroyed()) win.webContents.send('dns:profiles-updated', list);
+    return { ok: true, profile: rec };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
+
+/* ============================================================
    آب‌وهوا — Open-Meteo (بدون هیچ کلید API)
    ============================================================ */
 const WMO_FA = {
@@ -655,17 +724,154 @@ ipcMain.handle('ai:chat', async (_e, p) => {
 const GOOGLE_KEY_DEFAULT = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw';
 
 /* ---------- چت با GLM بدون کلید API — با نشست حساب z.ai کاربر ----------
-   کاربر یک بار در تب «صفحه چت» وارد chat.z.ai می‌شود؛ توکن نشستش
-   خوانده می‌شود و درخواست‌ها از این‌جا با همان حساب انجام می‌شود.
-   نکات مهم (بر اساس رفتار واقعی وب z.ai):
-   › درخواست باید هدرهای مرورگر واقعی بگیرد: X-FE-Version، Origin، Referer
-   › بدنه باید stream:true و chat_id و id داشته باشد
-   › پاسخ SSE است: محتوا در data.delta_content با phase=answer؛
-     phase=thinking زنجیره فکر است و باید حذف شود. */
+   مسیر اصلی (v0.9): یک پنجره مخفی با همان نشست دائمی «persist:ai»
+   (همان پارتیشن webview صفحه چت) chat.z.ai را باز نگه می‌دارد و
+   درخواست از «داخل خود صفحه» فرستاده می‌شود؛ یعنی کوکی‌ها، توکن
+   localStorage، هدرهای Origin/Referer و هویت مرورگر دقیقاً همان
+   چیزی است که خود سایت z.ai می‌فرستد — مثل این که کاربر خودش در
+   همان چت تایپ کرده باشد. پیام کاربر بی‌هیچ تغییری به z.ai می‌رود
+   و جوابش هم عیناً به آوا برمی‌گردد.
+   فالبک: اگر پنجره مخفی آماده نبود، درخواست مستقیم با توکن
+   (که رندرر از webview خوانده) تکرار می‌شود. */
+let zaiWin = null;          /* پنجره پل مخفی */
+let zaiWinLoading = null;   /* آخرین لود در جریان */
+
+function ensureZaiBridge() {
+  try {
+    if (zaiWin && !zaiWin.isDestroyed()) return zaiWin;
+    zaiWinLoading = null;
+    zaiWin = new BrowserWindow({
+      show: false,
+      width: 480,
+      height: 600,
+      webPreferences: {
+        partition: 'persist:ai',
+        contextIsolation: true,
+        nodeIntegration: false,
+        spellcheck: false,
+        backgroundThrottling: false,
+      },
+    });
+    zaiWin.loadURL('https://chat.z.ai/');
+    zaiWinLoading = new Promise((res) => {
+      const to = setTimeout(res, 20000); /* حتی اگر لود کند شد، ادامه بده */
+      zaiWin.webContents.once('did-finish-load', () => { clearTimeout(to); res(); });
+      zaiWin.webContents.once('did-fail-load', () => { clearTimeout(to); res(); });
+    });
+    zaiWin.on('closed', () => { zaiWin = null; zaiWinLoading = null; });
+    return zaiWin;
+  } catch (_) {
+    return null;
+  }
+}
+
+/* اسکریپتی که داخل صفحه z.ai اجرا می‌شود: توکن نشست را می‌خواند،
+   مدل را انتخاب می‌کند و SSE جواب را جمع می‌کند — همه در همان Origin */
+function buildZaiPageScript(messages, model) {
+  const payload = JSON.stringify({ messages, model: String(model || '') });
+  return `(async () => {
+    const CFG = ${payload};
+    try {
+      const token = String(localStorage.getItem('token') || localStorage.getItem('sessionToken') || '').trim();
+      if (!token) return { ok: false, needLogin: true, error: 'no-token' };
+      let mdl = String(CFG.model || '').trim();
+      if (!mdl) {
+        try {
+          const mr = await fetch('/api/models', { headers: { Authorization: 'Bearer ' + token } });
+          const mj = await mr.json().catch(function () { return {}; });
+          const ids = (((mj && mj.data) || []))
+            .filter(function (m) { return !m || !m.info || m.info.is_active !== false; })
+            .map(function (m) { return String(m && m.id); }).filter(Boolean);
+          mdl = ids.find(function (i) { return /glm[-_]?4\\.6/i.test(i); })
+            || ids.find(function (i) { return /glm/i.test(i); })
+            || ids[0] || 'GLM-4.6';
+        } catch (e) { mdl = 'GLM-4.6'; }
+      }
+      const uuid = function () { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1e6); };
+      const r = await fetch('/api/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({
+          stream: true,
+          chat_id: uuid(),
+          id: uuid(),
+          model: mdl,
+          messages: CFG.messages,
+          features: { enable_thinking: false },
+        }),
+      });
+      if (r.status === 401) return { ok: false, needLogin: true, error: 'expired' };
+      if (!r.ok) return { ok: false, error: 'HTTP ' + r.status };
+      const ct = String(r.headers.get('content-type') || '');
+      let text = '';
+      const feed = function (raw) {
+        raw.split('\\n').forEach(function (line) {
+          const s = line.trim();
+          if (!s.startsWith('data:')) return;
+          const d = s.slice(5).trim();
+          if (!d || d === '[DONE]') return;
+          try {
+            const j = JSON.parse(d);
+            const c = j && j.choices && j.choices[0];
+            if (c && (c.delta || c.message)) {
+              const dv = (c.delta && c.delta.content) || (c.message && c.message.content) || '';
+              if (dv) text += dv;
+              return;
+            }
+            const dd = j && typeof j.data === 'object' ? j.data : null;
+            if (!dd) return;
+            if (dd.phase && dd.phase !== 'answer') return;
+            let piece = String(dd.delta_content || dd.edit_content || '');
+            if (piece && /<summary>/i.test(piece)) piece = piece.replace(/<details[^>]*>[\\s\\S]*?<\\/details>/gi, '');
+            if (piece) text += piece;
+          } catch (e) {}
+        });
+      };
+      if (ct.indexOf('text/event-stream') !== -1 || ct.indexOf('json') === -1) {
+        feed(await r.text());
+      } else {
+        const j = await r.json().catch(function () { return {}; });
+        text = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+      }
+      text = text.replace(/\\n{3,}/g, '\\n\\n').trim();
+      return { ok: !!text, text: text, model: mdl };
+    } catch (e) {
+      return { ok: false, error: String((e && e.message) || e) };
+    }
+  })()`;
+}
+
+async function zaiInPageChat(messages, model) {
+  const w = ensureZaiBridge();
+  if (!w) return null;
+  try {
+    if (zaiWinLoading) await zaiWinLoading;
+    const js = buildZaiPageScript(messages, model);
+    const out = await Promise.race([
+      w.webContents.executeJavaScript(js, true),
+      new Promise((res) => setTimeout(() => res(null), 100000)),
+    ]);
+    return out || null;
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+}
+
 ipcMain.handle('ai:zaiChat', async (_e, p) => {
   const { token, messages, model } = p || {};
-  if (!token) return { ok: false, error: 'برای چت بدون کلید، اول در تب «صفحه چت» وارد حسابت شو' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+
+  /* ۱) مسیر اصلی: fetch از داخل صفحه z.ai با نشست واقعی حساب کاربر */
+  const inPage = await zaiInPageChat(messages, model);
+  if (inPage && inPage.ok) return { ok: true, text: inPage.text, model: inPage.model };
+  if (inPage && inPage.needLogin) {
+    return { ok: false, needLogin: true, error: 'برای چت، اول در تب «صفحه چت GLM» وارد حسابت شو' };
+  }
+
+  /* ۲) فالبک: درخواست مستقیم با توکن رندرر (اگر باشد) */
+  if (!token) {
+    return { ok: false, error: (inPage && inPage.error) || 'اتصال به z.ai برقرار نشد — در تب «صفحه چت GLM» وارد حسابت شو' };
+  }
   const ZAI = 'https://chat.z.ai';
   const chatId = crypto.randomUUID();
   const headers = {
