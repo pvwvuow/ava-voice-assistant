@@ -74,9 +74,26 @@ contextBridge.exposeInMainWorld('ava', {
     chat: (payload) => ipcRenderer.invoke('ai:chat', payload),
     /* چت بدون کلید API — با توکن نشست حساب z.ai کاربر (از webview) */
     zaiChat: (payload) => ipcRenderer.invoke('ai:zaiChat', payload),
-    /* پرووایدرهای دیگر (v0.11): Gemini (با سرچ گوگل) و OpenAI */
+    /* پرووایدرهای دیگر (v0.11): Gemini (با سرچ گوگل) و OpenAI — v0.12: چرخش چندکلیدی */
     gemini: (payload) => ipcRenderer.invoke('ai:gemini', payload),
     openai: (payload) => ipcRenderer.invoke('ai:openai', payload),
+  },
+
+  /* اسکنر برنامه‌های نصب‌شده (v0.12) — Start Menu + بازی‌های Steam
+     «کروم رو باز کن» → دیکشنری فونتیک + فازی → اجرای واقعی .exe */
+  apps: {
+    list: () => ipcRenderer.invoke('apps:list'),
+    scan: () => ipcRenderer.invoke('apps:scan'),
+    launch: (app) => ipcRenderer.invoke('apps:launch', app),
+  },
+
+  /* یادآوری‌ها (v0.12) — تیک پس‌زمینه در پروسه اصلی؛ رویداد due به رندرر می‌آید */
+  reminders: {
+    add: (p) => ipcRenderer.invoke('reminders:add', p),
+    list: () => ipcRenderer.invoke('reminders:list'),
+    remove: (id) => ipcRenderer.invoke('reminders:remove', id),
+    clear: () => ipcRenderer.invoke('reminders:clear'),
+    onDue: (cb) => ipcRenderer.on('reminders:due', (_e, r) => cb(r)),
   },
 
   /* صدای گوینده (TTS) — صدای زن گوگل برای فارسی (v0.11) */

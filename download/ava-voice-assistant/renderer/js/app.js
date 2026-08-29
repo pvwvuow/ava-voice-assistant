@@ -95,7 +95,7 @@
     'set.ai.nokeyHint': ['از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — پیام‌ها مستقیم به چت حسابت می‌روند و جوابش برمی‌گردد', 'From the chat page › "GLM chat" tab, sign in once — messages go straight to your account chat and the answer comes back'],
     'set.ai.login': ['ورود به حساب GLM', 'Sign in to GLM'],
     'set.ai.key': ['کلید API GLM (اختیاری)', 'GLM API key (optional)'],
-    'set.ai.keyHint': ['فقط اگر کلید داشته باشی — بدون آن هم چت از نشست حساب کار می‌کند', 'Only if you have a key — chat works via your account session without it'],
+    'set.ai.keyHint': ['فقط اگر کلید داشته باشی — بدون آن هم چت از نشست حساب کار می‌کند. چند کلید؟ با ویرگول جدا کن (چرخش خودکار)', 'Only if you have a key — chat works via your account session without it. Multiple keys: comma separated (auto rotation)'],
     'set.ai.keyPh': ['اختیاری — مثل: 1a2b3c…', 'Optional — e.g.: 1a2b3c…'], 'set.ai.show': ['نمایش', 'Show'],
     'set.ai.model': ['مدل گفتگو (با کلید API)', 'Chat model (with API key)'],
     'set.ai.modelHint': ['فلاش رایگان است؛ ۴.۶ هوشمندتر است', 'Flash is free; 4.6 is smarter'],
@@ -135,7 +135,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۰ — تشخیص گفتار دقیق با موتور وب گوگل داخل خود برنامه + فالبک خودکار گوگل رایگان/GLM، پیشنهاد شانسی فرمان‌ها، فرم شیشه‌ای DNS جدید داخل صفحه اصلی، تم روشن و تیره، دوزبانه (فارسی/English)، فرمان‌های صوتی خواب و خاموش کردن و مانیتور، چت GLM مستقیم با حسابت بدون کلید API و آپدیت دلتا داخل برنامه.', 'v0.10 — accurate speech recognition with the in-app Google web engine + automatic free Google/GLM fallback, rotating command suggestions, glass New-DNS form on the home page, light & dark themes, bilingual (Persian/English), voice sleep/shutdown/monitor-off commands, direct GLM chat via your account without an API key, and in-app delta updates.'],
+    'about.desc': ['نسخه ۰.۱۲ — باز کردن برنامه‌های نصب‌شده با صدا («تلگرام رو باز کن») با دیکشنری تلفظ فارسی و تطبیق فازی + اسکنر Start Menu و بازی‌های Steam، یادآوری‌های صوتی («۲۰ دقیقه دیگه یادم بنداز…»، «ساعت ۵ عصر…»)، مدیای سیستم، چند کلید AI با چرخش خودکار (GLM/Gemini/OpenAI)، پلیر موزیک بازطراحی‌شده، مصرف CPU بهینه و آپدیت دلتا داخل برنامه.', 'v0.12 — open installed apps by voice ("open Telegram") with a Persian phonetic dictionary + fuzzy match, Start Menu & Steam games scanner, voice reminders ("remind me in 20 minutes…", "at 5 PM"), system media keys, multi-key AI rotation (GLM/Gemini/OpenAI), a redesigned music player, lower CPU usage, and in-app delta updates.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -323,6 +323,21 @@
     'music.next': ['آهنگ بعدی', 'Next track'], 'music.prev': ['آهنگ قبلی', 'Previous track'],
     'music.emptyPlay': ['پلی‌لیست خالی است — اول از صفحه موزیک یک پوشه انتخاب کن', 'Playlist is empty — pick a folder in the music page first'],
     'music.pageOpen': ['صفحه موزیک باز شد', 'Music page opened'],
+    'music.mute': ['قطع/وصل صدا', 'Mute / unmute'],
+    'music.muted': ['صدای پلیر قطع شد', 'Player muted'],
+    'music.unmuted': ['صدای پلیر وصل شد', 'Player unmuted'],
+
+    /* --- v0.12: باز کردن برنامه‌های سیستم --- */
+    'app.open': ['{x} را باز کردم — خوش بگذره!', 'Opened {x} — enjoy!'],
+    'app.notFound': ['برنامه‌ای به نام «{x}» روی سیستم پیدا نکردم — اسمش را واضح‌تر بگو یا از نصب بودنش مطمئن شو.', 'Could not find an app called "{x}" on this PC — say it more clearly or make sure it is installed.'],
+    'app.launchFail': ['{x} را باز نشد — فایل ممکن است جابه‌جا شده باشد.', 'Could not launch {x} — the file may have moved.'],
+    'app.scanning': ['اولین بار لیست برنامه‌های سیستم را می‌سازم… چند لحظه صبر کن', 'First scan of installed apps… one moment'],
+
+    /* --- v0.12: یادآوری‌ها --- */
+    'rem.set': ['یادآوری «{x}» ثبت شد برای {y} — سر وقت خودم خبرت می‌کنم.', 'Reminder "{x}" is set for {y} — I will ping you on time.'],
+    'rem.noTime': ['نگفتی کی یادت بندازم — مثلاً بگو «۲۰ دقیقه دیگه یادم بنداز چایی درست کنم» یا «ساعت ۵ عصر یادآوری بذار».', 'You did not say when — try "remind me in 20 minutes to make tea" or "remind me at 5 PM".'],
+    'rem.fail': ['یادآوری ثبت نشد — دوباره امتحان کن.', 'The reminder did not save — try again.'],
+    'rem.due': ['یادآوری: {x}', 'Reminder: {x}'],
     'voice.engine': ['موتور صدا', 'Voice engine'],
     'voice.engineHint': ['«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)', '"Google": natural professional female voice (online — the Google Translate voice); "Windows": the installed Windows voice (offline)'],
     'voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
@@ -339,12 +354,12 @@
     'set.ai.pGlm': ['کلید API گله‌م', 'GLM API key'],
     'set.ai.pGemini': ['گوگل جمنای', 'Google Gemini'],
     'set.ai.pOpenai': ['OpenAI', 'OpenAI'],
-    'set.ai.geminiKey': ['کلید API گوگل جمنای (اختیاری)', 'Google Gemini API key (optional)'],
-    'set.ai.geminiKeyHint': ['برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com', 'Search-like questions get live Google Search answers — free key from aistudio.google.com'],
-    'set.ai.geminiPh': ['AIza…', 'AIza…'],
-    'set.ai.openaiKey': ['کلید API اوپن‌ای‌آی (اختیاری)', 'OpenAI API key (optional)'],
-    'set.ai.openaiKeyHint': ['از platform.openai.com — با GPT جواب می‌دهد', 'From platform.openai.com — answers with GPT'],
-    'set.ai.openaiPh': ['sk-…', 'sk-…'],
+    'set.ai.geminiKey': ['کلیدهای API گوگل جمنای (اختیاری)', 'Google Gemini API keys (optional)'],
+    'set.ai.geminiKeyHint': ['برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com. چند کلید؟ با ویرگول جدا کن؛ اگر یکی محدود شد، بعدی خودکار استفاده می‌شود', 'Search-like questions get live Google Search answers — free key from aistudio.google.com. Multiple keys: separate with commas — auto rotation on rate limits'],
+    'set.ai.geminiPh': ['AIza… , AIza… (چند کلید با ویرگول)', 'AIza… , AIza… (comma separated)'],
+    'set.ai.openaiKey': ['کلیدهای API اوپن‌ای‌آی (اختیاری)', 'OpenAI API keys (optional)'],
+    'set.ai.openaiKeyHint': ['از platform.openai.com — با GPT جواب می‌دهد. چند کلید را می‌توانی با ویرگول بدهی (چرخش خودکار)', 'From platform.openai.com — answers with GPT. Multiple keys can be comma separated (auto rotation)'],
+    'set.ai.openaiPh': ['sk-… , sk-… (چند کلید با ویرگول)', 'sk-… , sk-… (comma separated)'],
     'upd.badge': ['آپدیت جدید', 'Update'],
     'toast.saved': ['ذخیره شد', 'Saved'],
     'upd.badgeReady': ['نصب آپدیت', 'Install update'],
@@ -514,6 +529,7 @@
   const mShuffleBtn = $('#mShuffle');
   const mRepeatBtn = $('#mRepeat');
   const mVol = $('#mVol');
+  const mMute = $('#mMute');
   const mSearch = $('#mSearch');
   const mList = $('#mList');
   const mEmpty = $('#mEmpty');
@@ -739,11 +755,13 @@
 
   /* کش رنگ اکولایزر — فقط با تعویض تم تازه می‌شود (نه در هر فریم) */
   const waveCols = { c1: 'rgba(52,211,153,0.95)', mid: 'rgba(16,185,129,0.85)', c2: 'rgba(16,185,129,0.9)' };
+  let waveDirty = true, idleSettled = false; /* پرچم‌های بهینه‌سازی CPU حلقه اکولایزر */
   function refreshWaveColors() {
     waveCols.c1 = cssColor('--wave-c1', 'rgba(52, 211, 153, 0.95)');
     const acc = cssColor('--acc-rgb', '16,185,129');
     waveCols.mid = acc ? `rgba(${acc}, 0.85)` : 'rgba(16, 185, 129, 0.85)';
     waveCols.c2 = cssColor('--wave-c2', 'rgba(16, 185, 129, 0.9)');
+    waveDirty = true; /* رنگ عوض شد → یک رندر مجدد */
   }
 
   function greetingText() {
@@ -826,6 +844,7 @@
     wave.width = Math.max(1, W * DPR);
     wave.height = Math.max(1, H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    waveDirty = true; /* بعد از تغییر اندازه، یک فریم دوباره کشیده شود */
   }
   window.addEventListener('resize', resizeWave);
   resizeWave();
@@ -909,7 +928,7 @@
   /* میتر تست زنده در تنظیمات */
   const mctx = micMeter ? micMeter.getContext('2d') : null;
   function drawMeter() {
-    if (!mctx || settingsPage.hidden) { setTimeout(drawMeter, 400); return; }
+    if (!mctx || settingsPage.hidden) { setTimeout(drawMeter, 600); return; }
     const r = micMeter.getBoundingClientRect();
     const mw = Math.max(10, r.width), mh = 40;
     if (micMeter.width !== mw * DPR) { micMeter.width = mw * DPR; micMeter.height = mh * DPR; mctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
@@ -931,7 +950,7 @@
       mctx.textAlign = 'center';
       mctx.fillText('میکروفون متصل نیست', mw / 2, 24);
     }
-    setTimeout(drawMeter, 60);
+    setTimeout(drawMeter, 80);
   }
   drawMeter();
 
@@ -999,11 +1018,18 @@
     c.arcTo(x, y, x + w, y, r);
     c.closePath();
   }
+  /* زمان‌بندی تطبیقی حلقه (بهینه‌سازی CPU — v0.12):
+     در حالت فعال ۶۰fps، اما در حالت عادی پس از نشستن میله‌ها حلقه
+     فقط هر ۲۵۰ میلی‌ثانیه بیدار می‌شود — GPU و CPU آسوده می‌مانند */
+  const schedFrame = (ms) => { if (ms <= 0) requestAnimationFrame(frame); else setTimeout(frame, ms); };
   function frame() {
-    requestAnimationFrame(frame);
     const now = performance.now();
     const dt = Math.min(0.05, Math.max(0.001, (now - lastFrameT) / 1000));
     lastFrameT = now;
+    const active = state !== 'idle';
+    if (active) idleSettled = false;
+    /* سکون کامل: میله‌ها ثابت‌اند — بدون رندر مجدد، فقط بیدار شدن کم‌نرخ */
+    if (!active && idleSettled && !waveDirty) { schedFrame(250); return; }
     t0 += dt;
     /* طیف واقعی میکروفون فقط وقتی خوانده می‌شود که کاربر دکمه میکروفون را
        زده باشد (حالت گوش دادن) — در حالت عادی اکولایزر کاملاً ثابت می‌ماند */
@@ -1047,8 +1073,11 @@
       rr(ctx, startX + i * (bw + gap), mid - bh / 2, bw, bh, bw / 2);
       ctx.fill();
     }
+    waveDirty = false;
+    idleSettled = !active && energy < 0.02 && levels.every((l) => Math.abs(l - 0.055) < 0.004);
+    schedFrame(!active && idleSettled ? 250 : 0);
   }
-  requestAnimationFrame(frame);
+  schedFrame(0);
 
   /* ---------- قوانین فرمان‌ها ----------
      k = الگوی شنیدن | t = توست | i = آیکون | r = متن پاسخ
@@ -1220,10 +1249,17 @@
     { k: /تاریخ|چندمه|امروز|what('s| is) (the )?date|today'?s date/i, t: 'تاریخ', i: '#i-clock', r: () => t('date.reply', { x: fmtDate() }) },
 
     /* --- ابزار --- */
+    /* --- یادآوری واقعی (v0.12): ساعت مطلق یا مدت + متن --- */
     {
-      k: /تایمر|یادآور|یادآوری|هشدار\s?بذار|timer|remind me/i, t: 'تایمر فعال شد', i: '#i-timer',
-      r: (c) => startTimer(c),
+      k: /یادآوری|یادم\s?بنداز|یادت\s?بنداز|یادآور|آلارم|بیدارم\s?کن|remind me/i, t: 'یادآوری ثبت شد', i: '#i-timer',
+      r: (c) => reminderReply(c),
     },
+    { k: /تایمر|هشدار\s?بذار|timer/i, t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
+
+    /* --- مدیای سیستم (هر پلیری — Spotify/مرورگر و…) --- */
+    { k: /مدیا[^.]{0,10}(بعدی|بعد)|پلیر[^.]{0,10}(بعدی|بعد)|آهنگ بعدی پلیر|media next|next (track|media)/i, t: 'مدیای بعدی', i: '#i-music', run: 'media_next', r: () => (LANG === 'en' ? 'Next track on the system player.' : 'آهنگ بعدی در پلیر سیستم.') },
+    { k: /مدیا[^.]{0,10}(قبلی|قبل)|پلیر[^.]{0,10}(قبلی|قبل)|آهنگ قبلی پلیر|media prev|previous (track|media)/i, t: 'مدیای قبلی', i: '#i-music', run: 'media_prev', r: () => (LANG === 'en' ? 'Previous track on the system player.' : 'آهنگ قبلی در پلیر سیستم.') },
+    { k: /مدیا[^.]{0,12}(پاز|توقف|پخش|نگه دار)|(پاز|پخش).{0,6}مدیا|media (play|pause)|play pause media/i, t: 'پخش/توقف مدیا', i: '#i-music', run: 'media_toggle', r: () => (LANG === 'en' ? 'Toggled the system player.' : 'پلیر سیستم را پخش/توقف کردم.') },
     { k: /جوک|بخندون|شوخی|tell me a joke|make me laugh|joke/i, t: 'جوک', i: '#i-smile', r: () => joke() },
 
     /* --- تعامل --- */
@@ -1262,6 +1298,289 @@
       },
     ];
     RULES.splice(1, 0, ...musicRules);
+  }
+
+  /* ============================================================
+     باز کردن برنامه‌های سیستم (v0.12) — معادل phonetic_dictionary.json
+     کاربر نام‌ها را فارسی می‌گوید اما فایل‌ها انگلیسی‌اند؛ پس:
+     ۱) دیکشنری تلفظ صوتی: «کروم» → chrome ، «فتوشاپ» → photoshop
+     ۲) تطبیق فازی (Levenshtein): اگر نام دقیق نبود، نزدیک‌ترین
+        برنامه از نتیجه اسکن Start Menu + Steam پیدا می‌شود
+     پایپ‌لاین ۵ مرحله‌ای: فرمان دقیق → قوانین regex → فازی برنامه‌ها
+     → هوش مصنوعی — فقط وقتی هیچ‌کدام جواب نداد سراغ AI می‌رویم.
+     ============================================================ */
+  const APP_OPEN_RE = /(باز\s*(کن|بکن|شو|شه|کردن)|اجرا\s*(کن|بکن|بده|شه|کردن)|بیار\s*(بالا|روی|شکم)|بذار\s*(باز|اجرا|بشه)|لانچ|launch|run|open|start)/i;
+  const APP_PHONETIC = {
+    'کروم': 'chrome', 'گل کروم': 'google chrome', 'مرورگر کروم': 'chrome',
+    'فایرفاکس': 'firefox', 'موزیلا': 'firefox',
+    'اج': 'edge', 'مایکروسافت اج': 'microsoft edge',
+    'تلگرام': 'telegram', 'واتساپ': 'whatsapp', 'واتس اپ': 'whatsapp',
+    'دیسبورد': 'discord', 'دیسکورد': 'discord',
+    'اسپاتیفای': 'spotify', 'اسکایپ': 'skype', 'زوم': 'zoom',
+    'وی اس کد': 'visual studio code', 'ویژوال استودیو کد': 'visual studio code', 'ویزوال استودیو کد': 'visual studio code',
+    'ویژوال استودیو': 'visual studio',
+    'فتوشاپ': 'photoshop', 'الیستریتور': 'illustrator', 'ایلستریتور': 'illustrator', 'پریمیر': 'premiere pro',
+    'افترافکت': 'after effects', 'بلندر': 'blender',
+    'ورد': 'word', 'اکسل': 'excel', 'پاورپوینت': 'powerpoint', 'اوتلوک': 'outlook', 'وان نوت': 'onenote',
+    'تیمز': 'teams', 'تیم ورک': 'teams',
+    'پاورشل': 'powershell', 'ترمینال': 'terminal',
+    'استیم': 'steam', 'ایپیک گیمز': 'epic games',
+    'تاندربیرد': 'thunderbird', 'اوبونتو': 'ubuntu',
+    'پی دی اف': 'acrobat', 'آکروبت': 'acrobat', 'ادوبی ریدر': 'acrobat reader',
+    'کیوبیس': 'obs', 'او بی اس': 'obs studio',
+    'پایتون': 'python', 'جاوا': 'java',
+    'گیت هاب': 'github', 'پست من': 'postman', 'پایچرم': 'pycharm',
+    'نت پد پلاس پلاس': 'notepad++',
+    'وای فای': 'settings', 'وایبر': 'viber', 'لینکدین': 'linkedin',
+  };
+
+  /* نرمال‌سازی نام برای مچ (ی/ک عربی → فارسی، فاصله و نیم‌فاصله یکدست) */
+  const normApp = (s) =>
+    String(s || '').toLowerCase()
+      .replace(/[\u064A]/g, '\u06CC').replace(/[\u0643]/g, '\u06A9')
+      .replace(/[\s\u200C_.\-()[\]؟?!،,:;'"\/\\]+/g, ' ')
+      .replace(/[^a-z0-9\u0600-\u06FF+ ]/g, '')
+      .replace(/\s+/g, ' ').trim();
+
+  /* فاصله لوانشتاین — برای تطبیق فازی نام برنامه (تایپ اشتباه گوگل/تلفظ متفاوت) */
+  function lev(a, b) {
+    if (a === b) return 0;
+    const m = a.length, n = b.length;
+    if (!m || !n) return Math.max(m, n);
+    let prev = Array.from({ length: n + 1 }, (_, i) => i);
+    for (let i = 1; i <= m; i++) {
+      const cur = [i];
+      for (let j = 1; j <= n; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[n];
+  }
+  const simRatio = (a, b) => (!a || !b ? 0 : 1 - lev(a, b) / Math.max(a.length, b.length));
+
+  /* کش لیست برنامه‌های اسکن‌شده در رندرر — پروسه اصلی ۲۴ ساعت کش می‌کند */
+  const sysApps = { list: [], at: 0, busy: false };
+  async function ensureAppsList(force = false) {
+    if (!bridge || !bridge.apps) return sysApps.list;
+    if (!force && sysApps.list.length && Date.now() - sysApps.at < 20 * 60 * 1000) return sysApps.list;
+    if (sysApps.busy) return sysApps.list;
+    sysApps.busy = true;
+    try {
+      const r = force ? await bridge.apps.scan() : await bridge.apps.list();
+      if (r && r.ok && Array.isArray(r.apps) && r.apps.length) {
+        sysApps.list = r.apps;
+        sysApps.at = Date.now();
+      } else if (force) {
+        sysApps.at = Date.now(); /* اسکن زده شد ولی چیزی نیامد — بلافاصله تکرار نشود */
+      }
+    } catch (_) { /* noop */ }
+    sysApps.busy = false;
+    return sysApps.list;
+  }
+
+  /* استخراج نام برنامه از جمله: «لطفا تلگرام رو برام اجرا کن» → «تلگرام» */
+  function extractAppName(cmd) {
+    let s = String(cmd || '');
+    if (/(سایت|وب\s?سایت|https?:\/\/)/i.test(s)) return '';
+    s = s
+      .replace(/(لطفا|لطفاً|ممنون|بی\s?زحمت|تو\s?رو\s?خدا)/g, ' ')
+      .replace(/(برام|برای\s*من|می‌شه|میشه|می\s*شه|می‌خوام|میخوام|لطفا)/g, ' ')
+      .replace(/(باز\s*(کن|بکن|شو|شه|کردن)?(?=\s|$|،|\.|!|؟))|(اجرا\s*(کن|بکن|بده|شه|کردن)?(?=\s|$|،|\.|!|؟))|(بیار\s*(بالا|روی|شکم)?(?=\s|$|،|\.|!|؟))|(بذار\s*(باز|اجرا|بشه)(?=\s|$|،|\.|!|؟))|(لانچ\s*(کن)?(?=\s|$|،|\.|!|؟))|(بشین\s*(رو|روی)(?=\s|$|،|\.|!|؟))|\b(run|open|launch|start)\b/gi, ' ')
+      .replace(/(^|\s)(رو|را|یه|یک|هم)(\s|$)/g, ' ')
+      .replace(/\s*(کن|بکن|شه|شو)\s*$/g, ' ')
+      .replace(/[\s\u200C]+/g, ' ')
+      .trim();
+    return s.length >= 2 ? s.slice(0, 60) : '';
+  }
+
+  /* بهترین تطبیق نام از بین برنامه‌های اسکن‌شده (فونتیک + شامل‌بودن + فازی) */
+  function matchSysApp(query) {
+    const q = normApp(query);
+    if (!q || !sysApps.list.length) return null;
+    /* دیکشنری تلفظ: فارسی → نام انگلیسی */
+    let phon = APP_PHONETIC[q] || null;
+    if (!phon) {
+      /* اول شامل‌شدن، بعد فازی داخل خود دیکشنری — «تلگرم» هم به telegram می‌رسد */
+      let bestFa = null, bestScore = 0;
+      for (const [fa, en] of Object.entries(APP_PHONETIC)) {
+        const nfa = normApp(fa);
+        if ((q.includes(nfa) && nfa.length >= 3) || (nfa.includes(q) && q.length >= 3)) { bestFa = en; break; }
+        const sc = simRatio(nfa, q);
+        if (sc > bestScore) { bestScore = sc; bestFa = en; }
+      }
+      if (bestFa && bestScore >= 0.72) phon = bestFa;
+    }
+    const target = phon ? normApp(phon) : q;
+    let best = null, bestScore = 0;
+    for (const a of sysApps.list) {
+      const n = normApp(a.name);
+      if (!n) continue;
+      let score = 0;
+      if (n === target) score = 1;
+      else if ((n.includes(target) || target.includes(n)) && Math.min(n.length, target.length) >= 3) score = 0.9;
+      else score = simRatio(n, target) * 0.82;
+      /* امتیاز تطبیق مستقیم گفتار (بدون دیکشنری) — برای نام‌های انگلیسی که همان‌طور گفته می‌شوند */
+      const sq = n === q ? 1 : ((n.includes(q) || q.includes(n)) && q.length >= 3 ? 0.88 : simRatio(n, q) * 0.78);
+      score = Math.max(score, sq);
+      if (score > bestScore) { bestScore = score; best = a; }
+    }
+    return bestScore >= 0.62 && best ? { app: best, score: bestScore } : null;
+  }
+
+  /* نیت «باز کن» بود؟ برنامه پیدا شد؟ اجرا کن — وگرنه null (AI پاسخ می‌دهد) */
+  async function tryAppOpen(cmd) {
+    if (!APP_OPEN_RE.test(cmd)) return null;
+    const name = extractAppName(cmd);
+    if (!name) return null;
+    if (!bridge || !bridge.apps) return LANG === 'en' ? 'Opening apps only works inside the Windows app.' : 'باز کردن برنامه‌ها فقط داخل نرم‌افزار ویندوزی کار می‌کند.';
+    await ensureAppsList();
+    if (!sysApps.list.length) {
+      statusText.textContent = t('app.scanning');
+      await ensureAppsList(true).catch(() => { /* noop */ });
+    }
+    const hit = matchSysApp(name);
+    if (!hit) {
+      return t('app.notFound', { x: name });
+    }
+    const r = await bridge.apps.launch({ name: hit.app.name, exe: hit.app.exe }).catch(() => null);
+    if (r && r.ok) return t('app.open', { x: hit.app.name });
+    return (r && r.error) || t('app.launchFail', { x: hit.app.name });
+  }
+
+  /* ============================================================
+     یادآوری‌های صوتی (v0.12) — معادل reminders.py
+     «یادآوری کن ساعت ۵ عصر چای درست کنم» / «۲۰ دقیقه دیگه یادم بنداز
+     آهنگ رو ببینم» — تبدیل حروف فارسی به رقم + پارس ساعت + تیک
+     پس‌زمینه در پروسه اصلی که به‌محض رسیدن وقت، آوا بلند خبر می‌دهد.
+     ============================================================ */
+  function faWordNum(str) {
+    const t = faToEn(String(str || '').toLowerCase());
+    let total = 0, cur = 0, found = false;
+    for (const w of t.split(/[\s\u200Cو]+/)) {
+      if (!w) continue;
+      if (Object.prototype.hasOwnProperty.call(FA_WORD_NUM, w)) {
+        found = true;
+        const v = FA_WORD_NUM[w];
+        if (v >= 100) { total += cur + v; cur = 0; } else cur += v;
+      } else if (/^\d+$/.test(w)) { found = true; cur = cur * Math.pow(10, w.length) + Number(w); }
+    }
+    return found ? total + cur : null;
+  }
+
+  function fmtClock(ts) {
+    const d = new Date(ts);
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const pm = h >= 12;
+    h = h % 12 || 12;
+    return LANG === 'en'
+      ? `${h}:${m} ${pm ? 'PM' : 'AM'}`
+      : `${faNum(h)}:${faNum(m)} ${pm ? 'بعدازظهر' : 'صبح'}`;
+  }
+
+  /* پارس یادآوری: خروجی {at, text} یا null — اول ساعت مطلق، بعد مدت */
+  function parseReminder(c) {
+    const txt = String(c || '').replace(/(لطفا|لطفاً)/g, '');
+    const now = new Date();
+
+    /* متن یادآوری = جمله بدون الگوهای زمان و فرمان‌ها */
+    const stripTime = (s) => s
+      .replace(/(یادآوری\s*(کن|بده)?|یادم\s*بنداز|یادت\s*بنداز|یادآور|آلارم\s*(بذار|بزن|بگذار)?|بیدارم\s*کن|remind\s*me( to)?|reminder)/gi, ' ')
+      .replace(/(در\s*)?(ساعت)\s*[^\s،.!؟؟]*/gi, ' ')
+      .replace(/(و\s*)?(نیم|ربع)\s*(دیگه|دیگر|بعد)?/gi, ' ')
+      .replace(/(\d+|[ا-ی\u200C\s]{2,22}?)\s*(ساعت|دقیقه|ثانیه)\s*(دیگه|دیگر|بعد)?/gi, ' ')
+      .replace(/(دیگه|دیگر|بعدا|بعداً|بعد|later)/gi, ' ')
+      .replace(/(که|بگو|بگه|به\s*من|منو|من\s*را|رو|را|برام|برای\s*من)\s*/gi, ' ')
+      .replace(/[\s\u200C]+/g, ' ')
+      .replace(/^[،.!؟?\s]+|[،.!؟?\s]+$/g, '')
+      .trim();
+
+    /* ۱) ساعت مطلق: «ساعت ۵ عصر» / «ساعت هشت و نیم صبح» / «ساعت ۲۲» / «ساعت ۱۰ و ربع»
+       فاصله زمانی دقیق مچ می‌شود تا متن یادآوری همراهش پاک نشود */
+    const abs = txt.match(/ساعت\s+(?:[\d۰-۹]+|[ا-ی\u200C]+)(?:\s*و\s*(?:نیم|ربع|[\d۰-۹]+\s*دقیقه|[ا-ی\u200C]+\s*دقیقه))?(?:\s*(?:صبح|ظهر|عصر|شب))?/i);
+    if (abs) {
+      const seg = abs[0].replace(/^\s*ساعت\s+/i, '');
+      const numM = seg.match(/[\d۰-۹]+|[ا-ی\u200C]+/);
+      let h = numM ? (/^\d/.test(numM[0]) ? Number(faToEn(numM[0])) : faWordNum(numM[0])) : null;
+      if (h !== null && h >= 0 && h <= 23) {
+        let min = 0;
+        if (/نیم/i.test(seg)) min = 30;
+        else if (/ربع/i.test(seg)) min = 15;
+        else {
+          const mq = seg.match(/[و,،]\s*(\d+|[ا-ی\u200C\s]{2,12})\s*دقیقه/i);
+          if (mq) min = faWordNum(mq[1]) || Number(faToEn(mq[1]).replace(/\D/g, '')) || 0;
+        }
+        const mer = /عصر|شب/i.test(seg) ? 'pm' : /صبح/i.test(seg) ? 'am' : /ظهر/i.test(seg) ? 'noon' : null;
+        let hour = h;
+        if (mer === 'pm' && hour < 12) hour += 12;
+        else if (mer === 'noon' && hour < 12) hour += hour === 0 ? 12 : 0;
+        else if (!mer && hour <= 12) {
+          /* بدون صبح/عصر: نزدیک‌ترین زمان آینده (۵ را هم ۵ صبح می‌گیریم هم ۵ عصر) */
+          const cand = [hour, (hour % 12) + 12, hour + 12];
+          let bestDt = null;
+          for (const hh of new Set(cand)) {
+            if (hh > 23) continue;
+            const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, min, 0, 0);
+            if (dt <= now) dt.setDate(dt.getDate() + 1);
+            if (!bestDt || dt < bestDt) bestDt = dt;
+          }
+          if (bestDt) {
+            const text = stripTime(txt.replace(abs[0], ' ')) || 'یادآوری';
+            return { at: bestDt.getTime(), text };
+          }
+        }
+        if (hour <= 23) {
+          const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, min, 0, 0);
+          if (dt <= now) dt.setDate(dt.getDate() + 1);
+          const text = stripTime(txt.replace(abs[0], ' ')) || 'یادآوری';
+          return { at: dt.getTime(), text };
+        }
+      }
+    }
+
+    /* ۲) مدت: «۲۰ دقیقه دیگه» / «یک ساعت و نیم بعد» / «نیم ساعت دیگه» */
+    const half = /نیم\s*ساعت/.test(txt);
+    const dur = txt.match(/([\d۰-۹]+|[ا-ی\u200C\s]{2,20}?)\s*(ثانیه|دقیقه|ساعت)(?:\s*و\s*(نیم|ربع))?\s*(دیگه|دیگر|بعد)/i);
+    if (dur) {
+      let n = faWordNum(dur[1]);
+      if (n === null) { const m2 = faToEn(dur[1]).match(/\d+/); n = m2 ? Number(m2[0]) : null; }
+      if (n === null) n = half ? 30 : null;
+      if (n !== null) {
+        let ms = 0;
+        if (/ثانیه/.test(dur[2])) ms = n * 1000;
+        else if (/دقیقه/.test(dur[2])) ms = n * 60000;
+        else ms = n * 3600000;
+        /* جزء «و نیم/و ربع»: یک ساعت و نیم = ۹۰ دقیقه، یک دقیقه و نیم = ۹۰ ثانیه */
+        if (dur[3] === 'نیم') ms += (/دقیقه/.test(dur[2]) ? 30000 : 1800000);
+        else if (dur[3] === 'ربع') ms += (/دقیقه/.test(dur[2]) ? 15000 : 900000);
+        if (half) ms = 30 * 60000;
+        ms = Math.max(5000, Math.min(ms, 30 * 24 * 3600000));
+        const text = stripTime(txt) || 'یادآوری';
+        return { at: Date.now() + ms, text };
+      }
+    }
+    if (half && /(دیگ|دیگر|بعد)/.test(txt)) {
+      const text = stripTime(txt) || 'یادآوری';
+      return { at: Date.now() + 30 * 60000, text };
+    }
+    return null;
+  }
+
+  async function reminderReply(c) {
+    const parsed = parseReminder(c);
+    if (!parsed) {
+      /* زمان نفهمیدیم — اگر مدت داشت مثل تایمر رفتار کن */
+      if (/ثانیه|دقیقه|ساعت|timer/i.test(c)) return startTimer(c);
+      return t('rem.noTime');
+    }
+    if (!bridge || !bridge.reminders) {
+      /* پیش‌نمایش مرورگر — مثل تایمر محلی */
+      return startTimer(new Date(parsed.at - Date.now()) <= new Date(0) ? c : c);
+    }
+    const r = await bridge.reminders.add({ text: parsed.text, at: parsed.at }).catch(() => null);
+    if (r && r.ok) return t('rem.set', { x: parsed.text, y: fmtClock(parsed.at) });
+    return (r && r.error) || t('rem.fail');
   }
 
   /* اجرای فرمان‌های پاور — خاموش/ریستارت از قبل در resolveReply تأیید گرفته‌اند */
@@ -1442,10 +1761,28 @@
     rcTag.textContent = t('tag.working');
 
     const rule = RULES.find((r) => r.k.test(cmd)) || findCustomRule(cmd);
-    if (!rule && aiConnected()) {
-      /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */
-      await aiHandleCommand(cmd);
-      return;
+    if (!rule) {
+      /* مرحله ۳ پایپ‌لاین: تطبیق فازی برنامه‌های سیستم («تلگرام رو اجرا کن»)
+         اگر نیت باز کردن نبود یا برنامه پیدا نشد → هوش مصنوعی (مرحله ۴) */
+      const appReply = await tryAppOpen(cmd);
+      if (appReply) {
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, appReply);
+        speak(appReply);
+        pushHistory(cmd, !/پیدا نکردم|not found/i.test(appReply));
+        setTimeout(() => { cmdBusy = false; }, 100);
+        setTimeout(() => {
+          if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; }
+        }, 2600);
+        return;
+      }
+      if (aiConnected()) {
+        /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */
+        await aiHandleCommand(cmd);
+        return;
+      }
     }
     const reply = rule ? await resolveReply(rule, cmd) : t('default.reply');
     if (!rule) rcTag.textContent = t('tag.reply');
@@ -3685,30 +4022,50 @@
     return `${m}:${String(ss).padStart(2, '0')}`;
   }
 
+  /* پر شدن نوار سیک/ولوم (گرادیان با --p) — سیک و ولوم همیشه یکدست */
+  function paintRange(el) {
+    if (!el) return;
+    const min = Number(el.min) || 0;
+    const max = Number(el.max) || 100;
+    const p = ((Number(el.value) - min) / (max - min)) * 100;
+    el.style.setProperty('--p', `${Math.max(0, Math.min(100, p))}%`);
+  }
+
   function renderMusicList() {
     if (!mList) return;
     const q = (mSearch && mSearch.value || '').trim().toLowerCase();
     music.view = music.tracks.filter((tr) => !q || (tr.title + ' ' + tr.artist + ' ' + tr.file.name).toLowerCase().includes(q));
+    const sc = mList.scrollTop; /* اسکرول کاربر با هر رندر حفظ شود */
     mList.innerHTML = '';
     if (mEmpty) mEmpty.hidden = music.tracks.length > 0;
     if (mCount) {
       mCount.hidden = !music.tracks.length;
-      if (music.tracks.length) mCount.textContent = t('music.tracks', { x: faNum(music.tracks.length) });
+      if (music.tracks.length) {
+        mCount.textContent = (music.folderName ? music.folderName + ' • ' : '') + t('music.tracks', { x: faNum(music.tracks.length) });
+      }
     }
-    music.view.forEach((tr, i) => {
+    const frag = document.createDocumentFragment();
+    music.view.forEach((tr) => {
+      /* فیکس باگ مهم: index در «view فیلترشده» با index در «tracks» یکی نیست؛
+         قبلاً با جستجوی فعال، آهنگ اشتباهی پخش می‌شد — حالا شناسه واقعی آهنگ */
+      const tIdx = music.tracks.indexOf(tr);
       const row = document.createElement('div');
-      row.className = 'm-row' + (i === music.cur ? ' current' : '');
+      row.className = 'm-row' + (tIdx === music.cur ? ' current' : '');
+      row.dataset.idx = String(tIdx);
       row.innerHTML =
-        `<span class="m-idx num">${i === music.cur && music.playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(i + 1)}</span>` +
-        `<span class="m-thumb">${tr.cover ? `<img src="${tr.cover}" alt=""/>` : '<svg class="ic"><use href="#i-music"/></svg>'}</span>` +
+        `<span class="m-idx num">${tIdx === music.cur && music.playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(tIdx + 1)}</span>` +
+        `<span class="m-thumb">${tr.cover ? `<img src="${tr.cover}" alt=""/>` : '<svg class="ic"><use href="#i-music"/></svg>'}` +
+        `<span class="m-hovplay"><svg class="ic"><use href="#i-play"/></svg></span></span>` +
         `<span class="m-tt"><b></b><span class="m-ar"></span></span>` +
         `<span class="m-dur num">--:--</span>`;
       row.querySelector('.m-tt b').textContent = tr.title;
       row.querySelector('.m-ar').textContent = tr.artist || tr.file.name.replace(/\.[^.]+$/, '');
       row.querySelector('.m-dur').textContent = tr.dur ? fmtDur(tr.dur) : '--:--';
-      row.addEventListener('click', () => playTrack(i));
-      mList.appendChild(row);
+      row.addEventListener('click', () => playTrack(tIdx));
+      frag.appendChild(row);
     });
+    mList.appendChild(frag);
+    mList.scrollTop = sc;
   }
 
   /* مدت هر آهنگ به‌صورت پس‌زمینه‌ای خوانده می‌شود (بدون کند کردن لیست) */
@@ -3727,13 +4084,11 @@
         });
       } catch (_) { /* noop */ }
       if ((mSearch && mSearch.value || '').trim()) continue; /* جستجوی فعال — بعداً */
-      const rows = mList ? mList.children : [];
-      /* ردیف‌ها ممکن است فیلتر شده باشند — فقط دق‌ها را تازه کن */
-      if (mList) Array.from(mList.children).forEach((rowEl, i) => {
-        const tr2 = music.view[i];
+      /* ردیف‌ها با شناسه واقعی آهنگ مچ می‌شوند (نه index فیلترشده) */
+      if (mList) Array.from(mList.children).forEach((rowEl) => {
+        const tr2 = music.tracks[Number(rowEl.dataset.idx)];
         if (tr2 && tr2.dur) { const d = rowEl.querySelector('.m-dur'); if (d) d.textContent = fmtDur(tr2.dur); }
       });
-      void rows;
     }
   }
 
@@ -3784,9 +4139,11 @@
     } else {
       if (musicWidget) musicWidget.hidden = true;
     }
-    /* ردیف جاری در لیست */
-    if (mList) Array.from(mList.children).forEach((rowEl, i) => {
+    /* ردیف جاری در لیست — با شناسه واقعی آهنگ (فیکس جستجوی فعال) */
+    if (mList) Array.from(mList.children).forEach((rowEl) => {
+      const i = Number(rowEl.dataset.idx);
       rowEl.classList.toggle('current', i === music.cur);
+      rowEl.classList.toggle('playing-row', playing && i === music.cur);
       const idx = rowEl.querySelector('.m-idx');
       if (idx) idx.innerHTML = i === music.cur && playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(i + 1);
     });
@@ -3840,10 +4197,28 @@
     });
     mAudio.addEventListener('timeupdate', () => {
       if (mAudio.duration) {
-        if (mSeek) mSeek.value = String(Math.round((mAudio.currentTime / mAudio.duration) * 1000));
+        if (mSeek) { mSeek.value = String(Math.round((mAudio.currentTime / mAudio.duration) * 1000)); paintRange(mSeek); }
         if (mCur) mCur.textContent = fmtDur(mAudio.currentTime);
         if (mDur) mDur.textContent = fmtDur(mAudio.duration);
       }
+    });
+    /* دکمه بلندگو = قطع/وصل سریع صدا (آخرین ولوم به یاد می‌ماند) */
+    let lastMusicVol = settings.musicVol ?? 0.8;
+    if (mMute) mMute.addEventListener('click', () => {
+      const ico = $('#mMuteIcon');
+      if (mAudio.volume > 0) {
+        lastMusicVol = mAudio.volume;
+        mAudio.volume = 0;
+        if (mVol) mVol.value = '0';
+        if (ico) ico.setAttribute('href', '#i-mute');
+        toast(t('music.muted'), '#i-volume');
+      } else {
+        mAudio.volume = Math.max(0.01, lastMusicVol);
+        if (mVol) mVol.value = String(Math.round(lastMusicVol * 100));
+        if (ico) ico.setAttribute('href', '#i-volume');
+        toast(t('music.unmuted'), '#i-volume');
+      }
+      paintRange(mVol);
     });
     /* کنترل از دکمه‌های مدیای کیبورد/ویندوز */
     if ('mediaSession' in navigator) {
@@ -3946,12 +4321,14 @@
     }
   });
   if (mSeek) mSeek.addEventListener('input', () => {
+    paintRange(mSeek);
     if (mAudio.duration) mAudio.currentTime = (Number(mSeek.value) / 1000) * mAudio.duration;
   });
   if (mVol) mVol.addEventListener('input', () => {
     mAudio.volume = Number(mVol.value) / 100;
     settings.musicVol = mAudio.volume;
     store.set('musicVol', settings.musicVol);
+    paintRange(mVol);
   });
   if (mSearch) mSearch.addEventListener('input', () => renderMusicList());
   if (mwPlayBtn) mwPlayBtn.addEventListener('click', () => musicToggle());
@@ -3965,6 +4342,8 @@
     mRepeatBtn.classList.toggle('one', music.repeat === 'one');
   }
   if (mVol) mVol.value = String(Math.round((settings.musicVol ?? 0.8) * 100));
+  paintRange(mVol);
+  paintRange(mSeek);
 
   /* ---------- پاپ‌آپ درباره ---------- */
   btnAbout.addEventListener('click', (e) => {
@@ -3993,7 +4372,13 @@
     sbRam.textContent = `RAM ${faNum(lastRam)}٪`;
   }
   tickStats();
-  setInterval(tickStats, 2000);
+  setInterval(tickStats, 4000); /* ۴ ثانیه — IPC و خواندن os.cpus() سبک‌تر */
+
+  /* توقف انیمیشن‌های تزئینی وقتی پنجره فوکوس/نمای ندارد — مصرف CPU پایین */
+  const setWinBlur = (on) => body.classList.toggle('app-blur', !!on);
+  window.addEventListener('blur', () => setWinBlur(true));
+  window.addEventListener('focus', () => setWinBlur(false));
+  document.addEventListener('visibilitychange', () => setWinBlur(document.hidden));
 
   /* ---------- شروع ---------- */
   LANG = settings.lang === 'en' ? 'en' : 'fa';
@@ -4016,6 +4401,24 @@
   if (bridge && bridge.dns && bridge.dns.onQuickRequest) {
     bridge.dns.onQuickRequest(() => openDnsQuickOverlay());
   }
+  /* یادآوری سر وقت: توست + بوق + گفتن بلند (تیک پس‌زمینه در پروسه اصلی است) */
+  if (bridge && bridge.reminders && bridge.reminders.onDue) {
+    bridge.reminders.onDue((r) => {
+      const msg = t('rem.due', { x: (r && r.text) || '' });
+      beep();
+      toast(msg, '#i-timer');
+      setState('success');
+      statusText.textContent = t('timer.done');
+      body.classList.add('has-card');
+      rcHeard.textContent = t('timer.doneTag');
+      rcTag.textContent = t('timer.doneTag');
+      typeText(rcReply, msg);
+      speak(msg);
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 5000);
+    });
+  }
+  /* گرم کردن کش برنامه‌های سیستم در پس‌زمینه — اولین «باز کن» سریع باشد */
+  setTimeout(() => { ensureAppsList().catch(() => { /* noop */ }); }, 3500);
   setTimeout(() => {
     toast(canRun ? t('toast.welcome') : t('toast.preview'), '#i-wave');
   }, 900);

@@ -277,6 +277,12 @@ const COMMANDS = {
     fa: 'خاموش کردن مانیتور',
   },
 
+  /* کلیدهای مدیای سیستم — پخش/توقف/بعدی/قبلی هر پلیری (Spotify، مرورگر و…)
+     معادل keybd_event در system_actions.py — بدون هیچ کتابخانه سنگین */
+  media_toggle: { cmd: PS_KEY('B3', 1), fa: 'پخش/توقف مدیا' },
+  media_next:   { cmd: PS_KEY('B0', 1), fa: 'مدیای بعدی' },
+  media_prev:   { cmd: PS_KEY('B1', 1), fa: 'مدیای قبلی' },
+
   /* صدا (کلیدهای مجازی ویندوز) */
   vol_up:   { cmd: PS_KEY('AF', 6),  fa: 'بلندی صدا +' },
   vol_down: { cmd: PS_KEY('AE', 6),  fa: 'بلندی صدا -' },
@@ -316,6 +322,256 @@ ipcMain.handle('sys:run', (_e, id, arg) => {
     });
   });
 });
+
+/* ============================================================
+   اسکنر برنامه‌های نصب‌شده (v0.12) — معادل app_scanner.py
+   • Start Menu: همه فایل‌های .lnk در ProgramData و AppData
+     با WScript.Shell به مسیر واقعی .exe ترجمه می‌شوند
+   • بازی‌های Steam: خواندن SteamPath از رجیستری + پارس
+     libraryfolders.vdf و فایل‌های .acf هر کتابخانه
+   • نتیجه در userData/discovered_apps.json کش می‌شود (اعتبار ۲۴ ساعت)
+   ============================================================ */
+const APPS_FILE = () => { try { return path.join(app.getPath('userData'), 'discovered_apps.json'); } catch (_) { return null; } };
+const APPS_TTL = 24 * 60 * 60 * 1000;
+const APP_NAME_JUNK = /(unins|uninst|setup|install(?!er\.exe)|update|upgrade|license|readme|help|crash|report|uninstall|حذف|نصب)/i;
+let appsCache = null;
+let appsScanning = null; /* Promise جریان اسکن — از اسکن موازی جلوگیری می‌کند */
+
+function readAppsCache() {
+  if (appsCache) return appsCache;
+  const f = APPS_FILE();
+  if (!f) return null;
+  try { appsCache = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { appsCache = null; }
+  return appsCache;
+}
+
+function saveAppsCache() {
+  const f = APPS_FILE();
+  if (!f || !appsCache) return;
+  try {
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(appsCache, 'utf8'));
+  } catch (_) { /* noop */ }
+}
+
+/* اسکن Start Menu با یک فایل ps1 موقت — بدون وابستگی خارجی */
+function scanStartMenu() {
+  return new Promise((resolve) => {
+    try {
+      const psBody = [
+        "$ErrorActionPreference = 'SilentlyContinue'",
+        "$dirs = @($env:ProgramData + '\\Microsoft\\Windows\\Start Menu\\Programs', $env:AppData + '\\Microsoft\\Windows\\Start Menu\\Programs')",
+        "$sh = New-Object -ComObject WScript.Shell",
+        "foreach ($d in $dirs) {",
+        "  if (Test-Path $d) {",
+        "    Get-ChildItem -Path $d -Recurse -Filter *.lnk | ForEach-Object {",
+        "      try {",
+        "        $lnk = $sh.CreateShortcut($_.FullName)",
+        "        $t = $lnk.TargetPath",
+        "        if ($t -and $t -match '\\.(exe|bat|cmd)$') {",
+        "          Write-Output ($_.BaseName + '|' + $t + '|' + $_.FullName)",
+        "        }",
+        "      } catch {}",
+        "    }",
+        "  }",
+        "}",
+      ].join('\r\n');
+      const file = path.join(os.tmpdir(), `ava-scan-${Date.now()}.ps1`);
+      fs.writeFileSync(file, psBody, 'utf8');
+      exec(
+        `powershell -NoProfile -ExecutionPolicy Bypass -File "${file}"`,
+        { windowsHide: true, timeout: 60000, maxBuffer: 1024 * 1024 * 4 },
+        (err, stdout) => {
+          try { fs.unlinkSync(file); } catch (_) { /* noop */ }
+          const out = [];
+          if (!err && stdout) {
+            for (const line of String(stdout).split(/\r?\n/)) {
+              const s = line.trim();
+              if (!s) continue;
+              const parts = s.split('|');
+              if (parts.length < 3) continue;
+              const [name, exe, lnk] = [parts[0].trim(), parts.slice(1, parts.length - 1).join('|').trim(), parts[parts.length - 1].trim()];
+              if (!name || !exe || APP_NAME_JUNK.test(name)) continue;
+              if (exe.length > 260) continue;
+              out.push({ name, exe, lnk, kind: 'app' });
+            }
+          }
+          resolve(out);
+        }
+      );
+    } catch (_) { resolve([]); }
+  });
+}
+
+/* اسکن بازی‌های Steam — خواندن رجیستری + libraryfolders.vdf + .acf */
+function scanSteam() {
+  return new Promise((resolve) => {
+    exec(
+      'reg query HKCU\\Software\\Valve\\Steam /v SteamPath',
+      { windowsHide: true, timeout: 8000 },
+      (err, stdout) => {
+        if (err || !stdout) return resolve([]);
+        const m = String(stdout).match(/SteamPath\s+REG_SZ\s+(.+)/i);
+        const steamRoot = m && m[1].trim().replace(/\\$/, '');
+        if (!steamRoot) return resolve([]);
+        try {
+          /* کتابخانه‌ها از libraryfolders.vdf */
+          const libs = [steamRoot];
+          try {
+            const vdf = fs.readFileSync(path.join(steamRoot, 'steamapps', 'libraryfolders.vdf'), 'utf8');
+            for (const mm of vdf.matchAll(/"path"\s+"([^"]+)"/g)) {
+              const p = mm[1].replace(/\\\\/g, '\\');
+              if (!libs.includes(p)) libs.push(p);
+            }
+          } catch (_) { /* noop */ }
+          const games = [];
+          for (const lib of libs) {
+            const dir = path.join(lib, 'steamapps');
+            let files = [];
+            try { files = fs.readdirSync(dir).filter((x) => x.toLowerCase().endsWith('.acf')); } catch (_) { continue; }
+            for (const acf of files) {
+              try {
+                const txt = fs.readFileSync(path.join(dir, acf), 'utf8');
+                const nm = txt.match(/"name"\s+"([^"]+)"/);
+                const id = acf.match(/appmanifest_(\d+)\.acf/i);
+                if (nm && id && !APP_NAME_JUNK.test(nm[1])) {
+                  games.push({ name: nm[1], exe: `steam://rungameid/${id[1]}`, lnk: '', kind: 'steam', appid: id[1] });
+                }
+              } catch (_) { /* noop */ }
+            }
+          }
+          resolve(games);
+        } catch (_) { resolve([]); }
+      }
+    );
+  });
+}
+
+/* نرمال‌سازی نام برنامه برای مچ سریع */
+const normAppName = (s) =>
+  String(s || '').toLowerCase()
+    .replace(/[\u064A]/g, '\u06CC').replace(/[\u0643]/g, '\u06A9')
+    .replace(/[\s\u200C_.\-()\[\]]+/g, ' ')
+    .replace(/[^a-z0-9\u0600-\u06FF ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+
+async function scanAllApps(force = false) {
+  const cache = readAppsCache();
+  if (!force && cache && cache.at && Date.now() - cache.at < APPS_TTL && Array.isArray(cache.apps)) return cache.apps;
+  if (appsScanning) return appsScanning;
+  appsScanning = (async () => {
+    const [menu, steam] = await Promise.all([scanStartMenu(), scanSteam()]);
+    /* حذف تکراری بر اساس نام نرمال‌شده — اولویت با .exe واقعی */
+    const seen = new Map();
+    for (const a of [...menu, ...steam]) {
+      const k = normAppName(a.name);
+      if (!k) continue;
+      const prev = seen.get(k);
+      if (!prev || (prev.kind === 'steam' && a.kind === 'app')) seen.set(k, a);
+    }
+    const apps = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+    appsCache = { at: Date.now(), apps };
+    saveAppsCache();
+    return apps;
+  })();
+  try { return await appsScanning; } finally { appsScanning = null; }
+}
+
+ipcMain.handle('apps:list', async () => {
+  try {
+    const cache = readAppsCache();
+    const stale = !cache || !cache.at || Date.now() - cache.at >= APPS_TTL || !Array.isArray(cache.apps);
+    if (stale) {
+      /* اسکن در پس‌زمینه؛ اول لیست کش (اگر هست) برگردد */
+      scanAllApps().catch(() => {});
+      return { ok: true, apps: (cache && cache.apps) || [], stale: true };
+    }
+    return { ok: true, apps: cache.apps, stale: false };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e), apps: [] };
+  }
+});
+
+ipcMain.handle('apps:scan', async () => {
+  try {
+    const apps = await scanAllApps(true);
+    return { ok: true, apps, count: apps.length };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e), apps: [] };
+  }
+});
+
+/* اجرای برنامه اسکن‌شده — فقط مسیرهایی که واقعا در نتیجه اسکن بودند
+   (فهرست سفید امن؛ هیچ ورودی دلخواهی به شل تزریق نمی‌شود) */
+ipcMain.handle('apps:launch', async (_e, p) => {
+  try {
+    const apps = await scanAllApps();
+    const k = normAppName(p && p.name);
+    const hit = apps.find((a) => normAppName(a.name) === k && a.exe === (p && p.exe));
+    if (!hit) return { ok: false, error: 'این برنامه در نتیجه اسکن نبود — اول اسکن انجام شود' };
+    const cmdStr = hit.kind === 'steam'
+      ? `start "" "${hit.exe}"`
+      : `start "" "${String(hit.exe).replace(/"/g, '')}"`;
+    return new Promise((resolve) => {
+      exec(cmdStr, { windowsHide: true, timeout: 10000 }, (err) => {
+        resolve(err ? { ok: false, error: 'اجرا نشد — فایل ممکن است جابه‌جا شده باشد' } : { ok: true, name: hit.name });
+      });
+    });
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
+
+/* ============================================================
+   یادآوری‌ها (v0.12) — معادل reminders.py
+   ذخیره در ava-reminders.json + ترد تیک پس‌زمینه (۴ ثانیه)
+   که زمان رسیده را به رندرر می‌فرستد تا آوا آن را بلند بگوید.
+   ============================================================ */
+const REM_FILE = () => { try { return path.join(app.getPath('userData'), 'ava-reminders.json'); } catch (_) { return null; } };
+let reminders = [];
+function loadReminders() {
+  const f = REM_FILE();
+  if (!f) return;
+  try { reminders = JSON.parse(fs.readFileSync(f, 'utf8')) || []; } catch (_) { reminders = []; }
+  if (!Array.isArray(reminders)) reminders = [];
+}
+function saveReminders() {
+  const f = REM_FILE();
+  if (!f) return;
+  try {
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(reminders, null, 2));
+  } catch (_) { /* noop */ }
+}
+loadReminders();
+setInterval(() => {
+  const now = Date.now();
+  const due = reminders.filter((r) => !r.done && r.at <= now);
+  if (!due.length) return;
+  for (const r of due) r.done = true;
+  reminders = reminders.filter((r) => !r.done);
+  saveReminders();
+  for (const r of due) sendUI('reminders:due', { id: r.id, text: r.text, at: r.at });
+}, 4000);
+
+ipcMain.handle('reminders:add', (_e, p) => {
+  const text = String((p && p.text) || '').trim().slice(0, 300);
+  const at = Number(p && p.at);
+  if (!text) return { ok: false, error: 'متن یادآوری خالی است' };
+  if (!Number.isFinite(at) || at <= Date.now() + 3000) return { ok: false, error: 'زمان یادآوری باید در آینده باشد' };
+  if (reminders.length >= 100) return { ok: false, error: 'فهرست یادآوری‌ها پر است' };
+  const rem = { id: Date.now() + Math.floor(Math.random() * 999), text, at };
+  reminders.push(rem);
+  saveReminders();
+  return { ok: true, reminder: rem };
+});
+ipcMain.handle('reminders:list', () => ({ ok: true, reminders: reminders.filter((r) => !r.done).sort((a, b) => a.at - b.at) }));
+ipcMain.handle('reminders:remove', (_e, id) => {
+  reminders = reminders.filter((r) => r.id !== Number(id));
+  saveReminders();
+  return { ok: true };
+});
+ipcMain.handle('reminders:clear', () => { reminders = []; saveReminders(); return { ok: true }; });
 
 /* ---------- IPC: system stats (برای مانیتور و نوار وضعیت) ---------- */
 ipcMain.handle('sys:stats', () => ({
@@ -673,32 +929,39 @@ const netErr = (e) => {
 };
 ipcMain.handle('ai:chat', async (_e, p) => {
   const { base, key, model, messages, temperature } = p || {};
-  if (!key) return { ok: false, error: 'کلید GLM تنظیم نشده — از تنظیمات واردش کن' };
+  const keys = splitKeys(key);
+  if (!keys.length) return { ok: false, error: 'کلید GLM تنظیم نشده — از تنظیمات واردش کن' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
-  try {
-    const r = await fetch(trimBase(base) + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${String(key).trim()}` },
-      body: JSON.stringify({
-        model: model || 'glm-4.6',
-        messages: messages.slice(-16), // فقط ۸ رد و بدل آخر
-        temperature: typeof temperature === 'number' ? temperature : 0.6,
-        max_tokens: 1024,
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(60000),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
-      return { ok: false, error: `GLM: ${msg}` };
+  let lastErr = null;
+  /* چرخش چندکلیدی: اگر کلیدی محدود شد، بلافاصله سراغ بعدی */
+  for (const k of keys) {
+    try {
+      const r = await fetch(trimBase(base) + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
+        body: JSON.stringify({
+          model: model || 'glm-4.6',
+          messages: messages.slice(-16), // فقط ۸ رد و بدل آخر
+          temperature: typeof temperature === 'number' ? temperature : 0.6,
+          max_tokens: 1024,
+          stream: false,
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
+        lastErr = `GLM: ${msg}`;
+        continue; /* کلید بعدی */
+      }
+      const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      if (!text) { lastErr = 'پاسخ خالی از سرور رسید'; continue; }
+      return { ok: true, text };
+    } catch (e) {
+      lastErr = netErr(e);
     }
-    const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-    if (!text) return { ok: false, error: 'پاسخ خالی از سرور رسید' };
-    return { ok: true, text };
-  } catch (e) {
-    return { ok: false, error: netErr(e) };
   }
+  return { ok: false, error: lastErr || 'هیچ کلید GLM جواب نداد' };
 });
 
 /* ---------- موتور رایگان گوگل برای تشخیص گفتار (بدون هیچ کلیدی) ----------
@@ -1105,74 +1368,98 @@ ipcMain.handle('tts:google', async (_e, p) => {
    ابزار جستجوی گوگل (google_search grounding) هم فعال می‌شود تا
    سوالات «سرچ» با اطلاعات لحظه‌ای جواب بگیرند.
    ============================================================ */
+/* ---------- چرخش چندکلیدی (v0.12 — استراتژی API Rotation) ----------
+   کاربر می‌تواند چند کلید را با ویرگول بگذارد؛ اگر کلیدی محدود شد
+   (429/quota) یا خطای شبکه داد، خودکار سراغ کلید بعدی می‌رویم —
+   برای Gemini فالبک مدل هم انجام می‌شود (flash → flash-lite). */
+const splitKeys = (k) =>
+  String(k || '').split(/[\s,;،\n]+/).map((s) => s.trim()).filter((s) => s.length > 8);
+
 ipcMain.handle('ai:gemini', async (_e, p) => {
   const { key, model, messages, search } = p || {};
-  if (!key) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
+  const keys = splitKeys(key);
+  if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
-  try {
-    const sys = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
-    const contents = messages
-      .filter((m) => m.role !== 'system')
-      .slice(-16)
-      .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
-    const body = {
-      contents,
-      generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
-    };
-    if (sys) body.systemInstruction = { parts: [{ text: sys }] };
-    if (search) body.tools = [{ google_search: {} }];
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model || 'gemini-2.0-flash')}:generateContent?key=${encodeURIComponent(String(key).trim())}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(60000),
+  const models = [...new Set([String(model || 'gemini-2.0-flash'), 'gemini-2.0-flash-lite'])].filter(Boolean);
+  let lastErr = null;
+  /* چرخش کلید × مدل: کلید محدود/خراب → کلید بعدی؛ مدل نبود → مدل بعدی */
+  for (const k of keys) {
+    for (const mdl of models) {
+      try {
+        const sys = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
+        const contents = messages
+          .filter((m) => m.role !== 'system')
+          .slice(-16)
+          .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
+        const body = {
+          contents,
+          generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
+        };
+        if (sys) body.systemInstruction = { parts: [{ text: sys }] };
+        if (search) body.tools = [{ google_search: {} }];
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(60000),
+          }
+        );
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
+          lastErr = `Gemini: ${String(msg).slice(0, 140)}`;
+          /* کلید بی‌اعتبار/محدود → کلید بعدی؛ مدل ناموجود (404) → مدل بعدی */
+          continue;
+        }
+        const cand = j && j.candidates && j.candidates[0];
+        const text = cand && cand.content && cand.content.parts
+          ? cand.content.parts.map((x) => x.text || '').join('').trim()
+          : '';
+        if (!text) { lastErr = 'پاسخ خالی از Gemini رسید'; continue; }
+        return { ok: true, text, model: mdl, keyIndex: keys.indexOf(k) };
+      } catch (e) {
+        lastErr = netErr(e);
       }
-    );
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
-      return { ok: false, error: `Gemini: ${String(msg).slice(0, 140)}` };
     }
-    const cand = j && j.candidates && j.candidates[0];
-    const text = cand && cand.content && cand.content.parts
-      ? cand.content.parts.map((x) => x.text || '').join('').trim()
-      : '';
-    if (!text) return { ok: false, error: 'پاسخ خالی از Gemini رسید' };
-    return { ok: true, text };
-  } catch (e) {
-    return { ok: false, error: netErr(e) };
   }
+  return { ok: false, error: lastErr || 'هیچ کلید Gemini جواب نداد' };
 });
 
 ipcMain.handle('ai:openai', async (_e, p) => {
   const { key, model, messages } = p || {};
-  if (!key) return { ok: false, error: 'کلید OpenAI تنظیم نشده' };
+  const keys = splitKeys(key);
+  if (!keys.length) return { ok: false, error: 'کلید OpenAI تنظیم نشده' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
-  try {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${String(key).trim()}` },
-      body: JSON.stringify({
-        model: model || 'gpt-4o-mini',
-        messages: messages.slice(-16),
-        temperature: 0.6,
-        max_tokens: 1024,
-      }),
-      signal: AbortSignal.timeout(60000),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
-      return { ok: false, error: `OpenAI: ${String(msg).slice(0, 140)}` };
+  let lastErr = null;
+  for (const k of keys) {
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
+        body: JSON.stringify({
+          model: model || 'gpt-4o-mini',
+          messages: messages.slice(-16),
+          temperature: 0.6,
+          max_tokens: 1024,
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
+        lastErr = `OpenAI: ${String(msg).slice(0, 140)}`;
+        continue; /* کلید بعدی */
+      }
+      const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      if (!text) { lastErr = 'پاسخ خالی از OpenAI رسید'; continue; }
+      return { ok: true, text };
+    } catch (e) {
+      lastErr = netErr(e);
     }
-    const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-    if (!text) return { ok: false, error: 'پاسخ خالی از OpenAI رسید' };
-    return { ok: true, text };
-  } catch (e) {
-    return { ok: false, error: netErr(e) };
   }
+  return { ok: false, error: lastErr || 'هیچ کلید OpenAI جواب نداد' };
 });
 
 /* ---------- فرمان‌های سفارشی (پیشنهاد هوش مصنوعی + تأیید صریح کاربر) ----------

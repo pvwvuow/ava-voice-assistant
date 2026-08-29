@@ -1496,15 +1496,12 @@ html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, r
 [data-theme="light"] .orb-halo { background: radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 65%); }
 [data-theme="light"] .orb-ring { border-color: rgba(139, 92, 246, 0.5); }
 [data-theme="light"] .orb {
-  /* بوردر بسیار باریک‌تر + رنگ‌های داخلی تا لبه با افکت فید می‌رسند (v0.11) */
-  border: 0.5px solid rgba(139, 92, 246, 0.22);
-  background: radial-gradient(125% 125% at 32% 22%,
-    rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.62) 26%,
-    rgba(196, 181, 253, 0.35) 55%, rgba(139, 92, 246, 0.26) 78%, rgba(124, 58, 237, 0.34) 100%);
+  /* بازگشت به ظاهر قبلی (خواست کاربر در v0.12): بوردر سفید نازک + هسته سفید شیشه‌ای */
+  border: 1px solid rgba(38, 22, 92, 0.12);
+  background: radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5) 42%, rgba(139, 92, 246, 0.14) 100%);
   box-shadow: 0 24px 60px rgba(84, 60, 160, 0.25),
               inset 0 2px 0 rgba(255, 255, 255, 0.95),
-              inset 0 -18px 40px rgba(139, 92, 246, 0.16),
-              inset 0 0 34px rgba(167, 139, 250, 0.22);
+              inset 0 -18px 40px rgba(139, 92, 246, 0.12);
 }
 [data-theme="light"] .orb-liquid .bl1 { background: radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.95), rgba(109, 40, 217, 0.4)); }
 [data-theme="light"] .orb-liquid .bl2 { background: radial-gradient(circle at 60% 50%, rgba(217, 119, 6, 0.75), rgba(245, 158, 11, 0.28)); }
@@ -1659,17 +1656,29 @@ html[dir="ltr"][data-theme="light"] .set-nav { border-inline-end: 1px solid rgba
 .musicpage .set-top h2 { color: var(--acc2); }
 [data-theme="light"] .musicpage .set-top h2 { color: #6d28d9; }
 
-.music-hero { padding: 18px 22px; border-radius: 22px; display: flex; flex-direction: column; gap: 14px; }
+.music-hero { padding: 20px 22px 18px; border-radius: 24px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden; }
+/* هاله زمردی لطیف پشت هیرو پلیر — عمق بیشتر (v0.12) */
+.music-hero::before {
+  content: ''; position: absolute; inset: -40% -20% auto; height: 70%;
+  background: radial-gradient(60% 100% at 50% 0%, rgba(16, 185, 129, 0.14), transparent 70%);
+  pointer-events: none;
+}
+[data-theme="light"] .music-hero::before { background: radial-gradient(60% 100% at 50% 0%, rgba(139, 92, 246, 0.12), transparent 70%); }
 .m-now { display: flex; align-items: center; gap: 16px; }
 .m-cover {
-  position: relative; width: 84px; height: 84px; flex-shrink: 0;
-  border-radius: 18px; overflow: hidden;
+  position: relative; width: 92px; height: 92px; flex-shrink: 0;
+  border-radius: 20px; overflow: hidden;
   display: grid; place-items: center;
   background: linear-gradient(145deg, rgba(52, 211, 153, 0.3), rgba(16, 185, 129, 0.12));
   border: 1px solid rgba(52, 211, 153, 0.35);
   color: #7ef0c2;
   box-shadow: 0 10px 30px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.35s cubic-bezier(0.22, 1.2, 0.36, 1);
 }
+.m-cover:hover { transform: scale(1.03) rotate(-1deg); }
+/* بدون کاور: دیسک وینیل آرام می‌چرخد */
+body.music-playing .m-cover .ic { animation: discSpin 7s linear infinite; }
+@keyframes discSpin { to { transform: rotate(360deg); } }
 .m-cover .ic { width: 30px; height: 30px; }
 .m-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .m-cover-shine { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent 45%); pointer-events: none; }
@@ -1695,15 +1704,18 @@ body.music-playing .m-cover { animation: coverGlow 3.2s ease-in-out infinite; }
 @keyframes eqBounce { 0%, 100% { height: 5px; } 30% { height: 20px; } 55% { height: 9px; } 75% { height: 16px; } }
 [data-theme="light"] .m-eq i { background: #8b5cf6; }
 
-/* سیک پخش */
+/* سیک پخش — نوار با پرشدن گرادیانی (--p از JS) + اسلایدر LTR برای رفتار یکدست */
 .m-seek-row { display: flex; align-items: center; gap: 12px; }
+.m-seek-row input[type="range"], .m-vol-wrap input[type="range"] { direction: ltr; }
 .m-time { font-size: 11px; color: var(--text3); min-width: 34px; text-align: center; }
 .m-seek-row input[type="range"], .m-vol-wrap input[type="range"] {
   -webkit-appearance: none; appearance: none;
-  height: 5px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(to right, #34d399 0%, #10b981 var(--p, 0%), rgba(255, 255, 255, 0.12) var(--p, 0%));
   outline: none; cursor: pointer;
+  transition: box-shadow 0.2s ease;
 }
+.m-seek-row input[type="range"]:hover, .m-vol-wrap input[type="range"]:hover { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12); }
 .m-seek-row input[type="range"] { flex: 1; }
 .m-seek-row input[type="range"]::-webkit-slider-thumb, .m-vol-wrap input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
@@ -1712,7 +1724,7 @@ body.music-playing .m-cover { animation: coverGlow 3.2s ease-in-out infinite; }
   border: 2px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 2px 10px rgba(16, 185, 129, 0.55);
 }
-[data-theme="light"] .m-seek-row input[type="range"], [data-theme="light"] .m-vol-wrap input[type="range"] { background: rgba(38, 22, 92, 0.14); }
+[data-theme="light"] .m-seek-row input[type="range"], [data-theme="light"] .m-vol-wrap input[type="range"] { background: linear-gradient(to right, #8b5cf6 0%, #6d28d9 var(--p, 0%), rgba(38, 22, 92, 0.14) var(--p, 0%)); }
 [data-theme="light"] .m-seek-row input[type="range"]::-webkit-slider-thumb, [data-theme="light"] .m-vol-wrap input[type="range"]::-webkit-slider-thumb {
   background: linear-gradient(135deg, #8b5cf6, #6d28d9);
   border-color: #ffffff;
@@ -1727,6 +1739,8 @@ body.music-playing .m-cover { animation: coverGlow 3.2s ease-in-out infinite; }
   color: var(--text2);
   transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
+.m-ctl.sm { width: 30px; height: 30px; border-radius: 10px; }
+.m-ctl.sm .ic { width: 15px; height: 15px; }
 .m-ctl .ic { width: 17px; height: 17px; }
 .m-ctl:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
 .m-ctl:active { transform: scale(0.92); }
@@ -1765,7 +1779,21 @@ body.music-playing .m-cover { animation: coverGlow 3.2s ease-in-out infinite; }
 .m-search input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 12.5px; }
 .m-search input::placeholder { color: var(--text3); }
 .m-hint { font-size: 11px; color: var(--text3); }
-.m-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 120px; }
+.m-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 120px; padding-inline-end: 4px; }
+/* حالت خالی: دیسک موزیک آرام شناور */
+#mEmpty { text-align: center; padding: 34px 18px; }
+#mEmpty::before {
+  content: '♪';
+  display: grid; place-items: center;
+  width: 74px; height: 74px; margin: 0 auto 14px;
+  font-size: 30px; color: var(--acc2);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(52, 211, 153, 0.22), rgba(16, 185, 129, 0.08));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  animation: emptyFloat 3.4s ease-in-out infinite;
+}
+@keyframes emptyFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+[data-theme="light"] #mEmpty::before { background: linear-gradient(145deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.08)); border-color: rgba(139, 92, 246, 0.3); }
 .m-row {
   display: flex; align-items: center; gap: 13px;
   padding: 9px 14px;
@@ -1780,7 +1808,24 @@ body.music-playing .m-cover { animation: coverGlow 3.2s ease-in-out infinite; }
 .m-row.current {
   background: linear-gradient(135deg, rgba(52, 211, 153, 0.14), rgba(16, 185, 129, 0.07));
   border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: inset 3px 0 0 var(--acc2), 0 4px 16px rgba(16, 185, 129, 0.08);
 }
+/* دکمه پخش شناور: هاور روی ردیف → دکمه پخش روی تامبنیل */
+.m-hovplay {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(6, 14, 11, 0.55);
+  color: #ffffff;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.22, 1.2, 0.36, 1);
+  pointer-events: none;
+}
+.m-hovplay .ic { width: 18px; height: 18px; }
+.m-row:hover .m-hovplay { opacity: 1; transform: scale(1); }
+.m-row.current.playing-row .m-hovplay { display: none; }
+/* آهنگ در حال پخش: نوارهای کوچک کنار عنوان */
+.m-row.current .m-dur { color: var(--acc2); }
 .m-idx { width: 26px; text-align: center; font-size: 11.5px; color: var(--text3); flex-shrink: 0; }
 .m-row.current .m-idx { color: var(--acc2); }
 .m-row.current .m-idx .ic { width: 15px; height: 15px; animation: ltPing 1.1s ease-in-out infinite; }
@@ -1863,3 +1908,23 @@ body.music-playing .mw-cover { animation: coverGlow 3.2s ease-in-out infinite; }
   .music-hero { padding: 14px; }
   .m-cover { width: 66px; height: 66px; }
 }
+
+/* ============================================================
+   v0.12 — بهینه‌سازی مصرف CPU
+   وقتی پنجره فوکوس یا نمای ندارد، انیمیشن‌های تزئینی متوقف می‌شوند
+   (کلاس app-blur از JS روی body گذاشته می‌شود)
+   ============================================================ */
+body.app-blur .bg-blob,
+body.app-blur .orb-ring,
+body.app-blur .orb-halo,
+body.app-blur .orb-liquid .bl,
+body.app-blur .greet h1,
+body.app-blur .m-cover,
+body.app-blur .m-cover .ic,
+body.app-blur .mw-cover,
+body.app-blur .m-eq.live i,
+body.app-blur .mw-eq.live i,
+body.app-blur #mEmpty::before {
+  animation-play-state: paused !important;
+}
+body.app-blur .orb-ring { opacity: 0.5; }

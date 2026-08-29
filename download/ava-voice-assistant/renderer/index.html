@@ -27,6 +27,7 @@
       <symbol id="i-send" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></symbol>
       <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
       <symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
       <symbol id="i-play" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></symbol>
       <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="4.5" width="4" height="15" rx="1.4" fill="currentColor" stroke="none"/></symbol>
       <symbol id="i-next" viewBox="0 0 24 24"><polygon points="5 5 15 12 5 19 5 5" fill="currentColor" stroke="none"/><line x1="19" y1="5" x2="19" y2="19"/></symbol>
@@ -558,7 +559,7 @@
               <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
               <button class="m-ctl big" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
               <button class="m-ctl" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
-              <span class="m-vol-wrap"><svg class="ic"><use href="#i-volume"/></svg><input type="range" id="mVol" min="0" max="100" value="80" /></span>
+              <span class="m-vol-wrap"><button type="button" class="m-ctl sm" id="mMute" aria-label="قطع/وصل صدا" data-i18n-tip="music.mute"><svg class="ic"><use id="mMuteIcon" href="#i-volume"/></svg></button><input type="range" id="mVol" min="0" max="100" value="80" /></span>
             </div>
           </div>
 

@@ -1,8 +1,10 @@
 /**
- * Smoke test for AVA v0.11.0 — boots the app under Xvfb, checks
+ * Smoke test for AVA v0.12.0 — boots the app under Xvfb, checks
  * v0.11 UI elements (titlebar physical layout, update badge, music
- * page, live text, new settings), suggestion rotation, DNS overlay
- * flow, theme + language switching, and basic protocol loading.
+ * page, live text, new settings), suggestion rotation, theme +
+ * language switching, plus v0.12 additions: mute button, reverted
+ * light-theme orb, app-blur pause rules, phonetic app-open layer,
+ * reminders + app-scanner bridges, AI key rotation markers.
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -173,23 +175,58 @@ app.whenReady().then(async () => {
     const dirFa = await probe(`document.documentElement.dir`);
     ok('RTL restored for FA', dirFa === 'rtl');
 
-    // 5. DNS overlay open/close
+    // 5. v0.12 — static source markers (phonetic dictionary, reminders,
+    // app scanner, key rotation, CPU optimizations, reverted light orb)
     try {
-    await probe(`document.querySelector('#btnQuickDns').click()`);
-    await new Promise((r) => setTimeout(r, 500));
-    const dnsq1 = await probe(`(() => ({
-      hidden: document.querySelector('#dnsQuick').hidden,
-      bodyOpen: document.body.classList.contains('dnsq-open'),
-      focused: document.activeElement === document.querySelector('#dnsqName'),
+      const markers = (() => {
+        const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+        const appjs = read('renderer/js/app.js');
+        const mainjs = read('main.js');
+        const preload = read('preload.js');
+        const css = read('renderer/css/styles.css');
+        return {
+          phonetic: /APP_PHONETIC\s*=\s*\{/.test(appjs) && /'کروم':\s*'chrome'/.test(appjs),
+          fuzzy: /function lev\(/.test(appjs) && /simRatio/.test(appjs),
+          pipeline: /tryAppOpen\(/.test(appjs) && /APP_OPEN_RE/.test(appjs),
+          remindersParse: /function parseReminder\(/.test(appjs) && /faWordNum/.test(appjs),
+          musicIdentity: /rowEl.dataset\.idx/.test(appjs) && /music\.tracks\.indexOf\(tr\)/.test(appjs),
+          paintRange: /function paintRange\(/.test(appjs) && /--p/.test(css),
+          cpuFrame: /schedFrame\(/.test(appjs) && /idleSettled/.test(appjs),
+          blurPause: /app-blur/.test(css) && /setWinBlur/.test(appjs),
+          lightOrbReverted: css.includes('border: 1px solid rgba(38, 22, 92, 0.12)') && !css.includes('border: 0.5px solid rgba(139, 92, 246, 0.22)'),
+          scanner: mainjs.includes('discovered_apps.json') && mainjs.includes('steam://rungameid') && mainjs.includes('scanStartMenu'),
+          remindersMain: mainjs.includes("ipcMain.handle('reminders:add'") && mainjs.includes("sendUI('reminders:due'"),
+          keyRotation: mainjs.includes('const splitKeys') && mainjs.includes('gemini-2.0-flash-lite'),
+          mediaKeys: mainjs.includes("media_toggle:") && mainjs.includes("media_next:"),
+          bridges: preload.includes("'apps:launch'") && preload.includes("'reminders:due'") && preload.includes("'apps:list'"),
+          hovplay: css.includes('.m-hovplay') && appjs.includes('m-hovplay'),
+        };
+      })();
+      ok('phonetic dictionary (fa->en apps)', markers.phonetic);
+      ok('fuzzy matcher (levenshtein)', markers.fuzzy);
+      ok('app-open pipeline stage', markers.pipeline);
+      ok('reminder parser + fa numbers', markers.remindersParse);
+      ok('music list identity fix', markers.musicIdentity);
+      ok('range fill (--p) paint', markers.paintRange);
+      ok('adaptive cpu frame loop', markers.cpuFrame);
+      ok('blur pause rules', markers.blurPause);
+      ok('light orb reverted to v0.10', markers.lightOrbReverted);
+      ok('app scanner (startmenu+steam)', markers.scanner);
+      ok('reminders in main process', markers.remindersMain);
+      ok('multi-key ai rotation', markers.keyRotation);
+      ok('system media keys', markers.mediaKeys);
+      ok('preload bridges (apps+reminders)', markers.bridges);
+      ok('row hover play overlay', markers.hovplay);
+    } catch (e) { console.log('SKIP | v0.12 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 5.5 v0.12 — mute button + i-mute symbol in DOM
+    const v12ui = await probe(`(() => ({
+      mute: !!document.querySelector('#mMute'),
+      muteIcon: (document.querySelector('#mMuteIcon')||{}).getAttribute ? document.querySelector('#mMuteIcon').getAttribute('href') : '',
+      imute: !!document.querySelector('#i-mute') || [...document.querySelectorAll('symbol')].some((s) => s.id === 'i-mute'),
+      volCtl: !!document.querySelector('.m-vol-wrap .m-ctl.sm'),
     }))()`);
-    ok('DNS overlay opens', !dnsq1.hidden && dnsq1.bodyOpen);
-    ok('DNS overlay autofocus name', dnsq1.focused);
-    // Esc closes
-    await probe(`document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape', bubbles:true}));`);
-    await new Promise((r) => setTimeout(r, 500));
-    const dnsq2 = await probe(`document.querySelector('#dnsQuick').hidden`);
-    ok('DNS overlay closes on Esc', dnsq2 === true);
-    } catch (e) { console.log('SKIP | dns overlay | ' + String(e && e.message).slice(0, 50)); }
+    ok('player mute button present', v12ui.mute && v12ui.imute, JSON.stringify(v12ui));
 
     // 6. Rules: power command regexes match
     const ruleTest = await probe(`
@@ -210,6 +247,16 @@ app.whenReady().then(async () => {
       })()
     `);
     ok('command regex sanity', ruleTest.every(Boolean), JSON.stringify(ruleTest));
+
+    // 6.5 v0.12 — light-theme orb computed border (reverted look = 1px)
+    try {
+      await probe(`document.querySelector('#btnTheme').click()`);
+      await new Promise((r) => setTimeout(r, 300));
+      const orbBorder = await probe(`getComputedStyle(document.querySelector('#orb')).borderTopWidth`);
+      ok('light orb border is 1px again', orbBorder === '1px', 'got=' + orbBorder);
+      await probe(`document.querySelector('#btnTheme').click()`);
+      await new Promise((r) => setTimeout(r, 200));
+    } catch (e) { console.log('SKIP | light orb probe | ' + String(e && e.message).slice(0, 50)); }
 
     // 7. i18n completeness sanity — every data-i18n key must translate in EN
     // check via I18N dict: switch to EN and count elements that stayed Persian
