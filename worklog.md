@@ -200,3 +200,28 @@ Stage Summary:
 - نصب‌های قبلی 0.4.0 با electron-updater و latest.yml به 0.6.2 آپدیت خودکار می‌شوند
 - مشکل ریشه‌ای CI (نبودن ورک‌فلو در ریشه ریپو) رفع شد؛ release.ps1 هم حلقه‌ای فیکس شده
 - باز برای کاربر: revoke هر دو توکن + تصمیم درباره حذف .env از گیت (شامل DATABASE_URL، از قبل عمومی است)
+
+---
+Task ID: 9
+Agent: main (Super Z)
+Task: گزارش باگ کاربر (بدون صدا، موتور گوگل خراب، خطای ورود گوگل) + فیکس همه + پوش و ریلیز
+
+Work Log:
+- کشف باگ بحرانی صدا: getByteFrequencyData هرگز فراخوانی نمی‌شد → micData همیشه صفر → اکولایزر/متر/تشخیص سکوت کور
+- کشف: AudioContext بدون resume ممکن است suspended بماند → onaudioprocess هیچ‌وقت fire نمی‌شود → «صدایی نشنیدم»
+- تست زنده endpoint گوگل: HTTP 200 با کلید پیش‌فرض → موتور گوگل سمت سرور سالم است؛ مشکل سمت کلاینت بود
+- فیکس attachMic: فالبک خودکار به میکروفون پیش‌فرض وقتی deviceId ذخیره‌شده خراب است + پیام خطای دقیق فارسی به تفکیک نوع خطا
+- فیکس «This browser or app may not be secure»: CHROME_UA در app.userAgentFallback + setUserAgent + هدرهای sec-ch-ua برای هر دو نشست؛ پاپ‌آپ OAuth وب‌ویو z.ai در پارتیشن persist:ai
+- فیکس stt:google: تایم‌اوت 15 ثانیه + پیام خطای 403/5xx/خالی + regex خطای شبکه
+- فیکس GLM-ASR: تحمل 1.3 ثانیه سکوت تا بین کلمات قطع نشود
+- متفرقه: تایپوی «تایر»، تگ «اجرا نشد» به‌جای «شبیه‌سازی دمو»، listMicDevices هنگام باز شدن تنظیمات، resume در beep
+- کشف اینکه v0.6.2 قبلاً با CI منتشر شده (کد قبل از فیکس) → بامپ به v0.6.3 برای آپدیت خودکار نصب‌های قبلی
+- پوش main (0a31bea) + تگ v0.6.3 با توکن کلاسیک؛ CI run 33259219600 → success
+- ساخت ZIP سورس v0.6.3 (22 فایل، وریفای فیکس‌ها) و حذف ZIP قدیمی 0.6.1
+
+Stage Summary:
+- ریلیز v0.6.3 منتشر شد: https://github.com/pvwvuow/ava-voice-assistant/releases/tag/v0.6.3
+- AVA-Setup-0.6.3.exe (78.7MB) + blockmap + latest.yml (sha512 سازگار با electron-updater)
+- نصب‌های 0.6.2 ظرف ۱۲ ثانیه بعد از باز شدن برنامه آپدیت را خودکار پیدا می‌کنند
+- ZIP: download/ava-voice-assistant-v0.6.3.zip
+- یادآوری امنیتی به کاربر: Revoke هر دو توکن (fine-grained + ghp_...) لازم است؛ سوال حذف .env هنوز بی‌پاسخ است

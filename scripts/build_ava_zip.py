@@ -3,7 +3,7 @@
 import os, zipfile, json, sys
 
 SRC = "/home/z/my-project/download/ava-voice-assistant"
-OUT = "/home/z/my-project/download/ava-voice-assistant-v0.6.1.zip"
+OUT = "/home/z/my-project/download/ava-voice-assistant-v0.6.3.zip"
 SKIP_DIRS = {"node_modules", "dist", ".git"}
 SKIP_FILES = {".DS_Store", "Thumbs.db"}
 
@@ -37,6 +37,10 @@ ps1 = z.read("release.ps1").decode("utf-8", "ignore")
 print("entries:", len(names), "(walked", count, ")")
 print("zip version:", pkg["version"])
 print("release.ps1 has loop-bump:", "while (TagTaken $tag)" in ps1)
+appjs = z.read("renderer/js/app.js").decode("utf-8", "ignore")
+mnjs = z.read("main.js").decode("utf-8", "ignore")
+print("audio fix (getByteFrequencyData):", "getByteFrequencyData" in appjs)
+print("UA fix (CHROME_UA):", "CHROME_UA" in mnjs)
 print("missing:", missing if missing else "NONE")
 print("size:", os.path.getsize(OUT), "bytes")
 sys.exit(1 if missing else 0)
