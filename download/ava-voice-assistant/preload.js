@@ -74,6 +74,14 @@ contextBridge.exposeInMainWorld('ava', {
     chat: (payload) => ipcRenderer.invoke('ai:chat', payload),
     /* چت بدون کلید API — با توکن نشست حساب z.ai کاربر (از webview) */
     zaiChat: (payload) => ipcRenderer.invoke('ai:zaiChat', payload),
+    /* پرووایدرهای دیگر (v0.11): Gemini (با سرچ گوگل) و OpenAI */
+    gemini: (payload) => ipcRenderer.invoke('ai:gemini', payload),
+    openai: (payload) => ipcRenderer.invoke('ai:openai', payload),
+  },
+
+  /* صدای گوینده (TTS) — صدای زن گوگل برای فارسی (v0.11) */
+  tts: {
+    google: (payload) => ipcRenderer.invoke('tts:google', payload),
   },
 
   /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید) */

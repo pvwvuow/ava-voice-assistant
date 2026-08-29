@@ -27,6 +27,13 @@
       <symbol id="i-send" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></symbol>
       <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
       <symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="4.5" width="4" height="15" rx="1.4" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><polygon points="5 5 15 12 5 19 5 5" fill="currentColor" stroke="none"/><line x1="19" y1="5" x2="19" y2="19"/></symbol>
+      <symbol id="i-prev" viewBox="0 0 24 24"><polygon points="19 5 9 12 19 19 19 5" fill="currentColor" stroke="none"/><line x1="5" y1="5" x2="5" y2="19"/></symbol>
+      <symbol id="i-shuffle" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+      <symbol id="i-repeat" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
       <symbol id="i-camera" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
       <symbol id="i-note" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></symbol>
@@ -73,16 +80,24 @@
 
   <div id="app">
 
-    <!-- نوار عنوان سفارشی — دکمه‌های پنجره سمت راست -->
+    <!-- نوار عنوان سفارشی — برند و تم سمت چپ، دکمه‌های پنجره سمت راست
+         (چیدمان فیزیکی با direction:ltr تا در هر دو زبان ثابت بماند؛
+          مرکز نوار با گرادیان در رنگ پس‌زمینه ادغام می‌شود) -->
     <header id="titlebar">
-      <div class="tb-brand">
-        <div class="tb-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
-        <span class="tb-name">آوا</span>
-        <span class="tb-badge">v0.10</span>
+      <div class="tb-left">
+        <div class="tb-brand">
+          <div class="tb-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
+          <span class="tb-name">آوا</span>
+          <span class="tb-badge">v0.11</span>
+        </div>
+        <button class="tb-btn tb-theme" id="btnTheme" aria-label="تم روشن/تیره" data-i18n-tip="tb.theme"><svg class="ic"><use id="themeIcon" href="#i-sun"/></svg></button>
       </div>
       <div class="tb-title" data-i18n="tb.title">دستیار صوتی ویندوز</div>
       <div class="tb-controls">
-        <button class="tb-btn" id="btnTheme" aria-label="تم روشن/تیره" data-i18n-tip="tb.theme"><svg class="ic"><use id="themeIcon" href="#i-sun"/></svg></button>
+        <button class="tb-upd" id="btnUpdBadge" hidden>
+          <span class="tb-upd-dot"></span>
+          <span class="tb-upd-txt" id="updBadgeTxt">آپدیت</span>
+        </button>
         <button class="tb-btn" id="btnMin" aria-label="کوچک کردن" data-i18n-tip="tb.min"><svg class="ic"><use href="#i-min"/></svg></button>
         <button class="tb-btn" id="btnMax" aria-label="بزرگ کردن" data-i18n-tip="tb.max"><svg class="ic"><use id="maxIcon" href="#i-max"/></svg></button>
         <button class="tb-btn tb-close" id="btnClose" aria-label="بستن" data-i18n-tip="tb.close"><svg class="ic"><use href="#i-close"/></svg></button>
@@ -91,20 +106,14 @@
 
     <div id="shell">
 
-      <!-- سایدبار آیکونی -->
+      <!-- سایدبار آیکونی — بدون لوگوی بالا؛ با فید در پس‌زمینه ادغام شده -->
       <aside id="rail">
-        <div class="rail-top">
-          <div class="rail-logo">
-            <svg class="ic"><use href="#i-wave"/></svg>
-            <i class="rail-dot"></i>
-          </div>
-        </div>
         <nav class="rail-nav" aria-label="ناوبری">
           <button class="rail-item active" id="btnHome" data-i18n-tip="nav.home"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnDict" data-i18n-tip="nav.dict"><svg class="ic"><use href="#i-type"/></svg></button>
           <button class="rail-item" id="btnChat" data-i18n-tip="nav.chat"><svg class="ic"><use href="#i-chat"/></svg></button>
+          <button class="rail-item" id="btnMusic" data-i18n-tip="nav.music"><svg class="ic"><use href="#i-music"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnHistory" data-i18n-tip="nav.history"><svg class="ic"><use href="#i-history"/></svg></button>
-          <button class="rail-item locked" data-i18n-tip="nav.plugins"><svg class="ic"><use href="#i-grid"/></svg></button>
         </nav>
         <div class="rail-bottom">
           <button class="rail-item" id="btnAbout" data-i18n-tip="nav.about"><svg class="ic"><use href="#i-info"/></svg></button>
@@ -141,9 +150,23 @@
             </button>
           </div>
 
+          <!-- متن زنده: همون لحظه که حرف می‌زنی زیر دکمه ضبط تایپ می‌شه -->
+          <div class="live-text" id="liveText" hidden><span class="lt-dot"></span><span id="liveTextBody"></span></div>
+
           <div class="status-line">
             <span class="status-dot" id="statusDot"></span>
             <span id="statusText">برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd></span>
+          </div>
+
+          <!-- ویجت موزیک — بالا سمت چپ صفحه اصلی، فقط وقتی موزیک در جریان است -->
+          <div class="mw glass" id="musicWidget" hidden>
+            <span class="mw-cover" id="mwCover"><svg class="ic"><use href="#i-music"/></svg></span>
+            <div class="mw-tt">
+              <b id="mwTitle">—</b>
+              <span id="mwArtist"></span>
+            </div>
+            <div class="mw-eq" id="mwEq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <button class="mw-btn" id="mwPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mwPlayIcon" href="#i-pause"/></svg></button>
           </div>
 
           <!-- تاگل حالت بی‌دست: گوش دائمی + کلمه بیدارباش «آوا» -->
@@ -313,7 +336,14 @@
                   <span class="sw"><input type="checkbox" id="optTts"/><i></i></span>
                 </label>
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.voice.sel">صدای گوینده</b><span data-i18n="set.voice.selHint">اگر صدای فارسی نصب نباشد، از Settings › Time &amp; Language › Speech اضافه کن</span></span>
+                  <span class="set-info"><b data-i18n="set.voice.engine">موتور صدا</b><span data-i18n="set.voice.engineHint">«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)</span></span>
+                  <select id="optTtsEngine" class="set-select">
+                    <option value="google" data-i18n="set.voice.gEng">گوگل — صدای زن (پیشنهادی)</option>
+                    <option value="windows" data-i18n="set.voice.wEng">ویندوز — آفلاین</option>
+                  </select>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.voice.sel">صدای گوینده (فقط موتور ویندوز)</b><span data-i18n="set.voice.selHint">اگر صدای فارسی نصب نباشد، از Settings › Time &amp; Language › Speech اضافه کن</span></span>
                   <select id="optVoice" class="set-select"></select>
                 </div>
               </div>
@@ -339,7 +369,25 @@
                     <option value="glm-4.5-air">GLM-4.5-Air (سبک)</option>
                   </select>
                 </div>
-                <p class="set-note" data-i18n="set.ai.note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به GLM می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ai.provider">موتور هوش مصنوعی</b><span data-i18n="set.ai.providerHint">«خودکار»: به ترتیب حساب GLM، کلید GLM، کلید Gemini و بعد OpenAI امتحان می‌شود — یا یکی را ثابت انتخاب کن</span></span>
+                  <select id="optAiProvider" class="set-select">
+                    <option value="auto" data-i18n="set.ai.pAuto">خودکار (پیشنهادی)</option>
+                    <option value="zai" data-i18n="set.ai.pZai">حساب GLM (z.ai)</option>
+                    <option value="glm" data-i18n="set.ai.pGlm">کلید API گله‌م</option>
+                    <option value="gemini" data-i18n="set.ai.pGemini">گوگل جمنای</option>
+                    <option value="openai" data-i18n="set.ai.pOpenai">OpenAI</option>
+                  </select>
+                </div>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.ai.geminiKey">کلید API گوگل جمنای (اختیاری)</b><span data-i18n="set.ai.geminiKeyHint">برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com</span></span>
+                  <input type="password" id="optGeminiKey" class="set-input" data-i18n-ph="set.ai.geminiPh" placeholder="AIza…" autocomplete="off" dir="ltr" />
+                </div>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.ai.openaiKey">کلید API اوپن‌ای‌آی (اختیاری)</b><span data-i18n="set.ai.openaiKeyHint">از platform.openai.com — با GPT جواب می‌دهد</span></span>
+                  <input type="password" id="optOpenaiKey" class="set-input" data-i18n-ph="set.ai.openaiPh" placeholder="sk-…" autocomplete="off" dir="ltr" />
+                </div>
+                <p class="set-note" data-i18n="set.ai.note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به هوش مصنوعی می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
               </div>
 
               <!-- برنامه -->
@@ -477,6 +525,53 @@
           </div>
           <p class="set-note chat-note" data-i18n="chat.note">آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.</p>
         </section>
+
+        <!-- ============ صفحه پلیر موزیک (v0.11) ============ -->
+        <section id="musicPage" class="musicpage" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-music"/></svg> <span data-i18n="music.title">پلیر موزیک</span></h2>
+            <div class="music-top-actions">
+              <button class="chip" id="btnMusicFolder"><svg class="ic"><use href="#i-folder"/></svg><span data-i18n="music.pick">انتخاب پوشه موزیک</span></button>
+              <button class="chip" id="btnMusicBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
+            </div>
+          </header>
+          <input type="file" id="mFolder" webkitdirectory multiple hidden />
+
+          <div class="music-hero glass">
+            <div class="m-now">
+              <div class="m-cover" id="mCover"><svg class="ic"><use href="#i-disc"/></svg><span class="m-cover-shine"></span></div>
+              <div class="m-meta">
+                <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>
+                <span id="mArtist" data-i18n="music.pickHint">یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود</span>
+                <div class="m-eq" id="mEq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+              </div>
+              <div class="m-count glass" id="mCount" hidden></div>
+            </div>
+            <div class="m-seek-row">
+              <span class="m-time num" id="mCur">0:00</span>
+              <input type="range" id="mSeek" min="0" max="1000" value="0" />
+              <span class="m-time num" id="mDur">0:00</span>
+            </div>
+            <div class="m-controls">
+              <button class="m-ctl" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
+              <button class="m-ctl big" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
+              <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
+              <button class="m-ctl big" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
+              <button class="m-ctl" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
+              <span class="m-vol-wrap"><svg class="ic"><use href="#i-volume"/></svg><input type="range" id="mVol" min="0" max="100" value="80" /></span>
+            </div>
+          </div>
+
+          <div class="m-list-head">
+            <div class="m-search">
+              <svg class="ic"><use href="#i-search"/></svg>
+              <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
+            </div>
+            <span class="m-hint" data-i18n="music.hint">با صدا هم می‌گویی: «موزیک پخش کن»، «آهنگ بعدی»، «آهنگ قبلی»، «موزیک پاز»</span>
+          </div>
+          <div class="m-list" id="mList"></div>
+          <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
+        </section>
       </main>
     </div>
 
@@ -493,7 +588,7 @@
         <i class="sb-sep"></i>
         <span class="sb-item num" id="sbClock">--:--</span>
         <i class="sb-sep"></i>
-        <span class="sb-item">AVA v0.10.0</span>
+        <span class="sb-item">AVA v0.11.0</span>
       </div>
     </footer>
   </div>
@@ -556,13 +651,13 @@
       <div class="about-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
       <div class="about-title"><b>آوا</b><span data-i18n="tb.title">دستیار صوتی ویندوز</span></div>
     </div>
-    <p class="about-desc" data-i18n="about.desc">نسخه ۰.۱۰ — تشخیص گفتار دقیق با موتور وب گوگل داخل خود برنامه + فالبک خودکار گوگل رایگان/GLM، پیشنهاد شانسی فرمان‌ها، فرم شیشه‌ای DNS جدید داخل صفحه اصلی، تم روشن و تیره، دوزبانه (فارسی/English)، فرمان‌های صوتی خواب و خاموش کردن و مانیتور، چت GLM مستقیم با حسابت بدون کلید API و آپدیت دلتا داخل برنامه.</p>
+    <p class="about-desc" data-i18n="about.desc">نسخه ۰.۱۱ — صدای زن حرفه‌ای گوگل برای پاسخ‌ها، پلیر موزیک با کاور و اکولایزر و ویجت روی صفحه اصلی، متن زنده زیر دکمه ضبط، هوش مصنوعی چندموتوره (GLM/Gemini با سرچ گوگل/OpenAI)، اکولایزر دقیق که فقط با میکروفون حرکت می‌کند، ادغام نوار بالا با پس‌زمینه، اسکرول‌بار تم‌دار و همه امکانات نسخه‌های قبل.</p>
     <div class="about-keys">
       <div><span data-i18n="about.listen">گوش دادن</span><span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></span></div>
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span>v0.10.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span>v0.11.0</span></div>
   </div>
 
   <script src="js/app.js"></script>

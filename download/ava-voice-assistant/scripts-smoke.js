@@ -1,7 +1,8 @@
 /**
- * Smoke test for AVA v0.10.0 — boots the app under Xvfb, checks
- * new v0.10 UI elements, suggestion rotation, DNS overlay flow,
- * theme + language switching, and basic protocol loading.
+ * Smoke test for AVA v0.11.0 — boots the app under Xvfb, checks
+ * v0.11 UI elements (titlebar physical layout, update badge, music
+ * page, live text, new settings), suggestion rotation, DNS overlay
+ * flow, theme + language switching, and basic protocol loading.
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -85,7 +86,22 @@ app.whenReady().then(async () => {
       oldDnsWindowBtn: !!document.querySelector('#btnQuickDns'),
       particles: document.querySelectorAll('.bg-particles i').length,
       aurora: !!document.querySelector('.bg-aurora'),
-      titlebarOrder: getComputedStyle(document.querySelector('.tb-controls')).order,
+      /* v0.11 */
+      updBadge: !!document.querySelector('#btnUpdBadge'),
+      musicPage: !!document.querySelector('#musicPage'),
+      btnMusic: !!document.querySelector('#btnMusic'),
+      liveText: !!document.querySelector('#liveText'),
+      optTtsEngine: !!document.querySelector('#optTtsEngine'),
+      optAiProvider: !!document.querySelector('#optAiProvider'),
+      optGeminiKey: !!document.querySelector('#optGeminiKey'),
+      optOpenaiKey: !!document.querySelector('#optOpenaiKey'),
+      musicWidget: !!document.querySelector('#musicWidget'),
+      railLogo: !!document.querySelector('.rail-logo'),
+      /* چیدمان فیزیکی نوار: برند چپ، دکمه‌های پنجره راست */
+      tbLeft: (() => { const l = document.querySelector('.tb-left').getBoundingClientRect(); return l.left; })(),
+      tbCtlLeft: (() => { const c = document.querySelector('.tb-controls').getBoundingClientRect(); return c.left; })(),
+      tbCtlRight: (() => { const c = document.querySelector('.tb-controls').getBoundingClientRect(); return c.right; })(),
+      docW: document.documentElement.clientWidth,
     }))()`);
     ok('orb present', els.orb);
     ok('suggest pill present', els.suggest);
@@ -98,7 +114,16 @@ app.whenReady().then(async () => {
     ok('old chips grid removed', !els.chipsGrid);
     ok('particles rendered', els.particles >= 12, 'count=' + els.particles);
     ok('aurora layer present', els.aurora);
-    ok('window buttons on right (RTL order -1)', els.titlebarOrder === '-1', 'order=' + els.titlebarOrder);
+    /* v0.11 — چیدمان فیزیکی نوار بالا */
+    ok('brand+theme on the LEFT', els.tbLeft < els.docW / 2, 'tbLeft=' + Math.round(els.tbLeft));
+    ok('window buttons on the RIGHT', els.tbCtlRight > els.docW - 60 && els.tbCtlLeft > els.docW / 2, 'ctlLeft=' + Math.round(els.tbCtlLeft) + ' right=' + Math.round(els.tbCtlRight));
+    ok('update badge present', els.updBadge);
+    ok('music page present', els.musicPage && els.btnMusic);
+    ok('live text present', els.liveText);
+    ok('tts engine select present', els.optTtsEngine);
+    ok('ai provider + keys present', els.optAiProvider && els.optGeminiKey && els.optOpenaiKey);
+    ok('music widget present', els.musicWidget);
+    ok('useless rail logo removed', !els.railLogo);
 
     // 2. Suggestion rotation
     const s1 = await probe(`document.querySelector('#sgText').textContent`);
@@ -238,6 +263,24 @@ app.whenReady().then(async () => {
                      (/state-idle/.test(stress.cls) && stress.icon === '#i-mic');
     ok('triple-toggle never sticks', stressOk, stress.cls + ' | ' + stress.icon);
     } catch (e) { console.log('SKIP | listening cycle | ' + String(e && e.message).slice(0, 50)); }
+
+    // 8.5. v0.11 — music page opens, engine selects have values, badge hidden by default
+    try {
+    await probe(`document.querySelector('#btnMusic').click()`);
+    await new Promise((r) => setTimeout(r, 300));
+    const mus = await probe(`(() => ({
+      pageHidden: document.querySelector('#musicPage').hidden,
+      heroHidden: getComputedStyle(document.querySelector('.hero')).display === 'none',
+      seek: !!document.querySelector('#mSeek'),
+      empty: !document.querySelector('#mEmpty').hidden,
+    }))()`);
+    ok('music page opens', !mus.pageHidden && mus.heroHidden);
+    ok('music empty state', mus.empty && mus.seek);
+    await probe(`document.querySelector('#btnMusicBack').click()`);
+    await new Promise((r) => setTimeout(r, 250));
+    const badgeHidden = await probe(`document.querySelector('#btnUpdBadge').hidden`);
+    ok('update badge hidden until update', badgeHidden === true);
+    } catch (e) { console.log('SKIP | music page | ' + String(e && e.message).slice(0, 50)); }
 
     const fails = results.filter((r) => !r.pass);
     console.log('SMOKE SUMMARY: ' + (results.length - fails.length) + '/' + results.length + ' passed');

@@ -1024,6 +1024,157 @@ ipcMain.handle('stt:transcribe', async (_e, p) => {
   }
 });
 
+/* ============================================================
+   TTS گوگل (v0.11) — صدای زن طبیعی برای خواندن پاسخ‌های آوا
+   از موتور رسمی ترجمه گوگل استفاده می‌کنیم (همان صدایی که در
+   Google Translate می‌شنوید) — برای فارسی صدای زن گرم و طبیعی.
+   متن به تکه‌های ≤۱۹۰ کاراکتر شکسته می‌شود (محدودیت سرور)،
+   MP3 تکه‌ها برمی‌گردد و رندرر پشت‌سرهم پخش می‌کند.
+   ============================================================ */
+const TTS_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+
+function splitTtsChunks(text) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return [];
+  /* اول روی مرز جمله بشکن، بعد در صورت نیاز روی ویرگول/فاصله */
+  const sentences = clean.split(/(?<=[.!?؟。…])\s+/);
+  const chunks = [];
+  let cur = '';
+  const pushCur = () => { if (cur.trim()) chunks.push(cur.trim()); cur = ''; };
+  const addPiece = (piece) => {
+    piece = piece.trim();
+    if (!piece) return;
+    if (piece.length > 190) {
+      /* جمله خیلی طولانی → شکستن روی فاصله */
+      const words = piece.split(' ');
+      for (const w of words) {
+        if ((cur + ' ' + w).trim().length > 190) pushCur();
+        cur = (cur ? cur + ' ' : '') + w;
+      }
+      pushCur();
+      return;
+    }
+    if ((cur + ' ' + piece).trim().length > 190) pushCur();
+    cur = (cur ? cur + ' ' : '') + piece;
+  };
+  for (const s of sentences) addPiece(s);
+  pushCur();
+  return chunks.slice(0, 12); /* حداکثر ۱۲ تکه (~۲۳۰۰ کاراکتر) */
+}
+
+ipcMain.handle('tts:google', async (_e, p) => {
+  const { text, lang } = p || {};
+  const tl = String(lang || 'fa').slice(0, 5);
+  const chunks = splitTtsChunks(text);
+  if (!chunks.length) return { ok: false, error: 'متنی برای خواندن نیست' };
+  try {
+    const parts = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const q = encodeURIComponent(chunks[i]);
+      const url =
+        `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob` +
+        `&tl=${encodeURIComponent(tl)}&q=${q}&total=${chunks.length}&idx=${i}` +
+        `&textlen=${chunks[i].length}&ttsspeed=1`;
+      const r = await fetch(url, {
+        headers: {
+          'User-Agent': TTS_UA,
+          'Referer': 'https://translate.google.com/',
+          'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.5',
+          'Accept-Language': 'fa,en;q=0.8',
+        },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!r.ok) {
+        if (i === 0) return { ok: false, error: `گوگل: HTTP ${r.status}` };
+        break; /* تکه‌های قبلی را داشته باشیم */
+      }
+      const ab = await r.arrayBuffer();
+      if (ab.byteLength > 100) parts.push(Buffer.from(ab));
+    }
+    if (!parts.length) return { ok: false, error: 'صدایی از گوگل نرسید' };
+    return { ok: true, mime: 'audio/mpeg', chunks: parts.map((b) => b.toString('base64')) };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ============================================================
+   پرووایدرهای دیگر هوش مصنوعی (v0.11) — Gemini و OpenAI
+   کاربر می‌تواند توکن خودش را در تنظیمات بگذارد؛ برای Gemini
+   ابزار جستجوی گوگل (google_search grounding) هم فعال می‌شود تا
+   سوالات «سرچ» با اطلاعات لحظه‌ای جواب بگیرند.
+   ============================================================ */
+ipcMain.handle('ai:gemini', async (_e, p) => {
+  const { key, model, messages, search } = p || {};
+  if (!key) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
+  if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+  try {
+    const sys = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
+    const contents = messages
+      .filter((m) => m.role !== 'system')
+      .slice(-16)
+      .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
+    const body = {
+      contents,
+      generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
+    };
+    if (sys) body.systemInstruction = { parts: [{ text: sys }] };
+    if (search) body.tools = [{ google_search: {} }];
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model || 'gemini-2.0-flash')}:generateContent?key=${encodeURIComponent(String(key).trim())}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(60000),
+      }
+    );
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
+      return { ok: false, error: `Gemini: ${String(msg).slice(0, 140)}` };
+    }
+    const cand = j && j.candidates && j.candidates[0];
+    const text = cand && cand.content && cand.content.parts
+      ? cand.content.parts.map((x) => x.text || '').join('').trim()
+      : '';
+    if (!text) return { ok: false, error: 'پاسخ خالی از Gemini رسید' };
+    return { ok: true, text };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+ipcMain.handle('ai:openai', async (_e, p) => {
+  const { key, model, messages } = p || {};
+  if (!key) return { ok: false, error: 'کلید OpenAI تنظیم نشده' };
+  if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${String(key).trim()}` },
+      body: JSON.stringify({
+        model: model || 'gpt-4o-mini',
+        messages: messages.slice(-16),
+        temperature: 0.6,
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
+      return { ok: false, error: `OpenAI: ${String(msg).slice(0, 140)}` };
+    }
+    const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+    if (!text) return { ok: false, error: 'پاسخ خالی از OpenAI رسید' };
+    return { ok: true, text };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
 /* ---------- فرمان‌های سفارشی (پیشنهاد هوش مصنوعی + تأیید صریح کاربر) ----------
    رندرر قبلاً یک مودال تأیید با متن کامل اسکریپت نشان می‌دهد؛
    این‌جا فقط اجرای مهاربندی‌شده PowerShell انجام می‌شود. */

@@ -302,6 +302,57 @@
     'stt.demoListen': ['حالت دمو: در حال شنیدن…', 'Demo mode: listening…'],
     'stt.demoHint': ['حالت دمو روشن است — برای تشخیص واقعی، کلید GLM را در تنظیمات بگذار', 'Demo mode is on — set the GLM key in Settings for real recognition'],
     'stt.fallbackGlm': ['گوگل جواب نداد — همان صدا به GLM-ASR فرستاده شد…', 'Google had no answer — the same audio went to GLM-ASR…'],
+
+    /* ---------- v0.11 ---------- */
+    'nav.music': ['پلیر موزیک — پلی‌لیست از پوشه خودت', 'Music player — playlist from your folder'],
+    'live.on': ['در حال شنیدن…', 'Listening…'],
+    'music.title': ['پلیر موزیک', 'Music player'],
+    'music.pick': ['انتخاب پوشه موزیک', 'Choose music folder'],
+    'music.noTrack': ['هنوز آهنگی انتخاب نشده', 'No track selected yet'],
+    'music.pickHint': ['یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود', 'Pick a folder full of songs to build the playlist'],
+    'music.search': ['جستجو در آهنگ‌ها…', 'Search songs…'],
+    'music.hint': ['با صدا هم می‌گویی: «موزیک پخش کن»، «آهنگ بعدی»، «آهنگ قبلی»، «موزیک پاز»', 'Voice too: "play music", "next song", "previous song", "pause music"'],
+    'music.empty': ['هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.', 'No folder yet — click "Choose music folder" and point to where your songs live; AVA reads titles, artists and cover art.'],
+    'music.shuffle': ['پخش تصادفی', 'Shuffle'], 'music.repeat': ['تکرار (خاموش/همه/یکی)', 'Repeat (off / all / one)'],
+    'music.tracks': ['{x} آهنگ', '{x} tracks'],
+    'music.loaded': ['پلی‌لیست ساخته شد: {x} آهنگ از «{y}»', 'Playlist ready: {x} songs from "{y}"'],
+    'music.none': ['در این پوشه فایل صوتی پیدا نشد (mp3، wav، m4a، flac، ogg…)', 'No audio files found here (mp3, wav, m4a, flac, ogg…)'],
+    'music.playing': ['در حال پخش: {x}', 'Now playing: {x}'],
+    'music.paused': ['موزیک متوقف شد', 'Music paused'],
+    'music.resumed': ['موزیک ادامه پیدا کرد', 'Music resumed'],
+    'music.next': ['آهنگ بعدی', 'Next track'], 'music.prev': ['آهنگ قبلی', 'Previous track'],
+    'music.emptyPlay': ['پلی‌لیست خالی است — اول از صفحه موزیک یک پوشه انتخاب کن', 'Playlist is empty — pick a folder in the music page first'],
+    'music.pageOpen': ['صفحه موزیک باز شد', 'Music page opened'],
+    'voice.engine': ['موتور صدا', 'Voice engine'],
+    'voice.engineHint': ['«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)', '"Google": natural professional female voice (online — the Google Translate voice); "Windows": the installed Windows voice (offline)'],
+    'voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
+    'voice.wEng': ['ویندوز — آفلاین', 'Windows — offline'],
+    'voice.googleFail': ['صدای گوگل در دسترس نبود — با صدای ویندوز گفتم', 'Google voice unavailable — used the Windows voice'],
+    'set.voice.engine': ['موتور صدا', 'Voice engine'],
+    'set.voice.engineHint': ['«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)', '"Google": natural professional female voice (online); "Windows": the installed Windows voice (offline)'],
+    'set.voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
+    'set.voice.wEng': ['ویندوز — آفلاین', 'Windows — offline'],
+    'set.ai.provider': ['موتور هوش مصنوعی', 'AI engine'],
+    'set.ai.providerHint': ['«خودکار»: به ترتیب حساب GLM، کلید GLM، کلید Gemini و بعد OpenAI امتحان می‌شود — یا یکی را ثابت انتخاب کن', '"Auto": tries GLM account, GLM key, Gemini key, then OpenAI in order — or fix one'],
+    'set.ai.pAuto': ['خودکار (پیشنهادی)', 'Auto (recommended)'],
+    'set.ai.pZai': ['حساب GLM (z.ai)', 'GLM account (z.ai)'],
+    'set.ai.pGlm': ['کلید API گله‌م', 'GLM API key'],
+    'set.ai.pGemini': ['گوگل جمنای', 'Google Gemini'],
+    'set.ai.pOpenai': ['OpenAI', 'OpenAI'],
+    'set.ai.geminiKey': ['کلید API گوگل جمنای (اختیاری)', 'Google Gemini API key (optional)'],
+    'set.ai.geminiKeyHint': ['برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com', 'Search-like questions get live Google Search answers — free key from aistudio.google.com'],
+    'set.ai.geminiPh': ['AIza…', 'AIza…'],
+    'set.ai.openaiKey': ['کلید API اوپن‌ای‌آی (اختیاری)', 'OpenAI API key (optional)'],
+    'set.ai.openaiKeyHint': ['از platform.openai.com — با GPT جواب می‌دهد', 'From platform.openai.com — answers with GPT'],
+    'set.ai.openaiPh': ['sk-…', 'sk-…'],
+    'upd.badge': ['آپدیت جدید', 'Update'],
+    'toast.saved': ['ذخیره شد', 'Saved'],
+    'upd.badgeReady': ['نصب آپدیت', 'Install update'],
+    'upd.badgeDl': ['دانلود {x}٪', 'Downloading {x}%'],
+    'upd.clickInstall': ['نسخه {x} دانلود شد — برای نصب و راه‌اندازی مجدد کلیک کن', 'Version {x} is downloaded — click to install and restart'],
+    'upd.downloadingToast': ['نسخه {x} در حال دانلود است…', 'Downloading version {x}…'],
+    'dict.trigger': ['حالت تایپ صوتی روشن شد — هر چی بگویی در کادر تایپ نوشته می‌شود', 'Voice typing is on — everything you say goes into the typing box'],
+    'dns.setVoice': ['در حال تنظیم DNS «{x}» روی ویندوز…', 'Setting DNS "{x}" on Windows…'],
   };
   const t = (key, vars) => {
     const e = I18N[key];
@@ -434,6 +485,63 @@
   const btnConfirmOk = $('#btnConfirmOk');
   const btnConfirmCancel = $('#btnConfirmCancel');
 
+  /* ---------- عناصر v0.11: متن زنده، بج آپدیت، صدا، هوش مصنوعی، موزیک ---------- */
+  const liveText = $('#liveText');
+  const liveTextBody = $('#liveTextBody');
+  const btnUpdBadge = $('#btnUpdBadge');
+  const updBadgeTxt = $('#updBadgeTxt');
+  const optTtsEngine = $('#optTtsEngine');
+  const optAiProvider = $('#optAiProvider');
+  const optGeminiKey = $('#optGeminiKey');
+  const optOpenaiKey = $('#optOpenaiKey');
+  const musicPage = $('#musicPage');
+  const btnMusic = $('#btnMusic');
+  const btnMusicBack = $('#btnMusicBack');
+  const btnMusicFolder = $('#btnMusicFolder');
+  const mFolder = $('#mFolder');
+  const mCover = $('#mCover');
+  const mTitle = $('#mTitle');
+  const mArtist = $('#mArtist');
+  const mCount = $('#mCount');
+  const mEq = $('#mEq');
+  const mSeek = $('#mSeek');
+  const mCur = $('#mCur');
+  const mDur = $('#mDur');
+  const mPlayBtn = $('#mPlay');
+  const mPlayIcon = $('#mPlayIcon');
+  const mPrevBtn = $('#mPrev');
+  const mNextBtn = $('#mNext');
+  const mShuffleBtn = $('#mShuffle');
+  const mRepeatBtn = $('#mRepeat');
+  const mVol = $('#mVol');
+  const mSearch = $('#mSearch');
+  const mList = $('#mList');
+  const mEmpty = $('#mEmpty');
+  const mAudio = new Audio(); /* پلیر — خارج از DOM تا با ری‌رندر از دست نرود */
+  const musicWidget = $('#musicWidget');
+  const mwCover = $('#mwCover');
+  const mwTitle = $('#mwTitle');
+  const mwArtist = $('#mwArtist');
+  const mwEq = $('#mwEq');
+  const mwPlayBtn = $('#mwPlay');
+  const mwPlayIcon = $('#mwPlayIcon');
+
+  /* ---------- متن زنده زیر دکمه ضبط ----------
+     هر تکه‌ای که موتور تشخیص در حال شنیدن است، همان لحظه نشان داده می‌شود */
+  function setLiveText(txt) {
+    if (!liveText || !liveTextBody) return;
+    const s = String(txt || '').trim();
+    if (!s) {
+      liveText.hidden = true;
+      liveTextBody.textContent = '';
+      liveText.classList.remove('on');
+      return;
+    }
+    liveText.hidden = false;
+    liveText.classList.add('on');
+    liveTextBody.textContent = s;
+  }
+
   /* ---------- عناصر ---------- */
   const body = document.body;
   const btnMin = $('#btnMin');
@@ -475,6 +583,7 @@
   const settings = {
     tts: store.get('tts', true),
     voiceURI: store.get('voiceURI', ''),
+    ttsEngine: store.get('ttsEngine', 'google'),
     autoUpdate: store.get('autoUpdate', true),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
@@ -485,6 +594,9 @@
     glmKey: store.get('glmKey', ''),
     glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
     glmModel: store.get('glmModel', 'glm-4.6'),
+    aiProvider: store.get('aiProvider', 'auto'),
+    geminiKey: store.get('geminiKey', ''),
+    openaiKey: store.get('openaiKey', ''),
     micId: store.get('micId', ''),
     handsFree: store.get('handsFree', false),
     wakeWord: store.get('wakeWord', true),
@@ -492,6 +604,10 @@
     typingCmds: store.get('typingCmds', []),
     dnsProfiles: store.get('dnsProfiles', []),
     settingsPane: store.get('settingsPane', 'mic'),
+    musicVol: store.get('musicVol', 0.8),
+    musicShuffle: store.get('musicShuffle', false),
+    musicRepeat: store.get('musicRepeat', 'off'),
+    lastMusicFolder: store.get('lastMusicFolder', ''),
   };
   let customCmds = store.get('customCmds', []);
   let history = store.get('history', []);
@@ -521,9 +637,53 @@
   })();
   const glmReady = () => !!(settings.glmKey && bridge && bridge.stt);
 
-  /* ---------- پاسخ گفتاری واقعی (TTS) ---------- */
-  function speak(text) {
-    if (!settings.tts || !text || !('speechSynthesis' in window)) return;
+  /* ---------- پاسخ گفتاری (TTS) — v0.11 ----------
+     پیش‌فرض: صدای زن طبیعی گوگل (آنلاین — همان صدای گوگل‌ترنسلیت فارسی).
+     اگر گوگل در دسترس نبود، بدون سروصدا با صدای ویندوز می‌خواند. */
+  let gTtsAudio = null;          // <audio> جاری گوگل
+  let gTtsQueue = [];            // صف تکه‌های mp3
+  let gTtsPlaying = false;
+  const ttsAudioBusy = () => gTtsPlaying;
+
+  function stopGoogleSpeak() {
+    gTtsQueue = [];
+    gTtsPlaying = false;
+    if (gTtsAudio) {
+      try { gTtsAudio.pause(); } catch (_) { /* noop */ }
+      gTtsAudio.src = '';
+      gTtsAudio = null;
+    }
+  }
+
+  function playNextGoogleChunk() {
+    if (!gTtsQueue.length) { gTtsPlaying = false; return; }
+    const b64 = gTtsQueue.shift();
+    try {
+      const au = new Audio('data:audio/mpeg;base64,' + b64);
+      gTtsAudio = au;
+      gTtsPlaying = true;
+      au.onended = playNextGoogleChunk;
+      au.onerror = () => { gTtsPlaying = false; };
+      au.play().catch(() => { gTtsPlaying = false; });
+    } catch (_) { gTtsPlaying = false; }
+  }
+
+  async function speakGoogle(text) {
+    if (!bridge || !bridge.tts || !bridge.tts.google) return false;
+    const lang = settings.sttLang === 'en-US' ? 'en' : 'fa';
+    try {
+      const r = await bridge.tts.google({ text: String(text).slice(0, 2200), lang });
+      if (!(r && r.ok && Array.isArray(r.chunks) && r.chunks.length)) return false;
+      stopGoogleSpeak();
+      gTtsQueue = r.chunks.slice();
+      playNextGoogleChunk();
+      return gTtsPlaying;
+    } catch (_) { return false; }
+  }
+
+  /* مسیر آفلاین ویندوز — فالبک مطمئن */
+  function speakWindows(text) {
+    if (!('speechSynthesis' in window)) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(String(text).replace(/[«»]/g, '').slice(0, 320));
@@ -540,6 +700,22 @@
       u.pitch = 1;
       speechSynthesis.speak(u);
     } catch (_) { /* noop */ }
+  }
+
+  async function speak(text) {
+    if (!settings.tts || !text) return;
+    const txt = String(text).replace(/[«»]/g, '').trim();
+    if (!txt) return;
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
+    stopGoogleSpeak();
+    if (settings.ttsEngine === 'google') {
+      const ok = await speakGoogle(txt);
+      if (ok) return;
+      /* گوگل جواب نداد (آفلاین/فیلتر) → صدای ویندوز */
+      speakWindows(txt);
+      return;
+    }
+    speakWindows(txt);
   }
 
   /* ---------- ابزار ---------- */
@@ -560,6 +736,15 @@
       return v || fallback;
     } catch (_) { return fallback; }
   };
+
+  /* کش رنگ اکولایزر — فقط با تعویض تم تازه می‌شود (نه در هر فریم) */
+  const waveCols = { c1: 'rgba(52,211,153,0.95)', mid: 'rgba(16,185,129,0.85)', c2: 'rgba(16,185,129,0.9)' };
+  function refreshWaveColors() {
+    waveCols.c1 = cssColor('--wave-c1', 'rgba(52, 211, 153, 0.95)');
+    const acc = cssColor('--acc-rgb', '16,185,129');
+    waveCols.mid = acc ? `rgba(${acc}, 0.85)` : 'rgba(16, 185, 129, 0.85)';
+    waveCols.c2 = cssColor('--wave-c2', 'rgba(16, 185, 129, 0.9)');
+  }
 
   function greetingText() {
     const h = new Date().getHours();
@@ -604,6 +789,7 @@
     else document.body.removeAttribute('data-theme');
     const ti = $('#themeIcon');
     if (ti) ti.setAttribute('href', settings.theme === 'light' ? '#i-moon' : '#i-sun');
+    refreshWaveColors(); /* رنگ اکولایزر با تم همگام شود */
   }
   function setTheme(th, silent = false) {
     settings.theme = th === 'light' ? 'light' : 'dark';
@@ -800,8 +986,9 @@
   }
 
   const N = 52;
-  const levels = new Array(N).fill(0.1);
-  let t0 = 0, energy = 0.1;
+  const levels = new Array(N).fill(0.06);
+  let t0 = 0, energy = 0.06, lastFrameT = performance.now();
+  refreshWaveColors();
   function rr(c, x, y, w, hgt, r) {
     if (c.roundRect) { c.beginPath(); c.roundRect(x, y, w, hgt, r); return; }
     c.beginPath();
@@ -813,14 +1000,19 @@
     c.closePath();
   }
   function frame() {
-    t0 += 0.016;
-    /* خواندن طیف واقعی میکروفون — بدون این فراخوانی micData همیشه صفر می‌ماند
-       و اکولایزر و تشخیص سکوت هیچ صدایی نمی‌بینند (باگ اصلی «صدایی دریافت نمیشه») */
-    if (analyser && micData && micLive) {
+    requestAnimationFrame(frame);
+    const now = performance.now();
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastFrameT) / 1000));
+    lastFrameT = now;
+    t0 += dt;
+    /* طیف واقعی میکروفون فقط وقتی خوانده می‌شود که کاربر دکمه میکروفون را
+       زده باشد (حالت گوش دادن) — در حالت عادی اکولایزر کاملاً ثابت می‌ماند */
+    if (state === 'listening' && analyser && micData && micLive) {
       try { analyser.getByteFrequencyData(micData); } catch (_) { /* noop */ }
     }
-    const target = state === 'listening' ? 0.88 : state === 'processing' ? 0.42 : state === 'success' ? 0.55 : 0.15;
-    energy += (target - energy) * 0.05;
+    /* انرژی هدف بر اساس حالت: گوش دادن = بلند، پردازش/موفق = موج ملایم، عادی = سکون */
+    const target = state === 'listening' ? 0.88 : state === 'processing' ? 0.4 : state === 'success' ? 0.5 : 0.0;
+    energy += (target - energy) * (1 - Math.exp(-dt * 5));
     ctx.clearRect(0, 0, W, H);
     const mid = H / 2;
     const gap = 4;
@@ -829,32 +1021,32 @@
     for (let i = 0; i < N; i++) {
       const env = Math.sin((Math.PI * i) / (N - 1));
       let lvl;
-      if (micData) {
-        /* صدای واقعی میکروفون: تبدیل طیف فرکانسی به ۵۲ میله — همیشه واقعی */
+      if (state === 'idle') {
+        /* حالت عادی: میله‌های کوتاه ثابت — بدون هیچ حرکتی */
+        lvl = 0.055;
+      } else if (state === 'listening' && micData && micLive) {
+        /* صدای واقعی میکروفون */
         const bins = Math.floor(micData.length * 0.72);
         const bi = Math.min(micData.length - 1, Math.floor(Math.pow(i / N, 1.55) * bins));
         const raw = micData[bi] / 255;
         lvl = Math.max(0.05, Math.min(1, raw * 1.6 * (0.35 + 0.65 * env)));
+      } else if (state === 'processing' || state === 'success') {
+        /* موج سینوسی نرم و بی‌پرش (بدون تصادف) */
+        const n = Math.sin(t0 * 2.4 + i * 0.52) * 0.6 + Math.sin(t0 * 1.1 + i * 0.19) * 0.4;
+        lvl = Math.max(0.05, Math.min(1, energy * env * (0.5 + 0.5 * Math.abs(n))));
       } else {
-        const n =
-          Math.sin(t0 * 2.1 + i * 0.55) * 0.5 +
-          Math.sin(t0 * 3.7 + i * 1.3) * 0.3 +
-          Math.sin(t0 * 0.7 + i * 0.21) * 0.2;
-        const amp = energy * env * (0.32 + 0.68 * Math.abs(n));
-        const jitter = energy > 0.2 ? Math.random() * 0.13 * energy : 0;
-        lvl = Math.max(0.04, Math.min(1, amp + jitter));
+        lvl = 0.055;
       }
-      levels[i] += (lvl - levels[i]) * 0.25;
+      levels[i] += (lvl - levels[i]) * Math.min(1, dt * 14);
       const bh = Math.max(3, levels[i] * (H - 8));
       const g = ctx.createLinearGradient(0, mid - bh / 2, 0, mid + bh / 2);
-      g.addColorStop(0, cssColor('--wave-c1', 'rgba(52, 211, 153, 0.95)'));
-      g.addColorStop(0.5, cssColor('--acc-rgb', '16,185,129') ? `rgba(${cssColor('--acc-rgb', '16,185,129')}, 0.85)` : 'rgba(16, 185, 129, 0.85)');
-      g.addColorStop(1, cssColor('--wave-c2', 'rgba(16, 185, 129, 0.9)'));
+      g.addColorStop(0, waveCols.c1);
+      g.addColorStop(0.5, waveCols.mid);
+      g.addColorStop(1, waveCols.c2);
       ctx.fillStyle = g;
       rr(ctx, startX + i * (bw + gap), mid - bh / 2, bw, bh, bw / 2);
       ctx.fill();
     }
-    requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
@@ -1044,6 +1236,34 @@
     { k: /سطل.{0,10}(زباله|بازیافت).{0,12}(خالی|پاک|تمیز|بریز)|empty (the )?(recycle|trash)|empty trash/i, t: 'خالی کردن سطل بازیافت', i: '#i-trash', run: 'recycle_empty', r: () => LANG === 'en' ? 'Recycle Bin emptied.' : 'سطل بازیافت خالی شد.' },
   ];
 
+  /* فرمان‌های صوتی موزیک — قبل از قانون قدیمی یوتیوب‌موزیک */
+  const MUSIC_FA = 'موزیک|موسیقی|آهنگ|اهنگ|آواز|ترانه|پلی\s?[\u200C]?لیست|music|song|playlist';
+  {
+    const musicRules = [
+      {
+        k: new RegExp(`(?:${MUSIC_FA})[^.]{0,14}(بعدی|بعد)|(بعدی|next)[^.]{0,8}(?:${MUSIC_FA})|next (song|track|music)`, 'i'),
+        t: 'آهنگ بعدی', i: '#i-music', r: () => voiceMusicNext(),
+      },
+      {
+        k: new RegExp(`(?:${MUSIC_FA})[^.]{0,14}(قبلی|قبل)|(قبلی|previous|prev)[^.]{0,8}(?:${MUSIC_FA})|previous (song|track|music)`, 'i'),
+        t: 'آهنگ قبلی', i: '#i-music', r: () => voiceMusicPrev(),
+      },
+      {
+        k: new RegExp(`(?:${MUSIC_FA})[^.]{0,16}(پاز|توقف|نگه\s?[\u200C]?دار|قطع|استاپ|استپ|ساکت|stop|pause)|(پاز|stop|pause)[^.]{0,10}(?:${MUSIC_FA})`, 'i'),
+        t: 'توقف موزیک', i: '#i-music', r: () => voiceMusicPause(),
+      },
+      {
+        k: new RegExp(`(?:پخش|بزن|پلی|شروع|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|play|کن)`, 'i'),
+        t: 'پخش موزیک', i: '#i-music', r: () => voiceMusicPlay(),
+      },
+      {
+        k: /پلی\s?[\u200C]?لیست|playlist|صفحه.{0,8}موزیک|موزیک.{0,8}(باز|صفحه)/i,
+        t: 'پلیر موزیک', i: '#i-music', r: () => { showView('music'); return t('music.pageOpen'); },
+      },
+    ];
+    RULES.splice(1, 0, ...musicRules);
+  }
+
   /* اجرای فرمان‌های پاور — خاموش/ریستارت از قبل در resolveReply تأیید گرفته‌اند */
   async function runPower(id) {
     if (!canRun) return t('toast.onlyApp');
@@ -1153,12 +1373,38 @@
      توجه: state=processing بعد از تشخیص گفتار کاملاً طبیعی است و
      نباید فرمان را رد کند (باگ قدیمی که جواب‌های گوگل/GLM را ساکت دور می‌ریخت). */
   let cmdBusy = false;
+
+  /* اجرای فرمان‌های DNS (با UAC واقعی) — هم از مسیر «دی ان اس …»
+     و هم از مسیر «الکترو رو تنظیم کن» (اسم ذخیره‌شده کاربر) */
+  async function runDnsCommand(raw) {
+    if (cmdBusy) return;
+    cmdBusy = true;
+    setState('processing');
+    statusText.textContent = t('dns.dnsWork');
+    try {
+      const reply = await dnsHandle(raw);
+      setState('success');
+      statusText.textContent = t('dns.dnsDone');
+      body.classList.add('has-card');
+      rcHeard.textContent = `«${raw}»`;
+      rcTag.textContent = 'DNS';
+      typeText(rcReply, reply);
+      speak(reply);
+      pushHistory(raw, true);
+    } catch (_) {
+      setState('idle');
+      statusText.textContent = t('dns.dnsFail');
+    }
+    cmdBusy = false;
+    setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+  }
+
   async function runCommand(cmd, opts) {
     if (!cmd) return;
     if (cmdBusy) return;
     const raw = String(cmd).trim();
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
-    const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ/i;
+    const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ|برام\s*تایپ\s*کن|برایم\s*تایپ\s*کن|این\s*(رو|را)\s*تایپ\s*کن|تایپش\s*کن/i;
     const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
     if (dictation.active) {
       if (DICT_STOP_RE.test(raw)) { stopDictation(true); return; }
@@ -1167,31 +1413,23 @@
       return;
     }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
-    if (/دی\s?ان\s?اس|dns/i.test(raw)) {
-      cmdBusy = true;
-      setState('processing');
-      statusText.textContent = t('dns.dnsWork');
-      try {
-        const reply = await dnsHandle(raw);
-        setState('success');
-        statusText.textContent = t('dns.dnsDone');
-        body.classList.add('has-card');
-        rcHeard.textContent = `«${raw}»`;
-        rcTag.textContent = 'DNS';
-        typeText(rcReply, reply);
-        speak(reply);
-        pushHistory(raw, true);
-      } catch (_) {
-        setState('idle');
-        statusText.textContent = t('dns.dnsFail');
-      }
-      cmdBusy = false;
-      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
-      return;
+    /* DNS کلاسیک: هر جمله‌ای که «دی ان اس / dns» دارد */
+    if (/دی\s?ان\s?اس|dns/i.test(raw)) { await runDnsCommand(raw); return; }
+    /* DNS با اسم دلخواه — حتی بدون واژه «دی ان اس»:
+       «الکترو رو تنظیم کن» یا «شکن رو فعال کن» → همان پروفایل روی ویندوز ست می‌شود */
+    if (/(تنظیم|فعال|وصل|اعمال|ست)\s*(کن|بکن)?/i.test(raw)) {
+      const cand = raw
+        .replace(/(لطفا|لطفاً)/g, '')
+        .replace(/(^|\s)(رو|را|به|برای|من)(\s|$)/g, ' ')
+        .replace(/(تنظیم|فعال|وصل|اعمال|کن|بکن|بزن|شروع)/g, ' ')
+        .replace(/[\s\u200C]+/g, ' ')
+        .trim();
+      if (cand.length >= 3 && findDnsProfile(cand)) { await runDnsCommand(raw); return; }
     }
     cmdBusy = true;
     if (state === 'listening') stopListening(false);
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
+    stopGoogleSpeak(); /* صدای قبلی آوا قطع شود */
 
     setState('processing');
     statusText.textContent = t('status.working');
@@ -1315,11 +1553,12 @@
       }
       if (interim && state === 'listening') {
         if (dictation.active) { dictInterim.textContent = interim; }
-        else statusText.textContent = t('status.heard', { x: interim });
+        else { statusText.textContent = t('status.heard', { x: interim }); setLiveText(interim); }
       }
       if (final) {
         gotFinal = true;
         clearTimeout(webWatchdog);
+        setLiveText('');
         stopListening(false);
         if (dictation.active) dictateHandle(final.trim(), { interimEl: true });
         else handleUtterance(final.trim());
@@ -1691,6 +1930,7 @@
           handsFreeRearm(); return; /* تا صدای خود آوا تمام شود */
         }
       } catch (_) { /* noop */ }
+      if (ttsAudioBusy()) { handsFreeRearm(); return; } /* صدای گوگل هنوز در جریان است */
       startListening();
     }, 700);
   }
@@ -1827,6 +2067,7 @@
       try {
         if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) { rearmDictation(); return; }
       } catch (_) { /* noop */ }
+      if (ttsAudioBusy()) { rearmDictation(); return; }
       startListening();
     }, 350);
   }
@@ -1939,7 +2180,7 @@
       toast(t('dns.onlyApp'), '#i-info');
       return t('dns.onlyApp') + '.';
     }
-    toast(t('toast.dnsApplyUac'), '#i-info');
+    toast(t('dns.setVoice', { x: label }), '#i-info');
     const r = await bridge.dns.apply({ primary: ips[0], secondary: ips[1] || '' });
     if (r && r.ok) {
       return t('dns.applyOk', { x: label, y: faNum(ips.join(LANG === 'en' ? ' and ' : ' و ')) });
@@ -2180,6 +2421,7 @@
   /* --- وقتی هیچ موتوری نیست: پیام صادقانه (+ دمو فقط اگر کاربر روشن کرده) --- */
   function noEngine(reason) {
     setState('idle');
+    setLiveText('');
     sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
     if (settings.demoMode) {
       startDemoListen();
@@ -2199,6 +2441,8 @@
     respCard.classList.remove('show');
     sbMic.innerHTML = `<i class="dot rec"></i>${t('mic.rec')}`;
     gotFinal = false;
+    setLiveText(t('live.on')); /* زیر دکمه ضبط: «در حال شنیدن…» تا اولین کلمه */
+    stopGoogleSpeak(); /* اگر آوا مشغول حرف زدن بود، ساکت شود تا گوش دهد */
     attachMic();
     /* اگر کانتکست صوتی معلق بود، اینجا بیدارش می‌کنیم تا ضبط شروع شود */
     if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
@@ -2208,6 +2452,7 @@
     listenTimer = setTimeout(() => {
       if (state !== 'listening') return;
       setState('idle');
+      setLiveText('');
       statusText.innerHTML = IDLE_HINT;
       sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
     }, 35000);
@@ -2259,6 +2504,7 @@
     clearInterval(glmTimer); clearTimeout(glmMaxTimer);
     glmTimer = null; glmMaxTimer = null;
     glmListening = false;
+    setLiveText('');
     if (rec && recActive) { try { rec.stop(); } catch (_) { /* noop */ } }
     recActive = false;
     if (glmRec && glmRec.state !== 'inactive') {
@@ -2284,15 +2530,18 @@
   }
   const toggleListen = () => (state === 'listening' ? stopListening() : startListening());
 
-  /* کلیک اورب: موج ripple انیمیشنی + تیلت ریست */
-  orb.addEventListener('click', (e) => {
+  /* کلیک اورب: موج ripple انیمیشنی — همیشه از «مرکز دکمه» جریان می‌گیرد
+     (نه از نقطه کلیک) + تیلت ریست */
+  orb.addEventListener('click', () => {
     try {
       const st = orb.closest('.orb-stage') || orb.parentElement;
       const r = st.getBoundingClientRect();
+      const o = orb.getBoundingClientRect();
       const rip = document.createElement('span');
       rip.className = 'orb-ripple';
       const size = 200;
-      rip.style.cssText = `width:${size}px;height:${size}px;left:${(e.clientX || r.left + r.width / 2) - r.left}px;top:${(e.clientY || r.top + r.height / 2) - r.top}px;transform:translate(-50%,-50%) scale(0.5);`;
+      /* مرکز خود دکمه میکروفون نسبت به استیج */
+      rip.style.cssText = `width:${size}px;height:${size}px;left:${o.left + o.width / 2 - r.left}px;top:${o.top + o.height / 2 - r.top}px;transform:translate(-50%,-50%) scale(0.5);`;
       st.appendChild(rip);
       setTimeout(() => rip.remove(), 750);
     } catch (_) { /* noop */ }
@@ -2373,7 +2622,7 @@
     sgTimer = setInterval(() => {
       /* فقط وقتی صفحه اصلی دیده می‌شود و اورلی‌ای باز نیست بچرخ */
       const overlayOpen = dnsQuickEl && !dnsQuickEl.hidden;
-      const homeVisible = settingsPage.hidden && chatPage.hidden && historyPage.hidden && (dictPage ? dictPage.hidden : true) && !overlayOpen;
+      const homeVisible = settingsPage.hidden && chatPage.hidden && historyPage.hidden && (dictPage ? dictPage.hidden : true) && (musicPage ? musicPage.hidden : true) && !overlayOpen;
       if (!homeVisible) return;
       buildSuggestions();
     }, 4200);
@@ -2411,6 +2660,7 @@
       else if (!settingsPage.hidden) showSettings(false);
       else if (historyPage && !historyPage.hidden) showView('home');
       else if (dictPage && !dictPage.hidden) showView('home');
+      else if (musicPage && !musicPage.hidden) showView('home');
       else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
     }
@@ -2624,12 +2874,16 @@
     chatPage.hidden = v !== 'chat';
     if (historyPage) historyPage.hidden = v !== 'history';
     if (dictPage) dictPage.hidden = v !== 'dict';
+    if (musicPage) musicPage.hidden = v !== 'music';
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
     btnChat.classList.toggle('active', v === 'chat');
     if (btnDict) btnDict.classList.toggle('active', v === 'dict');
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
+    if (btnMusic) btnMusic.classList.toggle('active', v === 'music');
+    /* ویجت موزیک فقط روی صفحه اصلی دیده می‌شود */
+    if (musicWidget) musicWidget.hidden = v !== 'home' || !(music.tracks && music.tracks.length && music.cur >= 0);
     $('#main').scrollTop = 0;
     if (v === 'settings') {
       showSettingsPane(settings.settingsPane || 'mic');
@@ -2672,6 +2926,10 @@
     optGlmKey.value = settings.glmKey || '';
     optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
+    if (optTtsEngine) optTtsEngine.value = settings.ttsEngine || 'google';
+    if (optAiProvider) optAiProvider.value = settings.aiProvider || 'auto';
+    if (optGeminiKey) optGeminiKey.value = settings.geminiKey || '';
+    if (optOpenaiKey) optOpenaiKey.value = settings.openaiKey || '';
     updateHandsFreeUI();
     refreshEngineUI();
     fillVoiceSelect();
@@ -2693,11 +2951,35 @@
 
   const needApp = () => toast(t('toast.onlyApp'), '#i-info');
 
+  if (optTtsEngine) optTtsEngine.addEventListener('change', () => {
+    settings.ttsEngine = optTtsEngine.value === 'windows' ? 'windows' : 'google';
+    store.set('ttsEngine', settings.ttsEngine);
+    stopGoogleSpeak();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    speak(t(settings.ttsEngine === 'google' ? 'voice.gEng' : 'voice.wEng'));
+  });
+  if (optAiProvider) optAiProvider.addEventListener('change', () => {
+    settings.aiProvider = optAiProvider.value || 'auto';
+    store.set('aiProvider', settings.aiProvider);
+    toast(t('toast.saved'), '#i-spark');
+  });
+  if (optGeminiKey) optGeminiKey.addEventListener('change', () => {
+    settings.geminiKey = optGeminiKey.value.trim();
+    store.set('geminiKey', settings.geminiKey);
+  });
+  if (optOpenaiKey) optOpenaiKey.addEventListener('change', () => {
+    settings.openaiKey = optOpenaiKey.value.trim();
+    store.set('openaiKey', settings.openaiKey);
+  });
+
   optTts.addEventListener('change', () => {
     settings.tts = optTts.checked;
     store.set('tts', settings.tts);
     if (settings.tts) speak(t('tts.on'));
-    else if (window.speechSynthesis) speechSynthesis.cancel();
+    else {
+      stopGoogleSpeak();
+      if (window.speechSynthesis) speechSynthesis.cancel();
+    }
   });
 
   optAutoUpdate.addEventListener('change', () => {
@@ -2826,7 +3108,46 @@
     setTimeout(fillVoiceSelect, 300);
   }
 
-  /* --- به‌روزرسانی --- */
+  /* --- به‌روزرسانی (+ بج نوار بالا v0.11) --- */
+  let updVersion = '';
+  function setBadge(state, version, percent) {
+    if (!btnUpdBadge || !updBadgeTxt) return;
+    updVersion = version || updVersion || '';
+    switch (state) {
+      case 'available':
+        btnUpdBadge.hidden = false;
+        btnUpdBadge.classList.add('dl');
+        btnUpdBadge.classList.remove('ready');
+        updBadgeTxt.textContent = t('upd.badge');
+        break;
+      case 'downloading':
+        btnUpdBadge.hidden = false;
+        btnUpdBadge.classList.add('dl');
+        btnUpdBadge.classList.remove('ready');
+        updBadgeTxt.textContent = t('upd.badgeDl', { x: faNum(percent || 0) });
+        break;
+      case 'ready':
+        btnUpdBadge.hidden = false;
+        btnUpdBadge.classList.remove('dl');
+        btnUpdBadge.classList.add('ready');
+        updBadgeTxt.textContent = t('upd.badgeReady');
+        break;
+      default:
+        btnUpdBadge.hidden = true;
+    }
+  }
+  if (btnUpdBadge) btnUpdBadge.addEventListener('click', () => {
+    if (btnUpdBadge.classList.contains('ready') && bridge && bridge.updater) {
+      toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
+      bridge.updater.install();
+    } else if (bridge && bridge.updater) {
+      toast(t('upd.downloadingToast', { x: faNum(updVersion || '') }), '#i-download');
+      bridge.updater.check().catch(() => {});
+    } else {
+      toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh');
+    }
+  });
+
   function setUpdUI(s) {
     updProgress.hidden = true;
     btnInstallUpdate.hidden = true;
@@ -2839,25 +3160,31 @@
         updNote.textContent = t('upd.available', { x: faNum(s.version || '') });
         updProgress.hidden = false;
         updBar.style.width = '6%';
+        setBadge('available', s.version);
         break;
       case 'downloading':
         updNote.textContent = t('upd.downloading', { x: faNum(s.percent || 0) });
         updProgress.hidden = false;
         updBar.style.width = `${Math.max(4, s.percent || 0)}%`;
+        setBadge('downloading', s.version, s.percent);
         break;
       case 'ready':
         updNote.textContent = t('upd.ready', { x: faNum(s.version || '') });
         btnInstallUpdate.hidden = false;
+        setBadge('ready', s.version);
         toast(t('toast.updReady'), '#i-download');
         break;
       case 'none':
         updNote.textContent = t('upd.none');
+        setBadge('');
         break;
       case 'dev':
         updNote.textContent = t('upd.dev');
+        setBadge('');
         break;
       case 'error':
         updNote.textContent = t('upd.error', { x: String(s.message || '').slice(0, 90) });
+        setBadge('');
         break;
       default:
         updNote.textContent = t('upd.default');
@@ -3087,29 +3414,59 @@
     zaiWeb.addEventListener('did-stop-loading', () => setTimeout(() => checkZaiToken(), 800));
   }
 
-  /* --- ارسال پیام: پل نشست z.ai (اولویت) → کلید GLM --- */
+  /* --- ارسال پیام: زنجیره پرووایدرها (v0.11) ---
+     «خودکار»: حساب GLM (z.ai) → کلید GLM → Gemini (با سرچ گوگل) → OpenAI
+     یا پرووایدر ثابت از تنظیمات. اولین جواب موفق برگردانده می‌شود. */
   async function aiAsk(text) {
     const msgs = [{ role: 'system', content: aiSystem() }, ...chatHist.slice(-8), { role: 'user', content: text }];
-    if (bridge && bridge.ai && bridge.ai.zaiChat) {
-      /* توکن لازم نیست — پل خودش از پنجره مخفیِ نشست حساب، توکن را می‌خواند */
-      const r = await bridge.ai.zaiChat({ token: zaiToken || '', messages: msgs });
-      if (r && r.ok) {
-        setZaiBadge(true);
-        return r;
-      }
+    const prov = settings.aiProvider || 'auto';
+    let lastErr = null;
+
+    const tryZai = async () => {
+      if (!bridge || !bridge.ai || !bridge.ai.zaiChat) return false;
+      const r = await bridge.ai.zaiChat({ token: zaiToken || '', messages: msgs }).catch(() => null);
+      if (r && r.ok) { setZaiBadge(true); return r; }
       if (r && r.needLogin) {
         zaiToken = '';
         setZaiBadge(false, 'برای چت، در تب «صفحه چت GLM» وارد حسابت شو');
-        if (!settings.glmKey) return r;
-      } else if (r && !settings.glmKey) {
-        return r; // خطای z.ai را نشان بده
+        return false;
       }
+      if (r) lastErr = r;
+      return false;
+    };
+    const tryGlm = async () => {
+      if (!settings.glmKey || !bridge || !bridge.ai || !bridge.ai.chat) return false;
+      return (await bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs }).catch(() => null)) || false;
+    };
+    const tryGemini = async () => {
+      if (!settings.geminiKey || !bridge || !bridge.ai || !bridge.ai.gemini) return false;
+      /* Gemini با ابزار جستجوی گوگل: سوال‌های «سرچ» جواب لحظه‌ای می‌گیرند */
+      return (await bridge.ai.gemini({ key: settings.geminiKey, model: 'gemini-2.0-flash', messages: msgs, search: true }).catch(() => null)) || false;
+    };
+    const tryOpenai = async () => {
+      if (!settings.openaiKey || !bridge || !bridge.ai || !bridge.ai.openai) return false;
+      return (await bridge.ai.openai({ key: settings.openaiKey, model: 'gpt-4o-mini', messages: msgs }).catch(() => null)) || false;
+    };
+
+    if (prov === 'zai') { const r = await tryZai(); if (r) return r; }
+    else if (prov === 'glm') { const r = await tryGlm(); if (r) return r; }
+    else if (prov === 'gemini') { const r = await tryGemini(); if (r) return r; }
+    else if (prov === 'openai') { const r = await tryOpenai(); if (r) return r; }
+    else {
+      /* خودکار — به ترتیب همه موتورهای موجود */
+      let r = await tryZai(); if (r) return r;
+      r = await tryGlm(); if (r) return r;
+      r = await tryGemini(); if (r) return r;
+      r = await tryOpenai(); if (r) return r;
     }
-    if (settings.glmKey && bridge && bridge.ai && bridge.ai.chat) {
-      return bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs });
-    }
+
     if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
-    return { ok: false, needLogin: true, error: 'برای چت، اول در تب «صفحه چت GLM» وارد حسابت شو' };
+    if (lastErr && lastErr.error) return lastErr;
+    const needAny = !(settings.geminiKey || settings.openaiKey);
+    if (needAny && prov !== 'gemini' && prov !== 'openai') {
+      return { ok: false, needLogin: true, error: 'برای چت، اول در تب «صفحه چت GLM» وارد حسابت شو یا کلید Gemini/OpenAI را در تنظیمات بگذار' };
+    }
+    return { ok: false, error: 'هیچ‌کدام از موتورهای هوش مصنوعی جواب ندادند — کلیدها و اینترنت را بررسی کن' };
   }
 
   async function handleChatSend(v) {
@@ -3244,6 +3601,371 @@
     }, 3000);
   }
 
+  /* ============================================================
+     پلیر موزیک (v0.11) — پلی‌لیست زیبا از پوشه کاربر
+     • انتخاب پوشه (webkitdirectory) و اسکن فایل‌های صوتی
+     • خواندن تگ‌های ID3v2 (عنوان/خواننده/کاور) بدون هیچ کتابخانه‌ای
+     • پخش با <audio>: شافل، تکرار، سیک، ولوم، MediaSession ویندوز
+     • ویجت شیشه‌ای روی صفحه اصلی + اکولایزر زنده
+     ============================================================ */
+  const AUDIO_EXT = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|webm|wma)$/i;
+  const music = { tracks: [], view: [], cur: -1, playing: false, shuffle: false, repeat: 'off', folderName: '' };
+
+  /* --- پارسر ID3v2 (mp3) — عنوان، خواننده و کاور --- */
+  function decodeId3Text(bytes, enc) {
+    try {
+      let s = '';
+      if (enc === 1) { /* UTF-16 با BOM */
+        if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) s = new TextDecoder('utf-16be').decode(bytes.subarray(2));
+        else s = new TextDecoder('utf-16le').decode(bytes.subarray(bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe ? 2 : 0));
+      } else if (enc === 2) s = new TextDecoder('utf-16be').decode(bytes);
+      else if (enc === 3) s = new TextDecoder('utf-8').decode(bytes);
+      else s = new TextDecoder('windows-1252').decode(bytes);
+      return s.replace(/\u0000+$/g, '').replace(/^\u0000+/g, '').trim();
+    } catch (_) { return ''; }
+  }
+
+  async function readId3(file) {
+    const out = { title: '', artist: '', album: '', cover: null };
+    try {
+      const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+      if (head[0] !== 0x49 || head[1] !== 0x44 || head[2] !== 0x33) return out; /* «ID3» */
+      const ver = head[3];
+      const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
+      if (size < 10 || size > 3 * 1024 * 1024) return out;
+      const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 3 * 1024 * 1024)).arrayBuffer());
+      const dv = new DataView(buf.buffer);
+      let pos = 0;
+      /* پدینگ اکسپریمنتال (footer) نادیده گرفته می‌شود */
+      const frameHdr = ver >= 3 ? 10 : 6;
+      while (pos + frameHdr <= buf.length) {
+        let id = '', fsize = 0;
+        if (ver >= 3) {
+          id = String.fromCharCode(buf[pos], buf[pos + 1], buf[pos + 2], buf[pos + 3]);
+          if (!/^[A-Z0-9]{4}$/.test(id)) break;
+          if (ver === 4) fsize = ((buf[pos + 4] & 0x7f) << 21) | ((buf[pos + 5] & 0x7f) << 14) | ((buf[pos + 6] & 0x7f) << 7) | (buf[pos + 7] & 0x7f);
+          else fsize = dv.getUint32(pos + 4);
+        } else {
+          id = String.fromCharCode(buf[pos], buf[pos + 1], buf[pos + 2]);
+          if (!/^[A-Z0-9]{3}$/.test(id)) break;
+          fsize = (buf[pos + 3] << 16) | (buf[pos + 4] << 8) | buf[pos + 5];
+        }
+        if (fsize <= 0 || pos + frameHdr + fsize > buf.length) break;
+        const data = buf.subarray(pos + frameHdr, pos + frameHdr + fsize);
+        if (id === 'TIT2' || id === 'TT2') out.title = decodeId3Text(data.subarray(1), data[0]);
+        else if (id === 'TPE1' || id === 'TP1') out.artist = decodeId3Text(data.subarray(1), data[0]);
+        else if (id === 'TALB' || id === 'TAL') out.album = decodeId3Text(data.subarray(1), data[0]);
+        else if ((id === 'APIC' || id === 'PIC') && !out.cover) {
+          try {
+            const enc = data[0];
+            let p = 1, mime = 'image/jpeg';
+            if (id === 'APIC') {
+              let z = data.indexOf(0, p);
+              if (z > p) mime = String.fromCharCode(...data.subarray(p, z)) || mime;
+              p = z + 1;
+            } else { p = 4; } /* PIC: ۳ بایت فرمت تصویر */
+            p += 1; /* نوع تصویر */
+            /* توضیح با انکودینگ متن (null ترمینیتور: 1 یا 2 بایت) */
+            if (enc === 1 || enc === 2) { while (p + 1 < data.length && !(data[p] === 0 && data[p + 1] === 0)) p += 2; p += 2; }
+            else { while (p < data.length && data[p] !== 0) p += 1; p += 1; }
+            const img = data.subarray(p);
+            if (img.length > 200) out.cover = URL.createObjectURL(new Blob([img], { type: mime.includes('/') ? mime : 'image/jpeg' }));
+          } catch (_) { /* noop */ }
+        }
+        pos += frameHdr + fsize;
+      }
+    } catch (_) { /* noop */ }
+    return out;
+  }
+
+  /* --- ساخت ردیف آهنگ --- */
+  function fmtDur(s) {
+    if (!isFinite(s) || s < 0) return '--:--';
+    const m = Math.floor(s / 60), ss = Math.floor(s % 60);
+    return `${m}:${String(ss).padStart(2, '0')}`;
+  }
+
+  function renderMusicList() {
+    if (!mList) return;
+    const q = (mSearch && mSearch.value || '').trim().toLowerCase();
+    music.view = music.tracks.filter((tr) => !q || (tr.title + ' ' + tr.artist + ' ' + tr.file.name).toLowerCase().includes(q));
+    mList.innerHTML = '';
+    if (mEmpty) mEmpty.hidden = music.tracks.length > 0;
+    if (mCount) {
+      mCount.hidden = !music.tracks.length;
+      if (music.tracks.length) mCount.textContent = t('music.tracks', { x: faNum(music.tracks.length) });
+    }
+    music.view.forEach((tr, i) => {
+      const row = document.createElement('div');
+      row.className = 'm-row' + (i === music.cur ? ' current' : '');
+      row.innerHTML =
+        `<span class="m-idx num">${i === music.cur && music.playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(i + 1)}</span>` +
+        `<span class="m-thumb">${tr.cover ? `<img src="${tr.cover}" alt=""/>` : '<svg class="ic"><use href="#i-music"/></svg>'}</span>` +
+        `<span class="m-tt"><b></b><span class="m-ar"></span></span>` +
+        `<span class="m-dur num">--:--</span>`;
+      row.querySelector('.m-tt b').textContent = tr.title;
+      row.querySelector('.m-ar').textContent = tr.artist || tr.file.name.replace(/\.[^.]+$/, '');
+      row.querySelector('.m-dur').textContent = tr.dur ? fmtDur(tr.dur) : '--:--';
+      row.addEventListener('click', () => playTrack(i));
+      mList.appendChild(row);
+    });
+  }
+
+  /* مدت هر آهنگ به‌صورت پس‌زمینه‌ای خوانده می‌شود (بدون کند کردن لیست) */
+  async function loadDurations() {
+    for (const tr of music.tracks) {
+      if (tr.dur) continue;
+      try {
+        const a = new Audio();
+        a.preload = 'metadata';
+        a.src = tr.url;
+        await new Promise((res) => {
+          const done = () => { res(); a.src = ''; };
+          a.onloadedmetadata = () => { tr.dur = a.duration; done(); };
+          a.onerror = done;
+          setTimeout(done, 6000);
+        });
+      } catch (_) { /* noop */ }
+      if ((mSearch && mSearch.value || '').trim()) continue; /* جستجوی فعال — بعداً */
+      const rows = mList ? mList.children : [];
+      /* ردیف‌ها ممکن است فیلتر شده باشند — فقط دق‌ها را تازه کن */
+      if (mList) Array.from(mList.children).forEach((rowEl, i) => {
+        const tr2 = music.view[i];
+        if (tr2 && tr2.dur) { const d = rowEl.querySelector('.m-dur'); if (d) d.textContent = fmtDur(tr2.dur); }
+      });
+      void rows;
+    }
+  }
+
+  /* --- کاور + متادیتا پس‌زمینه‌ای برای همه آهنگ‌ها ---
+     هر ۴ فایل یک‌بار لیست تازه می‌شود تا با پلی‌لیست بزرگ کند نشود */
+  async function enrichTracks() {
+    let since = 0;
+    for (const tr of music.tracks) {
+      if (tr.enriched) continue;
+      tr.enriched = true;
+      const tag = await readId3(tr.file);
+      if (tag.title) tr.title = tag.title;
+      if (tag.artist) tr.artist = tag.artist;
+      if (tag.cover) tr.cover = tag.cover;
+      since += 1;
+      if (since % 4 === 0) renderMusicList();
+    }
+    renderMusicList();
+  }
+
+  function updatePlayerUI() {
+    const tr = music.tracks[music.cur];
+    const playing = music.playing;
+    if (mPlayIcon) mPlayIcon.setAttribute('href', playing ? '#i-pause' : '#i-play');
+    if (mwPlayIcon) mwPlayIcon.setAttribute('href', playing ? '#i-pause' : '#i-play');
+    document.body.classList.toggle('music-on', !!tr);
+    document.body.classList.toggle('music-playing', playing);
+    if (mEq) mEq.classList.toggle('live', playing);
+    if (mwEq) mwEq.classList.toggle('live', playing);
+    if (tr) {
+      if (mTitle) mTitle.textContent = tr.title;
+      if (mArtist) mArtist.textContent = tr.artist || tr.file.name.replace(/\.[^.]+$/, '');
+      if (mwTitle) mwTitle.textContent = tr.title;
+      if (mwArtist) mwArtist.textContent = tr.artist || '';
+      /* کاور */
+      const coverHtml = tr.cover ? `<img src="${tr.cover}" alt=""/>` : '';
+      if (mCover) {
+        const old = mCover.querySelector('img');
+        if (old) old.remove();
+        if (tr.cover) mCover.insertAdjacentHTML('afterbegin', coverHtml);
+      }
+      if (mwCover) {
+        const oldW = mwCover.querySelector('img');
+        if (oldW) oldW.remove();
+        if (tr.cover) mwCover.insertAdjacentHTML('afterbegin', coverHtml);
+      }
+      if (musicWidget) musicWidget.hidden = false;
+    } else {
+      if (musicWidget) musicWidget.hidden = true;
+    }
+    /* ردیف جاری در لیست */
+    if (mList) Array.from(mList.children).forEach((rowEl, i) => {
+      rowEl.classList.toggle('current', i === music.cur);
+      const idx = rowEl.querySelector('.m-idx');
+      if (idx) idx.innerHTML = i === music.cur && playing ? '<svg class="ic"><use href="#i-volume"/></svg>' : faNum(i + 1);
+    });
+  }
+
+  function playTrack(i) {
+    if (!music.tracks.length) return;
+    music.cur = ((i % music.tracks.length) + music.tracks.length) % music.tracks.length;
+    const tr = music.tracks[music.cur];
+    try { mAudio.src = tr.url; mAudio.play(); } catch (_) { /* noop */ }
+    mediaSessionMeta();
+  }
+
+  function musicNext(auto = false) {
+    if (!music.tracks.length) return;
+    if (music.shuffle && music.tracks.length > 1) {
+      let n = music.cur;
+      while (n === music.cur) n = Math.floor(Math.random() * music.tracks.length);
+      playTrack(n);
+      return;
+    }
+    if (auto && music.repeat === 'off' && music.cur === music.tracks.length - 1) {
+      music.playing = false;
+      updatePlayerUI();
+      return;
+    }
+    playTrack(music.cur + 1);
+  }
+
+  function musicPrev() {
+    if (!music.tracks.length) return;
+    /* اگر بیش از ۳ ثانیه پخش شده، از اول همان آهنگ */
+    if (mAudio.currentTime > 3) { mAudio.currentTime = 0; return; }
+    playTrack(music.cur - 1);
+  }
+
+  function musicToggle() {
+    if (!music.tracks.length) return false;
+    if (mAudio.paused) { mAudio.play().catch(() => {}); return true; }
+    mAudio.pause();
+    return true;
+  }
+
+  if (mAudio) {
+    mAudio.volume = settings.musicVol;
+    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); });
+    mAudio.addEventListener('pause', () => { music.playing = false; updatePlayerUI(); });
+    mAudio.addEventListener('ended', () => {
+      if (music.repeat === 'one') playTrack(music.cur);
+      else musicNext(true);
+    });
+    mAudio.addEventListener('timeupdate', () => {
+      if (mAudio.duration) {
+        if (mSeek) mSeek.value = String(Math.round((mAudio.currentTime / mAudio.duration) * 1000));
+        if (mCur) mCur.textContent = fmtDur(mAudio.currentTime);
+        if (mDur) mDur.textContent = fmtDur(mAudio.duration);
+      }
+    });
+    /* کنترل از دکمه‌های مدیای کیبورد/ویندوز */
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler('play', () => mAudio.play());
+        navigator.mediaSession.setActionHandler('pause', () => mAudio.pause());
+        navigator.mediaSession.setActionHandler('nexttrack', () => musicNext());
+        navigator.mediaSession.setActionHandler('previoustrack', () => musicPrev());
+      } catch (_) { /* noop */ }
+    }
+  }
+
+  function mediaSessionMeta() {
+    if (!('mediaSession' in navigator)) return;
+    const tr = music.tracks[music.cur];
+    try {
+      navigator.mediaSession.metadata = tr ? new MediaMetadata({
+        title: tr.title,
+        artist: tr.artist || 'AVA',
+        album: music.folderName || 'AVA Playlist',
+        artwork: tr.cover ? [{ src: tr.cover, sizes: '512x512' }] : [],
+      }) : null;
+    } catch (_) { /* noop */ }
+  }
+
+  async function handleMusicFolder(ev) {
+    const files = Array.from((ev.target && ev.target.files) || []).filter((f) => AUDIO_EXT.test(f.name));
+    ev.target.value = '';
+    if (!files.length) { toast(t('music.none'), '#i-music'); return; }
+    /* آزادسازی حافظه آهنگ‌های قبلی */
+    music.tracks.forEach((tr) => { try { if (tr.url) URL.revokeObjectURL(tr.url); } catch (_) { /* noop */ } });
+    mAudio.pause();
+    mAudio.removeAttribute('src');
+    music.tracks = files.map((f) => ({
+      file: f,
+      url: URL.createObjectURL(f),
+      title: f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(),
+      artist: '',
+      cover: null,
+      dur: 0,
+      enriched: false,
+    }));
+    /* نام پوشه از مسیر نسبی اولین فایل */
+    const rel = files[0].webkitRelativePath || '';
+    music.folderName = rel ? rel.split('/')[0] : '';
+    settings.lastMusicFolder = music.folderName;
+    store.set('lastMusicFolder', music.folderName);
+    music.cur = -1;
+    renderMusicList();
+    toast(t('music.loaded', { x: faNum(music.tracks.length), y: music.folderName }), '#i-music');
+    enrichTracks();
+    loadDurations();
+    /* اگر پلیر خالی بود، اولین آهنگ را آماده پخش کن (بدون پخش خودکار) */
+    if (music.cur < 0) { music.cur = 0; mAudio.src = music.tracks[0].url; updatePlayerUI(); mediaSessionMeta(); }
+  }
+
+  /* --- کمک‌کننده‌های فرمان صوتی موزیک --- */
+  function voiceMusicPlay() {
+    if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
+    if (!mAudio.src) { playTrack(music.cur < 0 ? 0 : music.cur); return t('music.playing', { x: music.tracks[Math.max(0, music.cur)].title }); }
+    if (mAudio.paused) { mAudio.play().catch(() => {}); return t('music.resumed'); }
+    return t('music.playing', { x: music.tracks[music.cur].title });
+  }
+  function voiceMusicPause() {
+    if (!music.tracks.length || mAudio.paused) return t('music.paused');
+    mAudio.pause();
+    return t('music.paused');
+  }
+  function voiceMusicNext() {
+    if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
+    musicNext();
+    return t('music.next');
+  }
+  function voiceMusicPrev() {
+    if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
+    musicPrev();
+    return t('music.prev');
+  }
+
+  if (btnMusic) btnMusic.addEventListener('click', () => showView(musicPage.hidden ? 'music' : 'home'));
+  if (btnMusicBack) btnMusicBack.addEventListener('click', () => showView('home'));
+  if (btnMusicFolder) btnMusicFolder.addEventListener('click', () => { if (mFolder) mFolder.click(); });
+  if (mFolder) mFolder.addEventListener('change', handleMusicFolder);
+  if (mPlayBtn) mPlayBtn.addEventListener('click', () => (music.tracks.length ? musicToggle() : (mFolder && mFolder.click())));
+  if (mNextBtn) mNextBtn.addEventListener('click', () => musicNext());
+  if (mPrevBtn) mPrevBtn.addEventListener('click', () => musicPrev());
+  if (mShuffleBtn) mShuffleBtn.addEventListener('click', () => {
+    music.shuffle = !music.shuffle;
+    settings.musicShuffle = music.shuffle;
+    store.set('musicShuffle', music.shuffle);
+    if (mShuffleBtn) mShuffleBtn.classList.toggle('active', music.shuffle);
+  });
+  if (mRepeatBtn) mRepeatBtn.addEventListener('click', () => {
+    music.repeat = music.repeat === 'off' ? 'all' : music.repeat === 'all' ? 'one' : 'off';
+    settings.musicRepeat = music.repeat;
+    store.set('musicRepeat', music.repeat);
+    if (mRepeatBtn) {
+      mRepeatBtn.classList.toggle('active', music.repeat !== 'off');
+      mRepeatBtn.classList.toggle('one', music.repeat === 'one');
+    }
+  });
+  if (mSeek) mSeek.addEventListener('input', () => {
+    if (mAudio.duration) mAudio.currentTime = (Number(mSeek.value) / 1000) * mAudio.duration;
+  });
+  if (mVol) mVol.addEventListener('input', () => {
+    mAudio.volume = Number(mVol.value) / 100;
+    settings.musicVol = mAudio.volume;
+    store.set('musicVol', settings.musicVol);
+  });
+  if (mSearch) mSearch.addEventListener('input', () => renderMusicList());
+  if (mwPlayBtn) mwPlayBtn.addEventListener('click', () => musicToggle());
+
+  /* بازیابی وضعیت شافل/تکرار/ولوم از تنظیمات */
+  if (mShuffleBtn) mShuffleBtn.classList.toggle('active', !!settings.musicShuffle);
+  music.shuffle = !!settings.musicShuffle;
+  music.repeat = settings.musicRepeat || 'off';
+  if (mRepeatBtn) {
+    mRepeatBtn.classList.toggle('active', music.repeat !== 'off');
+    mRepeatBtn.classList.toggle('one', music.repeat === 'one');
+  }
+  if (mVol) mVol.value = String(Math.round((settings.musicVol ?? 0.8) * 100));
+
   /* ---------- پاپ‌آپ درباره ---------- */
   btnAbout.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -3283,6 +4005,8 @@
   renderTypingCmds();
   renderDnsProfiles();
   renderDnsBuiltins();
+  renderMusicList();
+  updatePlayerUI();
   updateHandsFreeUI();
   updateDictToggleUI();
   startSuggestionLoop();
