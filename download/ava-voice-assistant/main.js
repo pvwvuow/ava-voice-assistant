@@ -1,7 +1,8 @@
 /**
  * آوا — دستیار صوتی ویندوز
- * Electron main process (نسخه ۰.۹ — فقط موتورهای آنلاین تشخیص گفتار،
- * پنجره کوچک «DNS جدید»، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
+ * Electron main process (نسخه ۰.۱۰ — موتور وب گوگل با کلید کرومیوم داخل Electron
+ * فعال می‌شود، فرمان‌های پاور (خواب/خاموش/مانیتور)، فرم «DNS جدید» داخل صفحه
+ * اصلی با انیمیشن، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
 const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net } = require('electron');
 const { exec } = require('child_process');
@@ -53,6 +54,18 @@ function serveAvaFile(reqUrl) {
     return new Response('not found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 }
+
+/* ---------- کلید Speech گوگل برای موتور وب داخل Electron ----------
+   بدون این کلید، webkitSpeechRecognition در Electron با خطای network بلافاصله
+   می‌میرد و هر بار چند ثانیه تلف می‌شد؛ با کلید عمومی خود کرومیوم
+   (همان کلیدی که درخواست‌های HTTP هم استفاده می‌کنند) موتور وب واقعی و
+   استریمی گوگل داخل برنامه بالا می‌آید. باید قبل از ready ثبت شود. */
+const GOOGLE_KEY_DEFAULT = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw';
+try {
+  app.commandLine.appendSwitch('google-api-key', GOOGLE_KEY_DEFAULT);
+  app.commandLine.appendSwitch('google-default-client-id', '446115136242-2p92k6onon4tnnd434e2f8sdcp8o9fr8.apps.googleusercontent.com');
+  app.commandLine.appendSwitch('google-default-client-secret', 'uFBboTQBEsseYMwbGjXAcRYF');
+} catch (_) { /* noop */ }
 
 /* electron-updater (فقط وقتی پکیج نصب باشد — خطا را ساکت رد می‌کنیم) */
 let autoUpdater = null;
@@ -251,6 +264,19 @@ const COMMANDS = {
   screenshot:   { cmd: SCREENSHOT_PS, fa: 'اسکرین‌شات' },
   recycle_empty: { cmd: 'powershell -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue; Write-Output done"', fa: 'سطل بازیافت' },
 
+  /* پاور: خواب / خاموش / ریستارت / مانیتور (فرمان‌های صوتی) */
+  sys_sleep: {
+    cmd: 'powershell -NoProfile -Command "Add-Type -Namespace P -Name S -MemberDefinition \'[DllImport(\"powrprof.dll\")] public static extern bool SetSuspendState(bool hiber, bool force, bool wake);\'; [P.S]::SetSuspendState($false,$false,$false); Write-Output ok"',
+    fa: 'حالت خواب',
+  },
+  sys_shutdown: { cmd: 'shutdown /s /t 10 /c "AVA"', fa: 'خاموش کردن کامپیوتر' },
+  sys_restart:  { cmd: 'shutdown /r /t 10 /c "AVA"', fa: 'راه‌اندازی مجدد' },
+  shutdown_abort: { cmd: 'shutdown /a', fa: 'لغو خاموش شدن' },
+  monitor_off: {
+    cmd: 'powershell -NoProfile -Command "Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport(\"user32.dll\")] public static extern int SendMessage(int h, int m, int w, int l);\'; [W.N]::SendMessage(0xffff,0x0112,0xf170,2); Write-Output ok"',
+    fa: 'خاموش کردن مانیتور',
+  },
+
   /* صدا (کلیدهای مجازی ویندوز) */
   vol_up:   { cmd: PS_KEY('AF', 6),  fa: 'بلندی صدا +' },
   vol_down: { cmd: PS_KEY('AE', 6),  fa: 'بلندی صدا -' },
@@ -277,9 +303,12 @@ ipcMain.handle('sys:run', (_e, id, arg) => {
   if (!c) return { ok: false, error: 'فرمان ناشناخته' };
   const cmdStr = typeof c.cmd === 'function' ? c.cmd(arg) : c.cmd;
   if (!cmdStr) return { ok: false, error: 'ورودی نامعتبر است' };
+  /* فرمان‌های پاور: سیستم می‌خوابد/خاموش می‌شود و پروسه exec ممکن است
+     timeout بخورد یا با کد غیرصفر بسته شود — ولی خودِ فرمان درست اجرا شده */
+  const fireAndForget = ['sys_sleep', 'sys_shutdown', 'sys_restart', 'monitor_off'].includes(id);
   return new Promise((resolve) => {
     exec(cmdStr, { windowsHide: true, timeout: 20000 }, (err, stdout) => {
-      if (err) {
+      if (err && !fireAndForget) {
         resolve({ ok: false, error: 'اجرا نشد — مطمئن شو روی ویندوز و برنامه‌ها نصب هستند', fa: c.fa });
       } else {
         resolve({ ok: true, out: (stdout || '').trim(), fa: c.fa });
@@ -558,74 +587,20 @@ ipcMain.handle('dns:reset', async () => {
 });
 
 /* ============================================================
-   پنجره کوچک «DNS جدید» — فقط همین: اسم + دو آی‌پی + ذخیره
-   با فرمان صوتی «تنظیم دی‌ان‌اس جدید» / «دی‌ان‌اس جدید» باز می‌شود.
-   ذخیره در همان فایل تنظیمات (ava-settings.json) انجام می‌شود و
-   پنجره اصلی با رویداد dns:profiles-updated فوراً به‌روز می‌شود.
+   «DNS جدید» — نسخه ۰.۱۰: دیگر پنجره جدا نیست؛ فرم شیشه‌ای
+   کوچک داخل خود صفحه اصلی باز می‌شود (با انیمیشن). ذخیره هم
+   مستقیم از رندرر با settings:save انجام می‌شود؛ فقط رویداد
+   درخواست باز شدن از این‌جا می‌آید (برای همگام‌بودن).
    ============================================================ */
-let dnsWin = null;
-
-function openDnsQuickWindow() {
-  if (dnsWin && !dnsWin.isDestroyed()) {
-    dnsWin.show();
-    dnsWin.focus();
-    return { ok: true, existed: true };
-  }
-  dnsWin = new BrowserWindow({
-    width: 400,
-    height: 480,
-    useContentSize: true,
-    show: false,
-    frame: false,
-    resizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    alwaysOnTop: true,
-    backgroundColor: '#0a0e10',
-    title: 'DNS جدید — آوا',
-    icon: path.join(__dirname, 'assets', 'icon.png'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      spellcheck: false,
-    },
-  });
-  dnsWin.setAlwaysOnTop(true, 'screen-saver');
-  dnsWin.loadURL('ava://app/renderer/dns-quick.html');
-  dnsWin.once('ready-to-show', () => { if (dnsWin && !dnsWin.isDestroyed()) dnsWin.show(); });
-  dnsWin.on('closed', () => { dnsWin = null; });
-  return { ok: true, existed: false };
-}
-
 ipcMain.handle('dns:quick-open', () => {
-  try { return openDnsQuickWindow(); } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
-});
-
-ipcMain.handle('dns:quick-close', () => {
-  if (dnsWin && !dnsWin.isDestroyed()) dnsWin.close();
-  return { ok: true };
-});
-
-ipcMain.handle('dns:quick-save', (_e, p) => {
-  const name = String((p && p.name) || '').trim().slice(0, 40);
-  const p1 = String((p && p.primary) || '').trim();
-  const p2 = String((p && p.secondary) || '').trim();
-  if (!name) return { ok: false, error: 'اسم DNS را بنویس' };
-  if (!DNS_IP_OK(p1)) return { ok: false, error: 'آی‌پی اول معتبر نیست (مثال: 78.157.42.100)' };
-  if (p2 && !DNS_IP_OK(p2)) return { ok: false, error: 'آی‌پی دوم معتبر نیست' };
   try {
-    const f = settingsFile();
-    let data = {};
-    try { data = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { /* noop */ }
-    const list = Array.isArray(data.dnsProfiles) ? data.dnsProfiles : [];
-    const rec = { id: Date.now(), name, ips: p2 ? [p1, p2] : [p1] };
-    list.push(rec);
-    data.dnsProfiles = list;
-    fs.mkdirSync(path.dirname(f), { recursive: true });
-    fs.writeFileSync(f, JSON.stringify(data, null, 2));
-    if (win && !win.isDestroyed()) win.webContents.send('dns:profiles-updated', list);
-    return { ok: true, profile: rec };
+    if (win && !win.isDestroyed()) {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.webContents.send('dns:quick-request');
+      return { ok: true };
+    }
+    return { ok: false, error: 'پنجره اصلی در دسترس نیست' };
   } catch (e) {
     return { ok: false, error: String((e && e.message) || e) };
   }
@@ -641,6 +616,14 @@ const WMO_FA = {
   71: 'برف سبک', 73: 'برف', 75: 'برف سنگین', 77: 'دانه‌های برف',
   80: 'رگبار سبک', 81: 'رگبار', 82: 'رگبار شدید', 85: 'رگبار برف', 86: 'رگبار برف سنگین',
   95: 'رعد و برق', 96: 'رعد و برق با تندباز', 99: 'رعد و برق شدید',
+};
+const WMO_EN = {
+  0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Foggy', 48: 'Freezing fog',
+  51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle', 56: 'Freezing drizzle', 57: 'Heavy freezing drizzle',
+  61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Freezing rain', 67: 'Heavy freezing rain',
+  71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains',
+  80: 'Light showers', 81: 'Showers', 82: 'Violent showers', 85: 'Snow showers', 86: 'Heavy snow showers',
+  95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Severe thunderstorm',
 };
 ipcMain.handle('sys:weather', async (_e, city) => {
   const c = String(city || 'تهران').trim().slice(0, 60) || 'تهران';
@@ -668,6 +651,7 @@ ipcMain.handle('sys:weather', async (_e, city) => {
       hum: Math.round(cur.relative_humidity_2m),
       wind: Math.round(cur.wind_speed_10m),
       desc: WMO_FA[cur.weather_code] || 'نامشخص',
+      descEn: WMO_EN[cur.weather_code] || 'Unknown',
     };
   } catch (e) {
     return { ok: false, error: netErr(e) };
@@ -720,8 +704,8 @@ ipcMain.handle('ai:chat', async (_e, p) => {
 /* ---------- موتور رایگان گوگل برای تشخیص گفتار (بدون هیچ کلیدی) ----------
    رندرر PCM ۱۶کیلوهرتز تک‌کاناله می‌فرستد؛ این‌جا مستقیم به سرور
    تشخیص گفتار گوگل (همان موتور داخلی کروم) POST می‌شود. کلید پیش‌فرض،
-   کلید عمومی خود کرومیوم است — کاربر هیچ توکنی لازم ندارد. */
-const GOOGLE_KEY_DEFAULT = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw';
+   کلید عمومی خود کرومیوم است — کاربر هیچ توکنی لازم ندارد.
+   (تعریف کلید در بالای فایل، قبل از ready انجام شده تا موتور وب هم فعال شود) */
 
 /* ---------- چت با GLM بدون کلید API — با نشست حساب z.ai کاربر ----------
    مسیر اصلی (v0.9): یک پنجره مخفی با همان نشست دائمی «persist:ai»

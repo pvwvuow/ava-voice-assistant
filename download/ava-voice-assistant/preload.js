@@ -40,16 +40,16 @@ contextBridge.exposeInMainWorld('ava', {
     typeText: (text) => ipcRenderer.invoke('sys:type-text', text),
   },
 
-  /* مدیریت DNS ویندوز (اعمال با تأیید مدیر/UAC) + پنجره کوچک «DNS جدید» */
+  /* مدیریت DNS ویندوز (اعمال با تأیید مدیر/UAC)
+     فرم «DNS جدید» حالا داخل خود صفحه اصلی است — رویداد dns:quick-request
+     از پروسه اصلی به رندرر می‌آید */
   dns: {
     interfaces: () => ipcRenderer.invoke('dns:interfaces'),
     current: () => ipcRenderer.invoke('dns:current'),
     apply: (p) => ipcRenderer.invoke('dns:apply', p),
     reset: () => ipcRenderer.invoke('dns:reset'),
     quickOpen: () => ipcRenderer.invoke('dns:quick-open'),
-    quickSave: (p) => ipcRenderer.invoke('dns:quick-save', p),
-    quickClose: () => ipcRenderer.invoke('dns:quick-close'),
-    onProfilesUpdated: (cb) => ipcRenderer.on('dns:profiles-updated', (_e, list) => cb(list)),
+    onQuickRequest: (cb) => ipcRenderer.on('dns:quick-request', () => cb()),
   },
 
   /* تنظیمات سیستمی برنامه + ماندگاری تنظیمات در فایل */
