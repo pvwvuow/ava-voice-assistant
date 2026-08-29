@@ -1,0 +1,597 @@
+     1→/* ============================================================
+     2→   آوا — دستیار صوتی ویندوز | استایل اصلی (Liquid Glass / Fluent)
+     3→   نسخه ۰.۱ — تیره، زمردی، راست‌به‌چپ
+     4→   ============================================================ */
+     5→
+     6→/* ---------- فونت وزیرمتن (لوکال، آفلاین) ---------- */
+     7→@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+     8→@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+     9→@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+    10→@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+    11→@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-ExtraBold.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+    12→
+    13→/* ---------- متغیرها ---------- */
+    14→:root {
+    15→  --bg: #0a0e10;
+    16→  --panel: rgba(255, 255, 255, 0.045);
+    17→  --panel-strong: rgba(255, 255, 255, 0.07);
+    18→  --stroke: rgba(255, 255, 255, 0.09);
+    19→  --text: #e7f0ea;
+    20→  --text2: #9fb0a7;
+    21→  --text3: #5f6f67;
+    22→  --acc: #10b981;
+    23→  --acc2: #34d399;
+    24→  --acc-deep: #059669;
+    25→  --acc-ink: #062b1d;
+    26→  --acc-glow: rgba(16, 185, 129, 0.35);
+    27→  --warn: #f59e0b;
+    28→  --err: #ef4444;
+    29→  --danger: #e81123;
+    30→  --tb-h: 44px;
+    31→  --sb-h: 30px;
+    32→  --rail-w: 64px;
+    33→}
+    34→
+    35→/* ---------- ریست ---------- */
+    36→*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    37→html, body { height: 100%; overflow: hidden; }
+    38→body {
+    39→  font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    40→  background: var(--bg);
+    41→  color: var(--text);
+    42→  font-size: 14px;
+    43→  line-height: 1.7;
+    44→  user-select: none;
+    45→  cursor: default;
+    46→}
+    47→button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+    48→input { font-family: inherit; }
+    49→::selection { background: rgba(16, 185, 129, 0.35); }
+    50→:focus-visible { outline: 2px solid rgba(52, 211, 153, 0.65); outline-offset: 2px; border-radius: 6px; }
+    51→
+    52→/* آیکون‌ها */
+    53→.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    54→
+    55→/* کیبورد */
+    56→kbd {
+    57→  display: inline-block; min-width: 20px; padding: 0 6px;
+    58→  background: rgba(255, 255, 255, 0.07);
+    59→  border: 1px solid rgba(255, 255, 255, 0.13);
+    60→  border-bottom-width: 2px; border-radius: 6px;
+    61→  font-family: inherit; font-size: 10.5px; line-height: 18px; text-align: center;
+    62→  color: var(--text2);
+    63→}
+    64→
+    65→/* ---------- شیشه مایع (Liquid Glass) ---------- */
+    66→.glass {
+    67→  background: linear-gradient(150deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.028) 55%, rgba(255, 255, 255, 0.05));
+    68→  -webkit-backdrop-filter: blur(22px) saturate(170%);
+    69→  backdrop-filter: blur(22px) saturate(170%);
+    70→  border: 1px solid var(--stroke);
+    71→  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.38),
+    72→              inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    73→              inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+    74→}
+    75→
+    76→/* ---------- پس‌زمینه متحرک ---------- */
+    77→.bg-fx { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    78→.bg-blob { position: absolute; border-radius: 50%; filter: blur(90px); will-change: transform; }
+    79→.bg-blob.b1 { width: 640px; height: 640px; top: -18%; right: -8%; background: rgba(16, 185, 129, 0.10); animation: drift1 26s ease-in-out infinite alternate; }
+    80→.bg-blob.b2 { width: 540px; height: 540px; bottom: -22%; left: -10%; background: rgba(13, 148, 136, 0.09); animation: drift2 32s ease-in-out infinite alternate; }
+    81→.bg-blob.b3 { width: 420px; height: 420px; top: 38%; left: 32%; background: rgba(52, 211, 153, 0.05); animation: drift3 38s ease-in-out infinite alternate; }
+    82→@keyframes drift1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-60px, 50px) scale(1.12); } }
+    83→@keyframes drift2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(70px, -50px) scale(1.08); } }
+    84→@keyframes drift3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-40px, -60px) scale(1.15); } }
+    85→.bg-vignette { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 0%, transparent 55%, rgba(0, 0, 0, 0.45) 100%); }
+    86→.bg-noise {
+    87→  position: absolute; inset: 0; opacity: 0.028; background-size: 180px 180px;
+    88→  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    89→}
+    90→
+    91→/* ---------- چیدمان کلی ---------- */
+    92→#app { position: fixed; inset: 0; z-index: 1; display: flex; flex-direction: column; }
+    93→
+    94→/* ============================================================
+    95→   نوار عنوان سفارشی
+    96→   ============================================================ */
+    97→#titlebar {
+    98→  height: var(--tb-h); flex-shrink: 0;
+    99→  display: flex; align-items: center;
+   100→  padding-inline-start: 14px;
+   101→  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+   102→  -webkit-backdrop-filter: blur(24px) saturate(160%);
+   103→  backdrop-filter: blur(24px) saturate(160%);
+   104→  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+   105→  -webkit-app-region: drag;
+   106→  user-select: none;
+   107→}
+   108→.tb-brand { display: flex; align-items: center; gap: 10px; }
+   109→.tb-logo {
+   110→  width: 30px; height: 30px; border-radius: 9px;
+   111→  display: grid; place-items: center;
+   112→  background: linear-gradient(145deg, rgba(52, 211, 153, 0.28), rgba(16, 185, 129, 0.12));
+   113→  border: 1px solid rgba(52, 211, 153, 0.35);
+   114→  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 14px rgba(16, 185, 129, 0.2);
+   115→  color: #7ef0c2;
+   116→}
+   117→.tb-logo .ic { width: 15px; height: 15px; }
+   118→.tb-name { font-size: 14.5px; font-weight: 800; letter-spacing: 0.2px; }
+   119→.tb-badge {
+   120→  font-size: 10px; padding: 1px 9px; border-radius: 999px;
+   121→  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--stroke); color: var(--text3);
+   122→}
+   123→.tb-title { flex: 1; text-align: center; font-size: 11.5px; color: var(--text3); }
+   124→.tb-controls { display: flex; height: 100%; -webkit-app-region: no-drag; }
+   125→.tb-btn {
+   126→  width: 46px; height: 100%;
+   127→  display: grid; place-items: center;
+   128→  color: var(--text2);
+   129→  transition: background 0.15s ease, color 0.15s ease;
+   130→}
+   131→.tb-btn .ic { width: 15px; height: 15px; stroke-width: 2; }
+   132→.tb-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+   133→.tb-btn:active { background: rgba(255, 255, 255, 0.12); }
+   134→.tb-close:hover { background: var(--danger); color: #fff; }
+   135→.tb-close:active { background: #c50f1f; }
+   136→
+   137→/* ============================================================
+   138→   پوسته: سایدبار + محتوا
+   139→   ============================================================ */
+   140→#shell { flex: 1; display: flex; min-height: 0; }
+   141→
+   142→/* ---------- سایدبار آیکونی ---------- */
+   143→#rail {
+   144→  width: var(--rail-w); flex-shrink: 0;
+   145→  display: flex; flex-direction: column; align-items: center;
+   146→  padding: 12px 0;
+   147→  gap: 8px;
+   148→  background: rgba(255, 255, 255, 0.028);
+   149→  -webkit-backdrop-filter: blur(20px);
+   150→  backdrop-filter: blur(20px);
+   151→  border-inline-end: 1px solid rgba(255, 255, 255, 0.06);
+   152→}
+   153→.rail-logo {
+   154→  position: relative; width: 40px; height: 40px; border-radius: 13px;
+   155→  display: grid; place-items: center;
+   156→  background: linear-gradient(145deg, rgba(52, 211, 153, 0.3), rgba(16, 185, 129, 0.14));
+   157→  border: 1px solid rgba(52, 211, 153, 0.4);
+   158→  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 18px rgba(16, 185, 129, 0.25);
+   159→  color: #8df2c8;
+   160→  margin-bottom: 8px;
+   161→}
+   162→.rail-logo .ic { width: 19px; height: 19px; }
+   163→.rail-dot {
+   164→  position: absolute; bottom: -2px; left: -2px;
+   165→  width: 10px; height: 10px; border-radius: 50%;
+   166→  background: var(--acc2); border: 2px solid #0b0f0e;
+   167→  box-shadow: 0 0 8px rgba(52, 211, 153, 0.8);
+   168→}
+   169→.rail-nav, .rail-bottom { display: flex; flex-direction: column; gap: 6px; }
+   170→.rail-bottom { margin-top: auto; }
+   171→.rail-item {
+   172→  position: relative; width: 44px; height: 44px; border-radius: 13px;
+   173→  display: grid; place-items: center;
+   174→  color: var(--text3);
+   175→  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+   176→}
+   177→.rail-item .ic { width: 20px; height: 20px; }
+   178→.rail-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+   179→.rail-item:active { transform: scale(0.94); }
+   180→.rail-item.active {
+   181→  color: var(--acc-ink);
+   182→  background: linear-gradient(135deg, rgba(52, 211, 153, 0.95), rgba(16, 185, 129, 0.9));
+   183→  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+   184→}
+   185→.rail-ind {
+   186→  position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+   187→  width: 3px; height: 20px; border-radius: 2px;
+   188→  background: var(--acc2); box-shadow: 0 0 10px rgba(52, 211, 153, 0.9);
+   189→}
+   190→.rail-item.locked { opacity: 0.42; cursor: not-allowed; }
+   191→.rail-item.locked:hover { background: rgba(255, 255, 255, 0.04); color: var(--text3); }
+   192→.rail-item.locked::before {
+   193→  content: ''; position: absolute; top: 9px; left: 9px;
+   194→  width: 6px; height: 6px; border-radius: 50%; background: var(--warn); opacity: 0.85;
+   195→}
+   196→
+   197→/* تولتیپ سایدبار */
+   198→.rail-item::after {
+   199→  content: attr(data-tip);
+   200→  position: absolute; right: calc(100% + 14px); top: 50%;
+   201→  transform: translateY(-50%) translateX(6px);
+   202→  white-space: nowrap;
+   203→  background: rgba(13, 19, 17, 0.96);
+   204→  border: 1px solid var(--stroke);
+   205→  padding: 5px 11px; border-radius: 8px;
+   206→  font-size: 11.5px; color: var(--text);
+   207→  opacity: 0; pointer-events: none;
+   208→  transition: opacity 0.15s ease, transform 0.15s ease;
+   209→  z-index: 80;
+   210→  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+   211→}
+   212→.rail-item:hover::after { opacity: 1; transform: translateY(-50%) translateX(0); }
+   213→
+   214→/* ---------- ناحیه اصلی ---------- */
+   215→#main { flex: 1; min-width: 0; overflow: hidden auto; scrollbar-width: thin; }
+   216→#main::-webkit-scrollbar { width: 9px; }
+   217→#main::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
+   218→#main::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); }
+   219→
+   220→.hero {
+   221→  min-height: 100%;
+   222→  display: flex; flex-direction: column;
+   223→  align-items: center; justify-content: center;
+   224→  gap: 13px;
+   225→  padding: 20px 36px 24px;
+   226→}
+   227→
+   228→/* خوش‌آمد */
+   229→.greet { text-align: center; }
+   230→.greet h1 {
+   231→  font-size: 27px; font-weight: 800; line-height: 1.5;
+   232→  background: linear-gradient(180deg, #ffffff, #a9cdbb);
+   233→  -webkit-background-clip: text; background-clip: text;
+   234→  -webkit-text-fill-color: transparent; color: transparent;
+   235→}
+   236→.greet-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+   237→
+   238→/* ============================================================
+   239→   اورب صوتی
+   240→   ============================================================ */
+   241→.orb-stage { position: relative; width: 292px; height: 292px; display: grid; place-items: center; }
+   242→
+   243→.orb-halo {
+   244→  position: absolute; width: 350px; height: 350px; border-radius: 50%;
+   245→  background: radial-gradient(circle, rgba(16, 185, 129, 0.26), transparent 65%);
+   246→  filter: blur(46px);
+   247→  opacity: 0.4;
+   248→  animation: haloBreathe 6s ease-in-out infinite;
+   249→  transition: opacity 0.5s ease;
+   250→}
+   251→@keyframes haloBreathe { 0%, 100% { transform: scale(0.94); opacity: 0.35; } 50% { transform: scale(1.06); opacity: 0.5; } }
+   252→
+   253→.orb-ring {
+   254→  position: absolute; width: 272px; height: 272px; border-radius: 50%;
+   255→  border: 1px solid rgba(52, 211, 153, 0.4);
+   256→  opacity: 0; top: 50%; left: 50%;
+   257→}
+   258→.state-listening .orb-ring { animation: ringPulse 2.1s ease-out infinite; }
+   259→.state-listening .orb-ring.rg2 { animation-delay: 0.55s; }
+   260→.state-listening .orb-ring.rg3 { animation-delay: 1.1s; }
+   261→@keyframes ringPulse {
+   262→  0% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.82); }
+   263→  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.42); }
+   264→}
+   265→
+   266→.orb {
+   267→  position: relative; width: 172px; height: 172px; border-radius: 50%;
+   268→  border: 1px solid rgba(255, 255, 255, 0.16);
+   269→  background: radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 42%, rgba(16, 185, 129, 0.1) 100%);
+   270→  -webkit-backdrop-filter: blur(18px) saturate(170%);
+   271→  backdrop-filter: blur(18px) saturate(170%);
+   272→  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5),
+   273→              inset 0 2px 0 rgba(255, 255, 255, 0.22),
+   274→              inset 0 -18px 40px rgba(16, 185, 129, 0.14);
+   275→  transition: transform 0.2s ease, box-shadow 0.45s ease;
+   276→}
+   277→.orb:hover { transform: scale(1.025); }
+   278→.orb:active { transform: scale(0.97); }
+   279→
+   280→/* لایه شیشه‌ای */
+   281→.orb-glass {
+   282→  position: absolute; inset: 0; border-radius: 50%;
+   283→  background: linear-gradient(160deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0) 40%);
+   284→  pointer-events: none;
+   285→}
+   286→/* هسته مایع */
+   287→.orb-liquid {
+   288→  position: absolute; inset: 10px; border-radius: 50%; overflow: hidden;
+   289→  pointer-events: none;
+   290→}
+   291→.orb-liquid .bl { position: absolute; display: block; filter: blur(20px); opacity: 0.75; }
+   292→.orb-liquid .bl1 {
+   293→  width: 72%; height: 72%; top: 6%; left: 8%;
+   294→  background: radial-gradient(circle at 40% 40%, rgba(52, 211, 153, 0.95), rgba(16, 185, 129, 0.35));
+   295→  animation: morphA 9s ease-in-out infinite alternate;
+   296→}
+   297→.orb-liquid .bl2 {
+   298→  width: 58%; height: 58%; bottom: 2%; right: 6%;
+   299→  background: radial-gradient(circle at 60% 50%, rgba(13, 148, 136, 0.9), rgba(13, 148, 136, 0.25));
+   300→  animation: morphB 12s ease-in-out infinite alternate;
+   301→}
+   302→.orb-liquid .bl3 {
+   303→  width: 44%; height: 44%; top: 30%; right: 22%;
+   304→  background: radial-gradient(circle at 50% 50%, rgba(167, 243, 208, 0.55), rgba(52, 211, 153, 0.12));
+   305→  animation: morphC 15s ease-in-out infinite alternate;
+   306→}
+   307→@keyframes morphA {
+   308→  0% { border-radius: 42% 58% 60% 40% / 45% 45% 55% 55%; transform: translate(0, 0) rotate(0deg); }
+   309→  50% { border-radius: 58% 42% 40% 60% / 55% 60% 40% 45%; transform: translate(8%, 6%) rotate(40deg); }
+   310→  100% { border-radius: 50% 50% 55% 45% / 60% 42% 58% 40%; transform: translate(-6%, 4%) rotate(-25deg); }
+   311→}
+   312→@keyframes morphB {
+   313→  0% { border-radius: 60% 40% 45% 55% / 50% 60% 40% 50%; transform: translate(0, 0) rotate(0deg) scale(1); }
+   314→  50% { border-radius: 40% 60% 55% 45% / 60% 45% 55% 40%; transform: translate(-10%, -8%) rotate(-35deg) scale(1.12); }
+   315→  100% { border-radius: 55% 45% 40% 60% / 45% 55% 60% 40%; transform: translate(6%, -4%) rotate(20deg) scale(0.95); }
+   316→}
+   317→@keyframes morphC {
+   318→  0% { border-radius: 45% 55% 60% 40% / 55% 40% 60% 45%; transform: translate(0, 0) scale(1); }
+   319→  100% { border-radius: 60% 40% 42% 58% / 40% 58% 42% 60%; transform: translate(-12%, 10%) scale(1.18); }
+   320→}
+   321→
+   322→/* آیکون مرکزی */
+   323→.orb-core { position: relative; z-index: 2; display: grid; place-items: center; width: 100%; height: 100%; }
+   324→.orb-core .ic {
+   325→  width: 42px; height: 42px; stroke-width: 1.6; color: #f4fdf9;
+   326→  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.4));
+   327→  transition: transform 0.25s ease;
+   328→}
+   329→/* برق شیشه */
+   330→.orb-shine {
+   331→  position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+   332→  background: radial-gradient(60% 40% at 50% 0%, rgba(255, 255, 255, 0.22), transparent 60%);
+   333→}
+   334→
+   335→/* حلقه پردازش */
+   336→.orb::after {
+   337→  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+   338→  border: 2px solid transparent; border-top-color: rgba(52, 211, 153, 0.9);
+   339→  opacity: 0; pointer-events: none;
+   340→}
+   341→.state-processing .orb::after { opacity: 1; animation: spin 0.9s linear infinite; }
+   342→@keyframes spin { to { transform: rotate(360deg); } }
+   343→
+   344→/* حالت‌های اورب */
+   345→.state-listening .orb {
+   346→  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5),
+   347→              0 0 90px rgba(16, 185, 129, 0.32),
+   348→              inset 0 2px 0 rgba(255, 255, 255, 0.3),
+   349→              inset 0 -18px 40px rgba(16, 185, 129, 0.25);
+   350→}
+   351→.state-listening .orb-halo { opacity: 0.85; animation-duration: 2.6s; }
+   352→.state-listening .orb-liquid .bl1 { animation-duration: 4.5s; }
+   353→.state-listening .orb-liquid .bl2 { animation-duration: 6s; }
+   354→.state-listening .orb-liquid .bl3 { animation-duration: 7s; }
+   355→.state-success .orb { box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(52, 211, 153, 0.28), 0 0 70px rgba(16, 185, 129, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.3); }
+   356→
+   357→/* ============================================================
+   358→   خط وضعیت + موج صدا
+   359→   ============================================================ */
+   360→.status-line { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text2); min-height: 24px; }
+   361→.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; transition: background 0.3s ease; flex-shrink: 0; }
+   362→.state-listening .status-dot { background: var(--acc2); animation: dotPing 1.5s ease-out infinite; }
+   363→.state-processing .status-dot { background: var(--warn); }
+   364→.state-success .status-dot { background: var(--acc2); }
+   365→@keyframes dotPing { 0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); } 100% { box-shadow: 0 0 0 9px rgba(52, 211, 153, 0); } }
+   366→
+   367→#wave {
+   368→  width: min(620px, 100%); height: 74px;
+   369→  transition: height 0.35s ease, opacity 0.3s ease;
+   370→}
+   371→/* وقتی کارت پاسخ باز می‌شود، موج جای خودش را به آن می‌دهد */
+   372→body.has-card #wave { height: 0; opacity: 0; }
+   373→
+   374→/* ============================================================
+   375→   فرمان‌های سریع
+   376→   ============================================================ */
+   377→.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
+   378→.chip {
+   379→  display: inline-flex; align-items: center; gap: 8px;
+   380→  padding: 9px 15px; border-radius: 999px;
+   381→  background: rgba(255, 255, 255, 0.045);
+   382→  border: 1px solid var(--stroke);
+   383→  color: var(--text2); font-size: 12.5px;
+   384→  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+   385→  transition: all 0.18s ease;
+   386→}
+   387→.chip .ic { width: 15px; height: 15px; color: var(--acc2); }
+   388→.chip:hover {
+   389→  color: var(--text); transform: translateY(-2px);
+   390→  border-color: rgba(52, 211, 153, 0.45);
+   391→  background: rgba(16, 185, 129, 0.1);
+   392→  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.16);
+   393→}
+   394→.chip:active { transform: translateY(0) scale(0.96); }
+   395→
+   396→/* ============================================================
+   397→   کارت پاسخ
+   398→   ============================================================ */
+   399→.response-card {
+   400→  position: relative;
+   401→  width: min(600px, 100%);
+   402→  display: none; flex-direction: column; gap: 10px;
+   403→  padding: 13px 16px 11px;
+   404→  border-radius: 16px;
+   405→}
+   406→.response-card.show { display: flex; animation: cardIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15); }
+   407→@keyframes cardIn { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+   408→.rc-tag {
+   409→  position: absolute; top: -9px; inset-inline-start: 16px;
+   410→  font-size: 10px; padding: 1px 9px; border-radius: 999px;
+   411→  background: rgba(16, 185, 129, 0.16); color: var(--acc2);
+   412→  border: 1px solid rgba(52, 211, 153, 0.35);
+   413→}
+   414→.rc-row { display: flex; align-items: flex-start; gap: 11px; }
+   415→.rc-avatar {
+   416→  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+   417→  display: grid; place-items: center;
+   418→  background: rgba(255, 255, 255, 0.08); border: 1px solid var(--stroke);
+   419→  color: var(--text2);
+   420→}
+   421→.rc-avatar .ic { width: 14px; height: 14px; }
+   422→.rc-avatar.bot {
+   423→  background: linear-gradient(135deg, rgba(52, 211, 153, 0.9), rgba(16, 185, 129, 0.8));
+   424→  color: var(--acc-ink); border-color: rgba(52, 211, 153, 0.5);
+   425→}
+   426→.rc-row p { font-size: 13.5px; line-height: 1.9; padding-top: 3px; min-height: 26px; user-select: text; cursor: text; }
+   427→
+   428→/* ============================================================
+   429→   کادر فرمان
+   430→   ============================================================ */
+   431→.cmd-bar {
+   432→  width: min(600px, 100%); height: 52px;
+   433→  display: flex; align-items: center; gap: 7px;
+   434→  padding: 7px 8px; border-radius: 999px;
+   435→  background: rgba(11, 15, 13, 0.55);
+   436→  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+   437→}
+   438→.cmd-bar:focus-within {
+   439→  border-color: rgba(52, 211, 153, 0.5);
+   440→  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1), 0 14px 40px rgba(0, 0, 0, 0.35);
+   441→}
+   442→.cmd-mic, .cmd-send {
+   443→  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+   444→  display: grid; place-items: center;
+   445→  transition: all 0.18s ease;
+   446→}
+   447→.cmd-mic { background: rgba(255, 255, 255, 0.07); border: 1px solid var(--stroke); color: var(--text2); }
+   448→.cmd-mic .ic { width: 17px; height: 17px; }
+   449→.cmd-mic:hover { background: rgba(16, 185, 129, 0.16); color: var(--acc2); border-color: rgba(52, 211, 153, 0.4); }
+   450→.cmd-send {
+   451→  background: linear-gradient(135deg, var(--acc2), var(--acc-deep));
+   452→  color: var(--acc-ink);
+   453→  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+   454→}
+   455→.cmd-send .ic { width: 17px; height: 17px; stroke-width: 2.2; }
+   456→.cmd-send:hover { filter: brightness(1.12); }
+   457→.cmd-send:active { transform: scale(0.92); }
+   458→.cmd-mic.listening {
+   459→  background: var(--acc); color: var(--acc-ink);
+   460→  animation: dotPing 1.5s ease-out infinite;
+   461→}
+   462→#cmdInput {
+   463→  flex: 1; min-width: 0; height: 100%;
+   464→  background: none; border: none; outline: none;
+   465→  color: var(--text); font-size: 13.5px;
+   466→}
+   467→#cmdInput::placeholder { color: var(--text3); }
+   468→
+   469→/* حالت گوش دادن روی دکمه میکروفون کادر */
+   470→.state-listening .cmd-mic { background: var(--acc); color: var(--acc-ink); animation: dotPing 1.5s ease-out infinite; }
+   471→
+   472→/* ============================================================
+   473→   نوار وضعیت
+   474→   ============================================================ */
+   475→#statusbar {
+   476→  height: var(--sb-h); flex-shrink: 0;
+   477→  display: flex; align-items: center; justify-content: space-between;
+   478→  padding: 0 12px;
+   479→  font-size: 11.5px; color: var(--text2);
+   480→  background: rgba(7, 10, 9, 0.6);
+   481→  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+   482→  border-top: 1px solid rgba(255, 255, 255, 0.06);
+   483→}
+   484→.sb-side { display: flex; align-items: center; gap: 12px; }
+   485→.sb-item { display: inline-flex; align-items: center; gap: 6px; }
+   486→.sb-item.num { font-variant-numeric: tabular-nums; letter-spacing: 0.2px; }
+   487→.sb-sep { width: 1px; height: 12px; background: rgba(255, 255, 255, 0.12); }
+   488→.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+   489→.dot.ok { background: var(--acc); box-shadow: 0 0 6px rgba(16, 185, 129, 0.8); }
+   490→.dot.warn { background: var(--warn); box-shadow: 0 0 6px rgba(245, 158, 11, 0.7); }
+   491→.dot.err { background: var(--err); }
+   492→.dot.rec { background: var(--acc2); animation: dotPing 1.4s ease-out infinite; }
+   493→
+   494→/* ============================================================
+   495→   توست‌ها
+   496→   ============================================================ */
+   497→#toasts { position: fixed; top: 54px; inset-inline-end: 14px; z-index: 90; display: flex; flex-direction: column; gap: 8px; }
+   498→.toast {
+   499→  display: flex; align-items: center; gap: 10px;
+   500→  padding: 10px 14px; border-radius: 12px;
+   501→  font-size: 12.5px; color: var(--text);
+   502→  border-inline-start: 3px solid var(--acc);
+   503→  animation: toastIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+   504→  max-width: 320px;
+   505→}
+   506→.toast .ic { width: 16px; height: 16px; color: var(--acc2); }
+   507→.toast.out { animation: toastOut 0.35s ease forwards; }
+   508→@keyframes toastIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+   509→@keyframes toastOut { to { opacity: 0; transform: translateY(-8px); } }
+   510→
+   511→/* ============================================================
+   512→   پاپ‌آپ درباره
+   513→   ============================================================ */
+   514→.about {
+   515→  position: fixed; bottom: 44px; right: 76px; z-index: 95;
+   516→  width: 288px; padding: 16px; border-radius: 16px;
+   517→  animation: cardIn 0.2s ease;
+   518→}
+   519→.about[hidden] { display: none; }
+   520→.about-head { display: flex; align-items: center; gap: 11px; }
+   521→.about-logo {
+   522→  width: 40px; height: 40px; border-radius: 12px;
+   523→  display: grid; place-items: center;
+   524→  background: linear-gradient(145deg, rgba(52, 211, 153, 0.3), rgba(16, 185, 129, 0.14));
+   525→  border: 1px solid rgba(52, 211, 153, 0.4);
+   526→  color: #8df2c8;
+   527→}
+   528→.about-title { display: flex; flex-direction: column; line-height: 1.5; }
+   529→.about-title b { font-size: 14px; font-weight: 800; }
+   530→.about-title span { font-size: 11px; color: var(--text2); }
+   531→.about-desc { font-size: 11.5px; color: var(--text2); line-height: 1.9; margin: 10px 0 12px; }
+   532→.about-keys { display: flex; flex-direction: column; gap: 7px; border-top: 1px solid rgba(255, 255, 255, 0.07); padding-top: 11px; }
+   533→.about-keys > div { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--text2); }
+   534→.about-keys .keys { display: inline-flex; gap: 4px; }
+   535→.about-foot {
+   536→  display: flex; justify-content: space-between;
+   537→  margin-top: 12px; padding-top: 10px;
+   538→  border-top: 1px solid rgba(255, 255, 255, 0.07);
+   539→  font-size: 10.5px; color: var(--text3);
+   540→}
+   541→
+   542→/* ============================================================
+   543→   واکنش‌گرایی و حرکت
+   544→   ============================================================ */
+   545→@media (max-width: 900px) {
+   546→  .tb-title { display: none; }
+   547→  .greet h1 { font-size: 23px; }
+   548→  .hero { padding: 14px 20px 18px; gap: 11px; }
+   549→  .orb-stage { width: 250px; height: 250px; }
+   550→  .orb { width: 150px; height: 150px; }
+   551→  .orb-ring { width: 234px; height: 234px; }
+   552→  .orb-halo { width: 300px; height: 300px; }
+   553→  #wave { height: 58px; }
+   554→}
+   555→@media (max-height: 660px) {
+   556→  .greet h1 { font-size: 21px; }
+   557→  .hero { gap: 9px; padding-top: 12px; padding-bottom: 14px; }
+   558→  .orb-stage { width: 218px; height: 218px; }
+   559→  .orb { width: 132px; height: 132px; }
+   560→  .orb-core .ic { width: 34px; height: 34px; }
+   561→  .orb-ring { width: 202px; height: 202px; }
+   562→  .orb-halo { width: 268px; height: 268px; }
+   563→  #wave { height: 48px; }
+   564→}
+   565→/* پنجره دستیار — عرض یک‌سوم صفحه (~۶۴۰px) */
+   566→@media (max-width: 680px) {
+   567→  .hero { padding: 12px 14px 16px; gap: 10px; }
+   568→  .greet h1 { font-size: 19px; }
+   569→  .greet-sub { font-size: 12px; }
+   570→  .orb-stage { width: 190px; height: 190px; }
+   571→  .orb { width: 116px; height: 116px; }
+   572→  .orb-core .ic { width: 30px; height: 30px; }
+   573→  .orb-ring { width: 176px; height: 176px; }
+   574→  .orb-halo { width: 232px; height: 232px; }
+   575→  #wave { height: 42px; }
+   576→  .status-line { font-size: 12px; }
+   577→  .chips { gap: 7px; }
+   578→  .chip { padding: 7px 12px; font-size: 11.5px; gap: 6px; }
+   579→  .chip .ic { width: 13px; height: 13px; }
+   580→  .rc-row p { font-size: 12.5px; }
+   581→  #cmdBar { height: 48px; }
+   582→  .sb-side { gap: 8px; }
+   583→  .about { right: 62px; width: 256px; bottom: 42px; }
+   584→  #toasts { top: 50px; inset-inline-end: 10px; }
+   585→  .toast { max-width: 260px; font-size: 12px; }
+   586→}
+   587→/* عرض خیلی کم */
+   588→@media (max-width: 460px) {
+   589→  .tb-badge { display: none; }
+   590→  .sb-item.num { display: none; }
+   591→  .greet h1 { font-size: 17px; }
+   592→}
+   593→@media (prefers-reduced-motion: reduce) {
+   594→  .bg-blob, .orb-liquid .bl, .orb-halo, .orb-ring, .orb::after { animation: none !important; }
+   595→}
+   596→
+   597→

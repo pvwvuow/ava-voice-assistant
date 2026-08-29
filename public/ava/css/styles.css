@@ -543,7 +543,8 @@ body.has-card #wave { height: 0; opacity: 0; }
    واکنش‌گرایی و حرکت
    ============================================================ */
 @media (max-width: 900px) {
-  .tb-title { display: none; }
+  /* عنوان مخفی می‌شود ولی به‌عنوان فاصله‌گذار flex باقی می‌ماند تا دکمه‌های پنجره به لبه بچسبند */
+  .tb-title { visibility: hidden; }
   .greet h1 { font-size: 23px; }
   .hero { padding: 14px 20px 18px; gap: 11px; }
   .orb-stage { width: 250px; height: 250px; }
