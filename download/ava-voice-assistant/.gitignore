@@ -1,4 +1,9 @@
+# AVA Voice Assistant - git ignore
 node_modules/
 dist/
+out/
+release/
 *.log
+npm-debug.log*
 .DS_Store
+Thumbs.db

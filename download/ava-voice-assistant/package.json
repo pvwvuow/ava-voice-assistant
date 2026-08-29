@@ -1,16 +1,19 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.3.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/pvwvuow/ava-voice-assistant.git"
-  },
-  "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۲ با اجرای واقعی فرمان‌ها",
+  "version": "0.4.0",
+  "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۴ با آپدیت خودکار، پاسخ گفتاری TTS، ضبط واقعی صدا و تنظیمات سیستمی",
   "main": "main.js",
   "license": "MIT",
   "author": {
     "name": "AVA"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pvwvuow/ava-voice-assistant.git"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   },
   "scripts": {
     "start": "electron .",
@@ -26,6 +29,10 @@
     "directories": {
       "output": "dist"
     },
+    "publish": {
+      "provider": "github"
+    },
+    "artifactName": "AVA-Setup-${version}.${ext}",
     "files": [
       "main.js",
       "preload.js",
