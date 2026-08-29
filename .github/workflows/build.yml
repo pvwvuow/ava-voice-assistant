@@ -9,6 +9,13 @@ on:
       - 'v*'
   workflow_dispatch: # اجازه اجرای دستی از تب Actions
 
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: download/ava-voice-assistant
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -33,12 +40,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AVA-Windows-Installer
-          path: dist/*.exe
+          path: download/ava-voice-assistant/dist/*.exe
           if-no-files-found: error
 
       - name: انتشار در Releases (فقط روی تگ)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: download/ava-voice-assistant/dist/*.exe
           generate_release_notes: true
