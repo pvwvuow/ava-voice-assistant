@@ -109,3 +109,27 @@ Stage Summary:
 - جریان انتشار آینده: .\push.cmd "پیام" -Release → بامپ خودکار نسخه + تگ + بیلد CI + انتشار در Releases + آپدیت خودکار برنامه‌های نصب‌شده
 - برنامه از داخل خودش آپدیت می‌شود (تنظیمات → به‌روزرسانی)
 - نسخه 0.4.0 آماده: کاربر باید کل پوشه را روی ویندوز کپی و .\push.cmd "v0.4.0" -Release بزند
+
+---
+Task ID: 6
+Agent: main (Super Z)
+Task: نسخه 0.5.0 — حذف فالبک دموی جعلی و STT واقعی (وب → GLM-ASR)، چت با هوش مصنوعی GLM + ساخت فرمان سفارشی، تنظیمات میکروفون با تست زنده، اکولایزر همیشه‌واقعی، runmetocreateexeforyou.bat + release.ps1
+
+Work Log:
+- تحقیق API: endpoint چت GLM (api.z.ai/api/paas/v4/chat/completions) و ASR فارسی (glm-asr-2512 روی /audio/transcriptions، پاسخ {text}) از docs.z.ai تأیید شد
+- main.js: سه IPC جدید — ai:chat (OpenAI-compatible با پیام‌های آخر)، stt:transcribe (FormData multipart با Blob در پروسه اصلی — دور زدن CORS)، custom:run (اجرای اسکریپت PowerShell تک‌خطی فقط با تأیید قبلی UI، timeout 30s) + دو فرمان whitelist جدید (open_downloads با shell:Downloads، open_documents با shell:Personal، recycle_empty با Clear-RecycleBin)
+- preload.js: ava.ai.chat / ava.stt.transcribe / ava.custom.run
+- app.js بازنویسی STT: resolveEngine (خودکار/وب/GLM) → موتور وب با فالبک خودکار به GLM در خطای network/service-not-allowed → GLM-ASR با MediaRecorder + VAD ساده (آستانه میانگین طیف 16، توقف بعد از 2.3s سکوت، سقف 12s) → تبدیل → runCommand. تابع noEngine پیام صادقانه می‌دهد (هیچ فرمان جعلی اجرا نمی‌شود)؛ حالت دمو فقط با تنظیم صریح demoMode
+- اکولایزر همیشه‌واقعی: attachMic از شروع برنامه (1.2s بعد) با deviceId دلخواه، frame() بدون شرط micLive از micData استفاده می‌کند؛ stopListening/stopAudioRec دیگر میکروفون را نمی‌بندند
+- تنظیمات جدید: گروه میکروفون (enumerateDevices + select ورودی + میتر تست زنده canvas 34 میله‌ای)، گروه تشخیص گفتار (سلکت موتور، کلید GLM password با دکمه نمایش، سوییچ دمو)، گروه AI GLM (سلکت Z.ai/BigModel + مدل glm-4.6/4.5-flash/4.5-air)
+- چت AI: صفحه chatPage با حباب‌های RTL، system prompt فارسیِ JSON-strict، parseAi مقاوم (حذف fence + استخراج {})، کارت فرمان جدید با دکمه «افزودن به فرمان‌ها» → ذخیره localStorage → chip سفارشی زمردی با دکمه حذف → اجرای صوتی/متنی با مودال تأیید برای نوع ps
+- مودال تأیید (confirmBox) با کد LTR و دکمه‌های اجرا/بی‌خیال + Escape
+- فرمان‌های جدید RULES: دانلودها، اسناد، خالی کردن سطل بازیافت؛ DEFAULT_REPLY جدید به صفحه چت ارجاع می‌دهد
+- runmetocreateexeforyou.bat (ASCII): چک git، حذف پروکسی خراب، پیام کامیت اختیاری، فراخوانی release.ps1 + پیام URLهای Actions/Releases
+- release.ps1 (ASCII): unset پروکسی، add/set-url origin خودکار، سینک .gitignore و build.yml به ریشه ریپو + هشدار ورک‌فلوی قدیمی، سوییچ به main، fetch tags، بامپ خودکار patch با node اگر تگ موجود باشد (رفع ریشه‌ای مشکل همگامی version↔tag)، commit/pull --rebase/push main، تگ + پوش تگ
+- نسخه‌ها → 0.5.0 (package.json + statusbar + badge + about)؛ README بازنویسی بخش انتشار (راه ۱ دابل‌کلیک bat / راه ۲ push.ps1) و پل و ساختار
+- تست: node --check هر سه فایل OK، JSON OK، ۶۲ شناسه UI همه در HTML موجود، agent-browser در 640×780 و 380×540 بدون overflow و بدون خطای کنسول؛ چت/تنظیمات/مودال تأیید/chip سفارشی همه رندر و رفتار درست؛ sync کامل به public/ava
+
+Stage Summary:
+- درخواست‌های کاربر انجام شد: (۱) دیگه میره روی دمو؟ نه — زنجیره وب→GLM-ASR با پیام صادقانه، (۲) فایل runmetocreateexeforyou.bat ساخته شد که پوش+تگ+بیلد EXE را خودکار می‌کند و مشکل همگامی نسخه/تگ را ریشه‌ای حل می‌کند، (۳) تنظیمات میکروفون با لیست ورودی‌ها و تست زنده، (۴) اکولایزر واقعاً با صدا بالا/پایین می‌شود (میکروفون همیشه فعال)، (۵) چت AI متصل به اکانت GLM کاربر با ساخت فرمان و افزودن به لیست با تأیید، (۶) فیچرهای جدید: پوشه‌ها، سطل بازیافت، فرمان سفارشی، مدل‌های AI
+- برای فعال‌شدن STT ابری و چت، کاربر باید کلید API از console.z.ai (یا bigmodel) را در تنظیمات وارد کند

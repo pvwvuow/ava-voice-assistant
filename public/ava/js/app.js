@@ -1,11 +1,10 @@
 /* ============================================================
-   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه ۰.۴)
-   - تشخیص گفتار واقعی (Web Speech API) با فالبک به حالت دمو
-   - پاسخ گفتاری واقعی (TTS) + ویژوالایزر با صدای واقعی میکروفون
-   - ضبط واقعی صدا و ذخیره در Music/AVA (از طریق پل امن)
-   - صفحه تنظیمات: همیشه‌روون، اجرای خودکار با ویندوز، آپدیت خودکار
-   - اجرای واقعی فرمان‌های ویندوز از طریق پل امن sys:run
-   - در مرورگر (پیش‌نمایش): شبیه‌سازی کامل
+   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه ۰.۵)
+   - تشخیص گفتار واقعی: موتور وب → فالبک GLM-ASR ابری (بدون دموی جعلی)
+   - اکولایزر همیشه با صدای واقعی میکروفون بالا و پایین می‌شود
+   - چت با هوش مصنوعی GLM + ساخت فرمان جدید با تأیید کاربر
+   - صفحه تنظیمات: میکروفون (ورودی/تست زنده)، موتور گفتار، کلید GLM
+   - ضبط واقعی صدا و ذخیره در Music/AVA + پاسخ گفتاری TTS
    ============================================================ */
 (() => {
   'use strict';
@@ -32,6 +31,33 @@
   const updBar = $('#updBar');
   const btnCheckUpdate = $('#btnCheckUpdate');
   const btnInstallUpdate = $('#btnInstallUpdate');
+
+  /* ---------- عناصر تنظیمات جدید (میکروفون / گفتار / GLM) ---------- */
+  const optMic = $('#optMic');
+  const micStat = $('#micStat');
+  const micMeter = $('#micMeter');
+  const optSttEngine = $('#optSttEngine');
+  const optGlmKey = $('#optGlmKey');
+  const btnKeyShow = $('#btnKeyShow');
+  const optDemo = $('#optDemo');
+  const optAiBase = $('#optAiBase');
+  const optAiModel = $('#optAiModel');
+
+  /* ---------- عناصر چت هوش مصنوعی ---------- */
+  const chatPage = $('#chatPage');
+  const btnChat = $('#btnChat');
+  const btnChatBack = $('#btnChatBack');
+  const chatMsgs = $('#chatMsgs');
+  const chatBar = $('#chatBar');
+  const chatInput = $('#chatInput');
+
+  /* ---------- مودال تأیید ---------- */
+  const confirmBox = $('#confirmBox');
+  const cfTitle = $('#cfTitle');
+  const cfText = $('#cfText');
+  const cfCode = $('#cfCode');
+  const btnConfirmOk = $('#btnConfirmOk');
+  const btnConfirmCancel = $('#btnConfirmCancel');
 
   /* ---------- عناصر ---------- */
   const body = document.body;
@@ -62,7 +88,7 @@
   const abRuntime = $('#abRuntime');
 
   const IDLE_HINT = 'برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
-  const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم؛ ولی مثلاً می‌تونی بگی «کروم را باز کن»، «تایمر ۱۰ دقیقه‌ای بذار»، «جستجوی آب و هوا» یا «یک جوک بگو».';
+  const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم. اگر بخواهی از صفحه «چت با هوش مصنوعی» بپرس تا خودم یاد بگیرم و به فرمان‌هام اضافه کنم!';
 
   /* ---------- تنظیمات (localStorage) ---------- */
   const store = {
@@ -73,7 +99,14 @@
     tts: store.get('tts', true),
     voiceURI: store.get('voiceURI', ''),
     autoUpdate: store.get('autoUpdate', true),
+    demoMode: store.get('demoMode', false),
+    sttEngine: store.get('sttEngine', 'auto'),
+    glmKey: store.get('glmKey', ''),
+    glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
+    glmModel: store.get('glmModel', 'glm-4.6'),
+    micId: store.get('micId', ''),
   };
+  const glmReady = () => !!(settings.glmKey && bridge && bridge.stt);
 
   /* ---------- پاسخ گفتاری واقعی (TTS) ---------- */
   function speak(text) {
@@ -158,14 +191,16 @@
   window.addEventListener('resize', resizeWave);
   resizeWave();
 
-  /* ---------- میکروفون واقعی: تحلیل طیف برای ویژوالایزر + ضبط فایل ---------- */
+  /* ---------- میکروفون واقعی: همیشه روشن — اکولایزر و تست تنظیمات با صدای واقعی ---------- */
   let micStream = null, audioCtx = null, analyser = null, micData = null, micLive = false;
   let mediaRec = null, recChunks = [], isRecording = false;
 
   async function attachMic() {
     if (analyser) return true;
     try {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const cons = { echoCancellation: true, noiseSuppression: true };
+      if (settings.micId) cons.deviceId = { exact: settings.micId };
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: cons });
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return false;
       audioCtx = new AC();
@@ -175,17 +210,79 @@
       analyser.smoothingTimeConstant = 0.78;
       src.connect(analyser);
       micData = new Uint8Array(analyser.frequencyBinCount);
+      micLive = true;
+      sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: فعال';
+      micStat.textContent = 'میکروفون فعال است — با حرف زدن، میله‌ها بالا و پایین می‌شوند';
+      listMicDevices();
       return true;
     } catch (_) {
+      micLive = false;
+      sbMic.innerHTML = '<i class="dot err"></i>میکروفون: بدون دسترسی';
+      micStat.textContent = 'دسترسی به میکروفون ممکن نشد — مجوز ویندوز و آنتی‌ویروس را بررسی کن';
       return false;
     }
   }
+
+  async function listMicDevices() {
+    try {
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const mics = devs.filter((d) => d.kind === 'audioinput');
+      const cur = settings.micId;
+      let html = '<option value="">پیش‌فرض ویندوز</option>';
+      mics.forEach((m, i) => {
+        const label = m.label || `میکروفون ${i + 1}`;
+        const sel = m.deviceId === cur ? ' selected' : '';
+        html += `<option value="${m.deviceId}"${sel}>${label}</option>`;
+      });
+      optMic.innerHTML = html;
+    } catch (_) { /* noop */ }
+  }
+
+  optMic.addEventListener('change', async () => {
+    settings.micId = optMic.value || '';
+    store.set('micId', settings.micId);
+    /* ری‌استارت استریم با ورودی جدید */
+    if (isRecording) await stopAudioRec();
+    detachMic();
+    await attachMic();
+    toast('ورودی میکروفون عوض شد', '#i-mic');
+  });
+
+  /* میتر تست زنده در تنظیمات */
+  const mctx = micMeter ? micMeter.getContext('2d') : null;
+  function drawMeter() {
+    if (!mctx || settingsPage.hidden) { setTimeout(drawMeter, 400); return; }
+    const r = micMeter.getBoundingClientRect();
+    const mw = Math.max(10, r.width), mh = 40;
+    if (micMeter.width !== mw * DPR) { micMeter.width = mw * DPR; micMeter.height = mh * DPR; mctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+    mctx.clearRect(0, 0, mw, mh);
+    if (micData) {
+      const bars = 34, gap = 3;
+      const bw = Math.max(2, (mw - (bars - 1) * gap) / bars);
+      for (let i = 0; i < bars; i++) {
+        const bi = Math.min(micData.length - 1, Math.floor(Math.pow(i / bars, 1.5) * micData.length * 0.72));
+        const raw = micData[bi] / 255;
+        const bh = Math.max(3, raw * (mh - 8));
+        mctx.fillStyle = raw > 0.55 ? 'rgba(52, 211, 153, 0.95)' : 'rgba(16, 185, 129, 0.65)';
+        rr(mctx, (mw - (bars * bw + (bars - 1) * gap)) / 2 + i * (bw + gap), (mh - bh) / 2, bw, bh, bw / 2);
+        mctx.fill();
+      }
+    } else {
+      mctx.fillStyle = 'rgba(255,255,255,0.25)';
+      mctx.font = '11px Vazirmatn, sans-serif';
+      mctx.textAlign = 'center';
+      mctx.fillText('میکروفون متصل نیست', mw / 2, 24);
+    }
+    setTimeout(drawMeter, 60);
+  }
+  drawMeter();
 
   function detachMic() {
     if (isRecording) return; /* حین ضبط، استریم نباید بسته شود */
     if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
     if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
     analyser = null; micData = null; micLive = false;
+    sbMic.innerHTML = '<i class="dot err"></i>میکروفون: خاموش';
   }
 
   async function startAudioRec() {
@@ -217,7 +314,7 @@
     sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
     const blob = new Blob(recChunks, { type: (mediaRec && mediaRec.mimeType) || 'audio/webm' });
     recChunks = [];
-    if (state !== 'listening') { micLive = false; detachMic(); }
+    /* میکروفون برای اکولایزر واقعی روشن می‌ماند */
     if (!blob.size) return 'صدایی ضبط نشده بود!';
     if (canRun && bridge.system.saveAudio) {
       try {
@@ -255,8 +352,8 @@
     for (let i = 0; i < N; i++) {
       const env = Math.sin((Math.PI * i) / (N - 1));
       let lvl;
-      if (micLive && micData) {
-        /* صدای واقعی میکروفون: تبدیل طیف فرکانسی به ۵۲ میله */
+      if (micData) {
+        /* صدای واقعی میکروفون: تبدیل طیف فرکانسی به ۵۲ میله — همیشه واقعی */
         const bins = Math.floor(micData.length * 0.72);
         const bi = Math.min(micData.length - 1, Math.floor(Math.pow(i / N, 1.55) * bins));
         const raw = micData[bi] / 255;
@@ -385,6 +482,11 @@
     /* --- تعامل --- */
     { k: /سلام|درود|خوبی/, t: 'سلام', i: '#i-wave', r: () => 'سلام! من خوبم، ممنون. چه کاری برات انجام بدم؟' },
     { k: /متشکر|مرسی|ممنون/, t: 'خواهش', i: '#i-wave', r: () => 'خواهش می‌کنم! کار دیگری هست؟' },
+
+    /* --- پوشه‌های ویندوز و سطل بازیافت --- */
+    { k: /پوشه.{0,6}دانلود|دانلودها|downloads/i, t: 'باز کردن دانلودها', i: '#i-download', run: 'open_downloads', r: () => 'پوشه دانلودها باز شد.' },
+    { k: /پوشه.{0,6}(اسناد|داکیومنت|مستندات)|documents/i, t: 'باز کردن اسناد', i: '#i-note', run: 'open_documents', r: () => 'پوشه اسناد باز شد.' },
+    { k: /سطل.{0,10}(زباله|بازیافت).{0,12}(خالی|پاک|تمیز|بریز)/, t: 'خالی کردن سطل بازیافت', i: '#i-trash', run: 'recycle_empty', r: () => 'سطل بازیافت خالی شد.' },
   ];
 
   let lastCpu = 12, lastRam = 46;
@@ -445,7 +547,7 @@
   /* ---------- اجرای فرمان ---------- */
   async function resolveReply(rule, cmd) {
     let reply = await rule.r(cmd);
-    if (!rule.run) { rcTag.textContent = 'پاسخ آوا'; return reply; }
+    if (!rule.run) { rcTag.textContent = rule.custom ? 'فرمان سفارشی' : 'پاسخ آوا'; return reply; }
     if (!canRun) { rcTag.textContent = 'شبیه‌سازی دمو'; return reply; }
     const runId = typeof rule.run === 'function' ? rule.run(cmd) : rule.run;
     const arg = rule.arg ? rule.arg(cmd) : undefined;
@@ -480,7 +582,7 @@
     rcReply.textContent = '';
     rcTag.textContent = 'در حال انجام…';
 
-    const rule = RULES.find((r) => r.k.test(cmd));
+    const rule = RULES.find((r) => r.k.test(cmd)) || findCustomRule(cmd);
     const reply = rule ? await resolveReply(rule, cmd) : DEFAULT_REPLY;
     if (!rule) rcTag.textContent = 'پاسخ آوا';
 
@@ -499,14 +601,32 @@
     }, 500 + Math.random() * 300);
   }
 
-  /* ---------- تشخیص گفتار واقعی ---------- */
+  /* ============================================================
+     تشخیص گفتار واقعی — زنجیره: موتور وب → GLM-ASR ابری
+     هیچ‌وقت بی‌اجازه، فرمان جعلی اجرا نمی‌شود؛ دمو فقط با تنظیم صریح.
+     ============================================================ */
   let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
+  let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false;
+  const ASR_MODEL = 'glm-asr-2512';
+  const GLM_MAX_MS = 12000;   // بیشینه ضبط هر فرمان صوتی
+  const GLM_SIL_MS = 2300;    // سکوت لازم برای پایان فرمان
+  const GLM_ON_LVL = 16;      // آستانه تشخیص شروع حرف (میانگین طیف)
 
-  function updateEngine() {
-    if (SRC && !srBroken) sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار فعال';
-    else sbEngine.innerHTML = '<i class="dot warn"></i>موتور: شبیه‌سازی دمو';
+  function refreshEngineUI() {
+    if (SRC && !srBroken && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
+    else if (glmReady() && settings.sttEngine !== 'web') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
+    else if (settings.demoMode) sbEngine.innerHTML = '<i class="dot warn"></i>موتور: حالت دمو';
+    else sbEngine.innerHTML = '<i class="dot err"></i>موتور: تنظیم نشده';
   }
-  updateEngine();
+
+  function resolveEngine() {
+    const webOK = !!(SRC && !srBroken);
+    if (settings.sttEngine === 'web') return webOK ? 'web' : null;
+    if (settings.sttEngine === 'glm') return glmReady() ? 'glm' : null;
+    if (webOK) return 'web';
+    if (glmReady()) return 'glm';
+    return null;
+  }
 
   function makeRec() {
     const r = new SRC();
@@ -529,7 +649,12 @@
     r.onerror = (e) => {
       if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture'].includes(e.error)) {
         srBroken = true;
-        updateEngine();
+        refreshEngineUI();
+        /* فالبک خودکار به GLM-ASR اگر کلید باشد */
+        if (state === 'listening' && settings.sttEngine === 'auto' && glmReady()) {
+          try { recActive = false; } catch (_) { /* noop */ }
+          startGlmListen();
+        }
       }
     };
     r.onend = () => {
@@ -545,6 +670,101 @@
     return r;
   }
 
+  /* --- موتور GLM-ASR: ضبط واقعی + ارسال به سرور + تبدیل به فرمان --- */
+  function startGlmListen() {
+    if (!glmReady()) { noEngine('کلید GLM تنظیم نشده'); return; }
+    attachMic().then((ok) => {
+      if (!ok) { noEngine('میکروفون در دسترس نیست'); return; }
+      try {
+        recChunks = [];
+        glmSpoke = false;
+        glmListening = true;
+        glmRec = new MediaRecorder(micStream);
+        glmRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+        glmRec.onstop = finishGlmTranscribe;
+        glmRec.start();
+        statusText.textContent = 'در حال گوش دادن (GLM-ASR)… فرمانت را بگو';
+        /* تشخیص سکوت برای توقف هوشمند ضبط */
+        glmTimer = setInterval(() => {
+          if (!glmListening || !micData) return;
+          let sum = 0;
+          for (let i = 0; i < micData.length; i++) sum += micData[i];
+          const avg = sum / micData.length;
+          if (avg > GLM_ON_LVL) {
+            glmSpoke = true;
+            statusText.textContent = 'شنیدم… بعد از سکوت، تبدیلش می‌کنم';
+          } else if (glmSpoke) {
+            stopGlmRec();
+          }
+        }, 300);
+        glmMaxTimer = setTimeout(() => stopGlmRec(), GLM_MAX_MS);
+      } catch (_) {
+        noEngine('شروع ضبط ممکن نشد');
+      }
+    });
+  }
+
+  function stopGlmRec() {
+    clearInterval(glmTimer); clearTimeout(glmMaxTimer);
+    glmTimer = null; glmMaxTimer = null;
+    if (glmListening && glmRec && glmRec.state !== 'inactive') {
+      try { glmRec.stop(); } catch (_) { finishGlmTranscribe(); }
+    } else {
+      glmListening = false;
+    }
+  }
+
+  async function finishGlmTranscribe() {
+    glmListening = false;
+    glmRec = null;
+    const blob = new Blob(recChunks, { type: (micRecMime() || 'audio/webm') });
+    recChunks = [];
+    if (!blob.size || blob.size < 900) {
+      statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
+      setTimeout(() => { if (state === 'listening') { setState('idle'); statusText.innerHTML = IDLE_HINT; orbIcon.setAttribute('href', '#i-mic'); } }, 1600);
+      return;
+    }
+    setState('processing');
+    statusText.textContent = 'در حال تبدیل گفتار به متن با GLM-ASR…';
+    try {
+      const buf = new Uint8Array(await blob.arrayBuffer());
+      const r = await bridge.stt.transcribe({ buf, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
+      if (r && r.ok && r.text) {
+        runCommand(r.text.trim());
+      } else {
+        setState('idle');
+        statusText.textContent = 'تبدیل گفتار ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
+        orbIcon.setAttribute('href', '#i-mic');
+        toast('GLM-ASR: ' + ((r && r.error) || 'خطای نامشخص'), '#i-info');
+      }
+    } catch (_) {
+      setState('idle');
+      statusText.textContent = 'اتصال به GLM-ASR برقرار نشد';
+      orbIcon.setAttribute('href', '#i-mic');
+    }
+  }
+
+  function micRecMime() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']) {
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+    }
+    return '';
+  }
+
+  /* --- وقتی هیچ موتوری نیست: پیام صادقانه (+ دمو فقط اگر کاربر روشن کرده) --- */
+  function noEngine(reason) {
+    setState('idle');
+    orbIcon.setAttribute('href', '#i-mic');
+    sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+    if (settings.demoMode) {
+      startDemoListen();
+      return;
+    }
+    statusText.innerHTML = 'تشخیص گفتار در دسترس نیست — ' + reason;
+    toast('کلید GLM را در تنظیمات وارد کن تا تشخیص گفتار فارسی فعال شود', '#i-key');
+  }
+
   /* ---------- گوش دادن ---------- */
   let listenTimer = null;
   function startListening() {
@@ -556,25 +776,30 @@
     orbIcon.setAttribute('href', '#i-stop');
     sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
     gotFinal = false;
-    attachMic().then((ok) => { if (ok && (state === 'listening' || isRecording)) micLive = true; });
+    attachMic();
 
-    if (SRC && !srBroken) {
+    const eng = resolveEngine();
+    if (eng === 'web') {
       try {
         rec = makeRec();
         statusText.textContent = 'در حال گوش دادن… فرمانت را بگو';
         recActive = true;
         rec.start();
         return;
-      } catch (_) { /* ادامه به حالت دمو */ }
+      } catch (_) { srBroken = true; }
     }
-    startDemoListen();
+    if (eng === 'glm' || (settings.sttEngine === 'auto' && glmReady())) {
+      startGlmListen();
+      return;
+    }
+    noEngine(settings.sttEngine === 'glm' ? 'کلید GLM تنظیم نشده' : (SRC ? 'موتور وب از کار افتاد و کلید GLM نیست' : 'موتور وب اینجا پشتیبانی نمی‌شود و کلید GLM نیست'));
   }
 
   function startDemoListen() {
     statusText.textContent = 'حالت دمو: در حال شنیدن…';
     if (!demoNoticeShown) {
       demoNoticeShown = true;
-      toast('تشخیص گفتار اینجا در دسترس نیست؛ حالت دمو فعال شد', '#i-info');
+      toast('حالت دمو روشن است — برای تشخیص واقعی، کلید GLM را در تنظیمات بگذار', '#i-info');
     }
     listenTimer = setTimeout(() => {
       const demo = chips[Math.floor(Math.random() * chips.length)].dataset.cmd;
@@ -585,10 +810,18 @@
 
   function stopListening(reset = true) {
     clearTimeout(listenTimer);
+    clearInterval(glmTimer); clearTimeout(glmMaxTimer);
+    glmTimer = null; glmMaxTimer = null;
+    glmListening = false;
     if (rec && recActive) { try { rec.stop(); } catch (_) { /* noop */ } }
     recActive = false;
-    micLive = false;
-    if (!isRecording) detachMic();
+    if (glmRec && glmRec.state !== 'inactive') {
+      /* جلوی ادامه فرایند تبدیل را می‌گیریم */
+      glmRec.onstop = null;
+      try { glmRec.stop(); } catch (_) { /* noop */ }
+    }
+    glmRec = null;
+    /* میکروفون روشن می‌ماند تا اکولایزر همیشه به صدای واقعی واکنش نشان دهد */
     orbIcon.setAttribute('href', '#i-mic');
     sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
     if (reset) {
@@ -621,8 +854,10 @@
       e.preventDefault();
       cmdInput.focus();
     } else if (e.key === 'Escape') {
-      if (!about.hidden) about.hidden = true;
+      if (!confirmBox.hidden) hideConfirm();
+      else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
+      else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
     }
   });
@@ -634,21 +869,30 @@
   );
 
   /* ============================================================
-     صفحه تنظیمات
+     ناوبری: خانه / تنظیمات / چت
      ============================================================ */
-  let appVersion = '0.4.0';
+  let appVersion = '0.5.0';
 
-  function showSettings(on) {
-    settingsPage.hidden = !on;
-    hero.style.display = on ? 'none' : '';
-    btnHome.classList.toggle('active', !on);
-    btnSettings.classList.toggle('active', on);
+  function showView(v) {
+    settingsPage.hidden = v !== 'settings';
+    chatPage.hidden = v !== 'chat';
+    hero.style.display = v === 'home' ? '' : 'none';
+    btnHome.classList.toggle('active', v === 'home');
+    btnSettings.classList.toggle('active', v === 'settings');
+    btnChat.classList.toggle('active', v === 'chat');
     $('#main').scrollTop = 0;
-    if (on) refreshSettingsUI();
+    if (v === 'settings') refreshSettingsUI();
+    if (v === 'chat') {
+      if (!chatMsgs.childElementCount) chatWelcome();
+      setTimeout(() => chatInput.focus(), 150);
+    }
   }
-  btnSettings.addEventListener('click', () => showSettings(settingsPage.hidden));
-  btnHome.addEventListener('click', () => showSettings(false));
-  btnSettingsBack.addEventListener('click', () => showSettings(false));
+  function showSettings(on) { showView(on ? 'settings' : 'home'); }
+  btnSettings.addEventListener('click', () => showView(settingsPage.hidden ? 'settings' : 'home'));
+  btnHome.addEventListener('click', () => showView('home'));
+  btnSettingsBack.addEventListener('click', () => showView('home'));
+  btnChat.addEventListener('click', () => showView(chatPage.hidden ? 'chat' : 'home'));
+  btnChatBack.addEventListener('click', () => showView('home'));
 
   function loadAppVersion() {
     const render = () => { updText.textContent = `نسخه فعلی: v${faNum(appVersion)}`; };
@@ -665,6 +909,12 @@
   function refreshSettingsUI() {
     optTts.checked = !!settings.tts;
     optAutoUpdate.checked = !!settings.autoUpdate;
+    optDemo.checked = !!settings.demoMode;
+    optSttEngine.value = settings.sttEngine || 'auto';
+    optGlmKey.value = settings.glmKey || '';
+    optAiBase.value = settings.glmBase || 'https://api.z.ai/api/paas/v4';
+    optAiModel.value = settings.glmModel || 'glm-4.6';
+    refreshEngineUI();
     fillVoiceSelect();
     loadAppVersion();
     if (bridge && bridge.settings) {
@@ -715,6 +965,49 @@
         toast(v ? 'اجرای خودکار با ویندوز فعال شد' : 'اجرای خودکار خاموش شد', '#i-power');
       }
     } catch (_) { optLogin.checked = false; }
+  });
+
+  /* --- موتور تشخیص گفتار و کلید GLM --- */
+  optSttEngine.addEventListener('change', () => {
+    settings.sttEngine = optSttEngine.value || 'auto';
+    store.set('sttEngine', settings.sttEngine);
+    refreshEngineUI();
+    if (settings.sttEngine === 'glm' && !settings.glmKey) {
+      optGlmKey.focus();
+      toast('اول کلید GLM را وارد کن', '#i-key');
+    }
+  });
+
+  optGlmKey.addEventListener('change', () => {
+    settings.glmKey = optGlmKey.value.trim();
+    store.set('glmKey', settings.glmKey);
+    refreshEngineUI();
+    toast(settings.glmKey ? 'کلید ذخیره شد — تشخیص گفتار ابری و چت فعال شد' : 'کلید پاک شد', '#i-key');
+  });
+
+  btnKeyShow.addEventListener('click', () => {
+    const show = optGlmKey.type === 'password';
+    optGlmKey.type = show ? 'text' : 'password';
+    btnKeyShow.querySelector('span').textContent = show ? 'مخفی' : 'نمایش';
+  });
+
+  optDemo.addEventListener('change', () => {
+    settings.demoMode = optDemo.checked;
+    store.set('demoMode', settings.demoMode);
+    refreshEngineUI();
+    toast(settings.demoMode ? 'حالت دمو روشن شد' : 'حالت دمو خاموش شد — تشخیص واقعی یا پیام خطا', '#i-info');
+  });
+
+  optAiBase.addEventListener('change', () => {
+    settings.glmBase = optAiBase.value;
+    store.set('glmBase', settings.glmBase);
+    toast('سرویس‌دهنده عوض شد', '#i-spark');
+  });
+
+  optAiModel.addEventListener('change', () => {
+    settings.glmModel = optAiModel.value;
+    store.set('glmModel', settings.glmModel);
+    toast(`مدل گفتگو: ${optAiModel.selectedOptions[0].textContent}`, '#i-spark');
   });
 
   /* --- انتخاب صدای گوینده --- */
@@ -816,6 +1109,229 @@
     })
   );
 
+  /* ============================================================
+     فرمان‌های سفارشی (ساخته‌شده با هوش مصنوعی) + مودال تأیید
+     ============================================================ */
+  let customCmds = store.get('customCmds', []);
+  let confirmResolve = null;
+  const chipsBox = $('#chips');
+
+  const normFa = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .replace(/\u064A/g, '\u06CC')
+      .replace(/\u0643/g, '\u06A9')
+      .replace(/[\s\u200C]+/g, ' ')
+      .trim();
+
+  function findCustomRule(cmd) {
+    const n = normFa(cmd);
+    if (!n) return null;
+    const cc = customCmds.find((c) => (c.phrases || []).some((p) => n.includes(normFa(p))));
+    if (!cc) return null;
+    return {
+      custom: true,
+      k: /.*/,
+      t: cc.title || 'فرمان سفارشی',
+      i: '#i-spark',
+      r: async () => runCustom(cc),
+    };
+  }
+
+  async function runCustom(cc) {
+    const act = cc.action || {};
+    if (act.type === 'open_url') {
+      if (bridge && bridge.system && bridge.system.openUrl) {
+        const r = await bridge.system.openUrl(act.value);
+        return r && r.ok ? `«${cc.title}» باز شد.` : 'باز کردن لینک ممکن نشد.';
+      }
+      window.open(act.value, '_blank');
+      return `«${cc.title}» باز شد (در مرورگر).`;
+    }
+    if (act.type === 'run') {
+      if (!canRun) return 'اجرای واقعی فقط داخل نرم‌افزار ویندوزی انجام می‌شود.';
+      const r = await bridge.system.run(act.value);
+      return r && r.ok ? `«${cc.title}» انجام شد.` : `اجرا نشد: ${(r && r.error) || 'خطای نامشخص'}`;
+    }
+    if (act.type === 'ps') {
+      if (!bridge || !bridge.custom) return 'اجرای اسکریپت فقط داخل نرم‌افزار ویندوزی انجام می‌شود.';
+      const okGo = await askConfirm({
+        title: 'اجرای فرمان سفارشی',
+        text: `اسکریپت PowerShell زیر برای فرمان «${cc.title}» ذخیره شده. اجرا شود؟`,
+        code: act.value,
+      });
+      if (!okGo) return 'بی‌خیال؛ اجرا نشد.';
+      const r = await bridge.custom.run(act.value);
+      if (r && r.ok) return (r.out ? `انجام شد: ${r.out}` : 'انجام شد.') + '';
+      return `اجرا نشد: ${(r && r.error) || 'خطای نامشخص'}`;
+    }
+    return 'نوع فرمان سفارشی پشتیبانی نمی‌شود.';
+  }
+
+  function askConfirm({ title, text, code }) {
+    return new Promise((resolve) => {
+      cfTitle.textContent = title || 'تأیید';
+      cfText.textContent = text || '';
+      if (code) { cfCode.hidden = false; cfCode.textContent = code; }
+      else cfCode.hidden = true;
+      confirmBox.hidden = false;
+      confirmResolve = resolve;
+    });
+  }
+  function hideConfirm(val) {
+    if (confirmBox.hidden) return;
+    confirmBox.hidden = true;
+    if (confirmResolve) { confirmResolve(!!val); confirmResolve = null; }
+  }
+  btnConfirmOk.addEventListener('click', () => hideConfirm(true));
+  btnConfirmCancel.addEventListener('click', () => hideConfirm(false));
+
+  function renderCustomChips() {
+    chipsBox.querySelectorAll('.chip.custom').forEach((el) => el.remove());
+    customCmds.forEach((cc) => {
+      const b = document.createElement('button');
+      b.className = 'chip custom';
+      b.type = 'button';
+      b.title = `فرمان سفارشی — ${(cc.phrases || [])[0] || cc.title}`;
+      b.innerHTML = `<svg class="ic"><use href="#i-spark"/></svg><span></span><i class="chip-x" title="حذف فرمان">–</i>`;
+      b.querySelector('span').textContent = cc.title;
+      b.addEventListener('click', () => runCommand(cc.title));
+      b.querySelector('.chip-x').addEventListener('click', (e) => {
+        e.stopPropagation();
+        customCmds = customCmds.filter((c) => c.id !== cc.id);
+        store.set('customCmds', customCmds);
+        renderCustomChips();
+        toast(`فرمان «${cc.title}» حذف شد`, '#i-trash');
+      });
+      chipsBox.appendChild(b);
+    });
+  }
+
+  /* ============================================================
+     چت با هوش مصنوعی GLM
+     ============================================================ */
+  const AI_SYSTEM =
+    'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود. پاسخ را فقط به صورت JSON بده: ' +
+    '{"reply":"متن پاسخ فارسی، کوتاه و دوستانه","add_command":null}\n' +
+    'اگر کاربر خواست فرمان جدیدی اضافه شود، add_command را این‌طور پر کن:\n' +
+    '{"title":"نام کوتاه فرمان","phrases":["جمله‌ای که کاربر میگوید","جمله دوم"],"action":{"type":"open_url|run|ps","value":"..."}}\n' +
+    '- type=open_url: باز کردن وب‌سایت؛ value آدرس کامل https\n' +
+    '- type=run: اجرای برنامه ویندوز؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, recycle_empty\n' +
+    '- type=ps: اسکریپت کوتاه تک‌خطی و غیرمخرب PowerShell\n' +
+    'همیشه فقط JSON خالص بده؛ بدون توضیح اضافه و بدون بک‌تیک.';
+
+  let chatBusy = false;
+
+  function chatWelcome() {
+    const ready = glmReady();
+    addMsg('bot', ready
+      ? 'سلام! من مغز هوشمند آوا هستم. هر چیزی بپرسی جواب می‌دهم و اگر فرمانی بخواهی، خودم می‌سازمش و با تأیید تو به لیست فرمان‌ها اضافه می‌کنم.'
+      : 'سلام! برای چت با هوش مصنوعی، اول کلید GLM را در تنظیمات وارد کن (سرویس‌دهنده Z.ai یا BigModel). بعد اینجا می‌توانی هر فرمانی بخواهی تا برایت بسازم.');
+  }
+
+  function addMsg(role, text) {
+    const m = document.createElement('div');
+    m.className = `msg ${role === 'user' ? 'user' : role === 'err' ? 'err' : 'bot'}`;
+    m.textContent = text;
+    chatMsgs.appendChild(m);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+    return m;
+  }
+
+  function parseAi(text) {
+    let t = String(text || '').trim()
+      .replace(/^```(?:json)?/i, '')
+      .replace(/```$/, '')
+      .trim();
+    const m = t.match(/\{[\s\S]*\}/);
+    if (m) {
+      try {
+        const j = JSON.parse(m[0]);
+        if (j && (typeof j.reply === 'string' || j.add_command)) return j;
+      } catch (_) { /* noop */ }
+    }
+    return { reply: t || '…', add_command: null };
+  }
+
+  function renderCmdCard(msgEl, cc) {
+    const card = document.createElement('div');
+    card.className = 'cmd-card';
+    card.innerHTML =
+      `<b><svg class="ic"><use href="#i-plus"/></svg><span></span></b>` +
+      `<code></code>` +
+      `<div class="cmd-actions">` +
+      `<button class="chip sm upd-install"><svg class="ic"><use href="#i-plus"/></svg><span>افزودن به فرمان‌ها</span></button>` +
+      `<button class="chip sm"><svg class="ic"><use href="#i-close"/></svg><span>بی‌خیال</span></button>` +
+      `</div>`;
+    card.querySelector('b span').textContent = cc.title || 'فرمان جدید';
+    const codeEl = card.querySelector('code');
+    const act = cc.action || {};
+    codeEl.textContent = (act.type === 'ps' ? 'PowerShell: ' : act.type === 'open_url' ? 'URL: ' : 'Command: ') + (act.value || '');
+    const [btnAdd, btnSkip] = card.querySelectorAll('button');
+    btnAdd.addEventListener('click', () => {
+      cc.id = Date.now();
+      customCmds.push(cc);
+      store.set('customCmds', customCmds);
+      renderCustomChips();
+      card.querySelector('.cmd-actions').remove();
+      const done = document.createElement('p');
+      done.style.cssText = 'margin:8px 0 0;font-size:11.5px;color:#6ee7b7';
+      done.textContent = 'افزوده شد ✓ حالا با صدا یا کادر فرمان قابل اجراست.';
+      card.appendChild(done);
+      toast(`فرمان «${cc.title}» به لیست اضافه شد`, '#i-plus');
+    });
+    btnSkip.addEventListener('click', () => { card.remove(); });
+    msgEl.appendChild(card);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+
+  chatBar.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = chatInput.value.trim();
+    if (!v || chatBusy) return;
+    if (!bridge || !bridge.ai) {
+      addMsg('err', 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند (درخواست باید از پروسه اصلی برود).');
+      return;
+    }
+    if (!settings.glmKey) {
+      addMsg('err', 'کلید GLM تنظیم نشده است — از تنظیمات › تشخیص گفتار، کلید را وارد کن و دوباره بیا.');
+      showView('settings');
+      setTimeout(() => optGlmKey.focus(), 300);
+      return;
+    }
+    chatInput.value = '';
+    addMsg('user', v);
+    const typing = addMsg('bot', 'دارم فکر می‌کنم…');
+    typing.classList.add('typing');
+    chatBusy = true;
+    try {
+      const r = await bridge.ai.chat({
+        base: settings.glmBase,
+        key: settings.glmKey,
+        model: settings.glmModel,
+        messages: [
+          { role: 'system', content: AI_SYSTEM },
+          { role: 'user', content: v },
+        ],
+      });
+      typing.remove();
+      if (!r || !r.ok) {
+        addMsg('err', (r && r.error) || 'پاسخی نرسید.');
+      } else {
+        const j = parseAi(r.text);
+        const msgEl = addMsg('bot', j.reply || '…');
+        if (j.add_command && j.add_command.action && j.add_command.title) {
+          renderCmdCard(msgEl, j.add_command);
+        }
+      }
+    } catch (_) {
+      typing.remove();
+      addMsg('err', 'اتصال به سرور GLM برقرار نشد.');
+    }
+    chatBusy = false;
+    chatInput.focus();
+  });
+
   /* ---------- پاپ‌آپ درباره ---------- */
   btnAbout.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -848,6 +1364,10 @@
   /* ---------- شروع ---------- */
   setState('idle');
   statusText.innerHTML = IDLE_HINT;
+  refreshEngineUI();
+  renderCustomChips();
+  /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
+  setTimeout(() => { attachMic(); }, 1200);
   setTimeout(() => {
     toast(canRun ? 'آوا آماده است — اجرای واقعی فرمان‌ها فعال است' : 'آوا آماده است — پیش‌نمایش رابط کاربری', '#i-wave');
   }, 900);

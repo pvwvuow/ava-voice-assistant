@@ -127,6 +127,8 @@ const COMMANDS = {
   open_paint:    { cmd: 'start mspaint',               fa: 'پینت' },
   open_music:    { cmd: 'start https://music.youtube.com', fa: 'یوتیوب موزیک' },
   open_youtube:  { cmd: 'start https://www.youtube.com',   fa: 'یوتیوب' },
+  open_downloads: { cmd: 'start "" "shell:Downloads"',  fa: 'پوشه دانلودها' },
+  open_documents: { cmd: 'start "" "shell:Personal"',     fa: 'پوشه اسناد' },
 
   /* وب */
   web_open:   { cmd: (a) => { const u = safeUrl(a); return u ? `start "" "${u}"` : null; }, fa: 'سایت' },
@@ -136,6 +138,7 @@ const COMMANDS = {
   minimize_all: { cmd: 'powershell -NoProfile -Command "(New-Object -ComObject Shell.Application).MinimizeAll()"', fa: 'دسکتاپ' },
   lock:         { cmd: 'rundll32.exe user32.dll,LockWorkStation', fa: 'قفل صفحه' },
   screenshot:   { cmd: SCREENSHOT_PS, fa: 'اسکرین‌شات' },
+  recycle_empty: { cmd: 'powershell -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue; Write-Output done"', fa: 'سطل بازیافت' },
 
   /* صدا (کلیدهای مجازی ویندوز) */
   vol_up:   { cmd: PS_KEY('AF', 6),  fa: 'بلندی صدا +' },
@@ -265,6 +268,94 @@ ipcMain.handle('sys:save-audio', async (_e, data) => {
   } catch (e) {
     return { ok: false, error: String((e && e.message) || e) };
   }
+});
+
+/* ============================================================
+   هوش مصنوعی GLM — چت + تشخیص گفتار ابری (GLM-ASR)
+   کلید API فقط در همین پروسه استفاده می‌شود و جایی لاگ نمی‌شود.
+   base پیش‌فرض: https://api.z.ai/api/paas/v4  (سازگار با open.bigmodel.cn)
+   ============================================================ */
+const trimBase = (b) => String(b || 'https://api.z.ai/api/paas/v4').replace(/\/+$/, '');
+const netErr = (e) => {
+  const m = String((e && e.message) || e);
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN/i.test(m)) {
+    return 'اتصال به سرور برقرار نشد — اینترنت یا فیلترشکن را بررسی کن';
+  }
+  return m.slice(0, 140);
+};
+
+ipcMain.handle('ai:chat', async (_e, p) => {
+  const { base, key, model, messages, temperature } = p || {};
+  if (!key) return { ok: false, error: 'کلید GLM تنظیم نشده — از تنظیمات واردش کن' };
+  if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+  try {
+    const r = await fetch(trimBase(base) + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${String(key).trim()}` },
+      body: JSON.stringify({
+        model: model || 'glm-4.6',
+        messages: messages.slice(-16), // فقط ۸ رد و بدل آخر
+        temperature: typeof temperature === 'number' ? temperature : 0.6,
+        max_tokens: 1024,
+        stream: false,
+      }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
+      return { ok: false, error: `GLM: ${msg}` };
+    }
+    const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+    if (!text) return { ok: false, error: 'پاسخ خالی از سرور رسید' };
+    return { ok: true, text };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+ipcMain.handle('stt:transcribe', async (_e, p) => {
+  const { buf, base, key, model } = p || {};
+  if (!key) return { ok: false, error: 'کلید GLM تنظیم نشده — از تنظیمات واردش کن' };
+  if (!buf || !buf.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
+  try {
+    const form = new FormData();
+    form.append('file', new Blob([Buffer.from(buf)], { type: 'audio/webm' }), 'ava-audio.webm');
+    form.append('model', model || 'glm-asr-2512');
+    const r = await fetch(trimBase(base) + '/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${String(key).trim()}` },
+      body: form,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
+      return { ok: false, error: `GLM-ASR: ${msg}` };
+    }
+    const text = String((j && j.text) || (j && j.data && j.data.text) || '').trim();
+    return { ok: !!text, text, error: text ? undefined : 'متنی از صدا استخراج نشد' };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ---------- فرمان‌های سفارشی (پیشنهاد هوش مصنوعی + تأیید صریح کاربر) ----------
+   رندرر قبلاً یک مودال تأیید با متن کامل اسکریپت نشان می‌دهد؛
+   این‌جا فقط اجرای مهاربندی‌شده PowerShell انجام می‌شود. */
+ipcMain.handle('custom:run', (_e, script) => {
+  const s = String(script || '')
+    .replace(/\r?\n/g, '; ')
+    .slice(0, 2000);
+  if (!s.trim()) return { ok: false, error: 'اسکریپت خالی است' };
+  const cmdStr = `powershell -NoProfile -NonInteractive -Command "${s.replace(/"/g, '\\\\"')}"`;
+  return new Promise((resolve) => {
+    exec(cmdStr, { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 512 }, (err, stdout, stderr) => {
+      if (err && !stdout) {
+        resolve({ ok: false, error: String((err.message || stderr || 'اجرا نشد')).slice(0, 200) });
+      } else {
+        resolve({ ok: true, out: ((stdout || '') + (stderr ? `\n${stderr}` : '')).trim().slice(0, 500) });
+      }
+    });
+  });
 });
 
 /* ---------- App lifecycle ---------- */

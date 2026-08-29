@@ -1,8 +1,8 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.4.0",
-  "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۴ با آپدیت خودکار، پاسخ گفتاری TTS، ضبط واقعی صدا و تنظیمات سیستمی",
+  "version": "0.5.0",
+  "description": "آوا — دستیار صوتی ویندوز | نسخه ۰.۵ با تشخیص گفتار واقعی GLM-ASR، چت هوش مصنوعی GLM، آپدیت خودکار، اکولایزر واقعی و تنظیمات میکروفون",
   "main": "main.js",
   "license": "MIT",
   "author": {
@@ -43,7 +43,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.ico"

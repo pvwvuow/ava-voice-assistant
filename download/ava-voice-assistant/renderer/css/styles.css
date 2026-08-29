@@ -688,3 +688,160 @@ body.has-card #wave { height: 0; opacity: 0; }
   .set-select { max-width: 140px; }
 }
 
+/* ============================================================
+   نسخه ۰.۵ — میکروفون، کلید، چت AI و مودال تأیید
+   ============================================================ */
+.set-input {
+  flex: 1; min-width: 0;
+  padding: 8px 11px; border-radius: 10px;
+  background: rgba(11, 15, 13, 0.6);
+  border: 1px solid var(--stroke);
+  color: var(--text); font-family: inherit; font-size: 12px;
+  outline: none; letter-spacing: 0.3px;
+}
+.set-input:focus { border-color: rgba(52, 211, 153, 0.5); }
+.set-input::placeholder { color: var(--text3); letter-spacing: 0; }
+.key-row { display: flex; align-items: center; gap: 8px; }
+.chip.sm { padding: 6px 11px; font-size: 11px; gap: 5px; }
+.chip.sm .ic { width: 12px; height: 12px; }
+.chip.custom {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.1);
+  position: relative;
+}
+.chip-x {
+  font-style: normal; font-size: 13px; line-height: 1;
+  margin-inline-start: 2px; padding: 2px 4px; border-radius: 6px;
+  color: var(--text3); transition: all 0.15s ease;
+}
+.chip-x:hover { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.chip.danger {
+  border-color: rgba(248, 113, 113, 0.45) !important;
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #fca5a5 !important;
+}
+#micMeter {
+  width: 100%; height: 40px; display: block;
+  border-radius: 10px;
+  background: rgba(7, 10, 9, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ---------- صفحه چت با هوش مصنوعی ---------- */
+.chatpage {
+  max-width: 720px; margin: 0 auto;
+  padding: 20px 22px 24px;
+  display: flex; flex-direction: column; gap: 12px;
+  height: 100%; min-height: 0;
+}
+.chatpage[hidden] { display: none; }
+.chat-wrap {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  border-radius: 18px; overflow: hidden;
+  padding: 12px;
+}
+.chat-msgs {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin; scrollbar-color: rgba(52, 211, 153, 0.3) transparent;
+}
+.chat-msgs::-webkit-scrollbar { width: 6px; }
+.chat-msgs::-webkit-scrollbar-thumb { background: rgba(52, 211, 153, 0.3); border-radius: 99px; }
+.msg {
+  max-width: 84%;
+  padding: 9px 13px; border-radius: 14px;
+  font-size: 12.5px; line-height: 1.9;
+  white-space: pre-wrap; word-break: break-word;
+  animation: cardIn 0.22s ease;
+}
+.msg.user {
+  align-self: flex-start;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(13, 148, 136, 0.2));
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-bottom-right-radius: 5px;
+}
+.msg.bot {
+  align-self: flex-end;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom-left-radius: 5px;
+}
+.msg.err {
+  align-self: stretch; max-width: 100%;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fecaca; font-size: 11.5px;
+}
+.msg.typing { color: var(--text3); font-size: 11.5px; letter-spacing: 1px; }
+.msg .cmd-card {
+  margin-top: 9px; padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px dashed rgba(52, 211, 153, 0.45);
+}
+.msg .cmd-card b { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--acc2); }
+.msg .cmd-card b .ic { width: 13px; height: 13px; }
+.msg .cmd-card code {
+  display: block; margin-top: 6px;
+  font-family: Consolas, monospace; font-size: 10.5px;
+  color: var(--text2); direction: ltr; text-align: left;
+  max-height: 72px; overflow: auto;
+  white-space: pre-wrap; word-break: break-all;
+}
+.msg .cmd-actions { display: flex; gap: 7px; margin-top: 9px; }
+.msg .cmd-actions .chip { padding: 6px 11px; font-size: 11px; }
+.chat-bar {
+  display: flex; align-items: center; gap: 9px;
+  height: 50px; padding: 0 8px;
+  border-radius: 15px;
+  background: rgba(9, 13, 11, 0.65);
+  border: 1px solid var(--stroke);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.chat-bar:focus-within {
+  border-color: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+#chatInput {
+  flex: 1; min-width: 0; height: 100%;
+  background: none; border: none; outline: none;
+  color: var(--text); font-size: 13px; font-family: inherit;
+}
+#chatInput::placeholder { color: var(--text3); }
+.chat-note { text-align: center; }
+
+/* ---------- مودال تأیید فرمان ---------- */
+.confirm {
+  position: fixed; inset: 0; z-index: 120;
+  margin: auto; width: min(430px, calc(100vw - 48px));
+  height: fit-content; max-height: calc(100vh - 80px);
+  border-radius: 18px; padding: 18px;
+  background: rgba(10, 15, 13, 0.92);
+  animation: cardIn 0.2s ease;
+  overflow: auto;
+}
+.confirm[hidden] { display: none; }
+.confirm h3 { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: var(--acc2); }
+.confirm p { font-size: 12.5px; color: var(--text2); line-height: 1.9; margin: 10px 0 8px; }
+.confirm pre {
+  margin: 0 0 10px; padding: 10px 12px;
+  border-radius: 10px; font-size: 10.5px; line-height: 1.7;
+  font-family: Consolas, monospace;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a7f3d0;
+  max-height: 130px; overflow: auto;
+  white-space: pre-wrap; word-break: break-all;
+}
+.cf-actions { display: flex; gap: 9px; justify-content: flex-start; }
+
+@media (max-width: 680px) {
+  .chatpage { padding: 14px 12px 18px; gap: 10px; }
+  .chat-wrap { padding: 9px; border-radius: 15px; }
+  .msg { max-width: 92%; font-size: 12px; }
+  .chat-bar { height: 46px; }
+  .confirm { width: calc(100vw - 36px); }
+}
+

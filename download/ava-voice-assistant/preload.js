@@ -51,6 +51,21 @@ contextBridge.exposeInMainWorld('ava', {
     onStatus: (cb) => ipcRenderer.on('updater:status', (_e, s) => cb(s)),
   },
 
+  /* هوش مصنوعی GLM (چت) — کلید از تنظیمات رندرر می‌آید ولی درخواست از پروسه اصلی */
+  ai: {
+    chat: (payload) => ipcRenderer.invoke('ai:chat', payload),
+  },
+
+  /* تشخیص گفتار ابری GLM-ASR — بایت‌های ضبط را به پروسه اصلی می‌دهد */
+  stt: {
+    transcribe: (payload) => ipcRenderer.invoke('stt:transcribe', payload),
+  },
+
+  /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */
+  custom: {
+    run: (script) => ipcRenderer.invoke('custom:run', script),
+  },
+
   /* رویدادهای صوتی — نقطه اتصال موتور صوتی در نسخه‌های بعد */
   voice: {
     onToggleListen: (cb) => ipcRenderer.on('ava:toggle-listen', () => cb()),
