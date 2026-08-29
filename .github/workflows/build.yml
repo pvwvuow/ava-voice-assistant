@@ -1,0 +1,57 @@
+# ============================================================
+#  AVA Voice Assistant - Build & Release
+#  ------------------------------------------------------------
+#  * Push a tag (v*)  -> builds the Windows installer and
+#    publishes it automatically to GitHub Releases.
+#  * Manual run (workflow_dispatch) -> build only, installer
+#    appears under the run's Artifacts (for testing).
+#
+#  NOTE: if your app folder is the repo ROOT, change
+#  "working-directory" and the artifact path below to "."
+# ============================================================
+name: Build & Release AVA
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: download/ava-voice-assistant
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      # electron-builder needs the real repository URL to publish.
+      # GITHUB_REPOSITORY is "user/repo", so this can never be wrong.
+      - name: Fix repository field for electron-builder
+        run: node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.repository={type:'git',url:'https://github.com/'+process.env.GITHUB_REPOSITORY+'.git'};p.build=p.build||{};p.build.publish={provider:'github'};fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+
+      - name: Build & publish installer to GitHub Releases
+        run: npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer as artifact (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AVA-Windows-Installer
+          path: download/ava-voice-assistant/dist/*.exe
+          if-no-files-found: ignore
