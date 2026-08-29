@@ -3,7 +3,7 @@
 import os, zipfile, json, sys
 
 SRC = "/home/z/my-project/download/ava-voice-assistant"
-OUT = "/home/z/my-project/download/ava-voice-assistant-v0.6.3.zip"
+OUT = "/home/z/my-project/download/ava-voice-assistant-v0.7.0.zip"
 SKIP_DIRS = {"node_modules", "dist", ".git"}
 SKIP_FILES = {".DS_Store", "Thumbs.db"}
 

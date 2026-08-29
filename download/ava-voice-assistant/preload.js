@@ -36,6 +36,16 @@ contextBridge.exposeInMainWorld('ava', {
     info: () => ipcRenderer.invoke('app:info'),
     /* آب‌وهوا از Open-Meteo (بدون کلید) */
     weather: (city) => ipcRenderer.invoke('sys:weather', city),
+    /* تایپ متن در برنامه فعال — حالت تایپ صوتی با خروجی پیست (Ctrl+V) */
+    typeText: (text) => ipcRenderer.invoke('sys:type-text', text),
+  },
+
+  /* مدیریت DNS ویندوز (اعمال با تأیید مدیر/UAC) */
+  dns: {
+    interfaces: () => ipcRenderer.invoke('dns:interfaces'),
+    current: () => ipcRenderer.invoke('dns:current'),
+    apply: (p) => ipcRenderer.invoke('dns:apply', p),
+    reset: () => ipcRenderer.invoke('dns:reset'),
   },
 
   /* تنظیمات سیستمی برنامه + ماندگاری تنظیمات در فایل */

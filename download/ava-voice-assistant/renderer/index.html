@@ -48,6 +48,9 @@
       <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></symbol>
       <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15.5 14"/></symbol>
       <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19a4.5 4.5 0 0 0 .42-8.98 7 7 0 0 0-13.36 2.2A4 4 0 0 0 6 19.5z"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="12" y2="12"/><line x1="14" y1="14" x2="12" y2="12"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+      <symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     </defs>
   </svg>
 
@@ -67,7 +70,7 @@
       <div class="tb-brand">
         <div class="tb-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
         <span class="tb-name">آوا</span>
-        <span class="tb-badge">نسخه ۰.۶</span>
+        <span class="tb-badge">نسخه ۰.۸</span>
       </div>
       <div class="tb-title">دستیار صوتی ویندوز</div>
       <div class="tb-controls">
@@ -89,6 +92,7 @@
         </div>
         <nav class="rail-nav" aria-label="ناوبری">
           <button class="rail-item active" id="btnHome" data-tip="خانه صوتی"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
+          <button class="rail-item" id="btnDict" data-tip="تایپ صوتی — بگو «آوا تایپ»"><svg class="ic"><use href="#i-type"/></svg></button>
           <button class="rail-item" id="btnChat" data-tip="چت با هوش مصنوعی GLM (بدون کلید)"><svg class="ic"><use href="#i-chat"/></svg></button>
           <button class="rail-item" id="btnHistory" data-tip="تاریخچه فرمان‌ها"><svg class="ic"><use href="#i-history"/></svg></button>
           <button class="rail-item locked" data-tip="افزونه‌ها — به‌زودی"><svg class="ic"><use href="#i-grid"/></svg></button>
@@ -154,6 +158,8 @@
             <button class="chip" data-cmd="موسیقی پخش کن"><svg class="ic"><use href="#i-music"/></svg><span>موسیقی</span></button>
             <button class="chip" data-cmd="وضعیت سیستم را بگو"><svg class="ic"><use href="#i-pulse"/></svg><span>وضعیت سیستم</span></button>
             <button class="chip" data-cmd="شروع ضبط صدا"><svg class="ic"><use href="#i-mic"/></svg><span>ضبط صدا</span></button>
+            <button class="chip" data-cmd="آوا تایپ"><svg class="ic"><use href="#i-type"/></svg><span>آوا تایپ</span></button>
+            <button class="chip" data-cmd="دی ان اس"><svg class="ic"><use href="#i-shield"/></svg><span>مدیریت DNS</span></button>
             <button class="chip" data-cmd="یک جوک بگو"><svg class="ic"><use href="#i-smile"/></svg><span>جوک بگو</span></button>
           </div>
 
@@ -186,7 +192,7 @@
             <button class="chip" id="btnSettingsBack"><svg class="ic"><use href="#i-send"/></svg><span>بازگشت به خانه</span></button>
           </header>
 
-          <div class="set-group glass">
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-mic"/></svg> میکروفون</h3>
             <div class="set-row">
               <span class="set-info"><b>ورودی میکروفون</b><span id="micStat">دسترسی میکروفون بررسی می‌شود…</span></span>
@@ -198,7 +204,7 @@
             </div>
           </div>
 
-          <div class="set-group glass">
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-power"/></svg> رفتار برنامه</h3>
             <label class="set-row">
               <span class="set-info"><b>همیشه روی همه پنجره‌ها</b><span>پنجره آوا روی برنامه‌های دیگر باقی بماند</span></span>
@@ -210,18 +216,31 @@
             </label>
           </div>
 
-          <div class="set-group glass">
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-wave"/></svg> تشخیص گفتار (تبدیل صدا به متن)</h3>
             <div class="set-row">
-              <span class="set-info"><b>موتور تشخیص گفتار</b><span>«خودکار»: اول موتور آفلاین داخلی (بدون اینترنت)، بعد موتور وب و گوگل</span></span>
+              <span class="set-info"><b>موتور تشخیص گفتار</b><span>«خودکار»: اول موتور وب گوگل (دقیق‌ترین)، اگر در دسترس نبود موتور آفلاین داخلی</span></span>
               <select id="optSttEngine" class="set-select">
                 <option value="auto">خودکار (پیشنهادی)</option>
                 <option value="whisper">فقط موتور آفلاین (بدون اینترنت)</option>
-                <option value="web">فقط موتور وب</option>
-                <option value="google">فقط گوگل رایگان (نیاز به اینترنت/فیلترشکن)</option>
+                <option value="web">فقط موتور وب گوگل</option>
+                <option value="google">فقط گوگل رایگان HTTP (نیاز به اینترنت/فیلترشکن)</option>
                 <option value="glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
               </select>
             </div>
+            <label class="set-row">
+              <span class="set-info"><b>اولویت در حالت خودکار: دقت</b><span>روشن = اول موتور وب گوگل (دقت بالا، نیاز به دسترسی به گوگل)؛ خاموش = اول موتور آفلاین (پایدار، بدون اینترنت)</span></span>
+              <span class="sw"><input type="checkbox" id="optWebFirst"/><i></i></span>
+            </label>
+            <div class="set-row">
+              <span class="set-info"><b>کیفیت موتور آفلاین</b><span>مدل‌های بزرگ‌تر دقیق‌ترند؛ «دقت بالا» اولین بار حدود ۲۵۰ مگابایت دانلود و کش می‌شود، «متعادل» حدود ۸۰ مگابایت</span></span>
+              <select id="optSttQuality" class="set-select">
+                <option value="tiny">سریع — مدل کوچک داخلی (۴۰MB)</option>
+                <option value="base">متعادل — دقت بهتر (۸۰MB)</option>
+                <option value="small">دقت بالا — بهترین حالت (۲۵۰MB)</option>
+              </select>
+            </div>
+            <p class="set-note">برای دقت بیشتر: میکروفون نزدیک‌تر باشد، با آهنگ یکنواخت حرف بزن، و «نرمال‌سازی صدا» به‌طور خودکار کم‌صدایی میکروفون را جبران می‌کند. علائم نگارشی در حالت تایپ صوتی با صدا کنترل می‌شود.</p>
             <label class="set-row">
               <span class="set-info"><b>حالت بی‌دست (گوش دائمی)</b><span>آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A</span></span>
               <span class="sw"><input type="checkbox" id="optHandsFree"/><i></i></span>
@@ -238,10 +257,44 @@
               <span class="set-info"><b>حالت نمایشی (دمو)</b><span>اگر موتوری در دسترس نبود، فرمان نمونه اجرا شود — پیش‌فرض: خاموش</span></span>
               <span class="sw"><input type="checkbox" id="optDemo"/><i></i></span>
             </label>
-            <p class="set-note" id="sttNote">موتور آفلاین Whisper داخل خود برنامه است: تشخیص فارسی بدون اینترنت، بدون فیلترشکن و بدون هیچ کلیدی. اگر بخواهی می‌توانی موتور وب یا گوگل را هم فعال کنی.</p>
+            <p class="set-note" id="sttNote">موتور آفلاین Whisper داخل خود برنامه است: تشخیص فارسی بدون اینترنت، بدون فیلترشکن و بدون هیچ کلیدی. اگر گوگل در دسترس باشد، حالت «اولویت با دقت» از موتور وب گوگل استفاده می‌کند که برای فارسی دقیق‌ترین است.</p>
           </div>
 
-          <div class="set-group glass">
+          <div class="set-group">
+            <h3><svg class="ic"><use href="#i-type"/></svg> تایپ صوتی</h3>
+            <div class="set-row">
+              <span class="set-info"><b>شروع و پایان</b><span>بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین</span></span>
+              <button class="chip" id="btnDictStart"><svg class="ic"><use href="#i-type"/></svg><span>شروع تایپ صوتی</span></button>
+            </div>
+            <div class="set-row">
+              <span class="set-info"><b>خروجی تایپ</b><span>«کادر آوا»: متن در آوا نوشته و با دکمه کپی برمی‌دارد؛ «برنامه فعال»: همان‌جا که داری کار می‌کنی تایپ می‌شود (پیست خودکار)</span></span>
+              <select id="optDictTarget" class="set-select">
+                <option value="box">کادر تایپ آوا (با کپی)</option>
+                <option value="apps">تایپ مستقیم در برنامه فعال</option>
+              </select>
+            </div>
+            <div class="set-row col">
+              <span class="set-info"><b>فرمان‌های صوتی سفارشی</b><span>مثال: عبارت گفتاری «آدرس» → متن «تهران، خیابان …» — یا «خط جدید»، «پاک کردن کلمه آخر»، «پاک کردن همه»</span></span>
+              <div class="tc-add">
+                <input type="text" id="tcPhrase" class="set-input" placeholder="وقتی گفتم… (مثلاً: آدرس)" />
+                <input type="text" id="tcValue" class="set-input" placeholder="این را بنویس / خط جدید / پاک کردن کلمه آخر" />
+                <button type="button" class="chip sm" id="tcAdd"><svg class="ic"><use href="#i-plus"/></svg><span>افزودن</span></button>
+              </div>
+              <div id="typingCmdsList" class="tc-list"></div>
+            </div>
+            <p class="set-note">علائم داخلی: بگو «نقطه»، «کاما»، «علامت سوال»، «علامت تعجب»، «دو نقطه»، «خط تیره»، «پرانتز باز/بسته»، «خط جدید»، «پاک کن».</p>
+          </div>
+
+          <div class="set-group">
+            <h3><svg class="ic"><use href="#i-shield"/></svg> DNS و شبکه</h3>
+            <div class="set-row">
+              <span class="set-info"><b>مدیریت DNS</b><span>DNSهای معروف (الکترو، شکن، بگوان، ۴۰۳ و…) را با صدا یا کلیک فعال کن؛ پروفایل نام‌دار بساز، ویرایش و حذف کن — بدون محدودیت</span></span>
+              <button class="chip" id="btnOpenDns"><svg class="ic"><use href="#i-shield"/></svg><span>باز کردن مدیر DNS</span></button>
+            </div>
+            <p class="set-note">فرمان صوتی: «دی ان اس الکترو» یا «دی اناس شکن» → مستقیم اعمال می‌شود؛ «دی ان اس شماره ۱» → پروفایل اول تو؛ «دی ان اس جدید» → صفحه افزودن؛ «دی ان اس رو بردار» → بازگشت به حالت خودکار. تغییر DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند.</p>
+          </div>
+
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-tts"/></svg> صدا و پاسخ گفتاری</h3>
             <label class="set-row">
               <span class="set-info"><b>پاسخ گفتاری (TTS)</b><span>آوا جواب‌ها را با صدای بلند بخواند</span></span>
@@ -253,7 +306,7 @@
             </div>
           </div>
 
-          <div class="set-group glass">
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-spark"/></svg> هوش مصنوعی GLM</h3>
             <div class="set-row">
               <span class="set-info"><b>اتصال بدون کلید API</b><span>از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — همین!</span></span>
@@ -277,7 +330,7 @@
             <p class="set-note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به GLM می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
           </div>
 
-          <div class="set-group glass">
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-refresh"/></svg> به‌روزرسانی نرم‌افزار</h3>
             <label class="set-row">
               <span class="set-info"><b>بررسی خودکار هنگام شروع</b><span>۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود</span></span>
@@ -291,9 +344,10 @@
               <div class="upd-progress" id="updProgress" hidden><i id="updBar"></i></div>
               <button class="chip upd-install" id="btnInstallUpdate" hidden><svg class="ic"><use href="#i-download"/></svg><span>نصب و راه‌اندازی مجدد</span></button>
             </div>
+            <p class="set-note">آپدیت کامل داخل خود برنامه: بررسی و دانلود خودکار انجام می‌شود و نصب هم با یک کلیک — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا)، نه کل برنامه.</p>
           </div>
 
-          <div class="set-group glass">
+          <div class="set-group">
             <h3><svg class="ic"><use href="#i-globe"/></svg> پیوندها</h3>
             <div class="set-links">
               <button class="chip" data-url="https://github.com/pvwvuow/ava-voice-assistant"><svg class="ic"><use href="#i-globe"/></svg><span>ریپوی گیت‌هاب</span></button>
@@ -309,13 +363,77 @@
             <h2><svg class="ic"><use href="#i-history"/></svg> تاریخچه فرمان‌ها</h2>
             <button class="chip" id="btnHistoryBack"><svg class="ic"><use href="#i-send"/></svg><span>بازگشت به خانه</span></button>
           </header>
-          <div class="set-group glass">
+          <div class="set-group">
             <div class="set-row">
               <span class="set-info"><b>فرمان‌های اخیر</b><span>روی هر فرمان بزنی دوباره اجرا می‌شود</span></span>
               <button class="chip sm" id="btnHistoryClear"><svg class="ic"><use href="#i-trash"/></svg><span>پاک‌سازی</span></button>
             </div>
             <div id="historyList" class="history-list"></div>
             <p class="set-note" id="historyEmpty">هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.</p>
+          </div>
+        </section>
+
+        <!-- صفحه تایپ صوتی (v0.8) -->
+        <section id="dictPage" class="settings" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-type"/></svg> تایپ صوتی</h2>
+            <button class="chip" id="btnDictBack"><svg class="ic"><use href="#i-send"/></svg><span>بازگشت به خانه</span></button>
+          </header>
+          <div class="set-group">
+            <div class="set-row">
+              <span class="set-info"><b>متن تایپ‌شده</b><span>هر چه بگویی اینجا نوشته می‌شود؛ علائم را هم با صدا بگو (نقطه، کاما، علامت سوال…)</span></span>
+              <button class="chip" id="btnDictToggle"><svg class="ic"><use href="#i-mic"/></svg><span>شروع تایپ صوتی</span></button>
+            </div>
+            <div class="set-row col">
+              <textarea id="dictBox" class="dict-box" placeholder="متن اینجا تایپ می‌شود… بگو «آوا تایپ» تا شروع کنم، و «آوا تموم» یا «قطع تایپ» تا تمام کنم."></textarea>
+              <div class="dict-interim" id="dictInterim"></div>
+              <div class="dict-actions">
+                <button class="chip" id="btnDictCopy"><svg class="ic"><use href="#i-copy"/></svg><span>کپی متن</span></button>
+                <button class="chip" id="btnDictClear"><svg class="ic"><use href="#i-trash"/></svg><span>پاک کردن</span></button>
+                <span class="dict-status" id="dictStatus">تایپ صوتی خاموش است — بگو «آوا تایپ» یا دکمه را بزن</span>
+              </div>
+            </div>
+            <p class="set-note">پایان تایپ: «آوا تموم» یا «قطع تایپ». محل خروجی (کادر آوا یا برنامه فعال) را از تنظیمات › تایپ صوتی عوض کن. فرمان‌های صوتی دلخواهت را هم همان‌جا تعریف کن.</p>
+          </div>
+        </section>
+
+        <!-- صفحه مدیریت DNS (v0.8) -->
+        <section id="dnsPage" class="settings" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-shield"/></svg> مدیریت DNS</h2>
+            <button class="chip" id="btnDnsBack"><svg class="ic"><use href="#i-send"/></svg><span>بازگشت به خانه</span></button>
+          </header>
+          <div class="set-group">
+            <h3><svg class="ic"><use href="#i-pulse"/></svg> وضعیت فعلی</h3>
+            <div class="dns-current" id="dnsCurrentBox">در حال خواندن…</div>
+            <p class="set-note">اعمال DNS نیاز به تأیید پنجره مدیر (UAC) ویندوز دارد. «دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار برمی‌گرداند.</p>
+            <div class="set-links">
+              <button class="chip" id="btnDnsReset"><svg class="ic"><use href="#i-refresh"/></svg><span>بازگردانی به حالت خودکار (DHCP)</span></button>
+            </div>
+          </div>
+          <div class="set-group">
+            <h3><svg class="ic"><use href="#i-plus"/></svg> افزودن / ویرایش DNS</h3>
+            <form id="dnsAddForm" class="dns-form" autocomplete="off">
+              <input type="hidden" id="dnsEditId" value="" />
+              <div class="dns-fields">
+                <input type="text" id="dnsName" class="set-input" placeholder="اسم DNS (مثلاً: الکترو، کاری‌ام، …)" />
+                <input type="text" id="dnsPrimary" class="set-input" dir="ltr" placeholder="DNS اول (Preferred) — 78.157.42.100" />
+                <input type="text" id="dnsSecondary" class="set-input" dir="ltr" placeholder="DNS دوم (Alternate) — اختیاری" />
+              </div>
+              <div class="set-links">
+                <button type="submit" class="chip" id="dnsSaveBtn"><svg class="ic"><use href="#i-plus"/></svg><span>ذخیره DNS</span></button>
+                <button type="button" class="chip" id="dnsCancelEdit" hidden><svg class="ic"><use href="#i-close"/></svg><span>لغو ویرایش</span></button>
+              </div>
+            </form>
+            <p class="set-note">محدودیتی در تعداد DNSها نیست — هر چندتا که بخواهی. بعد از ذخیره، با صدا هم می‌توانی صدا بزنی: «دی ان اس (اسمش)» یا «دی اناس شماره ۱».</p>
+          </div>
+          <div class="set-group">
+            <h3><svg class="ic"><use href="#i-globe"/></svg> DNSهای معروف (یک‌کلیکی)</h3>
+            <div class="set-links" id="dnsBuiltins"></div>
+          </div>
+          <div class="set-group">
+            <h3><svg class="ic"><use href="#i-note"/></svg> فهرست DNSهای من</h3>
+            <div id="dnsProfilesList" class="dns-list"></div>
           </div>
         </section>
 
@@ -363,7 +481,7 @@
         <i class="sb-sep"></i>
         <span class="sb-item num" id="sbClock">--:--</span>
         <i class="sb-sep"></i>
-        <span class="sb-item">AVA v0.6.3</span>
+        <span class="sb-item">AVA v0.8.0</span>
       </div>
     </footer>
   </div>
@@ -388,13 +506,13 @@
       <div class="about-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
       <div class="about-title"><b>آوا</b><span>دستیار صوتی ویندوز</span></div>
     </div>
-    <p class="about-desc">نسخه ۰.۶ — تشخیص گفتار واقعی فارسی با موتور رایگان گوگل (بدون هیچ کلیدی)، چت با هوش مصنوعی GLM متصل به حساب z.ai تو (بدون کلید API)، پاسخ تحلیلی به سوالات پیچیده، ساخت فرمان جدید با تأیید تو، اکولایزر با صدای واقعی میکروفون، آپدیت خودکار از GitHub، تنظیمات کامل میکروفون و TTS.</p>
+    <p class="about-desc">نسخه ۰.۸ — تشخیص گفتار فارسی با اولویت موتور وب گوگل و فالبک خودکار به Whisper آفلاین (با نرمال‌سازی صدا و مدل‌های باکیفیت‌تر اختیاری)، تایپ صوتی با علائم نگارشی و فرمان‌های سفارشی و خروجی در هر برنامه، مدیریت DNS با صدا (الکترو، شکن، بگوان، ۴۰۳ و…)، چت GLM متصل به حسابت بدون کلید API، آپدیت دلتا و نصب خودکار داخل برنامه.</p>
     <div class="about-keys">
       <div><span>گوش دادن</span><span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></span></div>
       <div><span>کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span>بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span>نسخه ۰.۶</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span>نسخه ۰.۸</span></div>
   </div>
 
   <script src="js/app.js"></script>

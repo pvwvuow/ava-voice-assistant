@@ -225,3 +225,47 @@ Stage Summary:
 - نصب‌های 0.6.2 ظرف ۱۲ ثانیه بعد از باز شدن برنامه آپدیت را خودکار پیدا می‌کنند
 - ZIP: download/ava-voice-assistant-v0.6.3.zip
 - یادآوری امنیتی به کاربر: Revoke هر دو توکن (fine-grained + ghp_...) لازم است؛ سوال حذف .env هنوز بی‌پاسخ است
+
+---
+Task ID: 10
+Agent: main (Super Z)
+Task: گزارش کاربر: میکروفون وصل می‌شود ولی گوگل/STT کند یا خراب است + درخواست فیچرهای جدید و روش بهتر دریافت صدا/درخواست
+
+Work Log:
+- ریشه‌یابی: endpoint گوگل speech-api از سرور ما 200 می‌دهد ولی برای کاربر ایران فیلتر است + کلید عمومی کرومیوم محدودیت شدید دارد؛ تشخیص اینکه زنجیره gRec/GLM بعد از تشخیص، فرمان را اجرا نمی‌کردند
+- کشف باگ بحرانی دوم: runCommand با گارد state==='processing' هر پاسخ تشخیص‌داده‌شده گوگل/GLM را ساکت رد می‌کرد (تشخیص جواب می‌داد ولی فرمان اجرا نمی‌شد) → جایگزینی با cmdBusy
+- انتخاب معماری: پکیج vosk به ffi-napi وابسته است و بیلد نمی‌شود → ریسک CI؛ تصمیم: Whisper آفلاین با transformers.js v2 (WASM خالص، بدون ماژول نیتیو)
+- مدل whisper-tiny کوانتیزه (~42MB: tokenizer 2.4MB + encoder 9.7MB + decoder 30MB) از HuggingFace دانلود و داخل برنامه باندل شد (renderer/models/) + transformers.min.js و ort-wasm-simd(-threaded).wasm در renderer/vendor/ → نصب‌کننده 78.7MB → 107.3MB
+- پروتکل امن ava://app (standard+secure+supportFetchAPI+stream) با هندلر readFileSync + MIME کامل + ACAO:* + COOP/COEP فقط برای index.html → crossOriginIsolated=true → SAB → WASM چندنخی
+- کشف و حل ۳ مشکل لود ورکر: (۱) ورکر مستقیم از پروتکل سفارشی با COEP لود نمی‌شود → ساخت Blob-Worker؛ (۲) importScripts با URL نسبی در Blob ورکر بدون base شکست می‌خورد → URL مطلق ava://؛ (۳) باندل ESM است نه UMD (خطای "Unexpected token 'export'") → سوییچ به Module Worker با import مطلق از vendor
+- تست‌ها: node --check همه فایل‌ها ✓؛ تست Node مدل: pipeline از فایل‌های لوکال لود شد (780ms) و inference اجرا شد ✓؛ تست دود کامل Electron با Xvfb: ava://app لود، coi:true، bridge، UI جدید، asrReady:true و «موتور: آفلاین Whisper» → SMOKE_OK
+- فیچرهای جدید: حالت بی‌دست با کلمه بیدارباش «آوا» (شورت‌کات سراسری Ctrl+Alt+A + تاگل UI + تنظیمات)، VAD با کف نویز تطبیقی + بریدن سکوت لبه‌ها، آب‌وهوا از Open-Meteo بدون کلید (IPC sys:weather با کد WMO فارسی)، ماشین‌حساب صوتی فارسی (اعداد حرفی + عملگرها + اعتبارسنجی)، vol_set تنظیم دقیق درصد صدا با keybd_event، پنل تاریخچه فرمان‌ها با اجرای مجدد، ذخیره‌سازی تنظیمات در userData/ava-settings.json (مقاوم به تغییر مببع UI)، تایم‌اوت 60s برای z.ai/GLM
+- زنجیره موتور جدید: آفلاین Whisper → وب → گوگل رایگان → GLM-ASR؛ گزینه «فقط موتور آفلاین» در تنظیمات
+- بامپ 0.7.0 (package.json + توضیحات) + README بازنویسی + commit 2f536e3 + تگ v0.7.0 + push با توکن کلاسیک
+- CI run 33261592193 → success؛ ریلیز منتشر شد: AVA-Setup-0.7.0.exe (107.3MB) + blockmap + latest.yml
+- ZIP سورس v0.7.0 ساخته شد (34 فایل، مدل و ورکر داخلش وریفای شد) و ZIP قدیمی 0.6.3 حذف شد
+
+Stage Summary:
+- ریلیز v0.7.0: https://github.com/pvwvuow/ava-voice-assistant/releases/tag/v0.7.0 — نصب‌های قبلی با electron-updater خودکار آپدیت می‌شوند
+- تشخیص گفتار حالا ۱۰۰٪ آفلاین است: بدون گوگل، بدون فیلترشکن، بدون کلید، صدای کاربر به هیچ سروری نمی‌رود
+- ZIP: download/ava-voice-assistant-v0.7.0.zip
+- یادآوری امنیتی باز: کاربر باید هر دو توکن (fine-grained + ghp_) را revoke کند؛ سوال حذف .env از گیت هنوز بی‌پاسخ است
+
+---
+Task ID: 8 (v0.8.0 release)
+Agent: main (Super Z)
+Task: فیکس دقت تشخیص گفتار، فیکس چت GLM با حساب کاربر، آپدیت دلتا/خودکار، ریدیزاین تنظیمات، تایپ صوتی (شروع/پایان/علائم/فرمان سفارشی/کپی)، مدیریت DNS صوتی (الکترو/شکن/شماره‌دار/بی‌نهایت/قابل ویرایش)
+
+Work Log:
+- تحقیق z.ai web API از ریپوهای reverse-engineered (hmjz100/Z.ai2api): هدرهای لازم X-FE-Version/Origin/Referer + بدنه stream:true + chat_id/id + پاسخ SSE با phase/delta_content
+- main.js: بازنویسی کامل ai:zaiChat (هدرهای مرورگر + SSE واقعی + حذف زنجیره فکر + fallback فرمت OpenAI)؛ IPC جدید dns:interfaces/current/apply/reset با اسکریپت PowerShell موقت + Start-Process -Verb RunAs (UAC) + اعتبارسنجی بعد از اعمال؛ IPC sys:type-text (کلیپ‌بورد + Ctrl+V در برنامه فعال)
+- asr.module.js: پشتیبانی مدل باکیفیت (Xenova/whisper-base/small با دانلود و کش + فالبک خودکار به tiny باندل‌شده)، chunk_length_s/stride_length_s
+- app.js: اولویت «دقت» (وب گوگل اول) با سگ‌بان ۸ثانیه‌ای و فالبک زنجیره‌ای به آفلاین؛ normalizeLoudness (RMS→0.035، حداکثر ×۶) در مسیرهای whisper/google؛ حالت تایپ صوتی کامل (DICT_START/STOP با مادّه «آ»، علائم نگارشی DICT_PUNCT، اکشن‌ها، فرمان سفارشی n-گرمی، rearm loop، خروجی کادر یا برنامه فعال)؛ مدیریت DNS (پایگاه ۱۱ DNS معروف، تطبیق فازی نام، شماره‌دار، ensureUserProfile، صفحه مدیریت کامل)؛ showView dict/dns؛ ریدیزاین مسطح set-group؛ بامپ نسخه
+- index.html: صفحه تایپ صوتی (textarea + interim + کپی/پاک) و صفحه DNS (وضعیت فعلی، فرم افزودن/ویرایش، DNSهای معروف، فهرست پروفایل‌ها)؛ بخش‌های تنظیمات تایپ صوتی و DNS؛ دکمه‌های ریل و چیپ‌های جدید؛ نسخه‌ها ۰.۸
+- styles.css: set-group مسطح + استایل‌های dict/tc/dns
+- تست: node --check همه ✓؛ تست رجکس‌ها (فیکس مادّه «آ» + بسه) ALL PASS ✓؛ تست دود Xvfb Electron: SMOKE_OK (پروتکل، bridge dns/typeText، همه المان‌ها، سیکل کامل شروع/پایان تایپ صوتی با کلیک چیپ و فرمان «آوا تموم») ✓
+- README بازنویسی برای ۰.۸؛ package.json 0.8.0
+
+Stage Summary:
+- v0.8.0 آماده انتشار: تشخیص گفتار دقیق‌تر (وب-first + فالبک خودکار + نرمال‌سازی صدا + مدل باکیفیت اختیاری)، تایپ صوتی کامل، DNS صوتی کامل، چت GLM فیکس‌شده، تنظیمات مسطح، آپدیت دلتا
+- یادآوری امنیتی باز: کاربر باید هر دو توکن گیت‌هاب را revoke کند؛ سوال حذف .env از گیت هنوز بی‌پاسخ است

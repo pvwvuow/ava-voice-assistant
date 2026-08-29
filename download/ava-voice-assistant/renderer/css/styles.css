@@ -598,30 +598,32 @@ body.has-card #wave { height: 0; opacity: 0; }
 }
 
 /* ============================================================
-   صفحه تنظیمات (نسخه ۰.۴)
+   صفحه تنظیمات (نسخه ۰.۸ — ساده و مسطح، بدون باکس گرد)
    ============================================================ */
 .settings {
   max-width: 720px; margin: 0 auto;
   padding: 20px 22px 28px;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 22px;
 }
 .settings[hidden] { display: none; }
 .set-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .set-top h2 { display: flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 800; }
 .set-top h2 .ic { width: 20px; height: 20px; color: var(--acc2); }
 .set-group {
-  border-radius: 16px; padding: 14px 16px 12px;
+  background: none; border: none; border-radius: 0;
+  padding: 2px 2px 4px;
   display: flex; flex-direction: column; gap: 4px;
 }
 .set-group h3 {
   display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 700; color: var(--acc2);
-  margin-bottom: 6px;
+  font-size: 13px; font-weight: 800; color: var(--acc2);
+  padding-bottom: 9px; margin-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .set-group h3 .ic { width: 16px; height: 16px; }
 .set-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 9px 2px;
+  padding: 10px 2px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 .set-row:first-of-type { border-top: none; }
@@ -684,9 +686,73 @@ body.has-card #wave { height: 0; opacity: 0; }
 @media (max-width: 680px) {
   .settings { padding: 14px 12px 20px; }
   .set-top h2 { font-size: 17px; }
-  .set-group { padding: 12px 12px 10px; border-radius: 14px; }
   .set-select { max-width: 140px; }
 }
+
+/* ============================================================
+   نسخه ۰.۸ — تایپ صوتی و مدیریت DNS
+   ============================================================ */
+.dict-box {
+  width: 100%; min-height: 190px; resize: vertical;
+  padding: 13px 15px; border-radius: 12px;
+  background: rgba(11, 15, 13, 0.6);
+  border: 1px solid var(--stroke);
+  color: var(--text); font-family: inherit; font-size: 14.5px; line-height: 2;
+  outline: none;
+}
+.dict-box:focus { border-color: rgba(52, 211, 153, 0.5); }
+.dict-box::placeholder { color: var(--text3); }
+.dict-interim {
+  min-height: 20px; font-size: 12px; color: var(--acc2);
+  font-style: italic; opacity: 0.9;
+}
+.dict-interim:empty { display: none; }
+.dict-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.dict-status { font-size: 11.5px; color: var(--text2); margin-inline-start: 4px; }
+.tc-add {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.tc-add .set-input { flex: 1; min-width: 150px; }
+.tc-list { display: flex; flex-direction: column; gap: 6px; }
+.tc-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tc-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tc-info b { font-size: 12.5px; color: var(--text); }
+.tc-info span { font-size: 11px; color: var(--text2); word-break: break-word; }
+.dns-current {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  font-size: 12px; color: var(--text2);
+  padding: 10px 2px 2px;
+}
+.dns-current .dns-cur {
+  padding: 5px 10px; border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: var(--text);
+}
+.dns-current .dns-cur b { color: var(--acc2); margin-inline-end: 6px; }
+.dns-form { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.dns-fields { display: flex; flex-direction: column; gap: 8px; }
+.dns-fields .set-input { width: 100%; }
+.dns-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.dns-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+.dns-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.dns-info .dns-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.dns-info b { font-size: 13px; font-weight: 800; color: var(--acc2); }
+.dns-info .dns-ips { font-size: 11px; color: var(--text2); direction: ltr; text-align: right; }
+.dns-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ============================================================
    نسخه ۰.۵ — میکروفون، کلید، چت AI و مودال تأیید

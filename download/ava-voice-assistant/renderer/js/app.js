@@ -55,6 +55,37 @@
   const historyList = $('#historyList');
   const historyEmpty = $('#historyEmpty');
 
+  /* ---------- عناصر تایپ صوتی (v0.8) ---------- */
+  const dictPage = $('#dictPage');
+  const btnDict = $('#btnDict');
+  const btnDictBack = $('#btnDictBack');
+  const dictBox = $('#dictBox');
+  const dictInterim = $('#dictInterim');
+  const dictStatus = $('#dictStatus');
+  const btnDictToggle = $('#btnDictToggle');
+  const btnDictCopy = $('#btnDictCopy');
+  const btnDictClear = $('#btnDictClear');
+  const optDictTarget = $('#optDictTarget');
+  const typingCmdsList = $('#typingCmdsList');
+  const tcPhrase = $('#tcPhrase');
+  const tcValue = $('#tcValue');
+  const tcAdd = $('#tcAdd');
+
+  /* ---------- عناصر مدیریت DNS (v0.8) ---------- */
+  const dnsPage = $('#dnsPage');
+  const btnDnsBack = $('#btnDnsBack');
+  const dnsCurrentBox = $('#dnsCurrentBox');
+  const dnsProfilesList = $('#dnsProfilesList');
+  const dnsAddForm = $('#dnsAddForm');
+  const dnsName = $('#dnsName');
+  const dnsPrimary = $('#dnsPrimary');
+  const dnsSecondary = $('#dnsSecondary');
+  const dnsSaveBtn = $('#dnsSaveBtn');
+  const dnsEditId = $('#dnsEditId');
+  const dnsCancelEdit = $('#dnsCancelEdit');
+  const dnsBuiltins = $('#dnsBuiltins');
+  const btnOpenDns = $('#btnOpenDns');
+
   /* ---------- عناصر چت هوش مصنوعی ---------- */
   const chatPage = $('#chatPage');
   const btnChat = $('#btnChat');
@@ -121,6 +152,8 @@
     autoUpdate: store.get('autoUpdate', true),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
+    sttQuality: store.get('sttQuality', 'tiny'),
+    webFirst: store.get('webFirst', true),
     googleKey: store.get('googleKey', ''),
     glmKey: store.get('glmKey', ''),
     glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
@@ -128,6 +161,9 @@
     micId: store.get('micId', ''),
     handsFree: store.get('handsFree', false),
     wakeWord: store.get('wakeWord', true),
+    dictTarget: store.get('dictTarget', 'box'),
+    typingCmds: store.get('typingCmds', []),
+    dnsProfiles: store.get('dnsProfiles', []),
   };
   let customCmds = store.get('customCmds', []);
   let history = store.get('history', []);
@@ -697,9 +733,42 @@
      توجه: state=processing بعد از تشخیص گفتار کاملاً طبیعی است و
      نباید فرمان را رد کند (باگ قدیمی که جواب‌های گوگل/GLM را ساکت دور می‌ریخت). */
   let cmdBusy = false;
-  async function runCommand(cmd) {
+  async function runCommand(cmd, opts) {
     if (!cmd) return;
     if (cmdBusy) return;
+    const raw = String(cmd).trim();
+    /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
+    const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ/i;
+    const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
+    if (dictation.active) {
+      if (DICT_STOP_RE.test(raw)) { stopDictation(true); return; }
+      /* وسط تایپ: همین متن اضافه شود، نه اجرای فرمان */
+      dictateHandle(raw);
+      return;
+    }
+    if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
+    if (/دی\s?ان\s?اس|dns/i.test(raw)) {
+      cmdBusy = true;
+      setState('processing');
+      statusText.textContent = 'در حال کار روی DNS…';
+      try {
+        const reply = await dnsHandle(raw);
+        setState('success');
+        statusText.textContent = 'انجام شد';
+        body.classList.add('has-card');
+        rcHeard.textContent = `«${raw}»`;
+        rcTag.textContent = 'DNS';
+        typeText(rcReply, reply);
+        speak(reply);
+        pushHistory(raw, true);
+      } catch (_) {
+        setState('idle');
+        statusText.textContent = 'کار روی DNS ممکن نشد';
+      }
+      cmdBusy = false;
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+      return;
+    }
     cmdBusy = true;
     if (state === 'listening') stopListening(false);
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
@@ -746,6 +815,7 @@
      بدون هیچ کلیدی؛ دمو فقط با تنظیم صریح کاربر.
      ============================================================ */
   let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
+  let webGotAny = false, webWatchdog = null, webFailStreak = 0;
   let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false, glmSilentMs = 0;
   const ASR_MODEL = 'glm-asr-2512';
   const GLM_MAX_MS = 12000;   // بیشینه ضبط هر فرمان صوتی
@@ -756,13 +826,17 @@
 
   function refreshEngineUI() {
     try { window.__avaAsrReady = asrReady; window.__avaAsrBroken = asrBroken; } catch (_) { /* noop */ }
-    if (whisperReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm')
+    const eng = settings.sttEngine || 'auto';
+    const webUsable = SRC && !srBroken;
+    const webFirstNow = eng === 'web' || (eng === 'auto' && settings.webFirst && webUsable);
+    if (webFirstNow) sbEngine.innerHTML = '<i class="dot ok"></i>موتور: وب گوگل (دقیق‌ترین) — فالبک آفلاین خودکار';
+    else if (whisperReady() && eng !== 'web' && eng !== 'google' && eng !== 'glm')
       sbEngine.innerHTML = asrReady
-        ? '<i class="dot ok"></i>موتور: آفلاین Whisper — بدون اینترنت'
+        ? `<i class="dot ok"></i>موتور: آفلاین Whisper ${settings.sttQuality !== 'tiny' ? '(کیفیت بالا)' : ''} — بدون اینترنت`
         : '<i class="dot warn"></i>موتور: آفلاین (در حال آماده‌سازی…)';
-    else if (SRC && !srBroken && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm' && settings.sttEngine !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
-    else if (googleReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'glm' && settings.sttEngine !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
-    else if (glmReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google' && settings.sttEngine !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
+    else if (webUsable && eng !== 'google' && eng !== 'glm' && eng !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
+    else if (googleReady() && eng !== 'web' && eng !== 'glm' && eng !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
+    else if (glmReady() && eng !== 'web' && eng !== 'google' && eng !== 'whisper') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
     else if (settings.demoMode) sbEngine.innerHTML = '<i class="dot warn"></i>موتور: حالت دمو';
     else sbEngine.innerHTML = '<i class="dot err"></i>موتور: تنظیم نشده';
   }
@@ -773,7 +847,17 @@
     if (eng === 'web') return (SRC && !srBroken) ? 'web' : null;
     if (eng === 'google') return googleReady() ? 'google' : null;
     if (eng === 'glm') return glmReady() ? 'glm' : null;
-    /* خودکار: اول موتور آفلاین داخلی، بعد وب، بعد گوگل، بعد GLM */
+    /* خودکار — «اولویت با دقت»: موتور وب گوگل (دقیق‌ترین برای فارسی) اول
+       امتحان می‌شود؛ اگر در دسترس نبود/خطا داد، خودکار به موتور آفلاین
+       Whisper (بدون اینترنت) و بعد گوگل HTTP و GLM برمی‌گردیم. */
+    if (settings.webFirst) {
+      if (SRC && !srBroken) return 'web';
+      if (whisperReady()) return 'whisper';
+      if (googleReady()) return 'google';
+      if (glmReady()) return 'glm';
+      return null;
+    }
+    /* «اولویت با پایداری»: موتور آفلاین اول */
     if (whisperReady()) return 'whisper';
     if (SRC && !srBroken) return 'web';
     if (googleReady()) return 'google';
@@ -781,40 +865,90 @@
     return null;
   }
 
+  /* بعد از موتور وب، نوبت کدام موتور برسد (فالبک زنجیره‌ای) */
+  function nextEngineAfterWeb() {
+    if (whisperReady()) return 'whisper';
+    if (googleReady()) return 'google';
+    if (glmReady()) return 'glm';
+    return null;
+  }
+
+  /* فالبک هوشمند: اگر موتور وب از دسترس خارج شد، بدون دخالت کاربر
+     با موتور بعدی گوش می‌دهیم (در همان وضعیت گوش دادن) */
+  function fallbackFromWeb() {
+    webFailStreak += 1;
+    if (webFailStreak >= 2) srBroken = true; /* این اجرا: دیگر وب را امتحان نکن */
+    refreshEngineUI();
+    if (state !== 'listening') return;
+    const nxt = nextEngineAfterWeb();
+    if (nxt === 'whisper') { statusText.textContent = 'موتور وب در دسترس نبود — سوییچ به موتور آفلاین…'; startWhisperListen(); }
+    else if (nxt === 'google') { statusText.textContent = 'موتور وب در دسترس نبود — سوییچ به گوگل…'; startGoogleListen(); }
+    else if (nxt === 'glm') { startGlmListen(); }
+    else { setState('idle'); statusText.innerHTML = IDLE_HINT; orbIcon.setAttribute('href', '#i-mic'); }
+  }
+
   function makeRec() {
     const r = new SRC();
     r.lang = 'fa-IR';
     r.interimResults = true;
     r.continuous = false;
+    webGotAny = false;
+    /* سگ‌بان: اگر موتور وب بعد از ۸ ثانیه هیچ نتیجه/خطایی نداد (معمولاً
+       به‌خاطر بی‌دسترس بودن گوگل)، خودکار به موتور بعدی سوییچ می‌کنیم */
+    clearTimeout(webWatchdog);
+    webWatchdog = setTimeout(() => {
+      if (state !== 'listening' || gotFinal || webGotAny) return;
+      try { recActive = false; if (rec) { try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ } } } catch (_) { /* noop */ }
+      fallbackFromWeb();
+    }, 8000);
     r.onresult = (e) => {
       let interim = '', final = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
         if (e.results[i].isFinal) final += t; else interim += t;
       }
-      if (interim && state === 'listening') statusText.textContent = `شنیدم: «${interim}»`;
+      if ((interim || final) && !webGotAny) {
+        webGotAny = true;
+        clearTimeout(webWatchdog);
+        webFailStreak = 0; /* موتور وب زنده است */
+      }
+      if (interim && state === 'listening') {
+        if (dictation.active) { dictInterim.textContent = interim; }
+        else statusText.textContent = `شنیدم: «${interim}»`;
+      }
       if (final) {
         gotFinal = true;
+        clearTimeout(webWatchdog);
         stopListening(false);
-        runCommand(final.trim());
+        if (dictation.active) dictateHandle(final.trim(), { interimEl: true });
+        else runCommand(final.trim());
       }
     };
     r.onerror = (e) => {
       if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) {
-        srBroken = true;
-        refreshEngineUI();
-        /* فالبک خودکار: گوگل رایگان → GLM ابری (اگر کلید باشد) */
-        if (state === 'listening' && settings.sttEngine === 'auto') {
-          try { recActive = false; } catch (_) { /* noop */ }
-          if (googleReady()) startGoogleListen();
-          else if (glmReady()) startGlmListen();
+        clearTimeout(webWatchdog);
+        recActive = false;
+        /* فالبک خودکار: آفلاین Whisper → گوگل رایگان → GLM ابری */
+        if (state === 'listening' && (settings.sttEngine === 'auto')) {
+          fallbackFromWeb();
+        } else if (state === 'listening' && settings.sttEngine === 'web' && whisperReady()) {
+          srBroken = true;
+          refreshEngineUI();
+          startWhisperListen();
+        } else if (['network', 'service-not-allowed'].includes(e.error)) {
+          srBroken = true;
+          refreshEngineUI();
         }
       }
     };
     r.onend = () => {
       recActive = false;
+      clearTimeout(webWatchdog);
       if (gotFinal || srBroken) return;
       if (state === 'listening') {
+        /* بدون هیچ نتیجه بسته شد → احتمالاً گوگل در دسترس نیست → فالبک */
+        if (!webGotAny && (settings.sttEngine === 'auto')) { fallbackFromWeb(); return; }
+        if (dictation.active) { rearmDictation(); return; }
         setState('idle');
         statusText.innerHTML = IDLE_HINT;
         orbIcon.setAttribute('href', '#i-mic');
@@ -852,6 +986,23 @@
     for (let i = 0; i < f32.length; i++) {
       const v = Math.max(-1, Math.min(1, f32[i]));
       out[i] = v < 0 ? v * 32768 : v * 32767;
+    }
+    return out;
+  }
+
+  /* نرمال‌سازی بلندی صدا: میکروفون‌های کم‌صدا/دور را تقویت می‌کند تا
+     موتور تشخیص کلمه‌ها را نصفه‌کاره نشنود (علت اصلی «کج می‌شنود») */
+  function normalizeLoudness(f32) {
+    let sum = 0, n = 0;
+    for (let i = 0; i < f32.length; i += 2) { sum += f32[i] * f32[i]; n++; }
+    const rms = Math.sqrt(sum / Math.max(1, n));
+    if (!isFinite(rms) || rms < 1e-5) return f32;
+    const gain = Math.min(6, 0.035 / rms); /* هدف RMS حدود ۰٫۰۳۵ — حداکثر ×۶ */
+    if (gain > 0.97 && gain < 1.03) return f32;
+    const out = new Float32Array(f32.length);
+    for (let i = 0; i < f32.length; i++) {
+      const v = f32[i] * gain;
+      out[i] = v > 1 ? 1 : v < -1 ? -1 : v;
     }
     return out;
   }
@@ -918,17 +1069,21 @@
     let off = 0;
     for (const c of g.chunks) { merged.set(c, off); off += c.length; }
     const rate = (audioCtx && audioCtx.sampleRate) || 48000;
-    const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
+    const normed = normalizeLoudness(downsampleF32(merged, rate, 16000));
+    const pcm16 = f32ToI16(normed);
     bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, key: settings.googleKey || '', lang: 'fa-IR' })
       .then((r) => {
         if (r && r.ok && r.text) {
-          runCommand(r.text.trim());
+          const t = r.text.trim();
+          if (dictation.active) dictateHandle(t);
+          else runCommand(t);
         } else {
           setState('idle');
           statusText.textContent = 'تبدیل گوگل ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
           orbIcon.setAttribute('href', '#i-mic');
           sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
           toast((r && r.error) || 'گوگل پاسخی نداد', '#i-info');
+          if (dictation.active) setTimeout(rearmDictation, 1500);
         }
       })
       .catch(() => {
@@ -936,6 +1091,7 @@
         statusText.textContent = 'اتصال به گوگل برقرار نشد — اینترنت/فیلترشکن را چک کن';
         orbIcon.setAttribute('href', '#i-mic');
         sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+        if (dictation.active) setTimeout(rearmDictation, 1500);
       });
   }
 
@@ -1002,17 +1158,21 @@
       const buf = new Uint8Array(await blob.arrayBuffer());
       const r = await bridge.stt.transcribe({ buf, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
       if (r && r.ok && r.text) {
-        runCommand(r.text.trim());
+        const t = r.text.trim();
+        if (dictation.active) dictateHandle(t);
+        else runCommand(t);
       } else {
         setState('idle');
         statusText.textContent = 'تبدیل گفتار ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
         orbIcon.setAttribute('href', '#i-mic');
         toast('GLM-ASR: ' + ((r && r.error) || 'خطای نامشخص'), '#i-info');
+        if (dictation.active) setTimeout(rearmDictation, 1500);
       }
     } catch (_) {
       setState('idle');
       statusText.textContent = 'اتصال به GLM-ASR برقرار نشد';
       orbIcon.setAttribute('href', '#i-mic');
+      if (dictation.active) setTimeout(rearmDictation, 1500);
     }
   }
 
@@ -1069,7 +1229,9 @@
         asrWorker = w;
         asrCreating = false;
         refreshEngineUI();
-        w.postMessage({ type: 'load' }); /* پیش‌بارگذاری مدل */
+        const mdl = settings.sttQuality === 'base' ? 'Xenova/whisper-base'
+          : settings.sttQuality === 'small' ? 'Xenova/whisper-small' : 'whisper-tiny';
+        w.postMessage({ type: 'load', model: mdl }); /* پیش‌بارگذاری مدل — باکیفیت‌تر فقط با فرمان کاربر */
         if (done) done(w);
       } catch (err) {
         asrBroken = true;
@@ -1166,6 +1328,7 @@
     if (!cap.spoke || totalMs < WC_MIN_MS) {
       statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
       setTimeout(() => {
+        if (dictation.active) { rearmDictation(); return; }
         if (state === 'listening') {
           setState('idle');
           statusText.innerHTML = IDLE_HINT;
@@ -1182,16 +1345,20 @@
     let off = 0;
     for (const c of cap.chunks) { merged.set(c, off); off += c.length; }
     const pcm16k = downsampleF32(merged, rate, 16000);
-    const pcm = trimSilenceEdges(pcm16k, 16000);
+    const trimmed = trimSilenceEdges(pcm16k, 16000);
+    const pcm = normalizeLoudness(trimmed);
     asrRecognize(pcm).then((r) => {
       if (r && r.ok && r.text) {
-        handleUtterance(r.text.trim());
+        const t = r.text.trim();
+        if (dictation.active) dictateHandle(t);
+        else handleUtterance(t);
       } else {
         setState('idle');
         statusText.textContent = 'تبدیل آفلاین ممکن نشد: ' + ((r && r.error) || 'نامشخص');
         orbIcon.setAttribute('href', '#i-mic');
         sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
         toast((r && r.error) || 'موتور آفلاین پاسخی نداد', '#i-info');
+        if (dictation.active) { setTimeout(rearmDictation, 1200); return; }
         handsFreeRearm();
       }
     });
@@ -1221,7 +1388,7 @@
      ============================================================ */
   function handleUtterance(text) {
     let cmd = text;
-    if (settings.handsFree && settings.wakeWord) {
+    if (settings.handsFree && settings.wakeWord && !dictation.active) {
       const m = text.match(/^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|ava)[\s،,:-]*(.*)$/i);
       if (!m) {
         /* بدون کلمه بیدارباش → نادیده بگیر و به گوش دادن ادامه بده */
@@ -1239,7 +1406,7 @@
         return;
       }
     }
-    runCommand(cmd);
+    runCommand(cmd, { wake: !!(settings.handsFree && settings.wakeWord && !dictation.active) });
   }
 
   /* در حالت بی‌دست، بعد از هر فرمان/خطا دوباره گوش می‌دهیم */
@@ -1277,6 +1444,368 @@
     }
     if (optHandsFree) optHandsFree.checked = !!settings.handsFree;
     if (optWakeWord) optWakeWord.checked = !!settings.wakeWord;
+  }
+
+  /* ============================================================
+     حالت تایپ صوتی (v0.8) — «آوا تایپ» شروع، «آوا تموم»/«قطع تایپ» پایان
+     هر جمله‌ای که گفته شود در کادر تایپ نوشته می‌شود (یا با پیست
+     در همان برنامه‌ای که باز است). علائم نگارشی صوتی + فرمان‌های
+     سفارشی تعریف‌شدنی در تنظیمات.
+     ============================================================ */
+  const dictation = { active: false, busy: false };
+
+  /* علائم نگارشی داخلی — کلمه‌ای که گفته شود همان علامت ثبت می‌شود */
+  const DICT_PUNCT = {
+    'نقطه': '.', 'کاما': '،', 'ویرگول': '،', 'علامت سوال': '؟',
+    'علامت تعجب': '!', 'دو نقطه': ':', 'نقطه ویرگول': '؛',
+    'خط تیره': ' - ', 'پرانتز باز': ' (', 'پرانتز بسته': ') ',
+    'گیومه': '«»',
+  };
+  const DICT_ACTIONS = {
+    'خط جدید': '\n', 'اینتر': '\n', 'برو خط بعد': '\n',
+    'پاک کن': '__DEL__', 'پاک کردن': '__DEL__', 'پاک کردن همه': '__CLEAR__', 'همه رو پاک کن': '__CLEAR__',
+  };
+
+  const DICT_STOP_RE = /([اآا]وا|ava)[\s\u200C]*\s*(تموم|تمام|کافیه|بس|پایان|قطع|خاموش).{0,6}(تایپ|دیکته)|(تموم|تمام|کافیه|بس|پایان|قطع|خاموش)[\s\u200C]*\s*(کن)?[\s\u200C]*\s*(تایپ|دیکته)|تایپ.{0,4}(تموم|تمام|قطع|پایان|کافیه|بسه|بس)|([اآا]وا|ava)[\s\u200C]*\s*(تموم|تمام|کافیه)/i;
+
+  function normDictWord(w) {
+    return String(w || '').toLowerCase()
+      .replace(/\u064A/g, '\u06CC').replace(/\u0643/g, '\u06A9')
+      .replace(/[\s\u200C]+/g, ' ').trim();
+  }
+
+  /* تبدیل گفته‌ها به متن: علائم نگارشی + فرمان‌های سفارشی کاربر */
+  function applyTypingTokens(raw) {
+    const words = String(raw || '').trim().split(/[\s\u200C]+/).filter(Boolean);
+    let i = 0;
+    let cleared = false;
+    const dictBuf = () => dictBox.value;
+    const appendToBuf = (s) => { dictBox.value += s; };
+    const delLastWord = () => {
+      const v = dictBox.value.replace(/\s+$/, '');
+      const cut = Math.max(v.lastIndexOf(' '), v.lastIndexOf('\n'));
+      dictBox.value = cut > 0 ? v.slice(0, cut) : '';
+    };
+    const applyValue = (val) => {
+      if (val === '__DEL__') delLastWord();
+      else if (val === '__CLEAR__') { dictBox.value = ''; cleared = true; }
+      else appendToBuf((dictBuf() && !/[\s\n]$/.test(dictBuf()) ? ' ' : '') + val);
+    };
+    while (i < words.length) {
+      let matched = false;
+      /* فرمان‌های سفارشی کاربر — تطبیق n-گرمی (تا ۶ کلمه) */
+      for (const tc of settings.typingCmds || []) {
+        const ph = String(tc.phrase || '').trim().split(/[\s\u200C]+/).filter(Boolean);
+        if (!ph.length) continue;
+        if (words.length - i >= ph.length) {
+          const seg = words.slice(i, i + ph.length).map(normDictWord).join(' ');
+          if (seg === normDictWord(ph.join(' '))) {
+            applyValue(String(tc.value || ''));
+            i += ph.length;
+            matched = true;
+            break;
+          }
+        }
+      }
+      if (matched) continue;
+      const w = normDictWord(words[i]);
+      const two = words[i + 1] ? normDictWord(w + ' ' + normDictWord(words[i + 1])) : null;
+      if (two && (DICT_ACTIONS[two] || DICT_PUNCT[two])) {
+        applyValue(DICT_ACTIONS[two] || DICT_PUNCT[two]);
+        i += 2;
+        continue;
+      }
+      if (DICT_ACTIONS[w] || DICT_PUNCT[w]) {
+        applyValue(DICT_ACTIONS[w] || DICT_PUNCT[w]);
+        i += 1;
+        continue;
+      }
+      appendToBuf((dictBuf() && !/[\s\n]$/.test(dictBuf()) ? ' ' : '') + words[i]);
+      i += 1;
+    }
+    return { cleared };
+  }
+
+  function renderDictation() {
+    dictInterim.textContent = '';
+    dictStatus.textContent = `حالا حرف بزن — هر چیزی بگویی تایپ می‌شود (${faNum(String(dictBox.value || '').length)} نویسه)`;
+  }
+
+  /* حلقه تایپ: بعد از هر جمله دوباره گوش می‌دهیم */
+  function rearmDictation() {
+    if (!dictation.active) return;
+    setTimeout(() => {
+      if (!dictation.active || state !== 'idle') return;
+      try {
+        if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) { rearmDictation(); return; }
+      } catch (_) { /* noop */ }
+      startListening();
+    }, 350);
+  }
+
+  function dictateHandle(text) {
+    const raw = String(text || '').trim();
+    if (!raw) { rearmDictation(); return; }
+    if (DICT_STOP_RE.test(raw)) { stopDictation(true); return; }
+    /* state به idle برمی‌گردد تا حلقه گوش‌دادن دوباره شروع شود */
+    setState('idle');
+    const before = dictBox.value.length;
+    applyTypingTokens(raw);
+    const delta = dictBox.value.slice(before);
+    renderDictation();
+    /* خروجی در برنامه فعال: فقط بخش تازه‌اضافه‌شده در همان پنجره تایپ می‌شود */
+    if (settings.dictTarget === 'apps' && delta.trim() && bridge && bridge.system && bridge.system.typeText) {
+      bridge.system.typeText(delta).catch(() => { /* noop */ });
+    }
+    rearmDictation();
+  }
+
+  function startDictation() {
+    dictation.active = true;
+    showView('dict');
+    updateDictToggleUI();
+    renderDictation();
+    toast('حالت تایپ شروع شد — حرف بزن! پایان: «آوا تموم» یا «قطع تایپ»', '#i-note');
+    speak('حالت تایپ شروع شد. حرف بزن؛ هر وقت خواستی بگو آوا تموم.');
+    if (state === 'idle') startListening();
+    else if (state === 'listening') { stopListening(); setTimeout(() => { if (dictation.active && state === 'idle') startListening(); }, 300); }
+    else setTimeout(() => { if (dictation.active && state === 'idle') startListening(); }, 1500);
+  }
+
+  function stopDictation(voice = false) {
+    dictation.active = false;
+    updateDictToggleUI();
+    dictInterim.textContent = '';
+    dictStatus.textContent = voice ? 'تایپ صوتی تمام شد — متن آماده کپی است' : 'تایپ صوتی متوقف شد';
+    if (state === 'listening') stopListening();
+    toast('حالت تایپ پایان یافت', '#i-note');
+    if (voice) speak('تایپ تمام شد.');
+  }
+
+  function updateDictToggleUI() {
+    if (btnDictToggle) {
+      btnDictToggle.classList.toggle('active', dictation.active);
+      const sp = btnDictToggle.querySelector('span');
+      if (sp) sp.textContent = dictation.active ? 'توقف تایپ صوتی' : 'شروع تایپ صوتی';
+    }
+  }
+
+  /* ============================================================
+     مدیریت DNS (v0.8) — پایگاه DNSهای معروف + پروفایل‌های نام‌دار
+     بی‌نهایت، قابل ویرایش — اعمال واقعی با تأیید مدیر (UAC)
+     فرمان صوتی: «دی ان اس جدید»، «دی اناس شماره ۱»، «دی ان اس الکترو»،
+     «دی ان اس شکن»، «دی ان اس رو بردار»…
+     ============================================================ */
+  const DNS_BUILTIN = [
+    { name: 'الکترو', ips: ['78.157.42.100', '78.157.42.101'], aliases: ['electro', 'alctro', 'الکترو'] },
+    { name: 'شکن', ips: ['178.22.122.100', '185.51.200.2'], aliases: ['shecan', 'شکن'] },
+    { name: 'بگوان', ips: ['185.55.226.26', '185.55.225.25'], aliases: ['begzar', 'بگوان'] },
+    { name: '۴۰۳ آنلاین', ips: ['10.202.10.10', '10.202.10.11'], aliases: ['403', 'چهارصد و سه', 'ارباب حلقه‌ها'] },
+    { name: 'رادار گیم', ips: ['10.202.10.202', '10.202.10.102'], aliases: ['radar', 'رادار', 'رادارگیم'] },
+    { name: 'پیشگامان', ips: ['5.202.100.100', '5.202.100.101'], aliases: ['pishgaman', 'پیشگامان'] },
+    { name: 'گوگل', ips: ['8.8.8.8', '8.8.4.4'], aliases: ['google'] },
+    { name: 'کلادفلر', ips: ['1.1.1.1', '1.0.0.1'], aliases: ['cloudflare', 'کلاد فلر', 'کلودفلر'] },
+    { name: 'کوآد۹', ips: ['9.9.9.9', '149.112.112.112'], aliases: ['quad9', 'کواد 9', 'کواد۹'] },
+    { name: 'اُپن‌دی‌ان‌اس', ips: ['208.67.222.222', '208.67.220.220'], aliases: ['opendns', 'open dns'] },
+    { name: 'آدانگارد', ips: ['94.140.14.14', '94.140.15.15'], aliases: ['adguard', 'ادگارد'] },
+  ];
+
+  const FA_ORD = { 'یک': 1, 'دو': 2, 'سه': 3, 'چهار': 4, 'پنج': 5, 'شش': 6, 'هفت': 7, 'هشت': 8, 'نه': 9, 'ده': 10, 'اول': 1, 'دوم': 2, 'سوم': 3 };
+
+  const normDnsName = (s) =>
+    String(s || '').toLowerCase()
+      .replace(/[\u064A]/g, '\u06CC').replace(/[\u0643]/g, '\u06A9')
+      .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+      .replace(/[\s\u200C_-]+/g, '')
+      .replace(/[^a-z0-9\u0600-\u06FF]/g, '');
+
+  function findDnsProfile(query) {
+    const q = normDnsName(query);
+    if (!q) return null;
+    const all = [...settings.dnsProfiles, ...DNS_BUILTIN.map((b) => ({ ...b, builtin: true }))];
+    let hit = all.find((p) => normDnsName(p.name) === q);
+    if (hit) return hit;
+    hit = all.find((p) => (p.aliases || []).some((a) => normDnsName(a) === q));
+    if (hit) return hit;
+    /* تطبیق جزئی: نام شامل عبارت یا برعکس */
+    hit = all.find((p) => normDnsName(p.name).includes(q) && q.length >= 2);
+    if (hit) return hit;
+    hit = all.find((p) => (p.aliases || []).some((a) => normDnsName(a).includes(q) && q.length >= 2));
+    return hit || null;
+  }
+
+  function ensureUserProfile(prof) {
+    if (!prof) return null;
+    const found = settings.dnsProfiles.find((p) => normDnsName(p.name) === normDnsName(prof.name));
+    if (found) return found;
+    const np = { id: Date.now(), name: prof.name, ips: [...(prof.ips || [])] };
+    settings.dnsProfiles.push(np);
+    store.set('dnsProfiles', settings.dnsProfiles);
+    renderDnsProfiles();
+    return np;
+  }
+
+  async function applyDnsIps(ips, label) {
+    if (!bridge || !bridge.dns) {
+      toast('تغییر DNS فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+      return 'تغییر DNS فقط داخل نرم‌افزار ویندوزی کار می‌کند.';
+    }
+    toast('پنجره تأیید مدیر (UAC) ویندوز را تأیید کن', '#i-info');
+    const r = await bridge.dns.apply({ primary: ips[0], secondary: ips[1] || '' });
+    if (r && r.ok) {
+      return `DNS «${label}» فعال شد: ${faNum(ips.join(' و '))}. کش شبکه هم پاک شد.`;
+    }
+    return (r && r.error) || 'اعمال DNS ممکن نشد.';
+  }
+
+  async function dnsHandle(cmd) {
+    const n = normFa(cmd);
+    /* باز کردن صفحه مدیریت */
+    const openManager = (msg) => {
+      showView('dns');
+      refreshDnsCurrent();
+      return msg;
+    };
+    /* حذف/ریست به حالت خودکار */
+    if (/بردار|خاموش|قطع\s*کن|حذف\s*(دی|dns)|خودکار|پیش\s*فرض|ریست/.test(n)) {
+      if (bridge && bridge.dns) {
+        toast('برای بازگردانی DNS به حالت خودکار، UAC را تأیید کن', '#i-info');
+        const r = await bridge.dns.reset();
+        return r && r.ok ? 'DNS به حالت خودکار ویندوز برگشت.' : `ریست DNS ممکن نشد: ${(r && r.error) || ''}`;
+      }
+      return 'ریست DNS فقط داخل نرم‌افزار ویندوزی کار می‌کند.';
+    }
+    /* افزودن DNS جدید (صفحه) */
+    if (/جدید|اضافه|ادد|تعریف|ثبت|بساز|بساز براش/.test(n)) {
+      return openManager('صفحه افزودن DNS باز شد — نام و دو آی‌پی را وارد کن و ذخیره کن.');
+    }
+    /* شماره‌دار: پروفایل‌های ذخیره‌شده کاربر */
+    const mNum = n.match(/شماره\s*(\d{1,2}|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|اول|دوم|سوم)/);
+    if (mNum) {
+      const idxRaw = mNum[1];
+      const idx = /^\d+$/.test(idxRaw) ? Number(idxRaw) : FA_ORD[idxRaw] || 0;
+      const prof = settings.dnsProfiles[idx - 1];
+      if (!prof) {
+        return openManager(`پروفایل شماره ${faNum(idx)} هنوز تعریف نشده — لیست DNSهای تو باز شد.`);
+      }
+      return applyDnsIps(prof.ips, prof.name);
+    }
+    /* جستجو با نام (مثل: دی ان اس الکترو) */
+    const nameCand = n
+      .replace(/دی\s?ان\s?اس|dns|دک?ی?ان?س|رو|را|به|را\s*ست|ست\s*کن|تنظیم|فعال|وصل|کن|بده|استفاده|از|همون|همان|شروع|بزن/gi, ' ')
+      .replace(/[\s\u200C]+/g, ' ')
+      .trim();
+    if (nameCand && nameCand.length >= 2) {
+      const prof = findDnsProfile(nameCand);
+      if (prof) {
+        const user = ensureUserProfile(prof);
+        const ips = (user || prof).ips;
+        return applyDnsIps(ips, prof.name);
+      }
+      return openManager(`«${nameCand}» را در فهرست DNSهای معروف پیدا نکردم — صفحه افزودن باز شد؛ آی‌پی‌هایش را دستی وارد کن.`);
+    }
+    /* فقط «دی ان اس» — باز کردن مدیر */
+    return openManager('مدیریت DNS باز شد — فعلاً این DNSها فعال‌اند.');
+  }
+
+  function refreshDnsCurrent() {
+    if (!dnsCurrentBox) return;
+    dnsCurrentBox.textContent = 'در حال خواندن DNS فعلی…';
+    if (!bridge || !bridge.dns) {
+      dnsCurrentBox.textContent = 'خواندن DNS فعلی فقط داخل نرم‌افزار ویندوزی کار می‌کند';
+      return;
+    }
+    bridge.dns.current().then((r) => {
+      if (r && r.ok && r.entries && r.entries.length) {
+        dnsCurrentBox.innerHTML = r.entries
+          .map((e) => `<span class="dns-cur"><b>${e.name}</b> ${e.ips.map((i) => faNum(i)).join(' , ')}</span>`)
+          .join('');
+      } else {
+        dnsCurrentBox.textContent = 'DNS فعلی: حالت خودکار (DHCP)';
+      }
+    }).catch(() => { dnsCurrentBox.textContent = 'خواندن DNS فعلی ممکن نشد'; });
+  }
+
+  function renderDnsProfiles() {
+    if (!dnsProfilesList) return;
+    dnsProfilesList.innerHTML = '';
+    const list = settings.dnsProfiles;
+    if (!list.length) {
+      const p = document.createElement('p');
+      p.className = 'set-note';
+      p.textContent = 'هنوز DNS ذخیره نکردی — یکی از DNSهای معروف را اضافه کن یا خودت آی‌پی بده. محدودیتی در تعداد نیست.';
+      dnsProfilesList.appendChild(p);
+      return;
+    }
+    list.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.className = 'dns-row';
+      row.innerHTML =
+        `<div class="dns-info"><b>${idx + 1}. </b><span class="dns-name"></span>` +
+        `<span class="dns-ips"></span></div>` +
+        `<div class="dns-actions">` +
+        `<button class="chip sm dns-apply"><svg class="ic"><use href="#i-power"/></svg><span>فعال‌سازی</span></button>` +
+        `<button class="chip sm dns-edit"><svg class="ic"><use href="#i-note"/></svg><span>ویرایش</span></button>` +
+        `<button class="chip sm dns-del"><svg class="ic"><use href="#i-trash"/></svg><span>حذف</span></button>` +
+        `</div>`;
+      row.querySelector('.dns-name').textContent = p.name;
+      row.querySelector('.dns-ips').textContent = (p.ips || []).map(faNum).join(' , ');
+      row.querySelector('.dns-apply').addEventListener('click', async () => {
+        const msg = await applyDnsIps(p.ips, p.name);
+        toast(msg, '#i-globe');
+        refreshDnsCurrent();
+      });
+      row.querySelector('.dns-edit').addEventListener('click', () => {
+        dnsEditId.value = String(p.id);
+        dnsName.value = p.name;
+        dnsPrimary.value = (p.ips || [])[0] || '';
+        dnsSecondary.value = (p.ips || [])[1] || '';
+        dnsSaveBtn.querySelector('span').textContent = 'ذخیره تغییرات';
+        dnsCancelEdit.hidden = false;
+        dnsName.focus();
+      });
+      row.querySelector('.dns-del').addEventListener('click', () => {
+        settings.dnsProfiles = settings.dnsProfiles.filter((x) => x.id !== p.id);
+        store.set('dnsProfiles', settings.dnsProfiles);
+        renderDnsProfiles();
+        toast(`DNS «${p.name}» حذف شد`, '#i-trash');
+      });
+      dnsProfilesList.appendChild(row);
+    });
+  }
+
+  function resetDnsForm() {
+    dnsEditId.value = '';
+    dnsName.value = '';
+    dnsPrimary.value = '';
+    dnsSecondary.value = '';
+    dnsSaveBtn.querySelector('span').textContent = 'ذخیره DNS';
+    dnsCancelEdit.hidden = true;
+  }
+
+  function renderDnsBuiltins() {
+    if (!dnsBuiltins) return;
+    dnsBuiltins.innerHTML = '';
+    DNS_BUILTIN.forEach((b) => {
+      const btn = document.createElement('button');
+      btn.className = 'chip sm';
+      btn.type = 'button';
+      btn.title = `${b.name}: ${b.ips.join(' , ')}`;
+      btn.innerHTML = `<svg class="ic"><use href="#i-globe"/></svg><span></span>`;
+      btn.querySelector('span').textContent = b.name;
+      btn.addEventListener('click', () => {
+        const exists = settings.dnsProfiles.find((p) => normDnsName(p.name) === normDnsName(b.name));
+        if (exists) {
+          toast(`«${b.name}» از قبل در فهرست تو هست`, '#i-info');
+          return;
+        }
+        settings.dnsProfiles.push({ id: Date.now(), name: b.name, ips: [...b.ips] });
+        store.set('dnsProfiles', settings.dnsProfiles);
+        renderDnsProfiles();
+        toast(`«${b.name}» اضافه شد — با دکمه فعال‌سازی اعمالش کن`, '#i-plus');
+      });
+      dnsBuiltins.appendChild(btn);
+    });
   }
 
   /* --- وقتی هیچ موتوری نیست: پیام صادقانه (+ دمو فقط اگر کاربر روشن کرده) --- */
@@ -1412,6 +1941,8 @@
       else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
       else if (historyPage && !historyPage.hidden) showView('home');
+      else if (dnsPage && !dnsPage.hidden) showView('home');
+      else if (dictPage && !dictPage.hidden) showView('home');
       else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
     }
@@ -1481,21 +2012,143 @@
     bridge.voice.onToggleHandsFree(() => setHandsFree(!settings.handsFree));
   }
 
+  /* ---------- تایپ صوتی: صفحه، دکمه‌ها، فرمان‌های سفارشی ---------- */
+  if (btnDict) btnDict.addEventListener('click', () => showView(dictPage.hidden ? 'dict' : 'home'));
+  if (btnDictBack) btnDictBack.addEventListener('click', () => showView('home'));
+  if (btnDictToggle) btnDictToggle.addEventListener('click', () => {
+    if (dictation.active) stopDictation(false);
+    else startDictation();
+  });
+  if (btnDictCopy) btnDictCopy.addEventListener('click', async () => {
+    const txt = dictBox.value || '';
+    if (!txt.trim()) { toast('متنی برای کپی نیست', '#i-info'); return; }
+    try {
+      await navigator.clipboard.writeText(txt);
+      toast('متن کپی شد ✓', '#i-note');
+    } catch (_) {
+      try {
+        dictBox.select();
+        document.execCommand('copy');
+        toast('متن کپی شد ✓', '#i-note');
+      } catch (__) { toast('کپی ممکن نشد — خودت انتخاب و کپی کن', '#i-info'); }
+    }
+  });
+  if (btnDictClear) btnDictClear.addEventListener('click', () => {
+    dictBox.value = '';
+    renderDictation();
+    toast('کادر تایپ پاک شد', '#i-trash');
+  });
+  if (optDictTarget) optDictTarget.addEventListener('change', () => {
+    settings.dictTarget = optDictTarget.value || 'box';
+    store.set('dictTarget', settings.dictTarget);
+    toast(settings.dictTarget === 'apps'
+      ? 'خروجی: تایپ مستقیم در برنامه فعال (کلیپ‌بورد موقتاً عوض می‌شود)'
+      : 'خروجی: کادر تایپ آوا', '#i-note');
+  });
+  const btnDictStart = $('#btnDictStart');
+  if (btnDictStart) btnDictStart.addEventListener('click', () => startDictation());
+
+  function renderTypingCmds() {
+    if (!typingCmdsList) return;
+    typingCmdsList.innerHTML = '';
+    const list = settings.typingCmds || [];
+    if (!list.length) {
+      const p = document.createElement('p');
+      p.className = 'set-note';
+      p.textContent = 'هنوز فرمان سفارشی نداری — مثلاً بگو: هر وقت گفتم «آدرس»، این را بنویس: تهران، خیابان …';
+      typingCmdsList.appendChild(p);
+      return;
+    }
+    list.forEach((tc) => {
+      const row = document.createElement('div');
+      row.className = 'tc-row';
+      row.innerHTML =
+        `<div class="tc-info"><b class="tc-ph"></b><span class="tc-val"></span></div>` +
+        `<button class="chip sm tc-del"><svg class="ic"><use href="#i-trash"/></svg><span>حذف</span></button>`;
+      row.querySelector('.tc-ph').textContent = `«${tc.phrase}»`; 
+      row.querySelector('.tc-val').textContent =
+        tc.value === '\n' ? '→ خط جدید' : tc.value === '__DEL__' ? '→ پاک‌کردن کلمه آخر' : tc.value === '__CLEAR__' ? '→ پاک‌کردن همه' : `→ «${tc.value}»`;
+      row.querySelector('.tc-del').addEventListener('click', () => {
+        settings.typingCmds = settings.typingCmds.filter((x) => x.id !== tc.id);
+        store.set('typingCmds', settings.typingCmds);
+        renderTypingCmds();
+        toast('فرمان تایپ حذف شد', '#i-trash');
+      });
+      typingCmdsList.appendChild(row);
+    });
+  }
+  if (tcAdd) tcAdd.addEventListener('click', () => {
+    const ph = (tcPhrase.value || '').trim();
+    const rawVal = (tcValue.value || '').trim();
+    if (!ph || !rawVal) { toast('هم عبارت گفتاری و هم عمل لازم است', '#i-info'); return; }
+    let val = rawVal;
+    if (/^(خط\s*جدید|اینتر)$/i.test(rawVal)) val = '\n';
+    else if (/^پاک\s*کردن\s*کلمه(\s*آخر)?$/i.test(rawVal)) val = '__DEL__';
+    else if (/^پاک\s*کردن\s*همه$/i.test(rawVal)) val = '__CLEAR__';
+    settings.typingCmds = settings.typingCmds || [];
+    settings.typingCmds.push({ id: Date.now(), phrase: ph, value: val });
+    store.set('typingCmds', settings.typingCmds);
+    tcPhrase.value = '';
+    tcValue.value = '';
+    renderTypingCmds();
+    toast(`از این به بعد «${ph}» → همان عمل انجام می‌شود`, '#i-plus');
+  });
+
+  /* ---------- مدیریت DNS: فرم، ذخیره، باز کردن صفحه ---------- */
+  if (btnOpenDns) btnOpenDns.addEventListener('click', () => showView('dns'));
+  if (btnDnsBack) btnDnsBack.addEventListener('click', () => showView('home'));
+  if (dnsSaveBtn) dnsSaveBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const name = (dnsName.value || '').trim();
+    const p1 = (dnsPrimary.value || '').trim();
+    const p2 = (dnsSecondary.value || '').trim();
+    const IP_OK = (v) => /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(v);
+    if (!name) { toast('اسم DNS را بنویس — بعداً با همان اسم صدا می‌زنی', '#i-info'); dnsName.focus(); return; }
+    if (!IP_OK(p1)) { toast('آی‌پی اول معتبر نیست — مثال: 78.157.42.100', '#i-info'); dnsPrimary.focus(); return; }
+    if (p2 && !IP_OK(p2)) { toast('آی‌پی دوم معتبر نیست', '#i-info'); dnsSecondary.focus(); return; }
+    const editId = dnsEditId.value;
+    if (editId) {
+      const prof = settings.dnsProfiles.find((x) => String(x.id) === editId);
+      if (prof) { prof.name = name; prof.ips = p2 ? [p1, p2] : [p1]; }
+      toast(`DNS «${name}» به‌روز شد`, '#i-plus');
+    } else {
+      settings.dnsProfiles.push({ id: Date.now(), name, ips: p2 ? [p1, p2] : [p1] });
+      toast(`DNS «${name}» ذخیره شد — بگو «DNS ${name}» تا فعالش کنم`, '#i-plus');
+    }
+    store.set('dnsProfiles', settings.dnsProfiles);
+    resetDnsForm();
+    renderDnsProfiles();
+  });
+  if (dnsCancelEdit) dnsCancelEdit.addEventListener('click', resetDnsForm);
+  if (dnsAddForm) dnsAddForm.addEventListener('submit', (e) => { e.preventDefault(); if (dnsSaveBtn) dnsSaveBtn.click(); });
+  const btnDnsReset = $('#btnDnsReset');
+  if (btnDnsReset) btnDnsReset.addEventListener('click', async () => {
+    if (!bridge || !bridge.dns) { toast('ریست DNS فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info'); return; }
+    toast('برای بازگردانی DNS، پنجره تأیید مدیر (UAC) را تأیید کن', '#i-info');
+    const r = await bridge.dns.reset();
+    toast(r && r.ok ? 'DNS به حالت خودکار برگشت' : `ریست نشد: ${(r && r.error) || 'خطای نامشخص'}`, r && r.ok ? '#i-refresh' : '#i-info');
+    refreshDnsCurrent();
+  });
+
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.7.0';
+  let appVersion = '0.8.0';
 
   function showView(v) {
     settingsPage.hidden = v !== 'settings';
     chatPage.hidden = v !== 'chat';
     if (historyPage) historyPage.hidden = v !== 'history';
+    if (dictPage) dictPage.hidden = v !== 'dict';
+    if (dnsPage) dnsPage.hidden = v !== 'dns';
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
     btnChat.classList.toggle('active', v === 'chat');
+    if (btnDict) btnDict.classList.toggle('active', v === 'dict');
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     $('#main').scrollTop = 0;
     if (v === 'settings') refreshSettingsUI();
+    if (v === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
     if (v === 'chat') {
       if (!chatMsgs.childElementCount) chatWelcome();
       setTimeout(() => chatInput.focus(), 150);
@@ -1525,6 +2178,9 @@
     optAutoUpdate.checked = !!settings.autoUpdate;
     optDemo.checked = !!settings.demoMode;
     optSttEngine.value = settings.sttEngine || 'auto';
+    if (optSttQuality) optSttQuality.value = settings.sttQuality || 'tiny';
+    if (optWebFirst) optWebFirst.checked = !!settings.webFirst;
+    if (optDictTarget) optDictTarget.value = settings.dictTarget || 'box';
     optGlmKey.value = settings.glmKey || '';
     optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
@@ -1533,6 +2189,9 @@
     fillVoiceSelect();
     listMicDevices();
     loadAppVersion();
+    renderTypingCmds();
+    renderDnsProfiles();
+    renderDnsBuiltins();
     if (bridge && bridge.settings) {
       bridge.settings.flags().then((f) => {
         optTop.checked = !!(f && f.alwaysOnTop);
@@ -1592,6 +2251,29 @@
       optGlmKey.focus();
       toast('موتور GLM به کلید نیاز دارد — یا موتور «خودکار»/«گوگل رایگان» را انتخاب کن', '#i-key');
     }
+  });
+
+  if (optSttQuality) optSttQuality.addEventListener('change', () => {
+    const prev = settings.sttQuality;
+    settings.sttQuality = optSttQuality.value || 'tiny';
+    store.set('sttQuality', settings.sttQuality);
+    if (settings.sttQuality !== prev && asrWorker) {
+      /* مدل فعال عوض شد → موتور آفلاین با مدل جدید (یا فالبک داخلی) ری‌لود می‌شود */
+      asrReady = false;
+      asrWorker.postMessage({ type: 'load', model: settings.sttQuality === 'base' ? 'Xenova/whisper-base' : settings.sttQuality === 'small' ? 'Xenova/whisper-small' : 'whisper-tiny' });
+      if (settings.sttQuality !== 'tiny') toast('در حال آماده‌سازی مدل باکیفیت‌تر — اولین بار چند ده مگابایت دانلود می‌شود', '#i-download');
+    }
+    toast(settings.sttQuality === 'tiny' ? 'کیفیت آفلاین: سریع (مدل کوچک داخلی)' : 'کیفیت آفلاین: دقت بالاتر (مدل بزرگ‌تر)', '#i-wave');
+    refreshEngineUI();
+  });
+
+  if (optWebFirst) optWebFirst.addEventListener('change', () => {
+    settings.webFirst = !!optWebFirst.checked;
+    store.set('webFirst', settings.webFirst);
+    refreshEngineUI();
+    toast(settings.webFirst
+      ? 'اولویت با دقت: موتور وب گوگل اول امتحان می‌شود، اگر نبود آفلاین'
+      : 'اولویت با پایداری: موتور آفلاین داخلی اول است', '#i-wave');
   });
 
   optGlmKey.addEventListener('change', () => {
@@ -2099,7 +2781,11 @@
   statusText.innerHTML = IDLE_HINT;
   refreshEngineUI();
   renderCustomChips();
+  renderTypingCmds();
+  renderDnsProfiles();
+  renderDnsBuiltins();
   updateHandsFreeUI();
+  updateDictToggleUI();
   /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
   setTimeout(() => { attachMic(); }, 1200);
   /* پیش‌بارگذاری موتور آفلاین — تا اولین فرمان فوری جواب بدهد */

@@ -424,6 +424,145 @@ ipcMain.handle('settings:save', (_e, obj) => {
 });
 
 /* ============================================================
+   تایپ در برنامه فعال (حالت تایپ صوتی → خروجی پیست در هر برنامه)
+   متن به کلیپ‌بورد می‌رود و Ctrl+V در پنجره فعال زده می‌شود.
+   ============================================================ */
+ipcMain.handle('sys:type-text', (_e, text) => {
+  const t = String(text || '');
+  if (!t.trim()) return { ok: false, error: 'متن خالی است' };
+  if (t.length > 4000) return { ok: false, error: 'متن بیش از حد طولانی است' };
+  try {
+    const b64 = Buffer.from(t, 'utf16le').toString('base64');
+    const ps =
+      'powershell -NoProfile -Command "' +
+      `$t=[System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${b64}')); ` +
+      'Set-Clipboard -Value $t; ' +
+      "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; " +
+      '[W.N]::keybd_event(0x11,0,0,0); [W.N]::keybd_event(0x56,0,0,0); Start-Sleep -m 80; ' +
+      '[W.N]::keybd_event(0x56,0,2,0); [W.N]::keybd_event(0x11,0,2,0); Write-Output ok"';
+    return new Promise((resolve) => {
+      exec(ps, { windowsHide: true, timeout: 8000 }, (err) => {
+        resolve(err ? { ok: false, error: 'تایپ در برنامه فعال ممکن نشد' } : { ok: true });
+      });
+    });
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
+
+/* ============================================================
+   مدیریت DNS ویندوز — با فرمان صوتی یا رابط کاربری
+   تغییر DNS واقعی نیاز به دسترسی مدیر دارد؛ اسکریپت PowerShell
+   با Start-Process -Verb RunAs اجرا می‌شود (پنجره UAC ویندوز باز می‌شود
+   و خود کاربر تأیید می‌کند — آوا هیچ دسترسی مدیریتی انبار نمی‌کند).
+   ============================================================ */
+const PS_RUN = (cmdStr, timeout = 40000) =>
+  new Promise((resolve) => {
+    exec(cmdStr, { windowsHide: true, timeout }, (err, stdout) => {
+      resolve({ ok: !err, out: (stdout || '').trim(), err: err ? String(err.message || err) : '' });
+    });
+  });
+
+const DNS_IP_OK = (v) =>
+  typeof v === 'string' && /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(v.trim());
+
+/* اسکریپت موقت در پوشه Temp نوشته و با دسترسی مدیر اجرا می‌شود */
+function runElevatedPs(scriptBody) {
+  return new Promise((resolve) => {
+    try {
+      const file = path.join(os.tmpdir(), `ava-dns-${Date.now()}.ps1`);
+      fs.writeFileSync(file, scriptBody, 'utf8');
+      const launcher =
+        'powershell -NoProfile -Command "' +
+        `$p = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden ` +
+        `-ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','${file.replace(/'/g, "''")}'; ` +
+        `exit $p.ExitCode"`;
+      exec(launcher, { windowsHide: true, timeout: 120000 }, (err, stdout, stderr) => {
+        try { fs.unlinkSync(file); } catch (_) { /* noop */ }
+        if (err) {
+          /* کاربر پنجره UAC را لغو کرد یا اجرا شکست خورد */
+          const cancelled = /canceled|cancelled|operated by the user/i.test(String((err && err.message) || '') + stderr);
+          resolve({ ok: false, cancelled, error: cancelled ? 'تأیید مدیر لغو شد' : 'اجرا با دسترسی مدیر ممکن نشد' });
+        } else {
+          resolve({ ok: true });
+        }
+      });
+    } catch (e) {
+      resolve({ ok: false, error: String((e && e.message) || e) });
+    }
+  });
+}
+
+async function activeAdapters() {
+  const r = await PS_RUN(
+    'powershell -NoProfile -Command "Get-NetAdapter | Where-Object { $_.Status -eq \'Up\' } | ForEach-Object { Write-Output ($_.ifIndex.ToString() + \'|\' + $_.Name) }"'
+  );
+  if (!r.ok) return { ok: false, error: 'خواندن کارت‌های شبکه ممکن نشد', adapters: [] };
+  const adapters = r.out.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+    const i = l.indexOf('|');
+    return { ifIndex: Number(l.slice(0, i)), name: l.slice(i + 1) };
+  }).filter((a) => Number.isFinite(a.ifIndex));
+  return { ok: true, adapters };
+}
+
+ipcMain.handle('dns:interfaces', () => activeAdapters());
+
+ipcMain.handle('dns:current', async () => {
+  const r = await PS_RUN(
+    'powershell -NoProfile -Command "Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.ServerAddresses.Count -gt 0 } | ForEach-Object { $a = Get-NetAdapter -InterfaceIndex $_.InterfaceIndices[0] -ErrorAction SilentlyContinue; if ($a) { Write-Output ($a.Name + \'|\' + ($_.ServerAddresses -join \',\')) } }"'
+  );
+  if (!r.ok) return { ok: false, error: 'خواندن DNS فعلی ممکن نشد', entries: [] };
+  const entries = r.out.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+    const i = l.indexOf('|');
+    return { name: l.slice(0, i), ips: l.slice(i + 1).split(',').filter(Boolean) };
+  });
+  return { ok: true, entries };
+});
+
+ipcMain.handle('dns:apply', async (_e, p) => {
+  const { primary, secondary, ifIndex } = p || {};
+  const p1 = DNS_IP_OK(primary) ? String(primary).trim() : null;
+  const p2 = DNS_IP_OK(secondary) ? String(secondary).trim() : null;
+  if (!p1) return { ok: false, error: 'آی‌پی DNS اول معتبر نیست (مثال: 78.157.42.100)' };
+  let targets = [];
+  if (Number.isFinite(Number(ifIndex)) && ifIndex !== null && ifIndex !== undefined && ifIndex !== '') {
+    targets = [{ ifIndex: Number(ifIndex) }];
+  } else {
+    const a = await activeAdapters();
+    targets = (a.adapters || []).map((x) => ({ ifIndex: x.ifIndex }));
+    if (!targets.length) return { ok: false, error: 'هیچ کارت شبکه فعالی پیدا نشد' };
+  }
+  const idx = targets.map((t) => String(t.ifIndex)).join(',');
+  const body =
+    `$ErrorActionPreference = 'Stop'\n` +
+    `$ips = @('${p1}'${p2 ? `,'${p2}'` : ''})\n` +
+    `Set-DnsClientServerAddress -InterfaceIndex @(${idx}) -ServerAddresses $ips\n` +
+    `Clear-DnsClientCache\n` +
+    `exit 0\n`;
+  const r = await runElevatedPs(body);
+  if (!r.ok) return r;
+  /* اعتبارسنجی واقعی: بعد از اعمال، DNS فعلی را می‌خوانیم */
+  await new Promise((res) => setTimeout(res, 1200));
+  const cur = await PS_RUN(
+    'powershell -NoProfile -Command "(Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1).ServerAddresses -join \',\'"'
+  );
+  const applied = cur.ok && cur.out && cur.out.includes(p1);
+  return applied ? { ok: true, ips: p2 ? `${p1} , ${p2}` : p1 } : { ok: true, ips: p2 ? `${p1} , ${p2}` : p1, unverified: true };
+});
+
+ipcMain.handle('dns:reset', async () => {
+  const a = await activeAdapters();
+  if (!a.adapters || !a.adapters.length) return { ok: false, error: 'هیچ کارت شبکه فعالی پیدا نشد' };
+  const idx = a.adapters.map((t) => String(t.ifIndex)).join(',');
+  const body =
+    `$ErrorActionPreference = 'Stop'\n` +
+    `Set-DnsClientServerAddress -InterfaceIndex @(${idx}) -ResetServerAddresses\n` +
+    `Clear-DnsClientCache\n` +
+    `exit 0\n`;
+  return runElevatedPs(body);
+});
+
+/* ============================================================
    آب‌وهوا — Open-Meteo (بدون هیچ کلید API)
    ============================================================ */
 const WMO_FA = {
@@ -517,22 +656,42 @@ const GOOGLE_KEY_DEFAULT = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw';
 
 /* ---------- چت با GLM بدون کلید API — با نشست حساب z.ai کاربر ----------
    کاربر یک بار در تب «صفحه چت» وارد chat.z.ai می‌شود؛ توکن نشستش
-   خوانده می‌شود و درخواست‌ها از این‌جا با همان حساب انجام می‌شود. */
+   خوانده می‌شود و درخواست‌ها از این‌جا با همان حساب انجام می‌شود.
+   نکات مهم (بر اساس رفتار واقعی وب z.ai):
+   › درخواست باید هدرهای مرورگر واقعی بگیرد: X-FE-Version، Origin، Referer
+   › بدنه باید stream:true و chat_id و id داشته باشد
+   › پاسخ SSE است: محتوا در data.delta_content با phase=answer؛
+     phase=thinking زنجیره فکر است و باید حذف شود. */
 ipcMain.handle('ai:zaiChat', async (_e, p) => {
   const { token, messages, model } = p || {};
   if (!token) return { ok: false, error: 'برای چت بدون کلید، اول در تب «صفحه چت» وارد حسابت شو' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
   const ZAI = 'https://chat.z.ai';
-  const auth = { Authorization: `Bearer ${String(token).trim()}` };
+  const chatId = crypto.randomUUID();
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${String(token).trim()}`,
+    Accept: '*/*',
+    'User-Agent': CHROME_UA,
+    'X-FE-Version': 'prod-fe-1.0.76',
+    Origin: ZAI,
+    Referer: `${ZAI}/c/${chatId}`,
+    'sec-ch-ua': CHROME_SEC_CH_UA,
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-ch-ua-mobile': '?0',
+  };
   try {
     /* انتخاب مدل: از فهرست مدل‌های حساب کاربر */
     let mdl = String(model || '').trim();
     if (!mdl) {
       try {
-        const mr = await fetch(`${ZAI}/api/models`, { headers: auth, signal: AbortSignal.timeout(15000) });
+        const mr = await fetch(`${ZAI}/api/models`, { headers, signal: AbortSignal.timeout(15000) });
         const mj = await mr.json().catch(() => ({}));
-        const ids = ((mj && mj.data) || []).map((m) => String(m && m.id)).filter(Boolean);
+        const ids = ((mj && mj.data) || [])
+          .filter((m) => !m || !m.info || m.info.is_active !== false)
+          .map((m) => String(m && m.id)).filter(Boolean);
         mdl =
+          ids.find((i) => /^glm[-_]?4\.6$/i.test(i)) ||
           ids.find((i) => /glm[-_]?4\.6/i.test(i)) ||
           ids.find((i) => /glm[-_]?4\.5(?![-_]?air)/i.test(i)) ||
           ids.find((i) => /glm/i.test(i)) ||
@@ -541,42 +700,62 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
     }
     const r = await fetch(`${ZAI}/api/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth },
+      headers,
       body: JSON.stringify({
+        stream: true,
+        chat_id: chatId,
+        id: crypto.randomUUID(),
         model: mdl,
         messages: messages.slice(-16),
-        temperature: 0.6,
-        stream: false,
+        features: { enable_thinking: false },
       }),
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(90000),
     });
+    if (!r.ok && r.status === 401) {
+      return { ok: false, needLogin: true, error: 'نشست منقضی شده — در تب «صفحه چت» دوباره وارد شو' };
+    }
     const ct = String(r.headers.get('content-type') || '');
     let text = '';
-    if (ct.includes('text/event-stream')) {
-      /* بعضی مسیرها SSE برمی‌گردانند حتی با stream:false */
-      const t = await r.text();
-      for (const line of t.split('\n')) {
+    if (ct.includes('text/event-stream') || !ct.includes('json')) {
+      /* پاسخ SSE است — فرمت z.ai: data.  {  {phase, delta_content, done}  */
+      const raw = await r.text();
+      for (const line of raw.split('\n')) {
         const s = line.trim();
         if (!s.startsWith('data:')) continue;
         const d = s.slice(5).trim();
-        if (d === '[DONE]') break;
+        if (!d || d === '[DONE]') continue;
         try {
           const j = JSON.parse(d);
+          /* فرمت OpenAI استاندارد (فالبک) */
           const c = j && j.choices && j.choices[0];
-          const delta = (c && ((c.delta && c.delta.content) || (c.message && c.message.content))) || '';
-          if (delta) text += delta;
+          if (c && (c.delta || c.message)) {
+            const delta = (c.delta && c.delta.content) || (c.message && c.message.content) || '';
+            if (delta) text += delta;
+            continue;
+          }
+          /* فرمت واقعی z.ai */
+          const dd = j && typeof j.data === 'object' ? j.data : null;
+          if (!dd) continue;
+          if (dd.phase && dd.phase !== 'answer') continue; /* زنجیره فکر → حذف */
+          let piece = String(dd.delta_content || dd.edit_content || '');
+          if (piece && /<summary>/i.test(piece)) {
+            /* اولین تکه پاسخ ممکن است تفکر را هم داخل <details> داشته باشد */
+            piece = piece.replace(/<details[^>]*>[\s\S]*?<\/details>/gi, '');
+          }
+          if (piece) text += piece;
+          if (dd.done) break;
         } catch (_) { /* noop */ }
       }
     } else {
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
         const msg = (j && ((j.error && (j.error.message || j.error.code)) || j.detail || j.message)) || `HTTP ${r.status}`;
-        if (r.status === 401) return { ok: false, needLogin: true, error: 'نشست منقضی شده — در تب «صفحه چت» دوباره وارد شو' };
         return { ok: false, error: `z.ai: ${String(msg).slice(0, 140)}` };
       }
       text = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
     }
-    if (!text) return { ok: false, error: 'پاسخ خالی از z.ai رسید' };
+    text = text.replace(/\n{3,}/g, '\n\n').trim();
+    if (!text) return { ok: false, error: 'پاسخ خالی از z.ai رسید — چند لحظه بعد دوباره امتحان کن' };
     return { ok: true, text, model: mdl };
   } catch (e) {
     return { ok: false, error: netErr(e) };

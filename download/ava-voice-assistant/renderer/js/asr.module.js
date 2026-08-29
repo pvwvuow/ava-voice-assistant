@@ -32,18 +32,70 @@ env.backends.onnx.wasm = Object.assign(env.backends.onnx.wasm || {}, {
   proxy: false,
 });
 
-const MODEL = 'whisper-tiny';
+const BUNDLED_MODEL = 'whisper-tiny';
+let MODEL = BUNDLED_MODEL;
 let asr = null;
 let loading = null;
+
+/* مدل‌های باکیفیت‌تر در اولین استفاده از هاب دانلود و در حافظه مرورگر کش می‌شوند؛
+   اگر دانلود ممکن نشد (اینترنت/فیلترشکن)، خودکار به مدل داخلی باندل‌شده برمی‌گردیم. */
+function useRemoteQuality(model) {
+  if (model === BUNDLED_MODEL) return null;
+  env.allowRemoteModels = true;
+  env.useBrowserCache = true;
+  return model === 'Xenova/whisper-small' ? 'Xenova/whisper-small' : 'Xenova/whisper-base';
+}
 
 async function ensurePipeline() {
   if (asr) return asr;
   if (!loading) {
-    loading = pipeline('automatic-speech-recognition', MODEL, { quantized: true })
+    const opts = { quantized: true };
+    /* پردازش قطعه‌ای درست صدا → پایداری بیشتر برای جمله‌های طولانی */
+    opts.chunk_length_s = 30;
+    opts.stride_length_s = 5;
+    loading = pipeline('automatic-speech-recognition', MODEL, opts)
       .then((p) => { asr = p; return p; })
       .catch((e) => { loading = null; throw e; });
   }
   return loading;
+}
+
+async function loadModel(requested) {
+  if (requested && requested !== MODEL) {
+    MODEL = requested;
+    asr = null;
+    loading = null;
+    if (requested === BUNDLED_MODEL) {
+      /* بازگشت به مدل داخلی */
+      env.allowRemoteModels = false;
+      env.useBrowserCache = false;
+    } else {
+      useRemoteQuality(requested);
+    }
+  }
+  try {
+    await ensurePipeline();
+    self.postMessage({ type: 'ready', model: MODEL });
+  } catch (err) {
+    if (MODEL !== BUNDLED_MODEL) {
+      /* دانلود مدل بزرگ‌تر ممکن نشد → خودکار مدل داخلی */
+      try { console.warn('[AVA ASR] fallback to bundled:', String((err && err.message) || err).slice(0, 140)); } catch (_) { /* noop */ }
+      MODEL = BUNDLED_MODEL;
+      asr = null;
+      loading = null;
+      env.allowRemoteModels = false;
+      env.useBrowserCache = false;
+      try {
+        await ensurePipeline();
+        self.postMessage({ type: 'ready', model: MODEL, fallback: true });
+        return;
+      } catch (err2) {
+        self.postMessage({ type: 'loaderror', error: String((err2 && err2.message) || err2).slice(0, 180) });
+        return;
+      }
+    }
+    self.postMessage({ type: 'loaderror', error: String((err && err.message) || err).slice(0, 180) });
+  }
 }
 
 function cleanText(t) {
@@ -77,12 +129,7 @@ async function recognize(id, pcm) {
 self.onmessage = async (e) => {
   const d = e.data || {};
   if (d.type === 'load') {
-    try {
-      await ensurePipeline();
-      self.postMessage({ type: 'ready', model: MODEL });
-    } catch (err) {
-      self.postMessage({ type: 'loaderror', error: String((err && err.message) || err).slice(0, 180) });
-    }
+    await loadModel(d.model);
     return;
   }
   if (d.type === 'recognize' && typeof d.id === 'number') {

@@ -1,0 +1,1662 @@
+     1→/* ============================================================
+     2→   آوا — دستیار صوتی ویندوز | منطق رابط کاربری (نسخه ۰.۵)
+     3→   - تشخیص گفتار واقعی: موتور وب → فالبک GLM-ASR ابری (بدون دموی جعلی)
+     4→   - اکولایزر همیشه با صدای واقعی میکروفون بالا و پایین می‌شود
+     5→   - چت با هوش مصنوعی GLM + ساخت فرمان جدید با تأیید کاربر
+     6→   - صفحه تنظیمات: میکروفون (ورودی/تست زنده)، موتور گفتار، کلید GLM
+     7→   - ضبط واقعی صدا و ذخیره در Music/AVA + پاسخ گفتاری TTS
+     8→   ============================================================ */
+     9→(() => {
+    10→  'use strict';
+    11→
+    12→  const $ = (s) => document.querySelector(s);
+    13→  const bridge = window.ava || null;
+    14→  const SRC = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    15→  const canRun = !!(bridge && bridge.system && bridge.system.run);
+    16→
+    17→  /* ---------- عناصر صفحه تنظیمات ---------- */
+    18→  const hero = document.querySelector('.hero');
+    19→  const settingsPage = $('#settingsPage');
+    20→  const btnHome = $('#btnHome');
+    21→  const btnSettings = $('#btnSettings');
+    22→  const btnSettingsBack = $('#btnSettingsBack');
+    23→  const optTop = $('#optTop');
+    24→  const optLogin = $('#optLogin');
+    25→  const optTts = $('#optTts');
+    26→  const optVoice = $('#optVoice');
+    27→  const optAutoUpdate = $('#optAutoUpdate');
+    28→  const updText = $('#updText');
+    29→  const updNote = $('#updNote');
+    30→  const updProgress = $('#updProgress');
+    31→  const updBar = $('#updBar');
+    32→  const btnCheckUpdate = $('#btnCheckUpdate');
+    33→  const btnInstallUpdate = $('#btnInstallUpdate');
+    34→
+    35→  /* ---------- عناصر تنظیمات جدید (میکروفون / گفتار / GLM) ---------- */
+    36→  const optMic = $('#optMic');
+    37→  const micStat = $('#micStat');
+    38→  const micMeter = $('#micMeter');
+    39→  const optSttEngine = $('#optSttEngine');
+    40→  const optGlmKey = $('#optGlmKey');
+    41→  const btnKeyShow = $('#btnKeyShow');
+    42→  const optGoogleKey = $('#optGoogleKey');
+    43→  const btnGoZai = $('#btnGoZai');
+    44→  const optDemo = $('#optDemo');
+    45→  const optAiModel = $('#optAiModel');
+    46→
+    47→  /* ---------- عناصر چت هوش مصنوعی ---------- */
+    48→  const chatPage = $('#chatPage');
+    49→  const btnChat = $('#btnChat');
+    50→  const btnChatBack = $('#btnChatBack');
+    51→  const chatMsgs = $('#chatMsgs');
+    52→  const chatBar = $('#chatBar');
+    53→  const chatInput = $('#chatInput');
+    54→  const tabQuick = $('#tabQuick');
+    55→  const tabZai = $('#tabZai');
+    56→  const quickWrap = $('#quickWrap');
+    57→  const zaiWrap = $('#zaiWrap');
+    58→  const zaiWeb = $('#zaiWeb');
+    59→  const zaiBadge = $('#zaiBadge');
+    60→
+    61→  /* ---------- مودال تأیید ---------- */
+    62→  const confirmBox = $('#confirmBox');
+    63→  const cfTitle = $('#cfTitle');
+    64→  const cfText = $('#cfText');
+    65→  const cfCode = $('#cfCode');
+    66→  const btnConfirmOk = $('#btnConfirmOk');
+    67→  const btnConfirmCancel = $('#btnConfirmCancel');
+    68→
+    69→  /* ---------- عناصر ---------- */
+    70→  const body = document.body;
+    71→  const btnMin = $('#btnMin');
+    72→  const btnMax = $('#btnMax');
+    73→  const btnClose = $('#btnClose');
+    74→  const maxIcon = $('#maxIcon');
+    75→  const orb = $('#orb');
+    76→  const orbIcon = $('#orbIcon');
+    77→  const statusText = $('#statusText');
+    78→  const wave = $('#wave');
+    79→  const chips = [...document.querySelectorAll('.chip[data-cmd]')];
+    80→  const respCard = $('#respCard');
+    81→  const rcTag = $('#rcTag');
+    82→  const rcHeard = $('#rcHeard');
+    83→  const rcReply = $('#rcReply');
+    84→  const cmdBar = $('#cmdBar');
+    85→  const cmdInput = $('#cmdInput');
+    86→  const sbMic = $('#sbMic');
+    87→  const sbEngine = $('#sbEngine');
+    88→  const sbCpu = $('#sbCpu');
+    89→  const sbRam = $('#sbRam');
+    90→  const sbClock = $('#sbClock');
+    91→  const toasts = $('#toasts');
+    92→  const about = $('#about');
+    93→  const btnAbout = $('#btnAbout');
+    94→  const greetTitle = $('#greetTitle');
+    95→  const abRuntime = $('#abRuntime');
+    96→
+    97→  const IDLE_HINT = 'برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
+    98→  const DEFAULT_REPLY = 'این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!';
+    99→
+   100→  /* ---------- تنظیمات (localStorage) ---------- */
+   101→  const store = {
+   102→    get(k, d) { try { const v = localStorage.getItem('ava.' + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+   103→    set(k, v) { try { localStorage.setItem('ava.' + k, JSON.stringify(v)); } catch (_) { /* noop */ } },
+   104→  };
+   105→  const settings = {
+   106→    tts: store.get('tts', true),
+   107→    voiceURI: store.get('voiceURI', ''),
+   108→    autoUpdate: store.get('autoUpdate', true),
+   109→    demoMode: store.get('demoMode', false),
+   110→    sttEngine: store.get('sttEngine', 'auto'),
+   111→    googleKey: store.get('googleKey', ''),
+   112→    glmKey: store.get('glmKey', ''),
+   113→    glmBase: store.get('glmBase', 'https://api.z.ai/api/paas/v4'),
+   114→    glmModel: store.get('glmModel', 'glm-4.6'),
+   115→    micId: store.get('micId', ''),
+   116→  };
+   117→  const glmReady = () => !!(settings.glmKey && bridge && bridge.stt);
+   118→
+   119→  /* ---------- پاسخ گفتاری واقعی (TTS) ---------- */
+   120→  function speak(text) {
+   121→    if (!settings.tts || !text || !('speechSynthesis' in window)) return;
+   122→    try {
+   123→      speechSynthesis.cancel();
+   124→      const u = new SpeechSynthesisUtterance(String(text).replace(/[«»]/g, '').slice(0, 320));
+   125→      const voices = speechSynthesis.getVoices() || [];
+   126→      if (settings.voiceURI) {
+   127→        const sel = voices.find((v) => v.voiceURI === settings.voiceURI);
+   128→        if (sel) u.voice = sel;
+   129→      } else {
+   130→        const fa = voices.find((v) => /^fa[\-_]?/i.test(v.lang) || /persian|فارسی/i.test(v.name));
+   131→        if (fa) u.voice = fa;
+   132→      }
+   133→      u.lang = (u.voice && u.voice.lang) || 'fa-IR';
+   134→      u.rate = 0.98;
+   135→      u.pitch = 1;
+   136→      speechSynthesis.speak(u);
+   137→    } catch (_) { /* noop */ }
+   138→  }
+   139→
+   140→  /* ---------- ابزار ---------- */
+   141→  const faNum = (v) => String(v).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+   142→  const faToEn = (s) => String(s).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+   143→  const timeFmt = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' });
+   144→  const dateFmt = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+   145→
+   146→  function toast(msg, ico = '#i-info') {
+   147→    const t = document.createElement('div');
+   148→    t.className = 'toast glass';
+   149→    t.innerHTML = `<svg class="ic"><use href="${ico}"/></svg><span></span>`;
+   150→    t.querySelector('span').textContent = msg;
+   151→    toasts.appendChild(t);
+   152→    setTimeout(() => t.classList.add('out'), 3300);
+   153→    setTimeout(() => t.remove(), 3700);
+   154→  }
+   155→
+   156→  /* ---------- ماشین حالت ---------- */
+   157→  let state = 'idle';
+   158→  function setState(s) {
+   159→    state = s;
+   160→    body.classList.remove('state-idle', 'state-listening', 'state-processing', 'state-success');
+   161→    body.classList.add('state-' + s);
+   162→  }
+   163→
+   164→  /* ---------- خوش‌آمد بر اساس ساعت ---------- */
+   165→  const h = new Date().getHours();
+   166→  const dayPart = h < 5 ? 'شب بخیر' : h < 12 ? 'صبح بخیر' : h < 15 ? 'ظهر بخیر' : h < 19 ? 'عصر بخیر' : 'شب بخیر';
+   167→  greetTitle.textContent = `${dayPart}؛ من آوا هستم`;
+   168→
+   169→  /* ---------- ساعت نوار وضعیت ---------- */
+   170→  const tickClock = () => { sbClock.textContent = timeFmt.format(new Date()); };
+   171→  tickClock();
+   172→  setInterval(tickClock, 15000);
+   173→
+   174→  /* ---------- کنترل‌های پنجره ---------- */
+   175→  const browserHint = () => toast('این دکمه فقط داخل نرم‌افزار الکترون واقعی کار می‌کند', '#i-info');
+   176→  btnMin.addEventListener('click', () => (bridge ? bridge.window.minimize() : browserHint()));
+   177→  btnMax.addEventListener('click', () => (bridge ? bridge.window.toggleMaximize() : browserHint()));
+   178→  btnClose.addEventListener('click', () => (bridge ? bridge.window.close() : browserHint()));
+   179→  if (bridge) {
+   180→    const setMaxIco = (v) => maxIcon.setAttribute('href', v ? '#i-restore' : '#i-max');
+   181→    bridge.window.onMaximizeChange(setMaxIco);
+   182→    bridge.window.isMaximized().then(setMaxIco).catch(() => {});
+   183→    abRuntime.textContent = `Electron v${bridge.versions.electron}`;
+   184→  } else {
+   185→    abRuntime.textContent = 'پیش‌نمایش مرورگر';
+   186→  }
+   187→
+   188→  /* ---------- ویژوالایزر موج صدا ---------- */
+   189→  const ctx = wave.getContext('2d');
+   190→  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+   191→  let W = 0, H = 0;
+   192→  function resizeWave() {
+   193→    const r = wave.getBoundingClientRect();
+   194→    W = r.width; H = r.height;
+   195→    wave.width = Math.max(1, W * DPR);
+   196→    wave.height = Math.max(1, H * DPR);
+   197→    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+   198→  }
+   199→  window.addEventListener('resize', resizeWave);
+   200→  resizeWave();
+   201→
+   202→  /* ---------- میکروفون واقعی: همیشه روشن — اکولایزر و تست تنظیمات با صدای واقعی ---------- */
+   203→  let micStream = null, audioCtx = null, analyser = null, micData = null, micLive = false;
+   204→  let mediaRec = null, recChunks = [], isRecording = false;
+   205→
+   206→  async function attachMic() {
+   207→    if (analyser) return true;
+   208→    const AC = window.AudioContext || window.webkitAudioContext;
+   209→    if (!AC) return false;
+   210→    try {
+   211→      const base = { echoCancellation: true, noiseSuppression: true };
+   212→      /* اول با میکروفون انتخابی کاربر؛ اگر شناسه قدیمی بود/در دسترس نبود، خودکار پیش‌فرض ویندوز */
+   213→      if (settings.micId) {
+   214→        try {
+   215→          micStream = await navigator.mediaDevices.getUserMedia({ audio: { ...base, deviceId: { exact: settings.micId } } });
+   216→        } catch (_) { micStream = null; }
+   217→      }
+   218→      if (!micStream) micStream = await navigator.mediaDevices.getUserMedia({ audio: base });
+   219→      audioCtx = new AC();
+   220→      /* بعضی سیستم‌ها کانتکست را معلق (suspended) می‌سازند — بدون resume هیچ صدایی نمی‌آید */
+   221→      if (audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch (_) { /* noop */ } }
+   222→      const src = audioCtx.createMediaStreamSource(micStream);
+   223→      analyser = audioCtx.createAnalyser();
+   224→      analyser.fftSize = 256;
+   225→      analyser.smoothingTimeConstant = 0.78;
+   226→      src.connect(analyser);
+   227→      micData = new Uint8Array(analyser.frequencyBinCount);
+   228→      micLive = true;
+   229→      sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: فعال';
+   230→      micStat.textContent = 'میکروفون فعال است — با حرف زدن، میله‌ها بالا و پایین می‌شوند';
+   231→      listMicDevices();
+   232→      return true;
+   233→    } catch (err) {
+   234→      micLive = false;
+   235→      const nm = String((err && err.name) || err || '');
+   236→      const why = /NotReadable|TrackStart/i.test(nm)
+   237→        ? 'میکروفون توسط برنامه دیگری در حال استفاده است — آن برنامه را ببند'
+   238→        : /NotFound/i.test(nm)
+   239→        ? 'هیچ میکروفونی پیدا نشد — اتصال میکروفون را چک کن'
+   240→        : /NotAllowed|SecurityError/i.test(nm)
+   241→        ? 'مجوز میکروفون رد شد — در ویندوز: Settings › Privacy › Microphone را روشن کن'
+   242→        : 'دسترسی به میکروفون ممکن نشد — مجوز ویندوز و آنتی‌ویروس را بررسی کن';
+   243→      sbMic.innerHTML = '<i class="dot err"></i>میکروفون: بدون دسترسی';
+   244→      micStat.textContent = why;
+   245→      return false;
+   246→    }
+   247→  }
+   248→
+   249→  async function listMicDevices() {
+   250→    try {
+   251→      const devs = await navigator.mediaDevices.enumerateDevices();
+   252→      const mics = devs.filter((d) => d.kind === 'audioinput');
+   253→      const cur = settings.micId;
+   254→      let html = '<option value="">پیش‌فرض ویندوز</option>';
+   255→      mics.forEach((m, i) => {
+   256→        const label = m.label || `میکروفون ${i + 1}`;
+   257→        const sel = m.deviceId === cur ? ' selected' : '';
+   258→        html += `<option value="${m.deviceId}"${sel}>${label}</option>`;
+   259→      });
+   260→      optMic.innerHTML = html;
+   261→    } catch (_) { /* noop */ }
+   262→  }
+   263→
+   264→  optMic.addEventListener('change', async () => {
+   265→    settings.micId = optMic.value || '';
+   266→    store.set('micId', settings.micId);
+   267→    /* ری‌استارت استریم با ورودی جدید */
+   268→    if (isRecording) await stopAudioRec();
+   269→    detachMic();
+   270→    await attachMic();
+   271→    toast('ورودی میکروفون عوض شد', '#i-mic');
+   272→  });
+   273→
+   274→  /* میتر تست زنده در تنظیمات */
+   275→  const mctx = micMeter ? micMeter.getContext('2d') : null;
+   276→  function drawMeter() {
+   277→    if (!mctx || settingsPage.hidden) { setTimeout(drawMeter, 400); return; }
+   278→    const r = micMeter.getBoundingClientRect();
+   279→    const mw = Math.max(10, r.width), mh = 40;
+   280→    if (micMeter.width !== mw * DPR) { micMeter.width = mw * DPR; micMeter.height = mh * DPR; mctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+   281→    mctx.clearRect(0, 0, mw, mh);
+   282→    if (micData) {
+   283→      const bars = 34, gap = 3;
+   284→      const bw = Math.max(2, (mw - (bars - 1) * gap) / bars);
+   285→      for (let i = 0; i < bars; i++) {
+   286→        const bi = Math.min(micData.length - 1, Math.floor(Math.pow(i / bars, 1.5) * micData.length * 0.72));
+   287→        const raw = micData[bi] / 255;
+   288→        const bh = Math.max(3, raw * (mh - 8));
+   289→        mctx.fillStyle = raw > 0.55 ? 'rgba(52, 211, 153, 0.95)' : 'rgba(16, 185, 129, 0.65)';
+   290→        rr(mctx, (mw - (bars * bw + (bars - 1) * gap)) / 2 + i * (bw + gap), (mh - bh) / 2, bw, bh, bw / 2);
+   291→        mctx.fill();
+   292→      }
+   293→    } else {
+   294→      mctx.fillStyle = 'rgba(255,255,255,0.25)';
+   295→      mctx.font = '11px Vazirmatn, sans-serif';
+   296→      mctx.textAlign = 'center';
+   297→      mctx.fillText('میکروفون متصل نیست', mw / 2, 24);
+   298→    }
+   299→    setTimeout(drawMeter, 60);
+   300→  }
+   301→  drawMeter();
+   302→
+   303→  function detachMic() {
+   304→    if (isRecording || gRec) return; /* حین ضبط، استریم نباید بسته شود */
+   305→    if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
+   306→    if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
+   307→    analyser = null; micData = null; micLive = false;
+   308→    sbMic.innerHTML = '<i class="dot err"></i>میکروفون: خاموش';
+   309→  }
+   310→
+   311→  async function startAudioRec() {
+   312→    if (isRecording) return 'ضبط از قبل در جریان است؛ بگو «توقف ضبط» تا ذخیره‌اش کنم.';
+   313→    if (!window.MediaRecorder) return 'ضبط صدا در این محیط پشتیبانی نمی‌شود.';
+   314→    const ok = await attachMic();
+   315→    if (!ok) return 'دسترسی به میکروفون ممکن نشد؛ مجوز میکروفون را در ویندوز بررسی کن.';
+   316→    try {
+   317→      recChunks = [];
+   318→      mediaRec = new MediaRecorder(micStream);
+   319→      mediaRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+   320→      mediaRec.start();
+   321→      isRecording = true;
+   322→      micLive = true;
+   323→      sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
+   324→      statusText.textContent = 'در حال ضبط صدایت… برای پایان بگو «توقف ضبط»';
+   325→      return 'ضبط شروع شد! هر وقت خواستی بگو «توقف ضبط» تا در پوشه Music ذخیره‌اش کنم.';
+   326→    } catch (_) {
+   327→      return 'شروع ضبط ممکن نشد.';
+   328→    }
+   329→  }
+   330→
+   331→  async function stopAudioRec() {
+   332→    if (!isRecording || !mediaRec || mediaRec.state === 'inactive') return 'ضبط فعالی وجود ندارد.';
+   333→    const stopped = new Promise((res) => { mediaRec.onstop = res; });
+   334→    try { mediaRec.stop(); } catch (_) { /* noop */ }
+   335→    await stopped;
+   336→    isRecording = false;
+   337→    sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+   338→    const blob = new Blob(recChunks, { type: (mediaRec && mediaRec.mimeType) || 'audio/webm' });
+   339→    recChunks = [];
+   340→    /* میکروفون برای اکولایزر واقعی روشن می‌ماند */
+   341→    if (!blob.size) return 'صدایی ضبط نشده بود!';
+   342→    if (canRun && bridge.system.saveAudio) {
+   343→      try {
+   344→        const buf = new Uint8Array(await blob.arrayBuffer());
+   345→        const r = await bridge.system.saveAudio(buf);
+   346→        if (r && r.ok) return `ضبط ذخیره شد در: ${r.path}`;
+   347→        return `ذخیره ممکن نشد: ${(r && r.error) || 'خطای نامشخص'}`;
+   348→      } catch (_) { /* ادامه به پاسخ مرورگری */ }
+   349→    }
+   350→    return `ضبط انجام شد (${faNum(Math.round(blob.size / 1024))} کیلوبایت)؛ ذخیره واقعی فایل فقط داخل نرم‌افزار ویندوزی است.`;
+   351→  }
+   352→
+   353→  const N = 52;
+   354→  const levels = new Array(N).fill(0.1);
+   355→  let t0 = 0, energy = 0.1;
+   356→  function rr(c, x, y, w, hgt, r) {
+   357→    if (c.roundRect) { c.beginPath(); c.roundRect(x, y, w, hgt, r); return; }
+   358→    c.beginPath();
+   359→    c.moveTo(x + r, y);
+   360→    c.arcTo(x + w, y, x + w, y + hgt, r);
+   361→    c.arcTo(x + w, y + hgt, x, y + hgt, r);
+   362→    c.arcTo(x, y + hgt, x, y, r);
+   363→    c.arcTo(x, y, x + w, y, r);
+   364→    c.closePath();
+   365→  }
+   366→  function frame() {
+   367→    t0 += 0.016;
+   368→    /* خواندن طیف واقعی میکروفون — بدون این فراخوانی micData همیشه صفر می‌ماند
+   369→       و اکولایزر و تشخیص سکوت هیچ صدایی نمی‌بینند (باگ اصلی «صدایی دریافت نمیشه») */
+   370→    if (analyser && micData && micLive) {
+   371→      try { analyser.getByteFrequencyData(micData); } catch (_) { /* noop */ }
+   372→    }
+   373→    const target = state === 'listening' ? 0.88 : state === 'processing' ? 0.42 : state === 'success' ? 0.55 : 0.15;
+   374→    energy += (target - energy) * 0.05;
+   375→    ctx.clearRect(0, 0, W, H);
+   376→    const mid = H / 2;
+   377→    const gap = 4;
+   378→    const bw = Math.max(2, Math.min(4.5, (W - (N - 1) * gap) / N));
+   379→    const startX = (W - (N * bw + (N - 1) * gap)) / 2;
+   380→    for (let i = 0; i < N; i++) {
+   381→      const env = Math.sin((Math.PI * i) / (N - 1));
+   382→      let lvl;
+   383→      if (micData) {
+   384→        /* صدای واقعی میکروفون: تبدیل طیف فرکانسی به ۵۲ میله — همیشه واقعی */
+   385→        const bins = Math.floor(micData.length * 0.72);
+   386→        const bi = Math.min(micData.length - 1, Math.floor(Math.pow(i / N, 1.55) * bins));
+   387→        const raw = micData[bi] / 255;
+   388→        lvl = Math.max(0.05, Math.min(1, raw * 1.6 * (0.35 + 0.65 * env)));
+   389→      } else {
+   390→        const n =
+   391→          Math.sin(t0 * 2.1 + i * 0.55) * 0.5 +
+   392→          Math.sin(t0 * 3.7 + i * 1.3) * 0.3 +
+   393→          Math.sin(t0 * 0.7 + i * 0.21) * 0.2;
+   394→        const amp = energy * env * (0.32 + 0.68 * Math.abs(n));
+   395→        const jitter = energy > 0.2 ? Math.random() * 0.13 * energy : 0;
+   396→        lvl = Math.max(0.04, Math.min(1, amp + jitter));
+   397→      }
+   398→      levels[i] += (lvl - levels[i]) * 0.25;
+   399→      const bh = Math.max(3, levels[i] * (H - 8));
+   400→      const g = ctx.createLinearGradient(0, mid - bh / 2, 0, mid + bh / 2);
+   401→      g.addColorStop(0, 'rgba(52, 211, 153, 0.95)');
+   402→      g.addColorStop(0.5, 'rgba(16, 185, 129, 0.85)');
+   403→      g.addColorStop(1, 'rgba(13, 148, 136, 0.9)');
+   404→      ctx.fillStyle = g;
+   405→      rr(ctx, startX + i * (bw + gap), mid - bh / 2, bw, bh, bw / 2);
+   406→      ctx.fill();
+   407→    }
+   408→    requestAnimationFrame(frame);
+   409→  }
+   410→  requestAnimationFrame(frame);
+   411→
+   412→  /* ---------- قوانین فرمان‌ها ----------
+   413→     k = الگوی شنیدن | t = توست | i = آیکون | r = متن پاسخ
+   414→     run = شناسه فرمان واقعی ویندوز | arg = آرگومان استخراجی */
+   415→  const stripSearch = (c) =>
+   416→    c.replace(/(لطفا|لطفاً)/g, '')
+   417→      .replace(/(در\s+)?(گوگل|google)/gi, '')
+   418→      .replace(/(را|رو)\s+/g, '')
+   419→      .replace(/(جستجو|سرچ|search)[\s\u200C]*(کن|بکن|بگیر)?[\s\u200C]*ی?[\s\u200C]*/gi, '')
+   420→      .replace(/[\s\u200C]+/g, ' ')
+   421→      .trim();
+   422→
+   423→  const JOKES = [
+   424→    'به برنامه‌نویس میگن چقدر طول می‌کشد این کار تموم شه؟ میگه دو دقیقه… بعد دو هفته برمی‌گردد!',
+   425→    'دو تا بایت به هم می‌رسند؛ یکی می‌پرسد حالت چطوره؟ می‌گوید یکم بیت‌دارم!',
+   426→    'چرا کامپیوترها هیچ‌وقت گرسنه نمی‌شوند؟ چون همیشه چیپس دارند!',
+   427→    'به یارو میگن گوشی‌ات را ریست کن، میگه چرا، خوبه! میگن نه، تو که رِست (رستوران) رفتی برگرد!',
+   428→    'دنیا بدون کامپیوتر چه شکلی بود؟ کسی نمی‌داند؛ هیچ‌کس آن‌قدر صبر نکرد!',
+   429→  ];
+   430→
+   431→  const RULES = [
+   432→    /* --- برنامه‌های ویندوز --- */
+   433→    { k: /کروم|مرورگر/, t: 'باز کردن کروم', i: '#i-globe', run: 'open_chrome', r: () => 'مرورگر کروم باز شد. خوش بگذره!' },
+   434→    { k: /نت[\s\u200C.]?پد|نوت[\s\u200C]?پد|دفترچه|notepad/i, t: 'باز کردن نت‌پد', i: '#i-note', run: 'open_notepad', r: () => 'نت‌پد باز شد.' },
+   435→    { k: /ماشین[\s\u200C]?حساب|calculator|حساب\s?کن/i, t: 'باز کردن ماشین‌حساب', i: '#i-calc', run: 'open_calc', r: () => 'ماشین‌حساب باز شد.' },
+   436→    { k: /اکسپلورر|فایل‌?ها|مای\s?کامپیوتر|این\s?کامپیوتر/, t: 'باز کردن اکسپلورر', i: '#i-window', run: 'open_explorer', r: () => 'فایل اکسپلورر باز شد.' },
+   437→    { k: /وی[\s\u200C]?اس\s?کد|vs\s?code|کدنویس/i, t: 'باز کردن VS Code', i: '#i-note', run: 'open_vscode', r: () => 'وی‌اس کد باز شد (باید روی سیستم نصب باشد).' },
+   438→    { k: /تسک[\s\u200C]?منیجر|مدیریت[\s\u200C]?فرایند/i, t: 'باز کردن تسک‌منیجر', i: '#i-pulse', run: 'open_taskmgr', r: () => 'تسک‌منیجر باز شد.' },
+   439→    { k: /تنظیمات/, t: 'باز کردن تنظیمات', i: '#i-gear', run: 'open_settings', r: () => 'تنظیمات ویندوز باز شد.' },
+   440→    { k: /پینت|نقاشی|paint/i, t: 'باز کردن پینت', i: '#i-calc', run: 'open_paint', r: () => 'پینت باز شد؛ خلاق باش!' },
+   441→
+   442→    /* --- وب --- */
+   443→    { k: /یوتیوب|youtube/i, t: 'باز کردن یوتیوب', i: '#i-music', run: 'open_youtube', r: () => 'یوتیوب باز شد.' },
+   444→    { k: /موسیقی|آهنگ|موزیک/, t: 'پخش موسیقی', i: '#i-music', run: 'open_music', r: () => 'یوتیوب موزیک باز شد؛ آهنگ دلخواهت را بزن.' },
+   445→    {
+   446→      k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?چطور|درجه[\s\u200C]?هوا|weather/i, t: 'جستجوی آب‌وهوا', i: '#i-search',
+   447→      run: 'web_search', arg: () => 'آب و هوای امروز',
+   448→      r: () => 'آب‌وهوای امروز را در گوگل جستجو کردم.',
+   449→    },
+   450→    {
+   451→      k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
+   452→      run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : 'web_search'),
+   453→      arg: (c) => {
+   454→        const m = c.match(/https?:\/\/\S+/);
+   455→        return m ? m[0] : stripSearch(c) || 'گوگل';
+   456→      },
+   457→      r: (c) => (/https?:\/\//i.test(c) ? 'سایت موردنظر باز شد.' : 'در گوگل جستجویش کردم؛ نتیجه اول معمولاً همان سایت است.'),
+   458→    },
+   459→    {
+   460→      k: /جستجو|سرچ|گوگل|google/i, t: 'جستجوی وب', i: '#i-search',
+   461→      run: 'web_search', arg: (c) => stripSearch(c),
+   462→      r: (c) => `«${stripSearch(c) || 'گوگل'}» را در گوگل جستجو کردم.`,
+   463→    },
+   464→
+   465→    /* --- پنجره‌ها و سیستم --- */
+   466→    { k: /اسکرین\s?شات|اسکرین|عکس.{0,8}(صفحه|نمایشگر)|screenshot/i, t: 'اسکرین‌شات', i: '#i-camera', run: 'screenshot', r: () => 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
+   467→    { k: /مینیمایز|کوچک.{0,8}(کن)|دسکتاپ|پنجره‌ها/, t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
+   468→    { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین/, t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => 'صفحه قفل شد؛ بدرود!' },
+   469→
+   470→    /* --- ضبط صدا (واقعی) --- */
+   471→    { k: /(شروع|بگیر).{0,8}ضبط|ضبط.{0,8}(صدا|شروع)/, t: 'شروع ضبط صدا', i: '#i-mic', r: () => startAudioRec() },
+   472→    { k: /توقف.{0,8}ضبط|پایان.{0,8}ضبط|ضبط.{0,8}(تموم|کافی)|قطع.{0,8}ضبط/, t: 'پایان ضبط صدا', i: '#i-mic', r: () => stopAudioRec() },
+   473→
+   474→    /* --- صدا --- */
+   475→    { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت)|میوت|mute|بی[\s\u200C]?صدا/i, t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => 'صدا قطع شد.' },
+   476→    { k: /(صدا|ولوم|بلندی).{0,12}(بلند|زیاد|بالا|بده)/i, t: 'بلندتر کردن صدا', i: '#i-volume', run: 'vol_up', r: () => 'صدای سیستم را بلندتر کردم.' },
+   477→    { k: /(صدا|ولوم|بلندی).{0,12}(کم|پایین|آرام)/i, t: 'کم کردن صدا', i: '#i-volume', run: 'vol_down', r: () => 'صدای سیستم را کمتر کردم.' },
+   478→    {
+   479→      k: /صدا|بلندی|ولوم/, t: 'تنظیم صدا', i: '#i-volume',
+   480→      r: (c) => {
+   481→        const m = faToEn(c).match(/\d+/);
+   482→        return `بلندی صدا روی ${faNum(m ? Math.min(100, +m[0]) : 50)}٪ تنظیم شد (تنظیم دقیق درصد در نسخه بعدی).`;
+   483→      },
+   484→    },
+   485→
+   486→    /* --- اطلاعات --- */
+   487→    { k: /وضعیت|سیستم|پردازنده|رم/, t: 'مانیتورینگ', i: '#i-pulse', r: () => `پردازنده حدود ${faNum(lastCpu)}٪ و رم حدود ${faNum(lastRam)}٪ درگیر است؛ همه‌چیز خوب کار می‌کند.` },
+   488→    {
+   489→      k: /باتری|شارژ/, t: 'باتری', i: '#i-pulse',
+   490→      r: async () => {
+   491→        if (navigator.getBattery) {
+   492→          try {
+   493→            const b = await navigator.getBattery();
+   494→            return `باتری ${faNum(Math.round(b.level * 100))}٪ است${b.charging ? ' و در حال شارژ شدن' : ''}.`;
+   495→          } catch (_) { /* noop */ }
+   496→        }
+   497→        return 'خواندن باتری در این محیط ممکن نیست؛ داخل نرم‌افزار ویندوزی امتحان کن.';
+   498→      },
+   499→    },
+   500→    { k: /ساعت/, t: 'ساعت', i: '#i-clock', r: () => `الان ساعت ${timeFmt.format(new Date())} است.` },
+   501→    { k: /تاریخ|چندمه|امروز/, t: 'تاریخ', i: '#i-clock', r: () => `امروز ${dateFmt.format(new Date())} است.` },
+   502→
+   503→    /* --- ابزار --- */
+   504→    {
+   505→      k: /تایمر|یادآور|یادآوری|هشدار\s?بذار/, t: 'تایمر فعال شد', i: '#i-timer',
+   506→      r: (c) => startTimer(c),
+   507→    },
+   508→    { k: /جوک|بخندون|شوخی/, t: 'جوک', i: '#i-smile', r: () => JOKES[Math.floor(Math.random() * JOKES.length)] },
+   509→
+   510→    /* --- تعامل --- */
+   511→    { k: /سلام|درود|خوبی/, t: 'سلام', i: '#i-wave', r: () => 'سلام! من خوبم، ممنون. چه کاری برات انجام بدم؟' },
+   512→    { k: /متشکر|مرسی|ممنون/, t: 'خواهش', i: '#i-wave', r: () => 'خواهش می‌کنم! کار دیگری هست؟' },
+   513→
+   514→    /* --- پوشه‌های ویندوز و سطل بازیافت --- */
+   515→    { k: /پوشه.{0,6}دانلود|دانلودها|downloads/i, t: 'باز کردن دانلودها', i: '#i-download', run: 'open_downloads', r: () => 'پوشه دانلودها باز شد.' },
+   516→    { k: /پوشه.{0,6}(اسناد|داکیومنت|مستندات)|documents/i, t: 'باز کردن اسناد', i: '#i-note', run: 'open_documents', r: () => 'پوشه اسناد باز شد.' },
+   517→    { k: /سطل.{0,10}(زباله|بازیافت).{0,12}(خالی|پاک|تمیز|بریز)/, t: 'خالی کردن سطل بازیافت', i: '#i-trash', run: 'recycle_empty', r: () => 'سطل بازیافت خالی شد.' },
+   518→  ];
+   519→
+   520→  let lastCpu = 12, lastRam = 46;
+   521→
+   522→  /* ---------- تایمر واقعی ---------- */
+   523→  let timerId = null;
+   524→  function beep() {
+   525→    try {
+   526→      const AC = window.AudioContext || window.webkitAudioContext;
+   527→      if (!AC) return;
+   528→      const ac = new AC();
+   529→      if (ac.state === 'suspended') { try { ac.resume(); } catch (_) { /* noop */ } }
+   530→      const o = ac.createOscillator();
+   531→      const g = ac.createGain();
+   532→      o.connect(g); g.connect(ac.destination);
+   533→      o.type = 'sine'; o.frequency.value = 880;
+   534→      g.gain.setValueAtTime(0.001, ac.currentTime);
+   535→      g.gain.exponentialRampToValueAtTime(0.2, ac.currentTime + 0.05);
+   536→      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.9);
+   537→      o.start(); o.stop(ac.currentTime + 1);
+   538→    } catch (_) { /* noop */ }
+   539→  }
+   540→  function startTimer(c) {
+   541→    const txt = faToEn(c);
+   542→    const m = txt.match(/(\d+(?:\.\d+)?)/);
+   543→    let mins = m ? parseFloat(m[1]) : 5;
+   544→    let unit = 'دقیقه';
+   545→    if (/ثانیه/.test(c) && !/دقیقه/.test(c)) { mins = mins / 60; unit = 'ثانیه'; }
+   546→    mins = Math.max(0.05, Math.min(600, mins));
+   547→    if (timerId) clearTimeout(timerId);
+   548→    timerId = setTimeout(() => {
+   549→      beep();
+   550→      toast('زمان تایمر تمام شد!', '#i-timer');
+   551→      setState('success');
+   552→      statusText.textContent = 'زمان تایمر تمام شد';
+   553→      rcTag.textContent = 'تایمر';
+   554→      rcHeard.textContent = 'تایمر';
+   555→      rcReply.textContent = 'زمان تمام شد؛ یادت بودیم!';
+   556→      respCard.classList.add('show');
+   557→      speak('زمان تایمر تمام شد؛ خبرت کردم!');
+   558→      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
+   559→    }, mins * 60000);
+   560→    const label = unit === 'ثانیه' ? faNum(Math.round(mins * 60)) : faNum(+(mins.toFixed(1)));
+   561→    return `تایمر ${label} ${unit}‌ای فعال شد؛ به‌محض رسیدن وقت خبرت می‌کنم.`;
+   562→  }
+   563→
+   564→  /* ---------- تایپ متن پاسخ ---------- */
+   565→  let typeTimer = null;
+   566→  function typeText(el, txt) {
+   567→    clearInterval(typeTimer);
+   568→    el.textContent = '';
+   569→    let i = 0;
+   570→    typeTimer = setInterval(() => {
+   571→      el.textContent = txt.slice(0, ++i);
+   572→      if (i >= txt.length) clearInterval(typeTimer);
+   573→    }, 14);
+   574→  }
+   575→
+   576→  /* ---------- اجرای فرمان ---------- */
+   577→  async function resolveReply(rule, cmd) {
+   578→    let reply = await rule.r(cmd);
+   579→    if (!rule.run) { rcTag.textContent = rule.custom ? 'فرمان سفارشی' : 'پاسخ آوا'; return reply; }
+   580→    if (!canRun) { rcTag.textContent = 'شبیه‌سازی دمو'; return reply; }
+   581→    const runId = typeof rule.run === 'function' ? rule.run(cmd) : rule.run;
+   582→    const arg = rule.arg ? rule.arg(cmd) : undefined;
+   583→    try {
+   584→      const res = await bridge.system.run(runId, arg);
+   585→      if (res && res.ok) {
+   586→        rcTag.textContent = 'اجرا شد';
+   587→        if (runId === 'screenshot' && res.out) reply = `اسکرین‌شات ذخیره شد در: ${res.out}`;
+   588→      } else {
+   589→        rcTag.textContent = canRun ? 'اجرا نشد' : 'شبیه‌سازی دمو';
+   590→        if (!canRun) reply += ' (اجرای واقعی فقط داخل نرم‌افزار ویندوزی انجام می‌شود.)';
+   591→      }
+   592→    } catch (_) {
+   593→      rcTag.textContent = canRun ? 'اجرا نشد' : 'شبیه‌سازی دمو';
+   594→    }
+   595→    return reply;
+   596→  }
+   597→
+   598→  async function runCommand(cmd) {
+   599→    if (!cmd) return;
+   600→    if (state === 'processing') return;
+   601→    if (state === 'listening') stopListening(false);
+   602→    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
+   603→
+   604→    setState('processing');
+   605→    statusText.textContent = 'در حال انجام…';
+   606→    body.classList.add('has-card');
+   607→    rcHeard.textContent = `«${cmd}»`;
+   608→    respCard.classList.remove('show');
+   609→    void respCard.offsetWidth;
+   610→    respCard.classList.add('show');
+   611→    rcReply.textContent = '';
+   612→    rcTag.textContent = 'در حال انجام…';
+   613→
+   614→    const rule = RULES.find((r) => r.k.test(cmd)) || findCustomRule(cmd);
+   615→    if (!rule && aiConnected()) {
+   616→      /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */
+   617→      await aiHandleCommand(cmd);
+   618→      return;
+   619→    }
+   620→    const reply = rule ? await resolveReply(rule, cmd) : DEFAULT_REPLY;
+   621→    if (!rule) rcTag.textContent = 'پاسخ آوا';
+   622→
+   623→    setTimeout(() => {
+   624→      setState('success');
+   625→      statusText.textContent = 'انجام شد';
+   626→      typeText(rcReply, reply);
+   627→      speak(reply);
+   628→      if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
+   629→      setTimeout(() => {
+   630→        if (state === 'success') {
+   631→          setState('idle');
+   632→          statusText.innerHTML = IDLE_HINT;
+   633→        }
+   634→      }, 2400);
+   635→    }, 500 + Math.random() * 300);
+   636→  }
+   637→
+   638→  /* ============================================================
+   639→     تشخیص گفتار واقعی — زنجیره: موتور وب → گوگل رایگان (HTTP) → GLM-ASR
+   640→     بدون هیچ کلیدی؛ دمو فقط با تنظیم صریح کاربر.
+   641→     ============================================================ */
+   642→  let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
+   643→  let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false, glmSilentMs = 0;
+   644→  const ASR_MODEL = 'glm-asr-2512';
+   645→  const GLM_MAX_MS = 12000;   // بیشینه ضبط هر فرمان صوتی
+   646→  const GLM_SIL_MS = 2300;    // سکوت لازم برای پایان فرمان
+   647→  const GLM_ON_LVL = 16;      // آستانه تشخیص شروع حرف (میانگین طیف)
+   648→
+   649→  const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
+   650→
+   651→  function refreshEngineUI() {
+   652→    if (SRC && !srBroken && settings.sttEngine !== 'google' && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: تشخیص گفتار وب';
+   653→    else if (googleReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'glm') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: گوگل رایگان';
+   654→    else if (glmReady() && settings.sttEngine !== 'web' && settings.sttEngine !== 'google') sbEngine.innerHTML = '<i class="dot ok"></i>موتور: GLM-ASR ابری';
+   655→    else if (settings.demoMode) sbEngine.innerHTML = '<i class="dot warn"></i>موتور: حالت دمو';
+   656→    else sbEngine.innerHTML = '<i class="dot err"></i>موتور: تنظیم نشده';
+   657→  }
+   658→
+   659→  function resolveEngine() {
+   660→    const webOK = !!(SRC && !srBroken);
+   661→    if (settings.sttEngine === 'web') return webOK ? 'web' : null;
+   662→    if (settings.sttEngine === 'google') return googleReady() ? 'google' : null;
+   663→    if (settings.sttEngine === 'glm') return glmReady() ? 'glm' : null;
+   664→    if (webOK) return 'web';
+   665→    if (googleReady()) return 'google';
+   666→    if (glmReady()) return 'glm';
+   667→    return null;
+   668→  }
+   669→
+   670→  function makeRec() {
+   671→    const r = new SRC();
+   672→    r.lang = 'fa-IR';
+   673→    r.interimResults = true;
+   674→    r.continuous = false;
+   675→    r.onresult = (e) => {
+   676→      let interim = '', final = '';
+   677→      for (let i = e.resultIndex; i < e.results.length; i++) {
+   678→        const t = e.results[i][0].transcript;
+   679→        if (e.results[i].isFinal) final += t; else interim += t;
+   680→      }
+   681→      if (interim && state === 'listening') statusText.textContent = `شنیدم: «${interim}»`;
+   682→      if (final) {
+   683→        gotFinal = true;
+   684→        stopListening(false);
+   685→        runCommand(final.trim());
+   686→      }
+   687→    };
+   688→    r.onerror = (e) => {
+   689→      if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) {
+   690→        srBroken = true;
+   691→        refreshEngineUI();
+   692→        /* فالبک خودکار: گوگل رایگان → GLM ابری (اگر کلید باشد) */
+   693→        if (state === 'listening' && settings.sttEngine === 'auto') {
+   694→          try { recActive = false; } catch (_) { /* noop */ }
+   695→          if (googleReady()) startGoogleListen();
+   696→          else if (glmReady()) startGlmListen();
+   697→        }
+   698→      }
+   699→    };
+   700→    r.onend = () => {
+   701→      recActive = false;
+   702→      if (gotFinal || srBroken) return;
+   703→      if (state === 'listening') {
+   704→        setState('idle');
+   705→        statusText.innerHTML = IDLE_HINT;
+   706→        orbIcon.setAttribute('href', '#i-mic');
+   707→        sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+   708→      }
+   709→    };
+   710→    return r;
+   711→  }
+   712→
+   713→  /* --- موتور رایگان گوگل: ضبط PCM + تشخیص سکوت + ارسال به سرور گوگل --- */
+   714→  const G_MAX_MS = 12000;    // بیشینه ضبط
+   715→  const G_SIL_MS = 1500;     // سکوت پایان فرمان
+   716→  const G_ON = 0.013;        // آستانه شروع حرف (RMS)
+   717→  const G_IDLE_MS = 8000;    // اگر هیچ حرفی نشنید
+   718→  let gRec = null, gMaxT = null;
+   719→
+   720→  function downsampleF32(f32, from, to) {
+   721→    if (from === to) return f32;
+   722→    const ratio = from / to;
+   723→    const len = Math.max(1, Math.floor(f32.length / ratio));
+   724→    const out = new Float32Array(len);
+   725→    for (let i = 0; i < len; i++) {
+   726→      const pos = i * ratio;
+   727→      const i0 = Math.floor(pos);
+   728→      const frac = pos - i0;
+   729→      const s0 = f32[i0] || 0;
+   730→      const s1 = f32[i0 + 1] || s0;
+   731→      out[i] = s0 + (s1 - s0) * frac;
+   732→    }
+   733→    return out;
+   734→  }
+   735→
+   736→  function f32ToI16(f32) {
+   737→    const out = new Int16Array(f32.length);
+   738→    for (let i = 0; i < f32.length; i++) {
+   739→      const v = Math.max(-1, Math.min(1, f32[i]));
+   740→      out[i] = v < 0 ? v * 32768 : v * 32767;
+   741→    }
+   742→    return out;
+   743→  }
+   744→
+   745→  function startGoogleListen() {
+   746→    if (!googleReady()) { noEngine('موتور گوگل فقط داخل نرم‌افزار فعال است'); return; }
+   747→    attachMic().then((ok) => {
+   748→      if (!ok) { noEngine('میکروفون در دسترس نیست'); return; }
+   749→      try {
+   750→        const src = audioCtx.createMediaStreamSource(micStream);
+   751→        const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+   752→        const sink = audioCtx.createGain();
+   753→        sink.gain.value = 0; // بی‌صدا — فقط برای پردازش
+   754→        src.connect(proc);
+   755→        proc.connect(sink);
+   756→        sink.connect(audioCtx.destination);
+   757→        gRec = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, started: Date.now(), busy: false };
+   758→        proc.onaudioprocess = (e) => {
+   759→          if (!gRec || gRec.busy) return;
+   760→          const f = e.inputBuffer.getChannelData(0);
+   761→          gRec.chunks.push(new Float32Array(f));
+   762→          let sum = 0, n = 0;
+   763→          for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
+   764→          const rms = Math.sqrt(sum / Math.max(1, n));
+   765→          const now = Date.now();
+   766→          if (rms > G_ON) {
+   767→            gRec.spoke = true;
+   768→            gRec.lastVoice = now;
+   769→            if (state === 'listening') statusText.textContent = 'شنیدم… بعد از سکوت، گوگل تبدیلش می‌کند';
+   770→          } else if (gRec.spoke && now - gRec.lastVoice > G_SIL_MS) {
+   771→            stopGoogleRec();
+   772→          } else if (!gRec.spoke && now - gRec.started > G_IDLE_MS) {
+   773→            stopGoogleRec();
+   774→          }
+   775→        };
+   776→        statusText.textContent = 'در حال گوش دادن (گوگل)… فرمانت را بگو';
+   777→        gMaxT = setTimeout(() => stopGoogleRec(), G_MAX_MS);
+   778→      } catch (_) {
+   779→        gRec = null;
+   780→        noEngine('شروع ضبط گوگل ممکن نشد');
+   781→      }
+   782→    });
+   783→  }
+   784→
+   785→  function stopGoogleRec() {
+   786→    clearTimeout(gMaxT); gMaxT = null;
+   787→    if (!gRec) return;
+   788→    const g = gRec;
+   789→    gRec = null;
+   790→    try { g.proc.disconnect(); } catch (_) { /* noop */ }
+   791→    try { g.src.disconnect(); } catch (_) { /* noop */ }
+   792→    try { g.sink.disconnect(); } catch (_) { /* noop */ }
+   793→    if (g.busy) return;
+   794→    g.busy = true;
+   795→    const totalMs = (g.chunks.length * 4096 * 1000) / (audioCtx ? audioCtx.sampleRate : 48000);
+   796→    if (!g.spoke || totalMs < 350) {
+   797→      statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
+   798→      setTimeout(() => { if (state === 'listening' || state === 'processing') { setState('idle'); statusText.innerHTML = IDLE_HINT; orbIcon.setAttribute('href', '#i-mic'); sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده'; } }, 1500);
+   799→      return;
+   800→    }
+   801→    setState('processing');
+   802→    statusText.textContent = 'در حال تبدیل گفتار با گوگل…';
+   803→    const merged = new Float32Array(g.chunks.reduce((a, c) => a + c.length, 0));
+   804→    let off = 0;
+   805→    for (const c of g.chunks) { merged.set(c, off); off += c.length; }
+   806→    const rate = (audioCtx && audioCtx.sampleRate) || 48000;
+   807→    const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
+   808→    bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, key: settings.googleKey || '', lang: 'fa-IR' })
+   809→      .then((r) => {
+   810→        if (r && r.ok && r.text) {
+   811→          runCommand(r.text.trim());
+   812→        } else {
+   813→          setState('idle');
+   814→          statusText.textContent = 'تبدیل گوگل ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
+   815→          orbIcon.setAttribute('href', '#i-mic');
+   816→          sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+   817→          toast((r && r.error) || 'گوگل پاسخی نداد', '#i-info');
+   818→        }
+   819→      })
+   820→      .catch(() => {
+   821→        setState('idle');
+   822→        statusText.textContent = 'اتصال به گوگل برقرار نشد — اینترنت/فیلترشکن را چک کن';
+   823→        orbIcon.setAttribute('href', '#i-mic');
+   824→        sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+   825→      });
+   826→  }
+   827→
+   828→  /* --- موتور GLM-ASR: ضبط واقعی + ارسال به سرور + تبدیل به فرمان --- */
+   829→  function startGlmListen() {
+   830→    if (!glmReady()) { noEngine('کلید GLM تنظیم نشده'); return; }
+   831→    attachMic().then((ok) => {
+   832→      if (!ok) { noEngine('میکروفون در دسترس نیست'); return; }
+   833→      try {
+   834→        recChunks = [];
+   835→        glmSpoke = false;
+   836→        glmListening = true;
+   837→        glmRec = new MediaRecorder(micStream);
+   838→        glmRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+   839→        glmRec.onstop = finishGlmTranscribe;
+   840→        glmRec.start();
+   841→        statusText.textContent = 'در حال گوش دادن (GLM-ASR)… فرمانت را بگو';
+   842→        /* تشخیص سکوت برای توقف هوشمند ضبط (با کمی تحمل تا بین کلمات قطع نشود) */
+   843→        glmSilentMs = 0;
+   844→        glmTimer = setInterval(() => {
+   845→          if (!glmListening || !micData) return;
+   846→          let sum = 0;
+   847→          for (let i = 0; i < micData.length; i++) sum += micData[i];
+   848→          const avg = sum / micData.length;
+   849→          if (avg > GLM_ON_LVL) {
+   850→            glmSpoke = true;
+   851→            glmSilentMs = 0;
+   852→            statusText.textContent = 'شنیدم… بعد از سکوت، تبدیلش می‌کنم';
+   853→          } else if (glmSpoke) {
+   854→            glmSilentMs += 300;
+   855→            if (glmSilentMs >= 1300) stopGlmRec();
+   856→          }
+   857→        }, 300);
+   858→        glmMaxTimer = setTimeout(() => stopGlmRec(), GLM_MAX_MS);
+   859→      } catch (_) {
+   860→        noEngine('شروع ضبط ممکن نشد');
+   861→      }
+   862→    });
+   863→  }
+   864→
+   865→  function stopGlmRec() {
+   866→    clearInterval(glmTimer); clearTimeout(glmMaxTimer);
+   867→    glmTimer = null; glmMaxTimer = null;
+   868→    if (glmListening && glmRec && glmRec.state !== 'inactive') {
+   869→      try { glmRec.stop(); } catch (_) { finishGlmTranscribe(); }
+   870→    } else {
+   871→      glmListening = false;
+   872→    }
+   873→  }
+   874→
+   875→  async function finishGlmTranscribe() {
+   876→    glmListening = false;
+   877→    glmRec = null;
+   878→    const blob = new Blob(recChunks, { type: (micRecMime() || 'audio/webm') });
+   879→    recChunks = [];
+   880→    if (!blob.size || blob.size < 900) {
+   881→      statusText.textContent = 'صدایی نشنیدم؛ دوباره امتحان کن';
+   882→      setTimeout(() => { if (state === 'listening') { setState('idle'); statusText.innerHTML = IDLE_HINT; orbIcon.setAttribute('href', '#i-mic'); } }, 1600);
+   883→      return;
+   884→    }
+   885→    setState('processing');
+   886→    statusText.textContent = 'در حال تبدیل گفتار به متن با GLM-ASR…';
+   887→    try {
+   888→      const buf = new Uint8Array(await blob.arrayBuffer());
+   889→      const r = await bridge.stt.transcribe({ buf, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
+   890→      if (r && r.ok && r.text) {
+   891→        runCommand(r.text.trim());
+   892→      } else {
+   893→        setState('idle');
+   894→        statusText.textContent = 'تبدیل گفتار ممکن نشد: ' + ((r && r.error) || 'خطای نامشخص');
+   895→        orbIcon.setAttribute('href', '#i-mic');
+   896→        toast('GLM-ASR: ' + ((r && r.error) || 'خطای نامشخص'), '#i-info');
+   897→      }
+   898→    } catch (_) {
+   899→      setState('idle');
+   900→      statusText.textContent = 'اتصال به GLM-ASR برقرار نشد';
+   901→      orbIcon.setAttribute('href', '#i-mic');
+   902→    }
+   903→  }
+   904→
+   905→  function micRecMime() {
+   906→    if (typeof MediaRecorder === 'undefined') return '';
+   907→    for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']) {
+   908→      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+   909→    }
+   910→    return '';
+   911→  }
+   912→
+   913→  /* --- وقتی هیچ موتوری نیست: پیام صادقانه (+ دمو فقط اگر کاربر روشن کرده) --- */
+   914→  function noEngine(reason) {
+   915→    setState('idle');
+   916→    orbIcon.setAttribute('href', '#i-mic');
+   917→    sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+   918→    if (settings.demoMode) {
+   919→      startDemoListen();
+   920→      return;
+   921→    }
+   922→    statusText.innerHTML = 'تشخیص گفتار در دسترس نیست — ' + reason;
+   923→    toast('موتور رایگان گوگل فقط داخل نرم‌افزار ویندوزی فعال است', '#i-info');
+   924→  }
+   925→
+   926→  /* ---------- گوش دادن ---------- */
+   927→  let listenTimer = null;
+   928→  function startListening() {
+   929→    if (state === 'processing') return;
+   930→    clearTimeout(listenTimer);
+   931→    setState('listening');
+   932→    body.classList.remove('has-card');
+   933→    respCard.classList.remove('show');
+   934→    orbIcon.setAttribute('href', '#i-stop');
+   935→    sbMic.innerHTML = '<i class="dot rec"></i>میکروفون: در حال ضبط';
+   936→    gotFinal = false;
+   937→    attachMic();
+   938→    /* اگر کانتکست صوتی معلق بود، اینجا بیدارش می‌کنیم تا ضبط شروع شود */
+   939→    if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
+   940→
+   941→    const eng = resolveEngine();
+   942→    if (eng === 'web') {
+   943→      try {
+   944→        rec = makeRec();
+   945→        statusText.textContent = 'در حال گوش دادن… فرمانت را بگو';
+   946→        recActive = true;
+   947→        rec.start();
+   948→        return;
+   949→      } catch (_) { srBroken = true; }
+   950→    }
+   951→    if (eng === 'google') {
+   952→      startGoogleListen();
+   953→      return;
+   954→    }
+   955→    if (eng === 'glm') {
+   956→      startGlmListen();
+   957→      return;
+   958→    }
+   959→    noEngine(SRC ? 'موتور وب از کار افتاد و موتور گوگل اینجا فعال نیست' : 'موتور گوگل اینجا پشتیبانی نمی‌شود (فقط داخل نرم‌افزار)');
+   960→  }
+   961→
+   962→  function startDemoListen() {
+   963→    statusText.textContent = 'حالت دمو: در حال شنیدن…';
+   964→    if (!demoNoticeShown) {
+   965→      demoNoticeShown = true;
+   966→      toast('حالت دمو روشن است — برای تشخیص واقعی، کلید GLM را در تنظیمات بگذار', '#i-info');
+   967→    }
+   968→    listenTimer = setTimeout(() => {
+   969→      const demo = chips[Math.floor(Math.random() * chips.length)].dataset.cmd;
+   970→      stopListening(false);
+   971→      runCommand(demo);
+   972→    }, 4200);
+   973→  }
+   974→
+   975→  function stopListening(reset = true) {
+   976→    clearTimeout(listenTimer);
+   977→    clearInterval(glmTimer); clearTimeout(glmMaxTimer);
+   978→    glmTimer = null; glmMaxTimer = null;
+   979→    glmListening = false;
+   980→    if (rec && recActive) { try { rec.stop(); } catch (_) { /* noop */ } }
+   981→    recActive = false;
+   982→    if (glmRec && glmRec.state !== 'inactive') {
+   983→      /* جلوی ادامه فرایند تبدیل را می‌گیریم */
+   984→      glmRec.onstop = null;
+   985→      try { glmRec.stop(); } catch (_) { /* noop */ }
+   986→    }
+   987→    glmRec = null;
+   988→    if (gRec) {
+   989→      const g = gRec;
+   990→      gRec = null;
+   991→      try { g.proc.disconnect(); } catch (_) { /* noop */ }
+   992→      try { g.src.disconnect(); } catch (_) { /* noop */ }
+   993→      try { g.sink.disconnect(); } catch (_) { /* noop */ }
+   994→    }
+   995→    clearTimeout(gMaxT); gMaxT = null;
+   996→    /* میکروفون روشن می‌ماند تا اکولایزر همیشه به صدای واقعی واکنش نشان دهد */
+   997→    orbIcon.setAttribute('href', '#i-mic');
+   998→    sbMic.innerHTML = '<i class="dot ok"></i>میکروفون: آماده';
+   999→    if (reset) {
+  1000→      setState('idle');
+  1001→      statusText.innerHTML = IDLE_HINT;
+  1002→    }
+  1003→  }
+  1004→  const toggleListen = () => (state === 'listening' ? stopListening() : startListening());
+  1005→
+  1006→  orb.addEventListener('click', toggleListen);
+  1007→
+  1008→  /* ---------- فرمان‌های سریع ---------- */
+  1009→  chips.forEach((c) => c.addEventListener('click', () => runCommand(c.dataset.cmd)));
+  1010→
+  1011→  /* ---------- کادر فرمان ---------- */
+  1012→  cmdBar.addEventListener('submit', (e) => {
+  1013→    e.preventDefault();
+  1014→    const v = cmdInput.value.trim();
+  1015→    if (!v) { cmdInput.focus(); return; }
+  1016→    cmdInput.value = '';
+  1017→    runCommand(v);
+  1018→  });
+  1019→
+  1020→  /* ---------- میانبرها ---------- */
+  1021→  window.addEventListener('keydown', (e) => {
+  1022→    if (e.ctrlKey && e.shiftKey && e.code === 'Space') {
+  1023→      e.preventDefault();
+  1024→      toggleListen();
+  1025→    } else if (e.ctrlKey && (e.key === 'k' || e.key === 'K')) {
+  1026→      e.preventDefault();
+  1027→      cmdInput.focus();
+  1028→    } else if (e.key === 'Escape') {
+  1029→      if (!confirmBox.hidden) hideConfirm();
+  1030→      else if (!about.hidden) about.hidden = true;
+  1031→      else if (!settingsPage.hidden) showSettings(false);
+  1032→      else if (!chatPage.hidden) showView('home');
+  1033→      else if (state === 'listening') stopListening();
+  1034→    }
+  1035→  });
+  1036→  if (bridge && bridge.voice) bridge.voice.onToggleListen(toggleListen);
+  1037→
+  1038→  /* ---------- آیتم‌های قفل‌شده سایدبار ---------- */
+  1039→  document.querySelectorAll('.rail-item.locked').forEach((b) =>
+  1040→    b.addEventListener('click', () => toast('این بخش در نسخه بعدی اضافه می‌شود', '#i-info'))
+  1041→  );
+  1042→
+  1043→  /* ============================================================
+  1044→     ناوبری: خانه / تنظیمات / چت
+  1045→     ============================================================ */
+  1046→  let appVersion = '0.6.3';
+  1047→
+  1048→  function showView(v) {
+  1049→    settingsPage.hidden = v !== 'settings';
+  1050→    chatPage.hidden = v !== 'chat';
+  1051→    hero.style.display = v === 'home' ? '' : 'none';
+  1052→    btnHome.classList.toggle('active', v === 'home');
+  1053→    btnSettings.classList.toggle('active', v === 'settings');
+  1054→    btnChat.classList.toggle('active', v === 'chat');
+  1055→    $('#main').scrollTop = 0;
+  1056→    if (v === 'settings') refreshSettingsUI();
+  1057→    if (v === 'chat') {
+  1058→      if (!chatMsgs.childElementCount) chatWelcome();
+  1059→      setTimeout(() => chatInput.focus(), 150);
+  1060→    }
+  1061→  }
+  1062→  function showSettings(on) { showView(on ? 'settings' : 'home'); }
+  1063→  btnSettings.addEventListener('click', () => showView(settingsPage.hidden ? 'settings' : 'home'));
+  1064→  btnHome.addEventListener('click', () => showView('home'));
+  1065→  btnSettingsBack.addEventListener('click', () => showView('home'));
+  1066→  btnChat.addEventListener('click', () => showView(chatPage.hidden ? 'chat' : 'home'));
+  1067→  btnChatBack.addEventListener('click', () => showView('home'));
+  1068→
+  1069→  function loadAppVersion() {
+  1070→    const render = () => { updText.textContent = `نسخه فعلی: v${faNum(appVersion)}`; };
+  1071→    if (bridge && bridge.system && bridge.system.info) {
+  1072→      bridge.system.info().then((i) => {
+  1073→        appVersion = (i && i.version) || appVersion;
+  1074→        render();
+  1075→      }).catch(render);
+  1076→    } else {
+  1077→      render();
+  1078→    }
+  1079→  }
+  1080→
+  1081→  function refreshSettingsUI() {
+  1082→    optTts.checked = !!settings.tts;
+  1083→    optAutoUpdate.checked = !!settings.autoUpdate;
+  1084→    optDemo.checked = !!settings.demoMode;
+  1085→    optSttEngine.value = settings.sttEngine || 'auto';
+  1086→    optGlmKey.value = settings.glmKey || '';
+  1087→    optGoogleKey.value = settings.googleKey || '';
+  1088→    optAiModel.value = settings.glmModel || 'glm-4.6';
+  1089→    refreshEngineUI();
+  1090→    fillVoiceSelect();
+  1091→    listMicDevices();
+  1092→    loadAppVersion();
+  1093→    if (bridge && bridge.settings) {
+  1094→      bridge.settings.flags().then((f) => {
+  1095→        optTop.checked = !!(f && f.alwaysOnTop);
+  1096→        optLogin.checked = !!(f && f.loginItem);
+  1097→      }).catch(() => { /* noop */ });
+  1098→    } else {
+  1099→      optTop.checked = false;
+  1100→      optLogin.checked = false;
+  1101→    }
+  1102→  }
+  1103→
+  1104→  const needApp = () => toast('این گزینه فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+  1105→
+  1106→  optTts.addEventListener('change', () => {
+  1107→    settings.tts = optTts.checked;
+  1108→    store.set('tts', settings.tts);
+  1109→    if (settings.tts) speak('پاسخ گفتاری فعال شد');
+  1110→    else if (window.speechSynthesis) speechSynthesis.cancel();
+  1111→  });
+  1112→
+  1113→  optAutoUpdate.addEventListener('change', () => {
+  1114→    settings.autoUpdate = optAutoUpdate.checked;
+  1115→    store.set('autoUpdate', settings.autoUpdate);
+  1116→    if (bridge && bridge.updater) bridge.updater.setAuto(settings.autoUpdate);
+  1117→    toast(settings.autoUpdate ? 'بررسی خودکار فعال شد' : 'بررسی خودکار خاموش شد', '#i-refresh');
+  1118→  });
+  1119→
+  1120→  optTop.addEventListener('change', async () => {
+  1121→    if (!bridge || !bridge.settings) { optTop.checked = false; needApp(); return; }
+  1122→    try {
+  1123→      const v = await bridge.settings.setAlwaysOnTop(optTop.checked);
+  1124→      optTop.checked = !!v;
+  1125→      toast(v ? 'آوا حالا همیشه روون است' : 'حالت همیشه‌روون خاموش شد', '#i-power');
+  1126→    } catch (_) { optTop.checked = false; }
+  1127→  });
+  1128→
+  1129→  optLogin.addEventListener('change', async () => {
+  1130→    if (!bridge || !bridge.settings) { optLogin.checked = false; needApp(); return; }
+  1131→    try {
+  1132→      const v = await bridge.settings.setLoginItem(optLogin.checked);
+  1133→      if (v === null || v === undefined) {
+  1134→        optLogin.checked = false;
+  1135→        toast('در این محیط قابل اعمال نیست', '#i-info');
+  1136→      } else {
+  1137→        optLogin.checked = !!v;
+  1138→        toast(v ? 'اجرای خودکار با ویندوز فعال شد' : 'اجرای خودکار خاموش شد', '#i-power');
+  1139→      }
+  1140→    } catch (_) { optLogin.checked = false; }
+  1141→  });
+  1142→
+  1143→  /* --- موتور تشخیص گفتار و کلید GLM --- */
+  1144→  optSttEngine.addEventListener('change', () => {
+  1145→    settings.sttEngine = optSttEngine.value || 'auto';
+  1146→    store.set('sttEngine', settings.sttEngine);
+  1147→    refreshEngineUI();
+  1148→    if (settings.sttEngine === 'glm' && !settings.glmKey) {
+  1149→      optGlmKey.focus();
+  1150→      toast('موتور GLM به کلید نیاز دارد — یا موتور «خودکار»/«گوگل رایگان» را انتخاب کن', '#i-key');
+  1151→    }
+  1152→  });
+  1153→
+  1154→  optGlmKey.addEventListener('change', () => {
+  1155→    settings.glmKey = optGlmKey.value.trim();
+  1156→    store.set('glmKey', settings.glmKey);
+  1157→    refreshEngineUI();
+  1158→    toast(settings.glmKey ? 'کلید ذخیره شد — تشخیص گفتار ابری و چت فعال شد' : 'کلید پاک شد', '#i-key');
+  1159→  });
+  1160→
+  1161→  btnKeyShow.addEventListener('click', () => {
+  1162→    const show = optGlmKey.type === 'password';
+  1163→    optGlmKey.type = show ? 'text' : 'password';
+  1164→    btnKeyShow.querySelector('span').textContent = show ? 'مخفی' : 'نمایش';
+  1165→  });
+  1166→
+  1167→  optDemo.addEventListener('change', () => {
+  1168→    settings.demoMode = optDemo.checked;
+  1169→    store.set('demoMode', settings.demoMode);
+  1170→    refreshEngineUI();
+  1171→    toast(settings.demoMode ? 'حالت دمو روشن شد' : 'حالت دمو خاموش شد — تشخیص واقعی یا پیام خطا', '#i-info');
+  1172→  });
+  1173→
+  1174→  optGoogleKey.addEventListener('change', () => {
+  1175→    settings.googleKey = optGoogleKey.value.trim();
+  1176→    store.set('googleKey', settings.googleKey);
+  1177→    refreshEngineUI();
+  1178→    toast(settings.googleKey ? 'کلید اختصاصی گوگل ذخیره شد' : 'کلید پاک شد — استفاده از کلید رایگان داخلی', '#i-key');
+  1179→  });
+  1180→
+  1181→  btnGoZai.addEventListener('click', () => {
+  1182→    showView('chat');
+  1183→    selectChatTab('zai');
+  1184→    toast('یک بار وارد حسابت شو — بعدش همه‌چیز بدون کلید کار می‌کند', '#i-globe');
+  1185→  });
+  1186→
+  1187→  optAiModel.addEventListener('change', () => {
+  1188→    settings.glmModel = optAiModel.value;
+  1189→    store.set('glmModel', settings.glmModel);
+  1190→    toast(`مدل گفتگو: ${optAiModel.selectedOptions[0].textContent}`, '#i-spark');
+  1191→  });
+  1192→
+  1193→  /* --- انتخاب صدای گوینده --- */
+  1194→  function fillVoiceSelect() {
+  1195→    if (!('speechSynthesis' in window)) {
+  1196→      optVoice.innerHTML = '<option value="">بدون موتور گفتار</option>';
+  1197→      optVoice.disabled = true;
+  1198→      return;
+  1199→    }
+  1200→    optVoice.disabled = false;
+  1201→    const voices = speechSynthesis.getVoices() || [];
+  1202→    const faFirst = [...voices].sort((a, b) => (/^fa/i.test(b.lang) ? 1 : 0) - (/^fa/i.test(a.lang) ? 1 : 0));
+  1203→    let html = '<option value="">خودکار (فارسی اگر نصب باشد)</option>';
+  1204→    faFirst.forEach((v) => {
+  1205→      const sel = settings.voiceURI === v.voiceURI ? ' selected' : '';
+  1206→      html += `<option value="${v.voiceURI}"${sel}>${v.name} — ${v.lang}</option>`;
+  1207→    });
+  1208→    optVoice.innerHTML = voices.length ? html : '<option value="">صدایی یافت نشد</option>';
+  1209→  }
+  1210→  optVoice.addEventListener('change', () => {
+  1211→    settings.voiceURI = optVoice.value || '';
+  1212→    store.set('voiceURI', settings.voiceURI);
+  1213→    speak('سلام! من آوا هستم.');
+  1214→  });
+  1215→  if ('speechSynthesis' in window) {
+  1216→    speechSynthesis.onvoiceschanged = fillVoiceSelect;
+  1217→    setTimeout(fillVoiceSelect, 300);
+  1218→  }
+  1219→
+  1220→  /* --- به‌روزرسانی --- */
+  1221→  function setUpdUI(s) {
+  1222→    updProgress.hidden = true;
+  1223→    btnInstallUpdate.hidden = true;
+  1224→    if (btnCheckUpdate) btnCheckUpdate.disabled = false;
+  1225→    switch (s && s.state) {
+  1226→      case 'checking':
+  1227→        updNote.textContent = 'در حال بررسی نسخه جدید…';
+  1228→        break;
+  1229→      case 'available':
+  1230→        updNote.textContent = `نسخه جدید v${faNum(s.version || '')} پیدا شد — در حال دانلود…`;
+  1231→        updProgress.hidden = false;
+  1232→        updBar.style.width = '6%';
+  1233→        break;
+  1234→      case 'downloading':
+  1235→        updNote.textContent = `در حال دانلود: ${faNum(s.percent || 0)}٪`;
+  1236→        updProgress.hidden = false;
+  1237→        updBar.style.width = `${Math.max(4, s.percent || 0)}%`;
+  1238→        break;
+  1239→      case 'ready':
+  1240→        updNote.textContent = `نسخه v${faNum(s.version || '')} آماده نصب است`;
+  1241→        btnInstallUpdate.hidden = false;
+  1242→        toast('نسخه جدید آماده نصب است — از تنظیمات نصبش کن', '#i-download');
+  1243→        break;
+  1244→      case 'none':
+  1245→        updNote.textContent = 'آخرین نسخه را داری ✓';
+  1246→        break;
+  1247→      case 'dev':
+  1248→        updNote.textContent = 'در حالت توسعه (npm start) به‌روزرسان غیرفعال است؛ خروجی نصب‌شده کار می‌کند';
+  1249→        break;
+  1250→      case 'error':
+  1251→        updNote.textContent = 'خطا در بروزرسانی: ' + String(s.message || '').slice(0, 90);
+  1252→        break;
+  1253→      default:
+  1254→        updNote.textContent = 'اتصال خودکار به GitHub Releases';
+  1255→    }
+  1256→  }
+  1257→
+  1258→  if (bridge && bridge.updater) {
+  1259→    bridge.updater.onStatus(setUpdUI);
+  1260→    if (bridge.updater.setAuto) bridge.updater.setAuto(settings.autoUpdate);
+  1261→    btnCheckUpdate.addEventListener('click', async () => {
+  1262→      btnCheckUpdate.disabled = true;
+  1263→      updNote.textContent = 'در حال بررسی نسخه جدید…';
+  1264→      const r = await bridge.updater.check().catch(() => ({ ok: false, error: 'اتصال برقرار نشد' }));
+  1265→      btnCheckUpdate.disabled = false;
+  1266→      if (r && r.dev) setUpdUI({ state: 'dev' });
+  1267→      else if (r && !r.ok) setUpdUI({ state: 'error', message: r.error });
+  1268→      else if (r && r.ok) setUpdUI({ state: 'checking' });
+  1269→    });
+  1270→    btnInstallUpdate.addEventListener('click', () => {
+  1271→      toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
+  1272→      bridge.updater.install();
+  1273→    });
+  1274→  } else {
+  1275→    btnCheckUpdate.addEventListener('click', () => toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh'));
+  1276→    btnInstallUpdate.addEventListener('click', needApp);
+  1277→  }
+  1278→
+  1279→  /* --- پیوندها (باز شدن در مرورگر پیش‌فرض) --- */
+  1280→  document.querySelectorAll('#settingsPage [data-url]').forEach((b) =>
+  1281→    b.addEventListener('click', async () => {
+  1282→      const url = b.dataset.url;
+  1283→      if (bridge && bridge.system && bridge.system.openUrl) {
+  1284→        const r = await bridge.system.openUrl(url);
+  1285→        if (!r || !r.ok) toast('باز کردن لینک ممکن نشد', '#i-info');
+  1286→      } else {
+  1287→        window.open(url, '_blank');
+  1288→      }
+  1289→    })
+  1290→  );
+  1291→
+  1292→  /* ============================================================
+  1293→     فرمان‌های سفارشی (ساخته‌شده با هوش مصنوعی) + مودال تأیید
+  1294→     ============================================================ */
+  1295→  let customCmds = store.get('customCmds', []);
+  1296→  let confirmResolve = null;
+  1297→  const chipsBox = $('#chips');
+  1298→
+  1299→  const normFa = (s) =>
+  1300→    String(s || '')
+  1301→      .toLowerCase()
+  1302→      .replace(/\u064A/g, '\u06CC')
+  1303→      .replace(/\u0643/g, '\u06A9')
+  1304→      .replace(/[\s\u200C]+/g, ' ')
+  1305→      .trim();
+  1306→
+  1307→  function findCustomRule(cmd) {
+  1308→    const n = normFa(cmd);
+  1309→    if (!n) return null;
+  1310→    const cc = customCmds.find((c) => (c.phrases || []).some((p) => n.includes(normFa(p))));
+  1311→    if (!cc) return null;
+  1312→    return {
+  1313→      custom: true,
+  1314→      k: /.*/,
+  1315→      t: cc.title || 'فرمان سفارشی',
+  1316→      i: '#i-spark',
+  1317→      r: async () => runCustom(cc),
+  1318→    };
+  1319→  }
+  1320→
+  1321→  async function runCustom(cc) {
+  1322→    const act = cc.action || {};
+  1323→    if (act.type === 'open_url') {
+  1324→      if (bridge && bridge.system && bridge.system.openUrl) {
+  1325→        const r = await bridge.system.openUrl(act.value);
+  1326→        return r && r.ok ? `«${cc.title}» باز شد.` : 'باز کردن لینک ممکن نشد.';
+  1327→      }
+  1328→      window.open(act.value, '_blank');
+  1329→      return `«${cc.title}» باز شد (در مرورگر).`;
+  1330→    }
+  1331→    if (act.type === 'run') {
+  1332→      if (!canRun) return 'اجرای واقعی فقط داخل نرم‌افزار ویندوزی انجام می‌شود.';
+  1333→      const r = await bridge.system.run(act.value);
+  1334→      return r && r.ok ? `«${cc.title}» انجام شد.` : `اجرا نشد: ${(r && r.error) || 'خطای نامشخص'}`;
+  1335→    }
+  1336→    if (act.type === 'ps') {
+  1337→      if (!bridge || !bridge.custom) return 'اجرای اسکریپت فقط داخل نرم‌افزار ویندوزی انجام می‌شود.';
+  1338→      const okGo = await askConfirm({
+  1339→        title: 'اجرای فرمان سفارشی',
+  1340→        text: `اسکریپت PowerShell زیر برای فرمان «${cc.title}» ذخیره شده. اجرا شود؟`,
+  1341→        code: act.value,
+  1342→      });
+  1343→      if (!okGo) return 'بی‌خیال؛ اجرا نشد.';
+  1344→      const r = await bridge.custom.run(act.value);
+  1345→      if (r && r.ok) return (r.out ? `انجام شد: ${r.out}` : 'انجام شد.') + '';
+  1346→      return `اجرا نشد: ${(r && r.error) || 'خطای نامشخص'}`;
+  1347→    }
+  1348→    return 'نوع فرمان سفارشی پشتیبانی نمی‌شود.';
+  1349→  }
+  1350→
+  1351→  function askConfirm({ title, text, code }) {
+  1352→    return new Promise((resolve) => {
+  1353→      cfTitle.textContent = title || 'تأیید';
+  1354→      cfText.textContent = text || '';
+  1355→      if (code) { cfCode.hidden = false; cfCode.textContent = code; }
+  1356→      else cfCode.hidden = true;
+  1357→      confirmBox.hidden = false;
+  1358→      confirmResolve = resolve;
+  1359→    });
+  1360→  }
+  1361→  function hideConfirm(val) {
+  1362→    if (confirmBox.hidden) return;
+  1363→    confirmBox.hidden = true;
+  1364→    if (confirmResolve) { confirmResolve(!!val); confirmResolve = null; }
+  1365→  }
+  1366→  btnConfirmOk.addEventListener('click', () => hideConfirm(true));
+  1367→  btnConfirmCancel.addEventListener('click', () => hideConfirm(false));
+  1368→
+  1369→  function renderCustomChips() {
+  1370→    chipsBox.querySelectorAll('.chip.custom').forEach((el) => el.remove());
+  1371→    customCmds.forEach((cc) => {
+  1372→      const b = document.createElement('button');
+  1373→      b.className = 'chip custom';
+  1374→      b.type = 'button';
+  1375→      b.title = `فرمان سفارشی — ${(cc.phrases || [])[0] || cc.title}`;
+  1376→      b.innerHTML = `<svg class="ic"><use href="#i-spark"/></svg><span></span><i class="chip-x" title="حذف فرمان">–</i>`;
+  1377→      b.querySelector('span').textContent = cc.title;
+  1378→      b.addEventListener('click', () => runCommand(cc.title));
+  1379→      b.querySelector('.chip-x').addEventListener('click', (e) => {
+  1380→        e.stopPropagation();
+  1381→        customCmds = customCmds.filter((c) => c.id !== cc.id);
+  1382→        store.set('customCmds', customCmds);
+  1383→        renderCustomChips();
+  1384→        toast(`فرمان «${cc.title}» حذف شد`, '#i-trash');
+  1385→      });
+  1386→      chipsBox.appendChild(b);
+  1387→    });
+  1388→  }
+  1389→
+  1390→  /* ============================================================
+  1391→     چت با هوش مصنوعی GLM — بدون کلید API (با نشست حساب z.ai) یا با کلید
+  1392→     ============================================================ */
+  1393→  const AI_SYSTEM =
+  1394→    'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود و به فرمان‌های کاربر گوش می‌دهی.\n' +
+  1395→    'همیشه فارسی، کوتاه (حداکثر ۳ جمله)، دوستانه و مفید جواب بده.\n' +
+  1396→    'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
+  1397→    'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
+  1398→    '<<<ADD>>>\n' +
+  1399→    '{"title":"نام کوتاه فرمان","phrases":["عبارتی که کاربر می‌گوید"],"action":{"type":"...","value":"..."}}\n' +
+  1400→    '<<<END>>>\n' +
+  1401→    'قواعد action:\n' +
+  1402→    '- type=open_url: باز کردن وب‌سایت؛ value آدرس کامل https\n' +
+  1403→    '- type=run: اجرای فرمان آماده؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, recycle_empty\n' +
+  1404→    '- type=ps: اسکریپت کوتاه تک‌خطی و غیرمخرب PowerShell\n' +
+  1405→    'مثال: اگر کاربر گفت «فرمان باز کردن تلگرام بساز»، بلوک را با open_url و آدرس https://web.telegram.org بساز.';
+  1406→
+  1407→  let chatBusy = false;
+  1408→  let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
+  1409→  let zaiToken = '';   // توکن نشست حساب z.ai — از webview خوانده می‌شود
+  1410→
+  1411→  const aiConnected = () => !!zaiToken || !!settings.glmKey;
+  1412→
+  1413→  function chatWelcome() {
+  1414→    const ready = aiConnected();
+  1415→    addMsg('bot', ready
+  1416→      ? 'سلام! من مغز هوشمند آوا هستم و به حسابت وصل هستم. هر سوال پیچیده‌ای بپرسی جواب می‌دهم و اگر فرمانی بخواهی، خودم می‌سازمش و با تأیید تو به فرمان‌هام اضافه می‌کنم.'
+  1417→      : 'سلام! من مغز هوشمند آوا هستم. برای چت بدون کلید API، برو تب «صفحه چت GLM» و یک بار وارد حسابت شو — بعد اینجا هر سوال و فرمانی بخواهی در خدمتم.');
+  1418→  }
+  1419→
+  1420→  function addMsg(role, text) {
+  1421→    const m = document.createElement('div');
+  1422→    m.className = `msg ${role === 'user' ? 'user' : role === 'err' ? 'err' : 'bot'}`;
+  1423→    m.textContent = text;
+  1424→    chatMsgs.appendChild(m);
+  1425→    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  1426→    return m;
+  1427→  }
+  1428→
+  1429→  /* استخراج بلوک افزودن فرمان از پاسخ AI */
+  1430→  function parseAdd(text) {
+  1431→    const t = String(text || '');
+  1432→    const m = t.match(/<<<ADD>>>\s*([\s\S]*?)\s*<<<END>>>/);
+  1433→    if (!m) return { reply: t.trim(), add: null };
+  1434→    let add = null;
+  1435→    try {
+  1436→      const j = JSON.parse(m[1].replace(/^```(?:json)?/i, '').replace(/```$/, '').trim());
+  1437→      if (j && j.title && j.action && j.action.type && j.action.value) add = j;
+  1438→    } catch (_) { /* noop */ }
+  1439→    return { reply: t.replace(m[0], '').trim(), add };
+  1440→  }
+  1441→
+  1442→  /* --- تب‌های چت: چت سریع / صفحه GLM --- */
+  1443→  function selectChatTab(which) {
+  1444→    const zai = which === 'zai';
+  1445→    if (tabQuick) tabQuick.classList.toggle('active', !zai);
+  1446→    if (tabZai) tabZai.classList.toggle('active', zai);
+  1447→    if (quickWrap) quickWrap.hidden = zai;
+  1448→    if (zaiWrap) zaiWrap.hidden = !zai;
+  1449→    if (zai) setTimeout(() => checkZaiToken(), 900);
+  1450→  }
+  1451→  if (tabQuick) tabQuick.addEventListener('click', () => selectChatTab('quick'));
+  1452→  if (tabZai) tabZai.addEventListener('click', () => selectChatTab('zai'));
+  1453→
+  1454→  function setZaiBadge(on, txt) {
+  1455→    if (!zaiBadge) return;
+  1456→    zaiBadge.textContent = txt || (on ? 'اتصال به حساب GLM: فعال ✓' : 'بدون کلید API');
+  1457→    zaiBadge.classList.toggle('on', !!on);
+  1458→  }
+  1459→
+  1460→  function checkZaiToken(attempts = 0) {
+  1461→    if (!zaiWeb || typeof zaiWeb.executeJavaScript !== 'function') return;
+  1462→    try {
+  1463→      zaiWeb.executeJavaScript("localStorage.getItem('token')||''", true).then((t) => {
+  1464→        if (t) {
+  1465→          zaiToken = String(t);
+  1466→          setZaiBadge(true);
+  1467→        } else {
+  1468→          zaiToken = '';
+  1469→          setZaiBadge(false, attempts < 4 ? 'برای اتصال، وارد حسابت شو' : 'بدون کلید API');
+  1470→          if (attempts < 4) setTimeout(() => checkZaiToken(attempts + 1), 2500);
+  1471→        }
+  1472→      }).catch(() => { /* noop */ });
+  1473→    } catch (_) { /* noop */ }
+  1474→  }
+  1475→  if (zaiWeb) {
+  1476→    zaiWeb.addEventListener('dom-ready', () => setTimeout(() => checkZaiToken(), 1400));
+  1477→    zaiWeb.addEventListener('did-stop-loading', () => setTimeout(() => checkZaiToken(), 800));
+  1478→  }
+  1479→
+  1480→  /* --- ارسال پیام: اول نشست z.ai، بعد کلید GLM --- */
+  1481→  async function aiAsk(text) {
+  1482→    const msgs = [{ role: 'system', content: AI_SYSTEM }, ...chatHist.slice(-8), { role: 'user', content: text }];
+  1483→    if (zaiToken && bridge && bridge.ai && bridge.ai.zaiChat) {
+  1484→      const r = await bridge.ai.zaiChat({ token: zaiToken, messages: msgs });
+  1485→      if (r && r.ok) return r;
+  1486→      if (r && r.needLogin) { zaiToken = ''; setZaiBadge(false, 'نشست منقضی شد — دوباره وارد شو'); }
+  1487→      if (r && !settings.glmKey) return r; // خطای z.ai را نشان بده
+  1488→    }
+  1489→    if (settings.glmKey && bridge && bridge.ai && bridge.ai.chat) {
+  1490→      return bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs });
+  1491→    }
+  1492→    if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
+  1493→    return { ok: false, needLogin: true, error: 'برای چت بدون کلید، اول در تب «صفحه چت GLM» وارد حسابت شو' };
+  1494→  }
+  1495→
+  1496→  async function handleChatSend(v) {
+  1497→    addMsg('user', v);
+  1498→    chatHist.push({ role: 'user', content: v });
+  1499→    const typing = addMsg('bot', 'دارم فکر می‌کنم…');
+  1500→    typing.classList.add('typing');
+  1501→    chatBusy = true;
+  1502→    try {
+  1503→      const r = await aiAsk(v);
+  1504→      typing.remove();
+  1505→      if (!r || !r.ok) {
+  1506→        addMsg('err', (r && r.error) || 'پاسخی نرسید.');
+  1507→      } else {
+  1508→        const { reply, add } = parseAdd(r.text);
+  1509→        chatHist.push({ role: 'assistant', content: r.text });
+  1510→        const msgEl = addMsg('bot', reply || '…');
+  1511→        speak(reply);
+  1512→        if (add) renderCmdCard(msgEl, add);
+  1513→      }
+  1514→    } catch (_) {
+  1515→      typing.remove();
+  1516→      addMsg('err', 'اتصال به سرور هوش مصنوعی برقرار نشد.');
+  1517→    }
+  1518→    chatBusy = false;
+  1519→    chatInput.focus();
+  1520→  }
+  1521→
+  1522→  chatBar.addEventListener('submit', (e) => {
+  1523→    e.preventDefault();
+  1524→    const v = chatInput.value.trim();
+  1525→    if (!v || chatBusy) return;
+  1526→    if (!bridge || !bridge.ai) {
+  1527→      addMsg('err', 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند (درخواست باید از پروسه اصلی برود).');
+  1528→      return;
+  1529→    }
+  1530→    chatInput.value = '';
+  1531→    handleChatSend(v);
+  1532→  });
+  1533→
+  1534→  function renderCmdCard(msgEl, cc) {
+  1535→    const card = document.createElement('div');
+  1536→    card.className = 'cmd-card';
+  1537→    card.innerHTML =
+  1538→      `<b><svg class="ic"><use href="#i-plus"/></svg><span></span></b>` +
+  1539→      `<code></code>` +
+  1540→      `<div class="cmd-actions">` +
+  1541→      `<button class="chip sm upd-install"><svg class="ic"><use href="#i-plus"/></svg><span>افزودن به فرمان‌ها</span></button>` +
+  1542→      `<button class="chip sm"><svg class="ic"><use href="#i-close"/></svg><span>بی‌خیال</span></button>` +
+  1543→      `</div>`;
+  1544→    card.querySelector('b span').textContent = cc.title || 'فرمان جدید';
+  1545→    const codeEl = card.querySelector('code');
+  1546→    const act = cc.action || {};
+  1547→    codeEl.textContent = (act.type === 'ps' ? 'PowerShell: ' : act.type === 'open_url' ? 'URL: ' : 'Command: ') + (act.value || '');
+  1548→    const [btnAdd, btnSkip] = card.querySelectorAll('button');
+  1549→    btnAdd.addEventListener('click', () => {
+  1550→      cc.id = Date.now();
+  1551→      customCmds.push(cc);
+  1552→      store.set('customCmds', customCmds);
+  1553→      renderCustomChips();
+  1554→      card.querySelector('.cmd-actions').remove();
+  1555→      const done = document.createElement('p');
+  1556→      done.style.cssText = 'margin:8px 0 0;font-size:11.5px;color:#6ee7b7';
+  1557→      done.textContent = 'افزوده شد ✓ حالا با صدا یا کادر فرمان قابل اجراست.';
+  1558→      card.appendChild(done);
+  1559→      toast(`فرمان «${cc.title}» به لیست اضافه شد`, '#i-plus');
+  1560→    });
+  1561→    btnSkip.addEventListener('click', () => { card.remove(); });
+  1562→    msgEl.appendChild(card);
+  1563→    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  1564→  }
+  1565→
+  1566→  /* ---------- مسیریابی سوالات پیچیده به هوش مصنوعی ----------
+  1567→     اگر متن، فرمان شناخته‌شده نبود و اتصال AI برقرار بود،
+  1568→     آوا خودش از GLM می‌پرسد، جواب را می‌گوید و فرمان جدید پیشنهادی را با تأیید اضافه می‌کند. */
+  1569→  async function aiHandleCommand(cmd) {
+  1570→    setState('processing');
+  1571→    statusText.textContent = 'سوالت را از هوش مصنوعی می‌پرسم…';
+  1572→    body.classList.add('has-card');
+  1573→    rcHeard.textContent = `«${cmd}»`;
+  1574→    respCard.classList.remove('show');
+  1575→    void respCard.offsetWidth;
+  1576→    respCard.classList.add('show');
+  1577→    rcReply.textContent = '';
+  1578→    rcTag.textContent = 'هوش مصنوعی';
+  1579→    try {
+  1580→      const r = await aiAsk(cmd);
+  1581→      if (r && r.ok) {
+  1582→        const { reply, add } = parseAdd(r.text);
+  1583→        chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: r.text });
+  1584→        setState('success');
+  1585→        statusText.textContent = 'جواب آمد';
+  1586→        rcTag.textContent = add ? 'هوش مصنوعی + فرمان جدید' : 'هوش مصنوعی';
+  1587→        typeText(rcReply, reply || '…');
+  1588→        speak(reply);
+  1589→        if (add) {
+  1590→          const okGo = await askConfirm({
+  1591→            title: 'فرمان جدید پیشنهاد شد',
+  1592→            text: `هوش مصنوعی برای درخواستت این فرمان را ساخت: «${add.title}». به فرمان‌ها اضافه شود؟`,
+  1593→            code: (add.action.type === 'ps' ? 'PowerShell: ' : add.action.type === 'open_url' ? 'URL: ' : 'Command: ') + add.action.value,
+  1594→          });
+  1595→          if (okGo) {
+  1596→            add.id = Date.now();
+  1597→            customCmds.push(add);
+  1598→            store.set('customCmds', customCmds);
+  1599→            renderCustomChips();
+  1600→            toast(`فرمان «${add.title}» اضافه شد`, '#i-plus');
+  1601→          }
+  1602→        }
+  1603→      } else {
+  1604→        setState('success');
+  1605→        statusText.textContent = r && r.needLogin ? 'اتصال AI برقرار نیست' : 'پاسخی نرسید';
+  1606→        rcTag.textContent = 'هوش مصنوعی';
+  1607→        typeText(rcReply, (r && r.error) || 'پاسخی نرسید. از صفحه «چت با هوش مصنوعی» امتحان کن.');
+  1608→      }
+  1609→    } catch (_) {
+  1610→      setState('success');
+  1611→      rcTag.textContent = 'هوش مصنوعی';
+  1612→      typeText(rcReply, 'اتصال به هوش مصنوعی برقرار نشد.');
+  1613→    }
+  1614→    setTimeout(() => {
+  1615→      if (state === 'success') {
+  1616→        setState('idle');
+  1617→        statusText.innerHTML = IDLE_HINT;
+  1618→      }
+  1619→    }, 3000);
+  1620→  }
+  1621→
+  1622→  /* ---------- پاپ‌آپ درباره ---------- */
+  1623→  btnAbout.addEventListener('click', (e) => {
+  1624→    e.stopPropagation();
+  1625→    about.hidden = !about.hidden;
+  1626→  });
+  1627→  document.addEventListener('click', (e) => {
+  1628→    if (!about.hidden && !about.contains(e.target) && !btnAbout.contains(e.target)) about.hidden = true;
+  1629→  });
+  1630→
+  1631→  /* ---------- آمار سیستم (واقعی در Electron / شبیه‌سازی در مرورگر) ---------- */
+  1632→  let simCpu = 12, simRam = 46;
+  1633→  async function tickStats() {
+  1634→    if (bridge && bridge.system) {
+  1635→      try {
+  1636→        const s = await bridge.system.stats();
+  1637→        lastCpu = s.cpu; lastRam = s.ram;
+  1638→      } catch (_) { /* noop */ }
+  1639→    } else {
+  1640→      simCpu = Math.max(3, Math.min(92, simCpu + (Math.random() * 10 - 5)));
+  1641→      simRam = Math.max(28, Math.min(88, simRam + (Math.random() * 4 - 2)));
+  1642→      lastCpu = Math.round(simCpu);
+  1643→      lastRam = Math.round(simRam);
+  1644→    }
+  1645→    sbCpu.textContent = `CPU ${faNum(lastCpu)}٪`;
+  1646→    sbRam.textContent = `RAM ${faNum(lastRam)}٪`;
+  1647→  }
+  1648→  tickStats();
+  1649→  setInterval(tickStats, 2000);
+  1650→
+  1651→  /* ---------- شروع ---------- */
+  1652→  setState('idle');
+  1653→  statusText.innerHTML = IDLE_HINT;
+  1654→  refreshEngineUI();
+  1655→  renderCustomChips();
+  1656→  /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
+  1657→  setTimeout(() => { attachMic(); }, 1200);
+  1658→  setTimeout(() => {
+  1659→    toast(canRun ? 'آوا آماده است — اجرای واقعی فرمان‌ها فعال است' : 'آوا آماده است — پیش‌نمایش رابط کاربری', '#i-wave');
+  1660→  }, 900);
+  1661→})();
+  1662→
