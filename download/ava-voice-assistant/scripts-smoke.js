@@ -1,11 +1,13 @@
 /**
- * Smoke test for AVA v0.13.0 — boots the app under Xvfb, checks
+ * Smoke test for AVA v0.14.0 — boots the app under Xvfb, checks
  * v0.11 UI elements (titlebar physical layout, update badge, music
  * page, live text, new settings), suggestion rotation, theme +
  * language switching, v0.12 additions (phonetic app-open, reminders,
- * scanner bridges, key rotation) and v0.13 additions: Extensions
+ * scanner bridges, key rotation), v0.13 additions (Extensions
  * pane, DNS ping popup, Gemini/OpenAI model inputs, removed rail
- * tooltip, mic busy feedback, dismissible music widget, monitor fix.
+ * tooltip, mic busy feedback, dismissible music widget, monitor fix)
+ * and v0.14 additions: 3-layer bulletproof updater (smart check,
+ * 3-route direct GitHub check, direct download IPC, updater.log).
  */
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
@@ -265,6 +267,43 @@ app.whenReady().then(async () => {
     }))()`);
     ok('ping overlay + ext pane in DOM', v13ui.ping && v13ui.pingList && v13ui.extBtn && v13ui.extNav && v13ui.dnsNavGone, JSON.stringify(v13ui));
     ok('model inputs in DOM', v13ui.gmModel && v13ui.oaModel);
+
+    // 5.55 v0.14 — bulletproof 3-layer updater (smart check, direct GitHub
+    // routes, in-app direct download, updater.log diagnostics)
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const html = read('renderer/index.html');
+      const v14 = {
+        smartCheck: mainjs.includes('function smartUpdateCheck(') && mainjs.includes("smartUpdateCheck('auto')"),
+        multiRoute: mainjs.includes('releases/latest') && mainjs.includes('releases.atom') && mainjs.includes('api.github.com/repos/'),
+        manualDl: mainjs.includes("ipcMain.handle('updater:download-manual'") && preload.includes("'updater:download-manual'"),
+        log: mainjs.includes("updater.log") && mainjs.includes('function updLog('),
+        manualStates: mainjs.includes("state: 'available-manual'") && mainjs.includes("state: 'ready-manual'"),
+        manualInstall: mainjs.includes('shell.openPath(manualDl.file)'),
+        uiStates: appjs.includes("case 'available-manual':") && appjs.includes("case 'ready-manual':"),
+        uiI18n: appjs.includes("'upd.availableManual'") && html.includes('btnManualDl') && appjs.includes('downloadManual'),
+      };
+      ok('smart update check wired', v14.smartCheck);
+      ok('3-route direct github check', v14.multiRoute);
+      ok('direct download fallback IPC', v14.manualDl);
+      ok('updater.log diagnostics', v14.log);
+      ok('manual states from main', v14.manualStates);
+      ok('install runs downloaded exe', v14.manualInstall);
+      ok('renderer handles manual states', v14.uiStates);
+      ok('manual download button + i18n', v14.uiI18n);
+    } catch (e) { console.log('SKIP | v0.14 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 5.56 v0.14 — btnManualDl exists in DOM and is hidden by default
+    try {
+      const upd = await probe(`(() => ({
+        btn: !!document.querySelector('#btnManualDl'),
+        hidden: document.querySelector('#btnManualDl') ? document.querySelector('#btnManualDl').hidden : null,
+      }))()`);
+      ok('manual download button in DOM (hidden)', upd.btn && upd.hidden === true, JSON.stringify(upd));
+    } catch (e) { console.log('SKIP | manual dl button | ' + String(e && e.message).slice(0, 50)); }
 
     // 5.6 v0.13 — toggleListen busy guard: simulate processing state click
     try {

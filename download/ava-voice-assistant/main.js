@@ -602,27 +602,163 @@ ipcMain.handle('app:info', () => ({
   electron: process.versions.electron,
 }));
 
-/* ---------- به‌روزرسان خودکار (electron-updater + GitHub Releases) ---------- */
+/* ---------- به‌روزرسان خودکار چندلایه (electron-updater + GitHub) ----------
+   لایه ۱: electron-updater — بررسی، دانلود دلتا و نصب خودکار
+   لایه ۲: بررسی مستقیم GitHub با سه مسیر (api.github.com → JSON صفحهٔ
+           releases/latest → فید releases.atom) تا اگر لایهٔ اول به هر دلیل
+           (شبکه/تحریم/کش) «نسخهٔ جدید نیست» گفت یا خطا داد، ما خودمان
+           نسخهٔ واقعی را پیدا کنیم.
+   لایه ۳: دانلود مستقیم نصّاب داخل برنامه (بدون electron-updater) و اجرای آن.
+   همهٔ تلاش‌ها در فایل updater.log ثبت می‌شود تا خطاها قابل ردیابی باشند. */
+const UPD_REPO = { owner: 'pvwvuow', repo: 'ava-voice-assistant' };
+
 const sendUI = (ch, payload) => {
   if (win && !win.isDestroyed()) win.webContents.send(ch, payload);
 };
 
 let autoCheckEnabled = true; // از تنظیمات UI قابل خاموش‌کردن است
 
+function updLog(msg) {
+  try {
+    fs.appendFileSync(path.join(app.getPath('userData'), 'updater.log'), `[${new Date().toISOString()}] ${msg}\n`);
+  } catch (_) { /* noop */ }
+}
+
+function cmpVersions(a, b) {
+  const pa = String(a || '').replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || '').replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+  }
+  return 0;
+}
+
+/* درخواست HTTP ساده با مهلت زمانی (برای پاسخ‌های کوچک: JSON/XML/YML) */
+function ghRequest(url, headers, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    try {
+      const req = net.request({ url, redirect: 'follow' });
+      req.setHeader('User-Agent', 'AVA-Voice-Assistant-Updater');
+      Object.entries(headers || {}).forEach(([k, v]) => req.setHeader(k, v));
+      let done = false;
+      const chunks = [];
+      let size = 0;
+      const finish = (err, data) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try { req.abort(); } catch (_) { /* noop */ }
+        err ? reject(err) : resolve(data);
+      };
+      const timer = setTimeout(() => finish(new Error('timeout')), timeoutMs);
+      req.on('response', (res) => {
+        res.on('data', (c) => {
+          size += c.length;
+          if (size > 8 * 1024 * 1024) return finish(new Error('response too large'));
+          chunks.push(c);
+        });
+        res.on('end', () => finish(null, Buffer.concat(chunks).toString('utf8')));
+        res.on('error', (e) => finish(e));
+      });
+      req.on('error', (e) => finish(e));
+      req.end();
+    } catch (e) { reject(e); }
+  });
+}
+
+/* آخرین نسخهٔ منتشرشده را با ۳ مسیر مختلف بررسی می‌کنیم؛
+   کافی است یکی جواب بدهد تا «نسخهٔ جدید» از قلم نیفتد. */
+async function manualCheckLatest() {
+  const { owner, repo } = UPD_REPO;
+  /* مسیر ۱: API رسمی — assets را هم می‌دهد (برای دانلود مستقیم) */
+  try {
+    const txt = await ghRequest(`https://api.github.com/repos/${owner}/${repo}/releases/latest`, { Accept: 'application/vnd.github+json' });
+    const j = JSON.parse(txt);
+    if (j && j.tag_name) {
+      let exeUrl = null;
+      let exeSize = 0;
+      (j.assets || []).forEach((a) => {
+        if (/AVA-Setup-.+\.exe$/i.test(a.name || '')) { exeUrl = a.browser_download_url; exeSize = a.size || 0; }
+      });
+      return { version: String(j.tag_name).replace(/^v/, ''), url: exeUrl, size: exeSize, via: 'api' };
+    }
+  } catch (e) { updLog(`manual check via api failed: ${(e && e.message) || e}`); }
+  /* مسیر ۲: صفحهٔ releases/latest در github.com — پاسخ JSON، بدون سهمیهٔ API */
+  try {
+    const txt = await ghRequest(`https://github.com/${owner}/${repo}/releases/latest`, { Accept: 'application/json' });
+    const j = JSON.parse(txt);
+    if (j && j.tag_name) return { version: String(j.tag_name).replace(/^v/, ''), url: null, size: 0, via: 'web-json' };
+  } catch (e) { updLog(`manual check via web-json failed: ${(e && e.message) || e}`); }
+  /* مسیر ۳: فید اتم — همیشه در دسترس */
+  try {
+    const xml = await ghRequest(`https://github.com/${owner}/${repo}/releases.atom`, { Accept: 'application/atom+xml, application/xml, text/xml, */*' });
+    const m = /\/tag\/(v?\d+\.\d+\.\d+)</.exec(xml);
+    if (m) return { version: m[1].replace(/^v/, ''), url: null, size: 0, via: 'atom' };
+  } catch (e) { updLog(`manual check via atom failed: ${(e && e.message) || e}`); }
+  return { version: null, url: null, size: 0, via: 'none' };
+}
+
+/* بررسی هوشمند: اول electron-updater، بعد بررسی مستقیم به‌عنوان پشتیبان */
+let updCheckBusy = false;
+async function smartUpdateCheck(trigger) {
+  if (updCheckBusy) return { ok: true, busy: true };
+  updCheckBusy = true;
+  try {
+    updLog(`check (${trigger}) — current v${app.getVersion()}`);
+    let updaterError = null;
+    try {
+      const r = await autoUpdater.checkForUpdates();
+      const info = r && r.updateInfo;
+      if (info && cmpVersions(info.version, app.getVersion()) > 0) {
+        updLog(`updater found v${info.version} → auto download started`);
+        return { ok: true, found: info.version, manual: false };
+      }
+      updLog(`updater says not-available (info v${(info && info.version) || '?'}) — double-checking via direct GitHub`);
+    } catch (e) {
+      updaterError = String((e && e.message) || e);
+      updLog(`updater error: ${updaterError}`);
+    }
+    const m = await manualCheckLatest();
+    if (!m.version) {
+      const msg = updaterError || 'اتصال به GitHub ممکن نشد';
+      updLog(`no route could fetch the latest version`);
+      sendUI('updater:status', { state: 'error', message: msg.slice(0, 160) });
+      return { ok: false, error: msg };
+    }
+    if (cmpVersions(m.version, app.getVersion()) <= 0) {
+      updLog(`direct check (${m.via}): latest v${m.version} → no update`);
+      sendUI('updater:status', { state: 'none' });
+      return { ok: true, found: null };
+    }
+    updLog(`direct check (${m.via}) found v${m.version} → offering direct download`);
+    sendUI('updater:status', { state: 'available-manual', version: m.version, size: m.size });
+    return { ok: true, found: m.version, manual: true };
+  } finally {
+    updCheckBusy = false;
+  }
+}
+
 function setupAutoUpdater() {
   if (!autoUpdater || !app.isPackaged) return; // در حالت dev (npm start) غیرفعال
   try {
     autoUpdater.autoDownload = true;        // دانلود خودکار پس از پیدا شدن نسخه جدید
     autoUpdater.autoInstallOnAppQuit = true; // نصب هنگام بستن برنامه اگر کاربر نصب فوری نزند
+    autoUpdater.allowPrerelease = false;
+    autoUpdater.allowDowngrade = false;
     autoUpdater.on('checking-for-update', () => sendUI('updater:status', { state: 'checking' }));
     autoUpdater.on('update-available', (i) => sendUI('updater:status', { state: 'available', version: i && i.version }));
     autoUpdater.on('update-not-available', () => sendUI('updater:status', { state: 'none' }));
     autoUpdater.on('download-progress', (p) => sendUI('updater:status', { state: 'downloading', percent: Math.round(p.percent || 0) }));
     autoUpdater.on('update-downloaded', (i) => sendUI('updater:status', { state: 'ready', version: i && i.version }));
-    autoUpdater.on('error', (e) => sendUI('updater:status', { state: 'error', message: String((e && e.message) || e) }));
+    autoUpdater.on('error', (e) => {
+      const msg = String((e && e.message) || e);
+      updLog(`updater event error: ${msg}`);
+      sendUI('updater:status', { state: 'error', message: msg.slice(0, 160) });
+    });
     /* بررسی خودکار ۱۲ ثانیه بعد از باز شدن برنامه (اگر کاربر خاموشش نکرده باشد) */
     setTimeout(() => {
-      if (autoCheckEnabled) autoUpdater.checkForUpdates().catch(() => {});
+      if (autoCheckEnabled) smartUpdateCheck('auto').catch(() => {});
     }, 12000);
   } catch (_) { /* noop */ }
 }
@@ -635,16 +771,84 @@ ipcMain.handle('updater:set-auto', (_e, on) => {
 ipcMain.handle('updater:check', async () => {
   if (!autoUpdater) return { ok: false, error: 'ماژول electron-updater نصب نیست' };
   if (!app.isPackaged) return { ok: false, dev: true, error: 'در حالت توسعه به‌روزرسان غیرفعال است' };
+  return smartUpdateCheck('manual');
+});
+
+/* لایه ۳: دانلود مستقیم نصّاب داخل برنامه (بدون electron-updater) */
+let manualDl = null; // { file, version, url, active }
+
+function ghDownloadToFile(url, file, onPercent) {
+  return new Promise((resolve, reject) => {
+    const req = net.request({ url, redirect: 'follow' });
+    req.setHeader('User-Agent', 'AVA-Voice-Assistant-Updater');
+    let done = false;
+    let received = 0;
+    let total = 0;
+    let lastPct = -1;
+    const ws = fs.createWriteStream(file);
+    const finish = (err) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (err) {
+        try { req.abort(); } catch (_) { /* noop */ }
+        try { ws.destroy(); } catch (_) { /* noop */ }
+        reject(err);
+      } else resolve();
+    };
+    const timer = setTimeout(() => finish(new Error('timeout')), 1000 * 60 * 30); // ۳۰ دقیقه سقف
+    req.on('response', (res) => {
+      total = parseInt(res.headers['content-length'] || '0', 10);
+      res.on('data', (c) => {
+        received += c.length;
+        ws.write(c);
+        if (total) {
+          const pct = Math.floor((received * 100) / total);
+          if (pct !== lastPct) { lastPct = pct; try { onPercent && onPercent(pct); } catch (_) { /* noop */ } }
+        }
+      });
+      res.on('end', () => ws.end(() => finish(null)));
+      res.on('error', (e) => finish(e));
+    });
+    req.on('error', (e) => finish(e));
+    req.end();
+  });
+}
+
+ipcMain.handle('updater:download-manual', async () => {
+  if (manualDl && manualDl.active) return { ok: false, error: 'دانلود در جریان است' };
   try {
-    await autoUpdater.checkForUpdates();
-    return { ok: true };
+    if (!app.isPackaged) return { ok: false, dev: true };
+    const meta = await manualCheckLatest();
+    if (!meta.version) return { ok: false, error: 'یافتن نسخهٔ جدید ممکن نشد' };
+    if (cmpVersions(meta.version, app.getVersion()) <= 0) return { ok: true, latest: true };
+    const url = meta.url || `https://github.com/${UPD_REPO.owner}/${UPD_REPO.repo}/releases/download/v${meta.version}/AVA-Setup-${meta.version}.exe`;
+    const file = path.join(app.getPath('downloads'), `AVA-Setup-${meta.version}.exe`);
+    manualDl = { file, version: meta.version, url, active: true };
+    sendUI('updater:status', { state: 'downloading', percent: 0 });
+    await ghDownloadToFile(url, file, (pct) => sendUI('updater:status', { state: 'downloading', percent: pct }));
+    manualDl.active = false;
+    updLog(`manual download complete: ${file} (${meta.via})`);
+    sendUI('updater:status', { state: 'ready-manual', version: meta.version });
+    return { ok: true, file };
   } catch (e) {
-    return { ok: false, error: String((e && e.message) || e) };
+    if (manualDl) manualDl.active = false;
+    const msg = String((e && e.message) || e);
+    updLog(`manual download failed: ${msg}`);
+    sendUI('updater:status', { state: 'error', message: msg.slice(0, 160) });
+    return { ok: false, error: msg };
   }
 });
 
 ipcMain.handle('updater:install', () => {
+  /* اگر نصّاب به‌صورت مستقیم دانلود شده، همان را اجرا کن */
+  if (manualDl && manualDl.file && fs.existsSync(manualDl.file)) {
+    updLog(`install via manually downloaded installer: ${manualDl.file}`);
+    shell.openPath(manualDl.file).then(() => setTimeout(() => app.quit(), 1500));
+    return true;
+  }
   if (autoUpdater && app.isPackaged) autoUpdater.quitAndInstall(false, true);
+  return false;
 });
 
 /* ---------- IPC: تنظیمات سیستمی ---------- */

@@ -63,11 +63,12 @@ contextBridge.exposeInMainWorld('ava', {
     save: (obj) => ipcRenderer.invoke('settings:save', obj),
   },
 
-  /* به‌روزرسان خودکار (electron-updater) */
+  /* به‌روزرسان خودکار (electron-updater + دانلود مستقیم پشتیبان) */
   updater: {
     check: () => ipcRenderer.invoke('updater:check'),
     install: () => ipcRenderer.invoke('updater:install'),
     setAuto: (on) => ipcRenderer.invoke('updater:set-auto', on),
+    downloadManual: () => ipcRenderer.invoke('updater:download-manual'),
     onStatus: (cb) => ipcRenderer.on('updater:status', (_e, s) => cb(s)),
   },
 

@@ -114,6 +114,7 @@
     'set.upd.auto': ['بررسی خودکار هنگام شروع', 'Auto check on startup'],
     'set.upd.autoHint': ['۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود', 'Check for a new version 12 seconds after launch'],
     'set.upd.check': ['بررسی نسخه جدید', 'Check for updates'], 'set.upd.install': ['نصب و راه‌اندازی مجدد', 'Install and restart'],
+    'set.upd.manualDl': ['دانلود مستقیم نصّاب', 'Download installer directly'],
     'set.upd.note': ['آپدیت کامل داخل خود برنامه: بررسی و دانلود خودکار انجام می‌شود و نصب هم با یک کلیک — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا)، نه کل برنامه.', 'Full in-app updates: auto check and download, one-click install — only changed parts are downloaded (delta update).'],
     'hist.title': ['تاریخچه فرمان‌ها', 'Command history'], 'hist.recent': ['فرمان‌های اخیر', 'Recent commands'],
     'hist.recentHint': ['روی هر فرمان بزنی دوباره اجرا می‌شود', 'Click any command to run it again'], 'hist.clear': ['پاک‌سازی', 'Clear'],
@@ -268,6 +269,9 @@
     'upd.none': ['آخرین نسخه را داری ✓', 'You are on the latest version ✓'],
     'upd.dev': ['در حالت توسعه (npm start) به‌روزرسان غیرفعال است؛ خروجی نصب‌شده کار می‌کند', 'Updater is disabled in dev mode (npm start); the installed build works'],
     'upd.error': ['خطا در بروزرسانی: {x}', 'Update error: {x}'], 'upd.default': ['اتصال خودکار به GitHub Releases', 'Auto-connects to GitHub Releases'],
+    'upd.availableManual': ['نسخه جدید v{x} پیدا شد — دانلود مستقیم ممکن است', 'New version v{x} found — direct download available'],
+    'upd.directDlToast': ['در حال دانلود مستقیم نصّاب از GitHub…', 'Downloading the installer directly from GitHub…'],
+    'upd.manualFailToast': ['دانلود مستقیم ناموفق بود', 'Direct download failed'],
     'upd.current': ['نسخه فعلی: v{x}', 'Current version: v{x}'],
     'wake.need': ['بگو «آوا …» تا فرمانت را اجرا کنم', 'Say "Ava …" and I will run your command'],
     'wake.yes': ['بله؟', 'Yes?'],
@@ -453,6 +457,7 @@
   const updBar = $('#updBar');
   const btnCheckUpdate = $('#btnCheckUpdate');
   const btnInstallUpdate = $('#btnInstallUpdate');
+  const btnManualDl = $('#btnManualDl');
 
   /* ---------- عناصر تنظیمات جدید (میکروفون / گفتار / GLM) ---------- */
   const optMic = $('#optMic');
@@ -3706,6 +3711,7 @@
   function setUpdUI(s) {
     updProgress.hidden = true;
     btnInstallUpdate.hidden = true;
+    if (btnManualDl) btnManualDl.hidden = true;
     if (btnCheckUpdate) btnCheckUpdate.disabled = false;
     switch (s && s.state) {
       case 'checking':
@@ -3717,6 +3723,11 @@
         updBar.style.width = '6%';
         setBadge('available', s.version);
         break;
+      case 'available-manual':
+        updNote.textContent = t('upd.availableManual', { x: faNum(s.version || '') });
+        if (btnManualDl) btnManualDl.hidden = false;
+        setBadge('available', s.version);
+        break;
       case 'downloading':
         updNote.textContent = t('upd.downloading', { x: faNum(s.percent || 0) });
         updProgress.hidden = false;
@@ -3724,6 +3735,7 @@
         setBadge('downloading', s.version, s.percent);
         break;
       case 'ready':
+      case 'ready-manual':
         updNote.textContent = t('upd.ready', { x: faNum(s.version || '') });
         btnInstallUpdate.hidden = false;
         setBadge('ready', s.version);
@@ -3761,6 +3773,14 @@
     btnInstallUpdate.addEventListener('click', () => {
       toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
       bridge.updater.install();
+    });
+    if (btnManualDl) btnManualDl.addEventListener('click', async () => {
+      btnManualDl.disabled = true;
+      toast(t('upd.directDlToast'), '#i-download');
+      const r = await bridge.updater.downloadManual().catch(() => ({ ok: false }));
+      btnManualDl.disabled = false;
+      if (r && (r.ok || r.dev || r.latest)) return;
+      toast((r && r.error) ? `خطا: ${r.error}` : t('upd.manualFailToast'), '#i-info');
     });
   } else {
     btnCheckUpdate.addEventListener('click', () => toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh'));
