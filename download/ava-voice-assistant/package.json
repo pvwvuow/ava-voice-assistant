@@ -30,7 +30,8 @@
       "output": "dist"
     },
     "publish": {
-      "provider": "github"
+      "provider": "github",
+      "releaseType": "release"
     },
     "artifactName": "AVA-Setup-${version}.${ext}",
     "files": [
