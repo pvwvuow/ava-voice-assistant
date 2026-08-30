@@ -963,7 +963,7 @@ app.whenReady().then(async () => {
         card: h27.includes('id="offCard"') && h27.includes('id="btnOfflineDl"') && a27.includes('function updateOfflineCard(') && a27.includes('refreshLocalStatus()'),
         deps: p27.dependencies['sherpa-onnx-node'] && p27.optionalDependencies['sherpa-onnx-win-x64'] && Array.isArray(p27.build.asarUnpack),
         tts: a27.includes('gTtsNext') && a27.includes('__avaB64'),
-        version: p27.version === '0.27.0',
+        version: p27.version === '0.27.1',
       };
       ok('v0.27 local offline engine (sherpa-onnx + whisper int8, on-device)', v27.localEngine);
       ok('v0.27 no external-buffer APIs (Electron-hardened PCM conversion)', v27.noExternalBuffer);
@@ -974,8 +974,30 @@ app.whenReady().then(async () => {
       ok('v0.27 offline pack card in settings (download/progress/status)', v27.card);
       ok('v0.27 packaging: native deps + asarUnpack for NAPI addon', v27.deps);
       ok('v0.27 TTS double-buffer prefetch (zero gap between chunks)', v27.tts);
-      ok('v0.27 version 0.27.0', v27.version);
+      ok('v0.27+ version 0.27.1', v27.version);
     } catch (e) { console.log('SKIP | v0.27 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.993 v0.27.1 — fix "it types my request, then goes back to listening,
+    // and the request never runs": (1) hands-free + wake-word silently DROPPED
+    // every command without the "ava" prefix → now an actionable card with
+    // run-now + turn-filter-off buttons; (2) cmdBusy could stick true forever
+    // on a thrown error → 45s stale guard, commands can never be permanently
+    // blocked silently.
+    try {
+      const a271 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h271 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const v271 = {
+        dropCard: a271.includes('function showWakeDropCard(') && a271.includes('wakeDropCmd') && h271.includes('id="rcWakeActions"') && h271.includes('id="btnWakeRun"') && h271.includes('id="btnWakeOff"'),
+        force: a271.includes('!(opts && opts.force)') && a271.includes('handleUtterance(c, { force: true })'),
+        busyGuard: a271.includes('const cmdBusyGuard = () =>') && a271.includes('Date.now() - cmdBusyAt < 45000') && !a271.includes('if (cmdBusy) return;'),
+        hideOnRepaint: (a271.match(/hideWakeDropCard\(\)/g) || []).length >= 4,
+        i18n: a271.includes("'wake.runNow'") && a271.includes("'wake.noWakeDone'"),
+      };
+      ok('v0.27.1 wake-drop actionable card (heard text + run-now + turn-filter-off)', v271.dropCard);
+      ok('v0.27.1 forced execution bypass for the run-now button', v271.force);
+      ok('v0.27.1 cmdBusy 45s stale guard (commands can never be permanently blocked)', v271.busyGuard);
+      ok('v0.27.1 drop-card hidden on live-heard/command repaint + i18n', v271.hideOnRepaint && v271.i18n);
+    } catch (e) { console.log('SKIP | v0.27.1 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),

@@ -706,6 +706,12 @@
     'upd.manualFailToast': ['دانلود مستقیم ناموفق بود', 'Direct download failed'],
     'upd.current': ['نسخه فعلی: v{x}', 'Current version: v{x}'],
     'wake.need': ['بگو «آوا …» تا فرمانت را اجرا کنم', 'Say "Ava …" and I will run your command'],
+    /* v0.27.1 — فرمان بدون «آوا» دیگر بی‌صدا دور ریخته نمی‌شود */
+    'wake.dropTag': ['شنیدم — بی‌اجرا', 'Heard — not run'],
+    'wake.dropHint': ['فرمانت آماده است ولی اجرا نشد — در حالت بی‌دست اول بگو «آوا» (مثلاً: آوا، کروم رو باز کن) یا با دکمهٔ پایین همین را اجرا کن.', 'Your command is ready but was not run — in hands-free say "Ava" first (e.g.: Ava, open Chrome), or run it with the button below.'],
+    'wake.runNow': ['همین حالا اجرا کن', 'Run it now'],
+    'wake.noWake': ['از این به بعد بدون «آوا»', 'From now on without "Ava"'],
+    'wake.noWakeDone': ['فیلتر «آوا» خاموش شد — هر چی بگویید اجرا می‌شود', 'Wake filter is off — everything you say will run'],
     'wake.yes': ['بله؟', 'Yes?'],
     'hf.rearm': ['در حال گوش دادن…', 'Listening…'],
     'dns.curReading': ['در حال خواندن DNS فعلی…', 'Reading the current DNS…'],
@@ -2409,14 +2415,26 @@
 
   /* cmdBusy: جلوگیری از اجرای دوباره فرمان در حین اجرای فرمان قبلی.
      توجه: state=processing بعد از تشخیص گفتار کاملاً طبیعی است و
-     نباید فرمان را رد کند (باگ قدیمی که جواب‌های گوگل/GLM را ساکت دور می‌ریخت). */
+     نباید فرمان را رد کند (باگ قدیمی که جواب‌های گوگل/GLM را ساکت دور می‌ریخت).
+     v0.27.1 — قفل‌شدگی هرگز ابدی نیست: اگر >۴۵ ثانیه بماند (خطای در
+     پرواز که رست نشده) خودکار رد می‌شود تا فرمان‌های بعدی ساکت دور ریخته نشوند
+     (دومین ریشهٔ گزارش کاربر: «درخواست اجرا نمی‌شود»). */
   let cmdBusy = false;
+  let cmdBusyAt = 0;
+  const cmdBusyGuard = () => {
+    if (!cmdBusy) return false;
+    if (Date.now() - cmdBusyAt < 45000) return true; /* واقعاً در جریان است */
+    actLog('cmdBusy stuck >45s — force reset (would silently drop every next command)');
+    cmdBusy = false;
+    return false;
+  };
+  const cmdBusySet = () => { cmdBusy = true; cmdBusyAt = Date.now(); };
 
   /* اجرای فرمان‌های DNS (با UAC واقعی) — هم از مسیر «دی ان اس …»
      و هم از مسیر «الکترو رو تنظیم کن» (اسم ذخیره‌شده کاربر) */
   async function runDnsCommand(raw) {
-    if (cmdBusy) return;
-    cmdBusy = true;
+    if (cmdBusyGuard()) return;
+    cmdBusySet();
     setState('processing');
     statusText.textContent = t('dns.dnsWork');
     try {
@@ -2480,7 +2498,7 @@
 
   async function runCommand(cmd, opts) {
     if (!cmd) return;
-    if (cmdBusy) return;
+    if (cmdBusyGuard()) return;
     let raw = String(cmd).trim();
     actLog('cmd: ' + raw.slice(0, 120));
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
@@ -2497,8 +2515,8 @@
     raw = normFaFull(raw);
     /* ارسال گزارش عملکرد (v0.18) — «آوا گزارش بفرست» */
     if (/گزارش\s*(بفرست|بده|بگیر)|لاگ\s*(بفرست|بده)|گزارش\s*مشکل|ارسال\s*گزارش|send\s+log\s+report/i.test(raw)) {
-      if (cmdBusy) return;
-      cmdBusy = true;
+      if (cmdBusyGuard()) return;
+      cmdBusySet();
       setState('processing');
       statusText.textContent = t('report.working');
       const rep = await sendActivityReport();
@@ -2517,7 +2535,7 @@
     if (/زنگ\s*بزن|تماس\s*بگیر|کال\s*کن|دیسکورد|discord|میکروفون[^.]{0,10}(قطع|میوت)/i.test(raw)) {
       const dr = await tryDiscordCmd(raw);
       if (dr) {
-        if (cmdBusy) return;
+        if (cmdBusyGuard()) return;
         setState('success');
         statusText.textContent = t('status.done');
         body.classList.add('has-card');
@@ -2532,8 +2550,8 @@
     }
     /* پینگ DNSها (v0.13) — قبل از مسیر کلاسیک DNS تا «پینگ دی ان اس» قاطی نشود */
     if (/پینگ[^.]{0,16}(دی\s?ان\s?اس|dns)|(دی\s?ان\s?اس|dns)[^.]{0,12}پینگ|پینگ\s?(بگیر|نشون|بده)|dns.{0,10}ping|ping.{0,10}dns/i.test(raw)) {
-      if (cmdBusy) return;
-      cmdBusy = true;
+      if (cmdBusyGuard()) return;
+      cmdBusySet();
       setState('processing');
       statusText.textContent = t('dnsp.testing');
       try {
@@ -2567,7 +2585,7 @@
         .trim();
       if (cand.length >= 3 && findDnsProfile(cand)) { await runDnsCommand(raw); return; }
     }
-    cmdBusy = true;
+    cmdBusySet();
     if (state === 'listening') stopListening(false);
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
     stopGoogleSpeak(); /* صدای قبلی آوا قطع شود */
@@ -2579,6 +2597,7 @@
     respCard.classList.remove('show');
     void respCard.offsetWidth;
     respCard.classList.add('show');
+    hideWakeDropCard(); /* v0.27.1 */
     rcReply.textContent = '';
     rcTag.textContent = t('tag.working');
 
@@ -2826,6 +2845,7 @@
   /* بازخورد زنده: متن شنیده‌شده همان لحظه در کارت پاسخ + زیر دکمه */
   function aveLiveHeard(txt) {
     if (dictation.active) { dictInterim.textContent = txt; return; }
+    hideWakeDropCard(); /* v0.27.1 — کارت قبلی پاک شود تا متن زنده دیده شود */
     statusText.textContent = t('status.heard', { x: txt });
     setLiveText(txt);
     rcTag.textContent = t('tag.heard');
@@ -3187,15 +3207,55 @@
   /* ============================================================
      پردازش گفته‌ها + حالت بی‌دست (کلمه بیدارباش «آوا»)
      ============================================================ */
-  async function handleUtterance(text) {
+
+  /* v0.27.1 — فرمانِ شنیده‌شده بدون «آوا» دیگر بی‌صدا دور ریخته نمی‌شود:
+     کارت «شنیدم — بی‌اجرا» + دکمهٔ اجرای یک‌کلیکی + خاموش‌کردن فیلتر.
+     (ریشهٔ گزارش کاربر: «تایپ می‌کند ولی دوباره میره روی listening و
+     درخواست اجرا نمی‌شود» — حالت بی‌دست + فیلتر بیدارباش) */
+  let wakeDropCmd = '';
+  function showWakeDropCard(text) {
+    wakeDropCmd = String(text || '').trim();
+    body.classList.add('has-card');
+    respCard.classList.remove('show');
+    void respCard.offsetWidth;
+    respCard.classList.add('show');
+    rcTag.textContent = t('wake.dropTag');
+    rcHeard.textContent = `«${wakeDropCmd}»`;
+    typeText(rcReply, t('wake.dropHint'));
+    const w = $('#rcWakeActions');
+    if (w) w.hidden = false;
+  }
+  function hideWakeDropCard() {
+    const w = $('#rcWakeActions');
+    if (w) w.hidden = true;
+  }
+  const btnWakeRun = $('#btnWakeRun');
+  const btnWakeOff = $('#btnWakeOff');
+  if (btnWakeRun) btnWakeRun.addEventListener('click', () => {
+    const c = wakeDropCmd;
+    hideWakeDropCard();
+    if (c) handleUtterance(c, { force: true }); /* اجرای همان فرمان بدون نیاز به «آوا» */
+  });
+  if (btnWakeOff) btnWakeOff.addEventListener('click', () => {
+    settings.wakeWord = false;
+    store.set('wakeWord', settings.wakeWord);
+    updateHandsFreeUI();
+    toast(t('wake.noWakeDone'), '#i-power');
+    const c = wakeDropCmd;
+    hideWakeDropCard();
+    if (c) handleUtterance(c); /* فیلتر خاموش شد → بدون force هم اجرا می‌شود */
+  });
+
+  async function handleUtterance(text, opts) {
     const h0 = Date.now(); /* v0.19 — لاگ تأخیر کل از شنیدن تا اجرا */
     let cmd = text;
-    if (settings.handsFree && settings.wakeWord && !dictation.active) {
+    if (settings.handsFree && settings.wakeWord && !dictation.active && !(opts && opts.force)) {
       const m = text.match(/^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|ava)[\s،,:-]*(.*)$/i);
       if (!m) {
-        /* بدون کلمه بیدارباش → نادیده بگیر و به گوش دادن ادامه بده */
+        /* بدون کلمه بیدارباش → v0.27.1: کارت اقدام‌پذیر، نه دورریز بی‌صدا */
         setState('idle');
         statusText.textContent = t('wake.need');
+        showWakeDropCard(text);
         handsFreeRearm();
         return;
       }
@@ -4255,7 +4315,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.27.0';
+  let appVersion = '0.27.1';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5599,6 +5659,7 @@
     respCard.classList.remove('show');
     void respCard.offsetWidth;
     respCard.classList.add('show');
+    hideWakeDropCard(); /* v0.27.1 */
     rcReply.textContent = '';
     rcTag.textContent = t('tag.ai');
     try {

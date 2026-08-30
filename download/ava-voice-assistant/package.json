@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.27.0",
+  "version": "0.27.1",
   "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۲۷: صدای همیشه-کار — موتور آفلاین داخلی (sherpa-onnx + Whisper int8) بدون اینترنت و بدون فیلترینگ، کلیدهای Speech کروم با env vars هم ست می‌شوند، حذف کامل پیام‌های DNS/فیلترشکن، پیش‌بارگذاری تکه‌های TTS بدون فاصله، پیشنهاد بستهٔ آفلاین وقتی هیچ موتوری جواب نداد",
   "main": "main.js",
   "license": "MIT",

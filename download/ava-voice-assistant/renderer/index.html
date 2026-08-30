@@ -207,6 +207,11 @@
               <span class="rc-avatar bot"><svg class="ic"><use href="#i-wave"/></svg></span>
               <p id="rcReply"></p>
             </div>
+            <!-- v0.27.1 — فرمان شنیده‌شده ولی بدون کلمهٔ «آوا»: یک‌کلیکی اجرا شود -->
+            <div class="rc-actions" id="rcWakeActions" hidden>
+              <button class="chip" id="btnWakeRun"><svg class="ic"><use href="#i-play"/></svg><span data-i18n="wake.runNow">همین حالا اجرا کن</span></button>
+              <button class="chip" id="btnWakeOff"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="wake.noWake">از این به بعد بدون «آوا»</span></button>
+            </div>
           </div>
 
           <!-- کادر فرمان -->
@@ -936,7 +941,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.27.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.27.1</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

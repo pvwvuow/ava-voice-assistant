@@ -56,3 +56,6 @@ server.log
 tool-results/
 worklog.md
 agent-ctx/
+
+# sandbox scratch (test artifacts, models) — never part of the app
+/scripts/

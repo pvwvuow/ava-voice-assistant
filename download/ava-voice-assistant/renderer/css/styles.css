@@ -2444,3 +2444,7 @@ body.music-playing .np-cover {
 #offCard { border: 1px solid rgba(52, 211, 153, 0.25); border-radius: 12px; padding: 10px 12px; background: rgba(52, 211, 153, 0.05); }
 [data-theme="light"] #offCard { border-color: rgba(5, 150, 105, 0.3); background: rgba(5, 150, 105, 0.05); }
 [data-theme="light"] .off-progress i { background: #059669; }
+
+/* v0.27.1 — دکمه‌های کارت «شنیدم — بی‌اجرا» (رنگ ثابت — SwiftShader-safe) */
+.rc-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.rc-actions .chip { font-size: 11.5px; }
