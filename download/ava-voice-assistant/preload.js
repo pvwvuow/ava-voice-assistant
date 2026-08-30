@@ -71,6 +71,9 @@ contextBridge.exposeInMainWorld('ava', {
     install: () => ipcRenderer.invoke('updater:install'),
     setAuto: (on) => ipcRenderer.invoke('updater:set-auto', on),
     downloadManual: () => ipcRenderer.invoke('updater:download-manual'),
+    /* v0.21 — دانلود به اختیار کاربر + توقف/لغو */
+    download: () => ipcRenderer.invoke('updater:download'),
+    cancel: (pause) => ipcRenderer.invoke('updater:cancel', pause),
     onStatus: (cb) => ipcRenderer.on('updater:status', (_e, s) => cb(s)),
   },
 

@@ -68,8 +68,11 @@ try {
 } catch (_) { /* noop */ }
 
 /* electron-updater (فقط وقتی پکیج نصب باشد — خطا را ساکت رد می‌کنیم) */
+/* v0.21 — CancellationToken هم برمی‌داریم تا کاربر بتواند دانلود آپدیت را
+   هر وقت خواست «توقف» یا «لغو» کند (خواست صریح کاربر) */
 let autoUpdater = null;
-try { ({ autoUpdater } = require('electron-updater')); } catch (_) { autoUpdater = null; }
+let CancellationToken = null;
+try { ({ autoUpdater, CancellationToken } = require('electron-updater')); } catch (_) { autoUpdater = null; CancellationToken = null; }
 
 /* ---------- هویت مرورگر واقعی ----------
    گوگل ورود از مرورگرهای «غیرمطمئن» (UA حاوی Electron) را می‌بندد:
@@ -711,7 +714,11 @@ async function smartUpdateCheck(trigger) {
       const r = await autoUpdater.checkForUpdates();
       const info = r && r.updateInfo;
       if (info && cmpVersions(info.version, app.getVersion()) > 0) {
-        updLog(`updater found v${info.version} → auto download started`);
+        /* v0.21 — دیگر دانلود خودکار در پس‌زمینه انجام نمی‌شود! دانلودِ خودکارِ
+       بی‌اجازه (۸۰+ مگابایت) پهنای باند کاربر را اشباع می‌کرد و همین باعث
+       «کندی شدید» دستیار صوتی، دیسکورد و همهٔ درخواست‌های ابری می‌شد.
+       حالا فقط «پیدا» می‌شود و دانلود هر وقت خود کاربر خواست شروع می‌شود. */
+        updLog(`updater found v${info.version} → waiting for user to download`);
         return { ok: true, found: info.version, manual: false };
       }
       updLog(`updater says not-available (info v${(info && info.version) || '?'}) — double-checking via direct GitHub`);
@@ -742,7 +749,11 @@ async function smartUpdateCheck(trigger) {
 function setupAutoUpdater() {
   if (!autoUpdater || !app.isPackaged) return; // در حالت dev (npm start) غیرفعال
   try {
-    autoUpdater.autoDownload = true;        // دانلود خودکار پس از پیدا شدن نسخه جدید
+    /* v0.21 — دانلود دیگر «هرگز» خودکار نیست: دانلودِ پشت‌زمینه‌ایِ بی‌اجازه
+       پهنای باند را می‌خورد و دستیار صوتی/دیسکورد را روی شبکه‌های عادی
+       فلج می‌کرد (گلهٔ اصلی کاربر: «نزدیک یک دقیقه طول می‌کشد»).
+       آپدیت پیدا می‌شود → کاربر خبردار می‌شود → دانلود فقط با کلیک خودش. */
+    autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true; // نصب هنگام بستن برنامه اگر کاربر نصب فوری نزند
     autoUpdater.allowPrerelease = false;
     autoUpdater.allowDowngrade = false;
@@ -767,14 +778,23 @@ function setupAutoUpdater() {
     autoUpdater.on('update-available', (i) => { actLog(`updater available v${i && i.version}`, 'update'); sendUI('updater:status', { state: 'available', version: i && i.version }); });
     autoUpdater.on('update-not-available', () => { actLog('updater: already latest', 'update'); sendUI('updater:status', { state: 'none' }); });
     let lastUpdMile = 0;
+    let updLastPct = 0; /* v0.21 — برای نشان دادن «توقف در چند٪» */
     autoUpdater.on('download-progress', (p) => {
-      sendUI('updater:status', { state: 'downloading', percent: Math.round(p.percent || 0) });
+      updLastPct = Math.round(p.percent || 0);
+      try { updLastProgress = p; } catch (_) { /* noop */ } /* v0.21 — برای «توقف در چند٪» */
+      const mb = (n) => Math.max(0, Math.round(((n || 0) / 1048576) * 10) / 10);
+      sendUI('updater:status', {
+        state: 'downloading',
+        percent: updLastPct,
+        transferred: mb(p.transferred),
+        total: mb(p.total),
+        delta: p.transferred > 0 && p.total > 0 && p.transferred < p.total * 0.8,
+      });
       /* ثبت بایت واقعی منتقل‌شده — اگر دلتا کار کند transferred ≪ total است */
       const mile = Math.floor((p.percent || 0) / 20);
       if (mile > lastUpdMile) {
         lastUpdMile = mile;
-        const mb = (n) => ((n || 0) / 1048576).toFixed(1);
-        actLog(`updater download ${Math.round(p.percent || 0)}% transferred=${mb(p.transferred)}MB / total=${mb(p.total)}MB ${p.transferred < (p.total || 0) * 0.8 ? '(DELTA)' : ''}`, 'update');
+        actLog(`updater download ${updLastPct}% transferred=${mb(p.transferred)}MB / total=${mb(p.total)}MB ${p.transferred < (p.total || 0) * 0.8 ? '(DELTA)' : ''}`, 'update');
       }
     });
     autoUpdater.on('update-downloaded', (i) => { actLog(`updater downloaded v${i && i.version}`, 'update'); sendUI('updater:status', { state: 'ready', version: i && i.version }); });
@@ -801,10 +821,74 @@ ipcMain.handle('updater:check', async () => {
   return smartUpdateCheck('manual');
 });
 
+/* ---------- v0.21 — دانلود به اختیار کاربر: شروع / توقف / ادامه / لغو ----------
+   توقف = قطع جریان دانلود (CancellationToken) و به‌خاطر سپردن درصد؛
+   ادامه = دانلود دوباره (اگر نصاب قدیمی در کش باشد، دلتا فقط اختلاف را می‌گیرد)؛
+   لغو = قطع و پاک کردن وضعیت. برای دانلود مستقیم (لایهٔ ۳) هم لغو وصل است. */
+let updToken = null;
+let updBusy = false;
+let updPausedPct = -1;
+ipcMain.handle('updater:download', async () => {
+  if (!autoUpdater || !app.isPackaged) return { ok: false, dev: true };
+  if (updBusy) return { ok: false, error: 'دانلود در جریان است' };
+  /* اگر دانلود مستقیم (لایهٔ ۳) در جریان است، اول لغو شود */
+  if (manualDl && manualDl.active) { manualDl.cancel = true; }
+  updBusy = true;
+  updPausedPct = -1;
+  try {
+    updLog('user-triggered download start');
+    actLog('updater download start (user)', 'update');
+    /* مطمئن شو updateInfo آماده است (اگر check قبلی نبود، خودمان می‌گیریم؛
+       autoDownload=false است پس چیزی دانلود نمی‌شود) */
+    try { await autoUpdater.checkForUpdates(); } catch (_) { /* خطا → downloadUpdate خودش خطای واضح می‌دهد */ }
+    updToken = CancellationToken ? new CancellationToken() : null;
+    await autoUpdater.downloadUpdate(updToken || undefined);
+    sendUI('updater:status', { state: 'ready' }); /* اگر event خودش نرسیده بود */
+    return { ok: true };
+  } catch (e) {
+    const msg = String((e && e.message) || e);
+    const wasCancel = !!(updToken && updToken.cancelled) || /cancel|abort/i.test(msg);
+    updLog(`download ended: ${wasCancel ? 'stopped by user' : msg}`);
+    if (wasCancel) {
+      sendUI('updater:status', { state: updPausedPct >= 0 ? 'paused' : 'canceled', percent: Math.max(0, updPausedPct) });
+      return { ok: false, cancelled: true };
+    }
+    sendUI('updater:status', { state: 'error', message: msg.slice(0, 160) });
+    return { ok: false, error: msg };
+  } finally {
+    updBusy = false;
+    try { if (updToken) updToken.cancel(); } catch (_) { /* noop */ }
+    updToken = null;
+  }
+});
+ipcMain.handle('updater:cancel', (_e, pause) => {
+  try {
+    if (updToken && !updToken.cancelled) {
+      updPausedPct = pause ? updLastPctSafe() : -1;
+      try { updToken.cancel(); } catch (_) { /* noop */ }
+      updLog(pause ? 'download PAUSED by user' : 'download CANCELLED by user');
+      actLog(`updater ${pause ? 'pause' : 'cancel'} (user)`, 'update');
+    }
+    if (manualDl && manualDl.active) {
+      manualDl.cancel = true;
+      updLog('manual (direct) download cancel requested');
+    }
+    sendUI('updater:status', pause ? { state: 'paused', percent: updPausedPct < 0 ? 0 : updPausedPct } : { state: 'canceled' });
+    return { ok: true };
+  } catch (_) { return { ok: false };
+  }
+});
+function updLastPctSafe() {
+  /* آخرین درصد دانلود — از متغیر بستهٔ event handler قابل دسترس نیست،
+     پس از progress event آخر ذخیره‌شده روی خود autoUpdater استفاده می‌کنیم */
+  try { return Math.round((updLastProgress && updLastProgress.percent) || 0); } catch (_) { return 0; }
+}
 /* لایه ۳: دانلود مستقیم نصّاب داخل برنامه (بدون electron-updater) */
 let manualDl = null; // { file, version, url, active }
+let updLastProgress = null; /* v0.21 — آخرین progress برای محاسبهٔ درصد هنگام توقف */
 
-function ghDownloadToFile(url, file, onPercent) {
+/* v0.21 — پارامتر cancelFlag: دانلود مستقیم هم قابل لغو شد (خواست کاربر) */
+function ghDownloadToFile(url, file, onPercent, cancelFlag) {
   return new Promise((resolve, reject) => {
     const req = net.request({ url, redirect: 'follow' });
     req.setHeader('User-Agent', 'AVA-Voice-Assistant-Updater');
@@ -827,6 +911,10 @@ function ghDownloadToFile(url, file, onPercent) {
     req.on('response', (res) => {
       total = parseInt(res.headers['content-length'] || '0', 10);
       res.on('data', (c) => {
+        if (cancelFlag && cancelFlag.cancel) {
+          finish(new Error('cancelled'));
+          return;
+        }
         received += c.length;
         ws.write(c);
         if (total) {
@@ -851,9 +939,9 @@ ipcMain.handle('updater:download-manual', async () => {
     if (cmpVersions(meta.version, app.getVersion()) <= 0) return { ok: true, latest: true };
     const url = meta.url || `https://github.com/${UPD_REPO.owner}/${UPD_REPO.repo}/releases/download/v${meta.version}/AVA-Setup-${meta.version}.exe`;
     const file = path.join(app.getPath('downloads'), `AVA-Setup-${meta.version}.exe`);
-    manualDl = { file, version: meta.version, url, active: true };
+    manualDl = { file, version: meta.version, url, active: true, cancel: false };
     sendUI('updater:status', { state: 'downloading', percent: 0 });
-    await ghDownloadToFile(url, file, (pct) => sendUI('updater:status', { state: 'downloading', percent: pct }));
+    await ghDownloadToFile(url, file, (pct) => sendUI('updater:status', { state: 'downloading', percent: pct, manual: true }), manualDl);
     manualDl.active = false;
     updLog(`manual download complete: ${file} (${meta.via})`);
     sendUI('updater:status', { state: 'ready-manual', version: meta.version });
@@ -861,6 +949,11 @@ ipcMain.handle('updater:download-manual', async () => {
   } catch (e) {
     if (manualDl) manualDl.active = false;
     const msg = String((e && e.message) || e);
+    if (/cancel/i.test(msg)) {
+      updLog('manual download cancelled by user');
+      sendUI('updater:status', { state: 'canceled' });
+      return { ok: false, cancelled: true };
+    }
     updLog(`manual download failed: ${msg}`);
     sendUI('updater:status', { state: 'error', message: msg.slice(0, 160) });
     return { ok: false, error: msg };
@@ -1223,26 +1316,31 @@ ipcMain.handle('ai:chat', async (_e, p) => {
   if (!keys.length) return { ok: false, error: 'کلید GLM تنظیم نشده — از تنظیمات واردش کن' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
   let lastErr = null;
+  /* v0.21 — سریع‌تر: بدون «فکر کردن» (GLM-4.5/4.6 از پارامتر thinking
+       پشتیبانی می‌کنند؛ مدل‌های قدیمی‌تر آن را نادیده می‌گیرند) + سقف ۳۵ ثانیه */
+  const body = {
+    model: model || 'glm-4.6',
+    messages: messages.slice(-16), // فقط ۸ رد و بدل آخر
+    temperature: typeof temperature === 'number' ? temperature : 0.6,
+    max_tokens: 700, /* v0.19 — پاسخ کوتاه‌تر = سریع‌تر (حداکثر ۳ جمله در راهنمای سیستم) */
+    stream: false,
+  };
+  if (/4\.[56]|4\.5|air|flash|plus/i.test(String(body.model))) body.thinking = { type: 'disabled' };
   /* چرخش چندکلیدی: اگر کلیدی محدود شد، بلافاصله سراغ بعدی */
   for (const k of keys) {
     try {
       const r = await fetch(trimBase(base) + '/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
-        body: JSON.stringify({
-          model: model || 'glm-4.6',
-          messages: messages.slice(-16), // فقط ۸ رد و بدل آخر
-          temperature: typeof temperature === 'number' ? temperature : 0.6,
-          max_tokens: 700, /* v0.19 — پاسخ کوتاه‌تر = سریع‌تر (حداکثر ۳ جمله در راهنمای سیستم) */
-          stream: false,
-        }),
-        signal: AbortSignal.timeout(60000),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(35000), /* v0.21: ۶۰→۳۵ ثانیه */
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
         const msg = (j && j.error && (j.error.message || j.error.code)) || `HTTP ${r.status}`;
         lastErr = `GLM: ${msg}`;
-        continue; /* کلید بعدی */
+        /* کلید نامعتبر/محدود → مدل‌ها بی‌فایده‌اند، فقط کلید بعدی (v0.21) */
+        continue;
       }
       const text = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
       if (!text) { lastErr = 'پاسخ خالی از سرور رسید'; continue; }
@@ -1452,7 +1550,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
         messages: messages.slice(-16),
         features: { enable_thinking: false },
       }),
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(45000), /* v0.21: ۹۰→۴۵ ثانیه */
     });
     if (!r.ok && r.status === 401) {
       return { ok: false, needLogin: true, error: 'نشست منقضی شده — در تب «صفحه چت» دوباره وارد شو' };
@@ -1564,6 +1662,7 @@ ipcMain.handle('stt:transcribe', async (_e, p) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${String(key).trim()}` },
       body: form,
+      signal: AbortSignal.timeout(20000), /* v0.21 — قبلاً هیچ سقفی نداشت؛ شبکه گیر می‌کرد و هرچیزی معطل می‌شد */
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -1595,6 +1694,12 @@ function geminiModelChain(userModel) {
   ])].filter(Boolean);
 }
 
+/* v0.21 — حافظهٔ مدل کارا: اولین درخواست هر جلسه ممکن است چند مدل را امتحان کند
+   (تا جواب بگیرد)، اما بعد از اولین موفقیت، همان مدل در اول زنجیرهٔ دفعات بعد
+   قرار می‌گیرد — یعنی «دومین سوال به بعد» همیشه با سریع‌ترین مسیر جواب می‌گیرد. */
+let gemWorkingModel = ''; // آخرین مدل کاری چت
+let gemSttWorkingModel = ''; // آخرین مدل کاری STT
+
 ipcMain.handle('stt:gemini', async (_e, p) => {
   const { buf, key, model, lang } = p || {};
   const keys = splitKeys(key);
@@ -1606,8 +1711,10 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
     `The spoken language is ${String(lang || 'fa-IR')} unless it is clearly another language. ` +
     'Return ONLY the transcription text with correct punctuation and Persian spacing (نیم‌فاصله where appropriate). No commentary, no quotes.';
   let lastErr = null;
+  /* v0.21 — مدل کاری اول + کلید خراب → کلید بعدی (نه همهٔ مدل‌ها) */
+  const models = [...new Set([gemSttWorkingModel, ...geminiModelChain(model)].filter(Boolean))];
   for (const k of keys) {
-    for (const mdl of geminiModelChain(model)) {
+    for (const mdl of models) {
       try {
         const body = {
           contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: b64 } }] }],
@@ -1617,12 +1724,14 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
         if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         const r = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(45000) }
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) } /* v0.21: ۴۵→۱۵ ثانیه */
         );
         const j = await r.json().catch(() => ({}));
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = `Gemini-ASR: ${String(msg).slice(0, 120)}`;
+          /* کلید نامعتبر/محدود → امتحان بقیهٔ مدل‌ها با همین کلید بی‌فایده است */
+          if ([401, 403, 429].includes(r.status)) break;
           continue;
         }
         const cand = j && j.candidates && j.candidates[0];
@@ -1630,6 +1739,7 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
           ? cand.content.parts.map((x) => x.text || '').join('').trim()
           : '';
         if (!text) { lastErr = 'Gemini-ASR: پاسخ خالی بود'; continue; }
+        gemSttWorkingModel = mdl; /* v0.21 — دفعه بعد اول همین امتحان می‌شود */
         return { ok: true, text, model: mdl };
       } catch (e) { lastErr = netErr(e); }
     }
@@ -1652,7 +1762,7 @@ ipcMain.handle('stt:whisper', async (_e, p) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${String(key).trim()}` },
       body: form,
-      signal: AbortSignal.timeout(45000),
+      signal: AbortSignal.timeout(12000), /* v0.21: ۴۵→۱۲ ثانیه */
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -1706,34 +1816,41 @@ function splitTtsChunks(text) {
 ipcMain.handle('tts:google', async (_e, p) => {
   const { text, lang } = p || {};
   const tl = String(lang || 'fa').slice(0, 5);
-  const chunks = splitTtsChunks(text);
+  const chunks = splitTtsChunks(text).slice(0, 8); /* v0.21 — بیشینه ۸ تکه */
   if (!chunks.length) return { ok: false, error: 'متنی برای خواندن نیست' };
   try {
-    const parts = [];
-    for (let i = 0; i < chunks.length; i++) {
-      const q = encodeURIComponent(chunks[i]);
+    /* v0.21 — تکه‌ها «موازی» گرفته می‌شوند (قبلاً پشت‌سرهم؛ برای پاسخ‌های
+       بلند تا ۲۰ ثانیه تأخیر صدا می‌گذاشت). ترتیب تکه‌ها حفظ می‌شود. */
+    const parts = new Array(chunks.length).fill(null);
+    let firstFail = null;
+    await Promise.all(chunks.map(async (chunk, i) => {
+      const q = encodeURIComponent(chunk);
       const url =
         `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob` +
         `&tl=${encodeURIComponent(tl)}&q=${q}&total=${chunks.length}&idx=${i}` +
-        `&textlen=${chunks[i].length}&ttsspeed=1`;
-      const r = await fetch(url, {
-        headers: {
-          'User-Agent': TTS_UA,
-          'Referer': 'https://translate.google.com/',
-          'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.5',
-          'Accept-Language': 'fa,en;q=0.8',
-        },
-        signal: AbortSignal.timeout(12000),
-      });
-      if (!r.ok) {
-        if (i === 0) return { ok: false, error: `گوگل: HTTP ${r.status}` };
-        break; /* تکه‌های قبلی را داشته باشیم */
+        `&textlen=${chunk.length}&ttsspeed=1`;
+      try {
+        const r = await fetch(url, {
+          headers: {
+            'User-Agent': TTS_UA,
+            'Referer': 'https://translate.google.com/',
+            'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.5',
+            'Accept-Language': 'fa,en;q=0.8',
+          },
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!r.ok) {
+          if (i === 0) firstFail = `گوگل: HTTP ${r.status}`;
+          return;
+        }
+        const ab = await r.arrayBuffer();
+        if (ab.byteLength > 100) parts[i] = Buffer.from(ab);
+      } catch (e) {
+        if (i === 0) firstFail = netErr(e);
       }
-      const ab = await r.arrayBuffer();
-      if (ab.byteLength > 100) parts.push(Buffer.from(ab));
-    }
-    if (!parts.length) return { ok: false, error: 'صدایی از گوگل نرسید' };
-    return { ok: true, mime: 'audio/mpeg', chunks: parts.map((b) => b.toString('base64')) };
+    }));
+    if (!parts.some(Boolean)) return { ok: false, error: firstFail || 'صدایی از گوگل نرسید' };
+    return { ok: true, mime: 'audio/mpeg', chunks: parts.filter(Boolean).map((b) => b.toString('base64')) };
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }
@@ -1765,8 +1882,10 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
   /* زنجیرهٔ مدل: اول مدلِ انتخابی کاربر، بعد جدیدترین فلاش (نام مستعار همیشه‌سبز)
      و بعد نسل‌های قدیمی‌تر به‌عنوان فالبک — اگر مدلی منسوخ شده باشد (404)، خودکار
-     مدل بعدی امتحان می‌شود تا «دیگر در دسترس نیست» دیگر به کاربر نرسد. */
+     مدل بعدی امتحان می‌شود تا «دیگر در دسترس نیست» دیگر به کاربر نرسد.
+     v0.21 — مدل کاریِ آخر در اول زنجیره (دومین سوال به بعد = سریع‌ترین مسیر) */
   const models = [...new Set([
+    gemWorkingModel,
     String(model || '').trim(),
     'gemini-flash-latest',
     'gemini-2.5-flash',
@@ -1793,9 +1912,13 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         if (sys) body.systemInstruction = { parts: [{ text: sys }] };
         /* v0.18 — جستجوی گوگل فقط وقتی سوال واقعاً «سرچی» است وصل می‌شود؛
-           ابزار سرچ ۲ تا ۶ ثانیه تأخیر اضافه دارد — سوال‌های معمولی را سریع جواب بده */
+           ابزار سرچ ۲ تا ۶ ثانیه تأخیر اضافه دارد — سوال‌های معمولی را سریع جواب بده
+           v0.21 — فرمان‌های موزیک/مدیا هرگز سرچ نمی‌گیرند («آهنگ امروزو پخش کن»
+           شامل «امروز» است و قبلاً بی‌دلیل سرچی می‌شد و کند) */
         const lastUserText = [...messages].reverse().find((m) => m.role === 'user');
-        const wantsSearch = lastUserText && SEARCH_INTENT_RE.test(String(lastUserText.content || ''));
+        const ut = String((lastUserText && lastUserText.content) || '');
+        const mediaCmd = /(پخش|آهنگ|موزیک|ترانه|آلبوم|بعدی|قبلی|پاز|توقف آهنگ)/.test(ut);
+        const wantsSearch = !mediaCmd && lastUserText && SEARCH_INTENT_RE.test(ut);
         if (search && wantsSearch) body.tools = [{ google_search: {} }];
         const r = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
@@ -1803,21 +1926,24 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
-            signal: AbortSignal.timeout(60000),
+            signal: AbortSignal.timeout(35000), /* v0.21: ۶۰→۳۵ ثانیه */
           }
         );
         const j = await r.json().catch(() => ({}));
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = `Gemini: ${String(msg).slice(0, 140)}`;
-          /* کلید بی‌اعتبار/محدود → کلید بعدی؛ مدل ناموجود (404) → مدل بعدی */
-          continue;
+          /* v0.21 — کلید بی‌اعتبار/محدود (401/403/429) → بقیهٔ مدل‌ها با همین کلید
+             بی‌فایده‌اند؛ بلافاصله کلید بعدی (قبلاً تا ۶ مدل × ۶۰ ثانیه معطل می‌شد) */
+          if ([401, 403, 429].includes(r.status)) break;
+          continue; /* مدل ناموجود (400/404) → مدل بعدی */
         }
         const cand = j && j.candidates && j.candidates[0];
         const text = cand && cand.content && cand.content.parts
           ? cand.content.parts.map((x) => x.text || '').join('').trim()
           : '';
         if (!text) { lastErr = 'پاسخ خالی از Gemini رسید'; continue; }
+        gemWorkingModel = mdl; /* v0.21 — حافظهٔ مدل کارا */
         return { ok: true, text, model: mdl, keyIndex: keys.indexOf(k) };
       } catch (e) {
         lastErr = netErr(e);
@@ -1844,7 +1970,7 @@ ipcMain.handle('ai:openai', async (_e, p) => {
           temperature: 0.6,
           max_tokens: 700, /* v0.19 — سریع‌تر */
         }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(40000), /* v0.21: ۶۰→۴۰ ثانیه */
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -1899,7 +2025,8 @@ ipcMain.handle('custom:run', (_e, script) => {
 function discordPsScript(action, mode, name, dx, dy, waitMs, clickRetries) {
   const nm = String(name || '').replace(/['’`]/g, '');
   return `
-$ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Stop'
+try {
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
@@ -1935,6 +2062,7 @@ if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
 $hwnd = $proc.MainWindowHandle
 $child = [AvaDc2.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
 if ($child -eq [IntPtr]::Zero) { $child = $hwnd }
+Write-Output "DBG:PROC=$($proc.ProcessName) CHILD=$(if ($child -ne [IntPtr]::Zero) { 1 } else { 0 }) MODE=${mode} ACT=${action}"
 $mode = '${mode}'
 $bg = ($mode -eq 'bg')
 $prevFg = [AvaDc2.W]::GetForegroundWindow()
@@ -1996,6 +2124,7 @@ function Try-CallClick {
       if ($win) {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
         $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
+        Write-Output "DBG:TRY=$tryN BTNS=$($btns.Count)"
         foreach ($pass in 1, 2) {
           foreach ($b in $btns) {
             $bn = ''
@@ -2003,9 +2132,10 @@ function Try-CallClick {
             if (-not $bn) { continue }
             if ($bn -match 'Video|ویدیو|دوربین|End|قطع|Screen|اشتراک') { continue }
             $ok = $false
-            if ($pass -eq 1) { $ok = ($bn -match 'Start Voice Call|Voice Call|تماس صوتی|شروع تماس|صوتی') }
+            if ($pass -eq 1) { $ok = ($bn -match 'Start Voice Call|Voice Call|Voice|تماس صوتی|شروع تماس|صوتی') }
             else { $ok = ($bn -match 'Call|تماس') }
             if (-not $ok) { continue }
+            Write-Output "DBG:HIT=$bn PASS=$pass"
             try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch {}
             try {
               $r = $b.Current.BoundingRectangle
@@ -2021,6 +2151,7 @@ function Try-CallClick {
     Start-Sleep -Milliseconds 1100
   }
   # فالبک مختصات دستی: گوشهٔ بالا-راست پنجره (سرستون DM)
+  Write-Output 'DBG:UIA_MISS'
   $r2 = New-Object AvaDc2.RECT
   [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
   $tx = $r2.Right - ${dx}
@@ -2031,7 +2162,7 @@ function Try-CallClick {
     return 'OK:CALL_CLICKED'
   }
   Restore-Focus
-  return 'OK:DM_OPENED'
+  return 'ERR:NOBTN'
 }
 $action = '${action}'
 switch ($action) {
@@ -2080,7 +2211,7 @@ switch ($action) {
   'callswitch' {
     $name = '${nm.replace(/'/g, "")}'
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
-    Set-Clipboard -Value $name | Out-Null
+    try { Set-Clipboard -Value $name -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
     if ($bg) {
       Send-BgCombo @(0x11, 0x4B)
       Start-Sleep -Milliseconds 1100
@@ -2098,6 +2229,11 @@ switch ($action) {
     Write-Output (Try-CallClick)
   }
   default { Write-Output 'ERR:UNKNOWN' }
+}
+} catch {
+  # v0.21 — هر خطای پاورشل (حتی Add-Type/UIA) به‌عنوان نتیجهٔ قابل‌فهم برمی‌گردد
+  # و در لاگ عملکرد ثبت می‌شود — دیگر «ارور پاورشل» گم نمی‌شود
+  Write-Output ('ERR:PS:' + ($_.Exception.Message -replace '\s+', ' '))
 }`.trim();
 }
 
@@ -2134,23 +2270,40 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
 function runDiscordPs(psAction, mode, nm, dxN, dyN) {
   const ps = discordPsScript(psAction, mode, nm, dxN, dyN,
     (psAction === 'clickcall' || psAction === 'callswitch') ? 25000 : 6000,
-    (psAction === 'clickcall' || psAction === 'callswitch') ? 8 : 1);
+    (psAction === 'clickcall' || psAction === 'callswitch') ? 12 : 1); /* v0.21: ۸→۱۲ تلاش */
   const encoded = Buffer.from(ps, 'utf16le').toString('base64');
   const t0 = Date.now();
   return new Promise((resolve) => {
     exec(`powershell -NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
       { windowsHide: true, timeout: 60000, maxBuffer: 1024 * 512 },
-      (err, stdout) => {
-        const out = String(stdout || '').trim();
+      (err, stdout, stderr) => {
+        /* v0.21 — خطای پاورشل دیگر گم نمی‌شود: stderr در لاگ عملکرد می‌رود
+           (با «آوا گزارش بفرست» قابل ارسال است — گلهٔ کاربر: «ارور پاورشل میده») */
+        const errTxt = String(stderr || '').trim();
+        if (errTxt) actLog(`discord ps stderr: ${errTxt.slice(0, 260)}`, 'discord');
+        /* خطوط DBG: تشخیصی‌اند و نتیجه نیستند — فقط لاگ می‌شوند؛
+           نتیجه = آخرین خط OK/ERR (اسکریپت ممکن است چند خط چاپ کند) */
+        const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        lines.filter((l) => /^DBG:/i.test(l)).forEach((l) => actLog(`discord ${l.slice(0, 140)}`, 'discord'));
+        const out = lines.filter((l) => !/^DBG:/i.test(l)).pop() || '';
         actLog(`discord ${psAction} mode=${mode} -> ${out || (err ? 'PS-FAIL' : 'EMPTY')} (${Date.now() - t0}ms)`, 'discord');
-        if (err && !out) return resolve({ ok: false, error: String(err.message || 'PowerShell اجرا نشد').slice(0, 160) });
+        if (/^ERR:PS:/.test(out)) {
+          return resolve({ ok: false, error: ('خطای اسکریپت: ' + out.replace(/^ERR:PS:/, '')).slice(0, 160) });
+        }
+        if (err && !out) {
+          const t = err.killed || /timeout/i.test(String(err.message || ''))
+            ? 'اسکریپت دیسکورد بیش از حد طول کشید — دیسکورد را یک‌بار باز/بسته کن و دوباره امتحان کن'
+            : String(err.message || 'PowerShell اجرا نشد');
+          return resolve({ ok: false, error: String(t).slice(0, 160) });
+        }
         if (/^ERR:/.test(out)) {
           const msgs = {
             'ERR:NO_DISCORD': 'دیسکورد باز نیست — اول دیسکورد را باز کن',
             'ERR:UNKNOWN': 'فرمان دیسکورد شناخته نشد',
             'ERR:NONAME': 'نام مخاطب پیدا نشد — در تنظیمات دیسکورد مخاطب بساز یا نام را کامل بگو',
+            'ERR:NOBTN': 'دکمهٔ تماس پیدا نشد — صفحهٔ مخاطب باز شد ولی تماس نگرفت؛ مختصات دستی را با «آزمایش مکان» تنظیم کن یا حالت کمکی را امتحان کن',
           };
-          return resolve({ ok: false, error: msgs[out] || out });
+          return resolve({ ok: false, error: msgs[out.trim()] || out.trim() });
         }
         resolve({ ok: true, result: out || 'OK' });
       });

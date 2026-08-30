@@ -14,6 +14,11 @@
     <defs>
       <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></symbol>
       <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></symbol>
+      <!-- v0.21 — کنترل‌های مینیمال پلیر: جلو/عقب ۱۰ ثانیه‌ای و کم/زیاد صدا -->
+      <symbol id="i-back10" viewBox="0 0 24 24"><polyline points="8.5 3.5 4 8 8.5 12.5"/><path d="M4 8h9.5a6 6 0 0 1 0 12H10"/></symbol>
+      <symbol id="i-fwd10" viewBox="0 0 24 24"><polyline points="15.5 3.5 20 8 15.5 12.5"/><path d="M20 8h-9.5a6 6 0 0 0 0 12H14"/></symbol>
+      <symbol id="i-volup" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="15" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="15" y2="15"/><line x1="15" y1="12" x2="21.5" y2="12"/></symbol>
+      <symbol id="i-voldown" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="15" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="15" y2="15"/></symbol>
       <symbol id="i-wave" viewBox="0 0 24 24"><line x1="3" y1="10" x2="3" y2="14"/><line x1="7.5" y1="7" x2="7.5" y2="17"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="16.5" y1="7" x2="16.5" y2="17"/><line x1="21" y1="10" x2="21" y2="14"/></symbol>
       <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
       <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
@@ -530,10 +535,16 @@
                     <button class="chip" id="btnCheckUpdate"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.upd.check">بررسی نسخه جدید</span></button>
                   </div>
                   <div class="upd-progress" id="updProgress" hidden><i id="updBar"></i></div>
+                  <!-- v0.21 — دانلود به اختیار کاربر: شروع/توقف/ادامه/لغو -->
+                  <div class="upd-actions">
+                    <button class="chip" id="btnUpdDownload" hidden><svg class="ic"><use href="#i-download"/></svg><span data-i18n="set.upd.download">دانلود نسخه جدید</span></button>
+                    <button class="chip" id="btnUpdPause" hidden><svg class="ic"><use href="#i-pause"/></svg><span data-i18n="set.upd.pause">توقف</span></button>
+                    <button class="chip" id="btnUpdCancel" hidden><svg class="ic"><use href="#i-close"/></svg><span data-i18n="set.upd.cancel">لغو</span></button>
+                  </div>
                   <button class="chip upd-install" id="btnInstallUpdate" hidden><svg class="ic"><use href="#i-download"/></svg><span data-i18n="set.upd.install">نصب و راه‌اندازی مجدد</span></button>
                   <button class="chip" id="btnManualDl" hidden><svg class="ic"><use href="#i-download"/></svg><span data-i18n="set.upd.manualDl">دانلود مستقیم نصّاب</span></button>
                 </div>
-                <p class="set-note" data-i18n="set.upd.note">آپدیت کامل داخل خود برنامه: بررسی و دانلود خودکار انجام می‌شود و نصب هم با یک کلیک — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا)، نه کل برنامه.</p>
+                <p class="set-note" data-i18n="set.upd.note">بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.</p>
               </div>
 
             </div>
@@ -657,14 +668,22 @@
                 <span class="m-time num" id="mDur">0:00</span>
               </div>
               <div class="m-controls">
-                <button class="m-ctl" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
-                <button class="m-ctl big" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
+                <button class="m-ctl sm" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
+                <button class="m-ctl" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
+                <button class="m-ctl" id="mBack10" aria-label="۱۰ ثانیه عقب"><svg class="ic"><use href="#i-back10"/></svg></button>
                 <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
-                <button class="m-ctl big" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
-                <button class="m-ctl" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
+                <button class="m-ctl" id="mFwd10" aria-label="۱۰ ثانیه جلو"><svg class="ic"><use href="#i-fwd10"/></svg></button>
+                <button class="m-ctl" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
+                <button class="m-ctl sm" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
               </div>
-              <div class="np-vol">
-                <span class="m-vol-wrap"><button type="button" class="m-ctl sm" id="mMute" aria-label="قطع/وصل صدا" data-i18n-tip="music.mute"><svg class="ic"><use id="mMuteIcon" href="#i-volume"/></svg></button><input type="range" id="mVol" min="0" max="100" value="80" /></span>
+              <div class="np-sub">
+                <button type="button" class="m-ctl sm" id="mStop" aria-label="توقف کامل"><svg class="ic"><use href="#i-stop"/></svg></button>
+                <span class="m-vol-wrap">
+                  <button type="button" class="m-ctl sm" id="mMute" aria-label="قطع/وصل صدا" data-i18n-tip="music.mute"><svg class="ic"><use id="mMuteIcon" href="#i-volume"/></svg></button>
+                  <button type="button" class="m-ctl sm" id="mVolDown" aria-label="کم کردن صدا"><svg class="ic"><use href="#i-voldown"/></svg></button>
+                  <input type="range" id="mVol" min="0" max="100" value="80" />
+                  <button type="button" class="m-ctl sm" id="mVolUp" aria-label="بلند کردن صدا"><svg class="ic"><use href="#i-volup"/></svg></button>
+                </span>
               </div>
             </div>
 

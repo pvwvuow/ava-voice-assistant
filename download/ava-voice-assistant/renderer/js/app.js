@@ -286,7 +286,8 @@
     'set.upd.autoHint': ['۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود', 'Check for a new version 12 seconds after launch'],
     'set.upd.check': ['بررسی نسخه جدید', 'Check for updates'], 'set.upd.install': ['نصب و راه‌اندازی مجدد', 'Install and restart'],
     'set.upd.manualDl': ['دانلود مستقیم نصّاب', 'Download installer directly'],
-    'set.upd.note': ['آپدیت کامل داخل خود برنامه: بررسی و دانلود خودکار انجام می‌شود و نصب هم با یک کلیک — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا)، نه کل برنامه.', 'Full in-app updates: auto check and download, one-click install — only changed parts are downloaded (delta update).'],
+    'set.upd.download': ['دانلود نسخه جدید', 'Download the new version'], 'set.upd.pause': ['توقف', 'Pause'], 'set.upd.resume': ['ادامه دانلود', 'Resume download'], 'set.upd.cancel': ['لغو', 'Cancel'],
+    'set.upd.note': ['بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.', 'Auto-check runs by itself, but downloading only when you want: hit “Download new version” whenever you like — pause or cancel anytime. Only changed parts are downloaded (delta update) and install is one click.'],
     'hist.title': ['تاریخچه فرمان‌ها', 'Command history'], 'hist.recent': ['فرمان‌های اخیر', 'Recent commands'],
     'hist.recentHint': ['روی هر فرمان بزنی دوباره اجرا می‌شود', 'Click any command to run it again'], 'hist.clear': ['پاک‌سازی', 'Clear'],
     'hist.empty': ['هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.', 'No commands yet — try a suggestion or speak into the microphone.'],
@@ -308,7 +309,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۰ هوشمندتر — لایهٔ نرمال‌سازی فارسی (ی/ک عربی و اعداد فارسی) و اجرای عملی فرمان‌های پیچیده با جمنای: حالا می‌گویی «آهنگ بعدی رو پخش کن و صدا رو هم زیاد کن» و آوا واقعاً هر دو را انجام می‌دهد (Function Calling امن با لیست سفید + تأیید برای کارهای حساس) — تماس دیسکورد حالا دو حالت دارد: کمکی (کاملاً مطابق قوانین دیسکورد) یا خودکار (آزمایشی، بدون هیچ توکن/API).', 'v0.20 smarter — Persian normalization layer (Arabic Yeh/Kaf, Persian digits), AI function-calling for complex and multi-action requests executed safely by local code with a strict whitelist and confirmation for sensitive actions, and Discord calling with two modes: Assist (fully within Discord rules) or Auto (experimental input simulation, no token/API).'],
+    'about.desc': ['نسخه ۰.۲۱ — سریع‌تر از همیشه: دیگر هیچ موتوری «گیر» نمی‌کند — هر موتور تشخیص گفتار و هوش مصنوعی سقف زمانی دارد، موتور/مدلی که آخرین بار جواب داد اول امتحان می‌شود و موتور خراب سه دقیقه کنار گذاشته می‌شود؛ دانلود آپدیت هم دیگر خودکار نیست که اینترنت را اشغال کند — هر وقت خواستی دانلود کن، هر وقت خواستی توقف یا لغو کن؛ کاور پلیر حرفه‌ای‌تر شد (۲۰۰px با سایهٔ چندلایه)، کنترل‌های مینیمال دایره‌ای با توقف/جلو-عقب ۱۰ ثانیه‌ای/کم-زیاد صدا، و پلی‌لیست تخت بدون جعبه؛ خطاهای پاورشل دیسکورد هم حالا کامل لاگ می‌شوند.', 'v0.21 — faster than ever: no engine can hang anymore (every STT/AI call has a deadline), the engine/model that worked last time is tried first and dead engines are benched for 3 minutes; update downloads are never automatic — download whenever you like, pause or cancel anytime; a pro 200px player cover, minimal round controls with stop / ±10s seek / volume±, a flat box-free playlist, and Discord PowerShell errors are now fully logged for the report.'],
     'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
@@ -508,7 +509,8 @@
     'set.upd.autoHint': ['۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود', 'Check for a new version 12 seconds after launch'],
     'set.upd.check': ['بررسی نسخه جدید', 'Check for updates'], 'set.upd.install': ['نصب و راه‌اندازی مجدد', 'Install and restart'],
     'set.upd.manualDl': ['دانلود مستقیم نصّاب', 'Download installer directly'],
-    'set.upd.note': ['آپدیت کامل داخل خود برنامه: بررسی و دانلود خودکار انجام می‌شود و نصب هم با یک کلیک — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا)، نه کل برنامه.', 'Full in-app updates: auto check and download, one-click install — only changed parts are downloaded (delta update).'],
+    'set.upd.download': ['دانلود نسخه جدید', 'Download the new version'], 'set.upd.pause': ['توقف', 'Pause'], 'set.upd.resume': ['ادامه دانلود', 'Resume download'], 'set.upd.cancel': ['لغو', 'Cancel'],
+    'set.upd.note': ['بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.', 'Auto-check runs by itself, but downloading only when you want: hit “Download new version” whenever you like — pause or cancel anytime. Only changed parts are downloaded (delta update) and install is one click.'],
     'hist.title': ['تاریخچه فرمان‌ها', 'Command history'], 'hist.recent': ['فرمان‌های اخیر', 'Recent commands'],
     'hist.recentHint': ['روی هر فرمان بزنی دوباره اجرا می‌شود', 'Click any command to run it again'], 'hist.clear': ['پاک‌سازی', 'Clear'],
     'hist.empty': ['هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.', 'No commands yet — try a suggestion or speak into the microphone.'],
@@ -674,8 +676,14 @@
     'badge.needLoginChat': ['برای چت، در تب «صفحه چت GLM» وارد حسابت شو', 'Sign in via the GLM chat tab to chat'],
     'zai.loginHint': ['یک بار وارد حسابت شو — بعدش همه‌چیز بدون کلید کار می‌کند', 'Sign in once — everything works without a key afterwards'],
     'upd.checking': ['در حال بررسی نسخه جدید…', 'Checking for a new version…'],
-    'upd.available': ['نسخه جدید v{x} پیدا شد — در حال دانلود…', 'New version v{x} found — downloading…'],
+    'upd.available': ['نسخه جدید v{x} پیدا شد — هر وقت خواستی دانلودش کن', 'New version v{x} found — download whenever you like'],
     'upd.downloading': ['در حال دانلود: {x}٪', 'Downloading: {x}%'],
+    'upd.downloadingMB': ['در حال دانلود: {x}٪ — {a} از {b} مگابایت{d}', 'Downloading: {x}% — {a} of {b} MB{d}'],
+    'upd.delta': [' (فقط تغییرات — دلتا)', ' (delta — changes only)'],
+    'upd.paused': ['دانلود در {x}٪ متوقف شد — با «ادامه دانلود» ادامه بده', 'Download paused at {x}% — hit “Resume download” to continue'],
+    'upd.canceled': ['دانلود لغو شد — هر وقت خواستی دوباره شروع کن', 'Download cancelled — start again whenever you like'],
+    'upd.startDlToast': ['دانلود نسخه {x} شروع شد — می‌توانی هر لحظه توقفش کنی', 'Downloading v{x} — you can pause it anytime'],
+    'upd.pauseToast': ['دانلود متوقف شد', 'Download paused'], 'upd.cancelToast': ['دانلود لغو شد', 'Download cancelled'],
     'upd.ready': ['نسخه v{x} آماده نصب است', 'Version v{x} is ready to install'],
     'upd.none': ['آخرین نسخه را داری ✓', 'You are on the latest version ✓'],
     'upd.dev': ['در حالت توسعه (npm start) به‌روزرسان غیرفعال است؛ خروجی نصب‌شده کار می‌کند', 'Updater is disabled in dev mode (npm start); the installed build works'],
@@ -734,7 +742,7 @@
     'music.loaded': ['پلی‌لیست ساخته شد: {x} آهنگ از «{y}»', 'Playlist ready: {x} songs from "{y}"'],
     'music.none': ['در این پوشه فایل صوتی پیدا نشد (mp3، wav، m4a، flac، ogg…)', 'No audio files found here (mp3, wav, m4a, flac, ogg…)'],
     'music.playing': ['در حال پخش: {x}', 'Now playing: {x}'],
-    'music.paused': ['موزیک متوقف شد', 'Music paused'],
+    'music.paused': ['موزیک متوقف شد', 'Music paused'], 'music.stopped': ['موزیک قطع شد — از ابتدا', 'Music stopped — back to the start'],
     'music.resumed': ['موزیک ادامه پیدا کرد', 'Music resumed'],
     'music.next': ['آهنگ بعدی', 'Next track'], 'music.prev': ['آهنگ قبلی', 'Previous track'],
     'music.emptyPlay': ['پلی‌لیست خالی است — اول از صفحه موزیک یک پوشه انتخاب کن', 'Playlist is empty — pick a folder in the music page first'],
@@ -869,6 +877,10 @@
   const btnCheckUpdate = $('#btnCheckUpdate');
   const btnInstallUpdate = $('#btnInstallUpdate');
   const btnManualDl = $('#btnManualDl');
+  /* v0.21 — دانلود به اختیار کاربر */
+  const btnUpdDownload = $('#btnUpdDownload');
+  const btnUpdPause = $('#btnUpdPause');
+  const btnUpdCancel = $('#btnUpdCancel');
 
   /* ---------- عناصر تنظیمات جدید (میکروفون / گفتار / GLM) ---------- */
   const optMic = $('#optMic');
@@ -992,6 +1004,12 @@
   const mRepeatBtn = $('#mRepeat');
   const mVol = $('#mVol');
   const mMute = $('#mMute');
+  /* v0.21 — کنترل‌های مینیمال جدید: توقف کامل، جلو/عقب ۱۰ ثانیه‌ای، کم/زیاد صدا */
+  const mStopBtn = $('#mStop');
+  const mBack10Btn = $('#mBack10');
+  const mFwd10Btn = $('#mFwd10');
+  const mVolDownBtn = $('#mVolDown');
+  const mVolUpBtn = $('#mVolUp');
   const mSearch = $('#mSearch');
   const mList = $('#mList');
   const mEmpty = $('#mEmpty');
@@ -2539,7 +2557,35 @@
   }
 
   /* زنجیرهٔ ابری (v0.17): جمنای → Whisper → GLM → گوگل رایگان
-     موتور آفلاین ضعیف در نسخه ۰.۹ کامل حذف شده است. */
+     موتور آفلاین ضعیف در نسخه ۰.۹ کامل حذف شده است.
+     v0.21 — هوشمندی زنجیره: ۱) موتوری که آخرین بار جواب داد، اول امتحان می‌شود؛
+     ۲) موتوری که ۲ بار پشت‌سرهم شکست خورد (کلید خراب/شبکهٔ بسته) ۳ دقیقه
+     «فیوز» می‌شود و جلوی زنجیره نمی‌ایستد — این همان تأخیری بود که کاربر
+     «نزدیک یک دقیقه» حس می‌کرد: هر بار از اول روی موتورِ مرده تلاش می‌شد. */
+  const STT_LAST_KEY = 'avaSttLast';
+  const STT_FUSE_KEY = 'avaSttFuse';
+  const sttFuseGet = () => { try { return JSON.parse(localStorage.getItem(STT_FUSE_KEY) || '{}') || {}; } catch (_) { return {}; } };
+  function sttMarkOk(eng) {
+    try {
+      localStorage.setItem(STT_LAST_KEY, String(eng));
+      const f = sttFuseGet();
+      if (f[eng]) { delete f[eng]; localStorage.setItem(STT_FUSE_KEY, JSON.stringify(f)); }
+    } catch (_) { /* noop */ }
+  }
+  function sttMarkFail(eng) {
+    try {
+      const f = sttFuseGet();
+      const e = f[eng] || { n: 0, until: 0 };
+      e.n = (e.n || 0) + 1;
+      e.until = e.n >= 2 ? Date.now() + 180000 : 0; /* ۲ بار شکست → ۳ دقیقه کنار */
+      f[eng] = e;
+      localStorage.setItem(STT_FUSE_KEY, JSON.stringify(f));
+    } catch (_) { /* noop */ }
+  }
+  const sttBenched = (eng) => {
+    const f = sttFuseGet();
+    return !!(f[eng] && f[eng].until && f[eng].until > Date.now());
+  };
   function buildCloudChain() {
     const eng = settings.sttEngine || 'auto';
     if (eng === 'gemini') return geminiSttReady() ? ['gemini'] : [];
@@ -2547,11 +2593,18 @@
     if (eng === 'glm') return glmReady() ? ['glm'] : [];
     if (eng === 'google') return googleReady() ? ['google'] : [];
     /* خودکار: دقیق‌ترین موتور در دسترس جلوتر */
-    const c = [];
+    let c = [];
     if (geminiSttReady()) c.push('gemini');
     if (whisperSttReady()) c.push('whisper');
     if (glmReady()) c.push('glm');
     if (googleReady()) c.push('google');
+    /* v0.21 — اگر فیوز همه را زده بود، همان ترتیب اصلی بماند */
+    const live = c.filter((e) => !sttBenched(e));
+    if (live.length) c = live;
+    /* v0.21 — موتور کارا (آخرین موفق) اول */
+    const lg = (() => { try { return localStorage.getItem(STT_LAST_KEY) || ''; } catch (_) { return ''; } })();
+    const li = c.indexOf(lg);
+    if (li > 0) c.splice(0, 0, c.splice(li, 1)[0]);
     return c;
   }
   function resolveEngine() {
@@ -2895,20 +2948,28 @@
       statusText.textContent = t('status.googleConv');
       return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang });
     };
+    /* v0.21 — سگ‌بان هر موتور: اگر جواب موتور داخل سقف زمانی نرسید،
+       بدون انتظار به موتور بعدی می‌رویم (هیچ موتوری حق «گیر کردن» ندارد) */
+    const withEngTimeout = (pr, ms) => Promise.race([
+      Promise.resolve(pr),
+      new Promise((res) => setTimeout(() => res({ ok: false, error: 'timeout' }), ms)),
+    ]);
     const runChain = async (i, why) => {
       if (state === 'idle') return; /* کاربر لغو کرد */
       const eng = chain[i];
       if (!eng) { finishIdle(why || t('stt.convFail', { x: '—' })); return; }
       let r = null;
       const te0 = Date.now();
-      try { r = await runEngine(eng); } catch (_) { r = { ok: false, error: t('stt.connFail') }; }
+      try { r = await withEngTimeout(runEngine(eng), eng === 'google' ? 18000 : 22000); } catch (_) { r = { ok: false, error: t('stt.connFail') }; }
       actLog(`stt ${eng} ${r && r.ok ? 'ok' : 'fail'} (${Date.now() - te0}ms)${r && r.error ? ' err=' + String(r.error).slice(0, 80) : ''}`);
       if (r && r.ok && r.text) {
+        sttMarkOk(eng); /* v0.21 — دفعه بعد اول همین موتور */
         const tx = r.text.trim();
         if (dictation.active) dictateHandle(tx);
         else handleUtterance(tx);
         return;
       }
+      sttMarkFail(eng); /* v0.21 — فیوز: بعد از ۲ شکست، ۳ دقیقه کنار می‌ماند */
       const isLast = (i + 1 >= chain.length);
       if (r && r.error && isLast) toast(String(r.error).slice(0, 150), '#i-info');
       runChain(i + 1, (r && r.error) ? t('stt.convFail', { x: r.error }) : why);
@@ -4163,7 +4224,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.20.0';
+  let appVersion = '0.21.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4743,6 +4804,8 @@
 
   /* --- به‌روزرسانی (+ بج نوار بالا v0.11) --- */
   let updVersion = '';
+  let updUiState = ''; /* v0.21 — وضعیت فعلی برای رفتار بج */
+  let updManualDling = false; /* v0.21 — دانلود مستقیم در جریان است؟ */
   function setBadge(state, version, percent) {
     if (!btnUpdBadge || !updBadgeTxt) return;
     updVersion = version || updVersion || '';
@@ -4773,44 +4836,96 @@
     if (btnUpdBadge.classList.contains('ready') && bridge && bridge.updater) {
       toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
       bridge.updater.install();
+    } else if (btnUpdBadge.classList.contains('dl') && bridge && bridge.updater) {
+      /* v0.21 — بج «نسخه جدید» = شروع دانلود (دانلود دیگر خودکار نیست) */
+      if (updUiState === 'downloading') {
+        toast(t('upd.downloading', { x: '…' }), '#i-download');
+        showView('settings');
+      } else {
+        toast(t('upd.startDlToast', { x: faNum(updVersion || '') }), '#i-download');
+        startUpdDownload();
+      }
     } else if (bridge && bridge.updater) {
-      toast(t('upd.downloadingToast', { x: faNum(updVersion || '') }), '#i-download');
       bridge.updater.check().catch(() => {});
     } else {
       toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh');
     }
   });
 
+  /* v0.21 — شروع/ادامهٔ دانلود (همون دکمه برای ادامه بعد از توقف) */
+  function startUpdDownload() {
+    if (!bridge || !bridge.updater || !bridge.updater.download) return;
+    if (btnUpdDownload) { btnUpdDownload.disabled = true; }
+    bridge.updater.download().catch(() => ({ ok: false })).then((r) => {
+      if (btnUpdDownload) { btnUpdDownload.disabled = false; }
+      /* نتیجه توسط رویدادهای updater:status نشان داده می‌شود؛ فقط خطای غیرلغو */
+      if (r && r.ok === false && !r.cancelled && !r.dev) {
+        setUpdUI({ state: 'error', message: r.error || '' });
+      }
+    });
+  }
+
   function setUpdUI(s) {
     updProgress.hidden = true;
     btnInstallUpdate.hidden = true;
     if (btnManualDl) btnManualDl.hidden = true;
     if (btnCheckUpdate) btnCheckUpdate.disabled = false;
+    if (btnUpdDownload) btnUpdDownload.hidden = true;
+    if (btnUpdPause) btnUpdPause.hidden = true;
+    if (btnUpdCancel) btnUpdCancel.hidden = true;
+    updUiState = (s && s.state) || '';
     switch (s && s.state) {
       case 'checking':
         updNote.textContent = t('upd.checking');
         break;
       case 'available':
         updNote.textContent = t('upd.available', { x: faNum(s.version || '') });
-        updProgress.hidden = false;
-        updBar.style.width = '6%';
+        /* v0.21 — نسخهٔ جدید پیدا شد؛ دانلود فقط با کلیک کاربر */
+        if (btnUpdDownload) btnUpdDownload.hidden = false;
         setBadge('available', s.version);
         break;
       case 'available-manual':
         updNote.textContent = t('upd.availableManual', { x: faNum(s.version || '') });
         if (btnManualDl) btnManualDl.hidden = false;
+        if (btnUpdDownload) btnUpdDownload.hidden = false;
         setBadge('available', s.version);
         break;
-      case 'downloading':
-        updNote.textContent = t('upd.downloading', { x: faNum(s.percent || 0) });
+      case 'downloading': {
+        const pct = faNum(s.percent || 0);
+        /* v0.21 — نمایش مگابایت واقعی منتقل‌شده (دلتا یا کامل؟) */
+        if (typeof s.transferred === 'number' && typeof s.total === 'number' && s.total > 0) {
+          updNote.textContent = t('upd.downloadingMB', {
+            x: pct, a: faNum(s.transferred), b: faNum(s.total),
+            d: s.delta ? t('upd.delta') : '',
+          });
+        } else {
+          updNote.textContent = t('upd.downloading', { x: pct });
+        }
         updProgress.hidden = false;
         updBar.style.width = `${Math.max(4, s.percent || 0)}%`;
+        if (btnUpdPause) btnUpdPause.hidden = false;
+        if (btnUpdCancel) btnUpdCancel.hidden = false;
         setBadge('downloading', s.version, s.percent);
+        break;
+      }
+      case 'paused':
+        /* v0.21 — توقف: همان دکمهٔ دانلود = ادامه */
+        updNote.textContent = t('upd.paused', { x: faNum(s.percent || 0) });
+        updProgress.hidden = false;
+        updBar.style.width = `${Math.max(4, s.percent || 0)}%`;
+        if (btnUpdDownload) { btnUpdDownload.hidden = false; btnUpdDownload.querySelector('span').textContent = t('set.upd.resume'); }
+        setBadge('available', updVersion);
+        break;
+      case 'canceled':
+        updNote.textContent = t('upd.canceled');
+        if (btnUpdDownload) { btnUpdDownload.hidden = false; btnUpdDownload.querySelector('span').textContent = t('set.upd.download'); }
+        setBadge('');
         break;
       case 'ready':
       case 'ready-manual':
         updNote.textContent = t('upd.ready', { x: faNum(s.version || '') });
         btnInstallUpdate.hidden = false;
+        if (btnUpdDownload) btnUpdDownload.querySelector('span').textContent = t('set.upd.download');
         setBadge('ready', s.version);
         toast(t('toast.updReady'), '#i-download');
         break;
@@ -4843,16 +4958,29 @@
       else if (r && !r.ok) setUpdUI({ state: 'error', message: r.error });
       else if (r && r.ok) setUpdUI({ state: 'checking' });
     });
+    /* v0.21 — دانلود / توقف / لغو */
+    if (btnUpdDownload) btnUpdDownload.addEventListener('click', () => startUpdDownload());
+    if (btnUpdPause) btnUpdPause.addEventListener('click', async () => {
+      await bridge.updater.cancel(true).catch(() => ({}));
+      toast(t('upd.pauseToast'), '#i-pause');
+    });
+    if (btnUpdCancel) btnUpdCancel.addEventListener('click', async () => {
+      await bridge.updater.cancel(false).catch(() => ({}));
+      toast(t('upd.cancelToast'), '#i-close');
+    });
     btnInstallUpdate.addEventListener('click', () => {
       toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
       bridge.updater.install();
     });
     if (btnManualDl) btnManualDl.addEventListener('click', async () => {
       btnManualDl.disabled = true;
+      updManualDling = true;
       toast(t('upd.directDlToast'), '#i-download');
       const r = await bridge.updater.downloadManual().catch(() => ({ ok: false }));
       btnManualDl.disabled = false;
+      updManualDling = false;
       if (r && (r.ok || r.dev || r.latest)) return;
+      if (r && r.cancelled) { setUpdUI({ state: 'canceled' }); return; }
       toast((r && r.error) ? `خطا: ${r.error}` : t('upd.manualFailToast'), '#i-info');
     });
   } else {
@@ -5270,11 +5398,26 @@
     else if (prov === 'gemini') { const r = await tryGemini(); if (r) return tag(r, 'Gemini'); }
     else if (prov === 'openai') { const r = await tryOpenai(); if (r) return tag(r, 'OpenAI'); }
     else {
-      /* خودکار: اول Gemini، بعد حساب GLM، بعد کلید GLM، در آخر OpenAI */
-      let r = await tryGemini(); if (r) return tag(r, 'Gemini');
-      r = await tryZai(); if (r) return tag(r, 'GLM');
-      r = await tryGlm(); if (r) return tag(r, 'GLM API');
-      r = await tryOpenai(); if (r) return tag(r, 'OpenAI');
+      /* خودکار: اول Gemini، بعد حساب GLM، بعد کلید GLM، در آخر OpenAI
+         v0.21 — پرووایدرِ کاری (آخرین موفق) همیشه اول امتحان می‌شود:
+         اگر جمنای یک‌بار جواب داده، دیگر هر بار منتظر شکستش نمی‌مانیم */
+      const AI_LAST_KEY = 'avaAiLast';
+      const lastAi = (() => { try { return localStorage.getItem(AI_LAST_KEY) || ''; } catch (_) { return ''; } })();
+      const chainAi = [
+        ['gemini', tryGemini, 'Gemini'],
+        ['zai', tryZai, 'GLM'],
+        ['glm', tryGlm, 'GLM API'],
+        ['openai', tryOpenai, 'OpenAI'],
+      ];
+      const li2 = chainAi.findIndex((x) => x[0] === lastAi);
+      if (li2 > 0) chainAi.unshift(chainAi.splice(li2, 1)[0]);
+      for (const [pk, fn2, viaName] of chainAi) {
+        const rr = await fn2();
+        if (rr) {
+          try { localStorage.setItem(AI_LAST_KEY, pk); } catch (_) { /* noop */ }
+          return tag(rr, viaName);
+        }
+      }
     }
 
     if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
@@ -5553,10 +5696,10 @@
       const row = document.createElement('div');
       row.className = 'm-row' + (tIdx === music.cur ? ' current' : '');
       row.dataset.idx = String(tIdx);
+      /* v0.21 — بدون تامبنیل و جعبه: شماره + عنوان + مدت؛ در هاور هم شماره
+         به دکمهٔ پخش تبدیل می‌شود — ساده، مرتب، مینیمال (خواست کاربر) */
       row.innerHTML =
-        `<span class="m-idx num">${tIdx === music.cur && music.playing ? '<span class="eqbars"><i></i><i></i><i></i></span>' : faNum(tIdx + 1)}</span>` +
-        `<span class="m-thumb">${tr.cover ? `<img src="${tr.cover}" alt=""/>` : '<svg class="ic"><use href="#i-music"/></svg>'}` +
-        `<span class="m-hovplay"><svg class="ic"><use href="#i-play"/></svg></span></span>` +
+        `<span class="m-idx num"><span class="m-num">${faNum(tIdx + 1)}</span><svg class="ic m-go"><use href="#i-play"/></svg><span class="eqbars"><i></i><i></i><i></i></span></span>` +
         `<span class="m-tt"><b></b><span class="m-ar"></span></span>` +
         `<span class="m-dur num">--:--</span>`;
       row.querySelector('.m-tt b').textContent = tr.title;
@@ -5640,13 +5783,12 @@
     } else {
       if (musicWidget) musicWidget.hidden = true;
     }
-    /* ردیف جاری در لیست — با شناسه واقعی آهنگ (فیکس جستجوی فعال) */
+    /* ردیف جاری در لیست — با شناسه واقعی آهنگ (فیکس جستجوی فعال)
+       v0.21 — شماره/پخش/اکولایزر با کلاس سوییچ می‌شوند (بدون innerHTML پویا) */
     if (mList) Array.from(mList.children).forEach((rowEl) => {
       const i = Number(rowEl.dataset.idx);
       rowEl.classList.toggle('current', i === music.cur);
       rowEl.classList.toggle('playing-row', playing && i === music.cur);
-      const idx = rowEl.querySelector('.m-idx');
-      if (idx) idx.innerHTML = i === music.cur && playing ? '<span class="eqbars"><i></i><i></i><i></i></span>' : faNum(i + 1);
     });
   }
 
@@ -5884,6 +6026,31 @@
   if (mPlayBtn) mPlayBtn.addEventListener('click', () => (music.tracks.length ? musicToggle() : (mFolder && mFolder.click())));
   if (mNextBtn) mNextBtn.addEventListener('click', () => musicNext());
   if (mPrevBtn) mPrevBtn.addEventListener('click', () => musicPrev());
+  /* v0.21 — توقف کامل: مکث + برگشتن به ابتدای آهنگ (خواست کاربر: «استوپ») */
+  if (mStopBtn) mStopBtn.addEventListener('click', () => {
+    if (!music.tracks.length || !mAudio.src) return;
+    try { mAudio.pause(); mAudio.currentTime = 0; } catch (_) { /* noop */ }
+    paintRange(mSeek);
+    toast(t('music.stopped'), '#i-stop');
+  });
+  /* v0.21 — جلو/عقب ۱۰ ثانیه‌ای (خواست کاربر: «جلو عقب کردن») */
+  const seek10 = (sec) => {
+    if (!mAudio.src || !isFinite(mAudio.duration)) return;
+    try { mAudio.currentTime = Math.max(0, Math.min(mAudio.duration - 0.3, mAudio.currentTime + sec)); } catch (_) { /* noop */ }
+    paintRange(mSeek);
+  };
+  if (mBack10Btn) mBack10Btn.addEventListener('click', () => seek10(-10));
+  if (mFwd10Btn) mFwd10Btn.addEventListener('click', () => seek10(10));
+  /* v0.21 — کم/زیاد کردن صدا با گام ۱۰٪ (خواست کاربر) */
+  const nudgeVol = (delta) => {
+    const v = Math.max(0, Math.min(100, Math.round(mAudio.volume * 100) + delta));
+    mAudio.volume = v / 100;
+    settings.musicVol = mAudio.volume;
+    store.set('musicVol', settings.musicVol);
+    if (mVol) { mVol.value = String(v); paintRange(mVol); }
+  };
+  if (mVolDownBtn) mVolDownBtn.addEventListener('click', () => nudgeVol(-10));
+  if (mVolUpBtn) mVolUpBtn.addEventListener('click', () => nudgeVol(10));
   if (mShuffleBtn) mShuffleBtn.addEventListener('click', () => {
     music.shuffle = !music.shuffle;
     settings.musicShuffle = music.shuffle;

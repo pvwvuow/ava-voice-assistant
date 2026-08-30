@@ -211,7 +211,7 @@ app.whenReady().then(async () => {
           keyRotation: mainjs.includes('const splitKeys') && mainjs.includes('gemini-2.0-flash-lite'),
           mediaKeys: mainjs.includes("media_toggle:") && mainjs.includes("media_next:"),
           bridges: preload.includes("'apps:launch'") && preload.includes("'reminders:due'") && preload.includes("'apps:list'"),
-          hovplay: css.includes('.m-hovplay') && appjs.includes('m-hovplay'),
+          hovplayGone: !css.includes('.m-hovplay') && !appjs.includes('m-hovplay'),
         };
       })();
       ok('phonetic dictionary (fa->en apps)', markers.phonetic);
@@ -228,7 +228,7 @@ app.whenReady().then(async () => {
       ok('multi-key ai rotation', markers.keyRotation);
       ok('system media keys', markers.mediaKeys);
       ok('preload bridges (apps+reminders)', markers.bridges);
-      ok('row hover play overlay', markers.hovplay);
+      ok('row hover play overlay removed (flat playlist v0.21)', markers.hovplayGone);
     } catch (e) { console.log('SKIP | v0.12 markers | ' + String(e && e.message).slice(0, 80)); }
 
     // 5.2 v0.13 — static source markers (ping, extensions pane, models,
@@ -247,7 +247,7 @@ app.whenReady().then(async () => {
         pingVoice: appjs.includes('پینگ') && appjs.includes('pingVoiceReply'),
         extPane: html.includes('data-pane="ext"') && !html.includes('data-pane="dns"'),
         modelInputs: html.includes('optGeminiModel') && html.includes('optOpenaiModel') && appjs.includes('settings.geminiModel'),
-        geminiFirst: /let r = await tryGemini\(\); if \(r\) return tag\(r, 'Gemini'\);/.test(appjs) && appjs.includes('gemini-flash-latest'),
+        geminiFirst: /\['gemini', tryGemini, 'Gemini'\]/.test(appjs) && appjs.includes('AI_LAST_KEY') && appjs.includes('gemini-flash-latest'), /* v0.21: provider chain still heads with Gemini (last-good may reorder) */
         tooltipGone: !css.includes('rail-item::after'),
         widgetDrag: appjs.includes('widgetDismissedFor') && appjs.includes('pointerdown'),
         micBusyGuard: appjs.includes("t('mic.busy')") && css.includes('orbShake'),
@@ -688,7 +688,7 @@ app.whenReady().then(async () => {
         aiFast: mainjs.includes('thinkingBudget: 0') && mainjs.includes('SEARCH_INTENT_RE') && mainjs.includes('if (search && wantsSearch)'),
         dcWait: mainjs.includes('function discordPsScript(action, mode, name, dx, dy, waitMs, clickRetries)') && mainjs.includes('$waited -lt ${waitMs}') && mainjs.includes('$tryN -le ${clickRetries}'),
         minimalHtml: html.includes('np-area') && html.includes('np-cover') && html.includes('pl-area') && !html.includes('np-card'),
-        minimalCss: css.includes('.np-cover {\n  position: relative; width: 168px; height: 168px;') && css.includes('.np-area .np-head b { font-size: 21px'),
+        minimalCss: css.includes('.np-cover {\n  position: relative; width: 200px; height: 200px;') && css.includes('.np-area .np-head b { font-size: 21px'),
       };
       ok('v0.18 listening dispatch reaches gemini/whisper engines', v18.dispatchFix);
       ok('v0.18 settings file restore re-applies theme/perf', v18.settingsRestore);
@@ -709,7 +709,7 @@ app.whenReady().then(async () => {
         pl: !!document.querySelector('.pl-area'),
       }))()`);
       ok('v0.18 log bridge exposed', rt.logBridge);
-      ok('v0.18 big now-playing cover (168px)', rt.cover === '168px', rt.cover);
+      ok('v0.21 big now-playing cover (200px)', rt.cover === '200px', rt.cover);
       ok('v0.18 minimal layout in DOM', rt.area && rt.pl);
       await probe(`ava.log.act('smoke: runtime log test').then(() => 'logged')`);
     } catch (e) { console.log('SKIP | v0.18 runtime | ' + String(e && e.message).slice(0, 80)); }
@@ -758,6 +758,68 @@ app.whenReady().then(async () => {
       ok('v0.20 DO whitelist + sleep confirm', v20.doSafe);
       ok('v0.20 discord assist call mode (ToS-safe option)', v20.callMode);
     } catch (e) { console.log('SKIP | v0.20 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.94 v0.21 — user-controlled updates (download/pause/resume/cancel),
+    // latency overhaul (timeouts/model-memory/fuses), discord PS diagnostics,
+    // professional cover + minimal player controls + flat playlist
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const html = read('renderer/index.html');
+      const css = read('renderer/css/styles.css');
+      const v21 = {
+        updManual: mainjs.includes('autoUpdater.autoDownload = false;'),
+        updDlIpc: mainjs.includes("ipcMain.handle('updater:download'") && mainjs.includes("ipcMain.handle('updater:cancel'"),
+        updToken: mainjs.includes('updToken.cancel()') && mainjs.includes('updPausedPct'),
+        updMbUi: appjs.includes("t('upd.downloadingMB'") && html.includes('btnUpdPause') && html.includes('btnUpdCancel') && html.includes('btnUpdDownload') && appjs.includes("btnUpdPause.hidden = false"),
+        updBridge: preload.includes("download: () => ipcRenderer.invoke('updater:download')") && preload.includes("cancel: (pause) => ipcRenderer.invoke('updater:cancel', pause)"),
+        manualCancel: mainjs.includes('cancelFlag.cancel') && mainjs.includes("state: 'canceled'"),
+        sttTimeouts: mainjs.includes('AbortSignal.timeout(15000)') && mainjs.includes('AbortSignal.timeout(12000)') && mainjs.includes('signal: AbortSignal.timeout(20000)'),
+        aiTimeos: mainjs.includes('AbortSignal.timeout(35000)') && mainjs.includes('AbortSignal.timeout(40000)') && mainjs.includes('AbortSignal.timeout(45000)'),
+        modelCache: mainjs.includes('gemSttWorkingModel') && mainjs.includes('gemWorkingModel'),
+        keyBreak: mainjs.includes('if ([401, 403, 429].includes(r.status)) break;'),
+        glmThink: mainjs.includes("body.thinking = { type: 'disabled' }"),
+        ttsParallel: mainjs.includes('await Promise.all(chunks.map(') && mainjs.includes('parts.filter(Boolean)'),
+        sttFuse: appjs.includes("STT_LAST_KEY = 'avaSttLast'") && appjs.includes('sttMarkFail(eng)') && appjs.includes('sttBenched'),
+        engGuard: appjs.includes('withEngTimeout') && appjs.includes("eng === 'google' ? 18000 : 22000"),
+        aiStick: appjs.includes("AI_LAST_KEY = 'avaAiLast'") && appjs.includes('chainAi'),
+        mediaSearchGuard: mainjs.includes('const mediaCmd ='),
+        dcDiag: mainjs.includes('discord ps stderr') && mainjs.includes('/^DBG:/i') && mainjs.includes('ERR:PS:') && mainjs.includes('DBG:TRY=') && mainjs.includes("'ERR:NOBTN'"),
+        musicFlat: !css.includes('.m-thumb') && !appjs.includes('m-thumb') && !appjs.includes('m-hovplay') && css.includes('background: transparent;\n  border: none;'),
+        musicCtl: html.includes('mBack10') && html.includes('mFwd10') && html.includes('id="mStop"') && html.includes('mVolDown') && html.includes('mVolUp') && html.includes('i-back10') && html.includes('i-fwd10') && html.includes('i-volup'),
+        musicWire: appjs.includes('seek10(-10)') && appjs.includes('seek10(10)') && appjs.includes('nudgeVol(-10)') && appjs.includes("t('music.stopped')"),
+        coverPro: css.includes('width: 200px; height: 200px;') && css.includes('.np-cover::before') && css.includes('.np-cover::after') && css.includes('.upd-actions'),
+      };
+      ok('v0.21 update download is user-triggered (no background auto-download)', v21.updManual && v21.updDlIpc);
+      ok('v0.21 pause/resume/cancel via CancellationToken (+ manual layer)', v21.updToken && v21.updBridge && v21.manualCancel);
+      ok('v0.21 updater UI: download/pause/cancel buttons + MB progress', v21.updMbUi);
+      ok('v0.21 STT engine timeouts (gemini 15s / whisper 12s / glm-asr 20s)', v21.sttTimeouts);
+      ok('v0.21 AI timeouts (35/40/45s) + GLM thinking disabled', v21.aiTimeos && v21.glmThink);
+      ok('v0.21 working-model memory (gemini chat+STT) + invalid-key break', v21.modelCache && v21.keyBreak);
+      ok('v0.21 parallel TTS chunks (first audio sooner)', v21.ttsParallel);
+      ok('v0.21 STT engine stickiness + circuit breaker + per-engine guard', v21.sttFuse && v21.engGuard);
+      ok('v0.21 AI provider stickiness + media-cmd search guard', v21.aiStick && v21.mediaSearchGuard);
+      ok('v0.21 discord PS diagnostics (stderr/DBG/ERR:PS/NOBTN)', v21.dcDiag);
+      ok('v0.21 flat playlist rows (no thumbnails/boxes)', v21.musicFlat);
+      ok('v0.21 player controls: stop / ±10s seek / volume± wired', v21.musicCtl && v21.musicWire);
+      ok('v0.21 professional cover (200px, highlight+ring) + upd actions css', v21.coverPro);
+    } catch (e) { console.log('SKIP | v0.21 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons
+    try {
+      const rt = await probe(`(() => ({
+        cover200: (() => { const c = document.querySelector('.np-cover'); return c ? getComputedStyle(c).width : 'none'; })(),
+        ctl: !!document.querySelector('#mStop') && !!document.querySelector('#mBack10') && !!document.querySelector('#mFwd10') && !!document.querySelector('#mVolUp') && !!document.querySelector('#mVolDown'),
+        flatRow: (() => { const r = document.querySelector('.m-row'); return r ? !r.querySelector('.m-thumb') : true; })(),
+        updBtns: !!document.querySelector('#btnUpdDownload') && !!document.querySelector('#btnUpdPause') && !!document.querySelector('#btnUpdCancel'),
+      }))()`);
+      ok('v0.21 pro cover renders at 200px', rt.cover200 === '200px', rt.cover200);
+      ok('v0.21 music controls in DOM (stop/±10s/vol±)', rt.ctl);
+      ok('v0.21 playlist rows render flat (no thumb in DOM)', rt.flatRow);
+      ok('v0.21 updater download/pause/cancel buttons in DOM', rt.updBtns);
+    } catch (e) { console.log('SKIP | v0.21 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 9. v0.16.2 — TDZ regression: cold boot with safeMode/noFx preset must survive.
     // User crash report v0.16.1: applyPerf() ran at boot before `let vizRaf` (app.js:4936)

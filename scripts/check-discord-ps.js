@@ -16,7 +16,7 @@ for (const [tag, act, mode, nm] of [
   ['fg-probe', 'probe', 'fg', ''],
   ['bg-deafen', 'deafen', 'bg', ''],
 ]) {
-  const s = fn(act, mode, nm, 46, 52, act.includes('call') ? 25000 : 6000, act.includes('call') ? 8 : 1);
+  const s = fn(act, mode, nm, 46, 52, act.includes('call') ? 25000 : 6000, act.includes('call') ? 12 : 1);
   fs.writeFileSync('/tmp/dc-' + tag + '.ps1', s, 'utf8');
   const bal = (s.match(/{/g) || []).length === (s.match(/}/g) || []).length;
   const paren = (s.match(/\(/g) || []).length === (s.match(/\)/g) || []).length;
@@ -25,7 +25,7 @@ for (const [tag, act, mode, nm] of [
   checks.push({ tag, len: s.length, bal, paren, noBlock, noLeftover });
   console.log(tag, 'len=' + s.length, 'braces=' + (bal ? 'OK' : 'BAD'), 'parens=' + (paren ? 'OK' : 'BAD'), 'noBlockComment=' + noBlock, 'interp=' + (noLeftover ? 'OK' : 'BAD'));
 }
-const s1 = fn('callswitch', 'bg', 'علی', 46, 52, 25000, 8);
+const s1 = fn('callswitch', 'bg', 'علی', 46, 52, 25000, 12);
 console.log('wait line :', s1.split('\n').find((l) => l.includes('$waited -lt')));
 console.log('retry line:', s1.split('\n').find((l) => l.includes('$tryN -le')));
 console.log('mode line :', s1.split('\n').find((l) => l.startsWith('$mode =')));
