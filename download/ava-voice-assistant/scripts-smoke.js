@@ -1128,6 +1128,41 @@ app.whenReady().then(async () => {
       ok('v0.29.1 AI: provider chain only accepts ok results ({ok:false} can no longer short-circuit to fake "Gemini ok")', v291.aiChain);
       ok('v0.29.1 Discord: «آن میوت» (alef) maps to unmute', v291.unmuteAlef);
     } catch (e) { console.log('SKIP | v0.29.1 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98955 v0.29.2 — THE AI-REFERRAL round: «ارجاع نمیده به ای آی».
+    // (1) A matched rule that cannot fulfill (weather city-not-found /
+    // network, calc parse fail) no longer dead-ends with an error string —
+    // the AI_FALLBACK sentinel routes the SAME utterance into
+    // aiHandleCommand (Gemini, or GLM when Gemini is blocked).
+    // (2) City extraction no longer sends «بجنورد را بهم» to geocoding —
+    // edge fillers (را/بهم/برام/نشونم/...) are stripped whole-token.
+    // (3) sys:weather checks gr.ok/fr.ok and no longer swallows filtered
+    // HTML into {} that LIED as «city not found»; 42 Iranian cities ship
+    // offline (بجنورد = 37.4747, 57.329 live-API verified).
+    try {
+      const m292 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a292 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const v292 = {
+        sentinel: a292.includes('const AI_FALLBACK = Object.freeze({ __aiFallback: true });'),
+        weatherRef: /const r = await bridge\.system\.weather\(city \|\| 'تهران'\);[\s\S]{0,600}return AI_FALLBACK;/.test(a292),
+        calcRef: /if \(!m\) \{[\s\S]{0,200}return AI_FALLBACK;/.test(a292),
+        dispatch: a292.includes("reply && typeof reply === 'object' && reply.__aiFallback")
+          && /__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd\); return; \}/.test(a292),
+        edgeCity: a292.includes('wxExtractCity') && a292.includes('نشونم') && a292.includes('نشانم'),
+        honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
+          && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,
+        irCities: m292.includes("'بجنورد': [37.4747, 57.329]") && (m292.match(/IR_CITIES/g) || []).length >= 2,
+        ver292: a292.includes("let appVersion = '0.29.2';"),
+      };
+      ok('v0.29.2 AI-referral: AI_FALLBACK sentinel defined', v292.sentinel);
+      ok('v0.29.2 AI-referral: weather failure returns the sentinel (no dead-end)', v292.weatherRef);
+      ok('v0.29.2 AI-referral: calc parse failure returns the sentinel', v292.calcRef);
+      ok('v0.29.2 AI-referral: runCommand routes sentinel → aiHandleCommand (same utterance)', v292.dispatch);
+      ok('v0.29.2 weather: edge-filler city extraction (بجنورد را بهم → بجنورد)', v292.edgeCity);
+      ok('v0.29.2 weather: gr.ok/fr.ok checked, netFail honest (no more fake city-not-found)', v292.honestGeo);
+      ok('v0.29.2 weather: 42 Iranian cities offline (بجنورد live-API coords)', v292.irCities);
+      ok('v0.29.2 version markers', v292.ver292);
+    } catch (e) { console.log('SKIP | v0.29.2 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),

@@ -163,9 +163,9 @@ ok('app.js gate accepts alef variant', appSrc.includes('(ا|آ)ن\\s?میوت'))
 /* ---- 7) versions ---- */
 console.log('\n[7] versions');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.29.1', pkg.version === '0.29.1', pkg.version);
-ok('index.html abVersion 0.29.1', htmlSrc.includes('v0.29.1'));
-ok('app.js appVersion 0.29.1', appSrc.includes("let appVersion = '0.29.1';"));
+ok('package.json >= 0.29.1 (relaxed after v0.29.2)', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
+ok('index.html abVersion 0.29.1+ (relaxed)', /v0\.(29|3\d)\.\d+/.test(htmlSrc));
+ok('app.js appVersion 0.29.1+ (relaxed)', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
 
 setTimeout(() => {
   console.log(`\nRESULT: ${pass}/${pass + fail}`);

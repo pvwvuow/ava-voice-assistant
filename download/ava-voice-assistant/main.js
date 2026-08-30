@@ -1567,22 +1567,57 @@ const WMO_EN = {
 };
 ipcMain.handle('sys:weather', async (_e, city) => {
   const c = String(city || 'تهران').trim().slice(0, 60) || 'تهران';
+  /* v0.29.2 — دیکشنری آفلاین شهرهای ایران (مختصات رسمی). اگر geocoding در
+     فیلترینگ از دسترس خارج شود یا جواب ندهد، آب‌وهوای شهرهای اصلی ایران
+     بدون هیچ سرور کمکی کار می‌کند. بجنورد (گزارش کاربر) در فهرست است. */
+  const IR_CITIES = {
+    'تهران': [35.6892, 51.389], 'مشهد': [36.2605, 59.6168], 'اصفهان': [32.6539, 51.666],
+    'تبریز': [38.08, 46.2919], 'شیراز': [29.5918, 52.5837], 'کرج': [35.8355, 50.9915],
+    'اهواز': [31.3183, 48.6706], 'قم': [34.6416, 50.8746], 'کرمانشاه': [34.3142, 47.065],
+    'ارومیه': [37.5527, 45.0761], 'رشت': [37.2808, 49.5832], 'زاهدان': [29.4963, 60.8629],
+    'همدان': [34.7992, 48.5146], 'کرمان': [30.2839, 57.0834], 'یزد': [31.8974, 54.3569],
+    'اردبیل': [38.2498, 48.2933], 'بندرعباس': [27.1865, 56.2808], 'اراک': [34.0917, 48.463],
+    'زنجان': [36.6736, 48.4787], 'سنندج': [35.3219, 46.9862], 'قزوین': [36.2688, 50.0041],
+    'بجنورد': [37.4747, 57.329], 'بیرجند': [32.8663, 59.2211], 'ایلام': [33.6374, 46.4227],
+    'یاسوج': [30.6684, 51.588], 'شهرکرد': [32.3256, 50.8644], 'ساری': [36.5633, 53.0601],
+    'گرگان': [36.8427, 54.4441], 'خرمآباد': [33.4878, 48.3558], 'سمنان': [35.5729, 53.3971],
+    'بوشهر': [28.9234, 50.8203], 'آبادان': [30.3392, 48.3043], 'دزفول': [32.3814, 48.4056],
+    'کیش': [26.5578, 54.0229], 'قشم': [26.9581, 56.2719], 'نیشابور': [36.2133, 58.7958],
+    'سبزوار': [36.2127, 57.6819], 'ملایر': [34.2993, 48.8184], 'مراغه': [37.3895, 46.2382],
+    'مرند': [38.4329, 45.7749], 'لنگرود': [37.1961, 50.1536], 'چالوس': [36.6515, 51.4273],
+  };
+  const norm = (s) => String(s || '').replace(/[\s\u200C]+/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک');
+  const local = IR_CITIES[norm(c)];
+  const wFail = (msg, netFail) => (netFail ? { ok: false, error: msg, netFail: true } : { ok: false, error: msg });
   try {
-    const gr = await cloudFetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(c)}&count=1&language=fa&format=json`,
-      { signal: AbortSignal.timeout(10000) }
-    );
-    const gj = await gr.json().catch(() => ({}));
-    const g = gj && gj.results && gj.results[0];
-    if (!g) return { ok: false, error: `شهری به نام «${c}» پیدا نشد — نام شهر را واضح‌تر بگو` };
+    let g = local ? { latitude: local[0], longitude: local[1], name: c } : null;
+    if (!g) {
+      const gr = await cloudFetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(c)}&count=1&language=fa&format=json`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      /* v0.29.2 — ریشهٔ «شهری به نام بجنورد پیدا نشد» در فیلترینگ: gr.ok هرگز
+         بررسی نمی‌شد و json().catch(()=>({})) پاسخ HTML فیلتر را به {}
+         تبدیل می‌کرد → شکست شبکه دروغ «شهر پیدا نشد» می‌گفت. حالا صادقانه
+         netFail برمی‌گردد و رندرر درخواست را به هوش مصنوعی ارجاع می‌دهد. */
+      if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);
+      const gj = await gr.json().catch(() => null);
+      if (!gj) return wFail('پاسخ سرویس شهرها خوانده نشد — شبکه فیلترشده است', true);
+      g = gj && gj.results && gj.results[0];
+    }
+    if (!g || g.latitude == null || g.longitude == null) {
+      /* شهر واقعاً در سرویس نبود — بن‌بست نیست؛ رندرر به هوش مصنوعی ارجاع می‌دهد */
+      return wFail(`شهری به نام «${c}» در سرویس آب‌وهوا پیدا نشد`);
+    }
     const fr = await cloudFetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}` +
       `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`,
       { signal: AbortSignal.timeout(10000) }
     );
-    const fj = await fr.json().catch(() => ({}));
+    if (!fr.ok) return wFail(`سرویس پیش‌بینی پاسخ نداد (HTTP ${fr.status})`, true);
+    const fj = await fr.json().catch(() => null);
     const cur = fj && fj.current;
-    if (!cur) return { ok: false, error: 'داده آب‌وهوا نرسید — چند لحظه بعد دوباره امتحان کن' };
+    if (!cur) return wFail('داده آب‌وهوا نرسید — پاسخ سرویس ناخوانا بود', true);
     return {
       ok: true,
       name: g.name || c,
@@ -1594,7 +1629,7 @@ ipcMain.handle('sys:weather', async (_e, city) => {
       descEn: WMO_EN[cur.weather_code] || 'Unknown',
     };
   } catch (e) {
-    return { ok: false, error: netErr(e) };
+    return { ok: false, error: netErr(e), netFail: true };
   }
 });
 

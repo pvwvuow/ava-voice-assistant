@@ -1882,21 +1882,45 @@
     /(لطفا|لطفاً|آب[\s\u200C]*و[\s\u200C]*هوا(ی)?|اب[\s\u200C]*و[\s\u200C]*هوا(ی)?|هوا(ی)?|درجه(ی)?|دما(ی)?|چطوره?|چند\s*درجه|چنده|چیه|چیکار|امروز|الان|فردا|بگو|بده|شهر|است|می\s*خوام|در|تو|رو|یک|یه)/gi;
   const WX_STRIP_EN =
     /\b(please|the|a|an|weather|temperature|forecast|what(?:'s| is)|how(?:'s| is)|it|today|now|tomorrow|tell|me|give|city|in|of|like|degrees?)\b/gi;
+  /* v0.29.2 — حروف اضافهٔ سر و ته جملهٔ شهر («بجنورد را بهم بگو» → تا دیروز
+     «بجنورد را بهم» به سرویس می‌رفت و «شهری به نام بجنورد را بهم پیدا نشد»
+     برمی‌گشت — ریشهٔ گزارش کاربر). فقط کل‌واژه‌های لبهٔ رشته بریده می‌شوند تا
+     اسم شهرها (مثل «میانه») آسیب نبیند. */
+  const WX_EDGE =
+    /(^|\s)(را|رو|بهم|برام|برایم|نشون|نشونم|نشان|نشانم|تو|در|از|برای|میخوام|می‌خوام)(?=\s|$)/gi;
+
+  /* v0.29.2 — نشانهٔ ارجاع به هوش مصنوعی: قانونی که درخواست را «می‌فهمد» ولی
+     نمی‌تواند انجامش دهد (شهر پیدا نشد / شبکه / پارس ریاضی) دیگر بن‌بست نیست؛
+     runCommand این نشانه را می‌بیند و درخواست را به تحلیل هوش مصنوعی می‌دهد */
+  const AI_FALLBACK = Object.freeze({ __aiFallback: true });
+
+  function wxExtractCity(c) {
+    let city = String(c || '')
+      .replace(WX_STRIP, ' ')
+      .replace(/[0-9۰-۹?؟!.,،:;]+/g, ' ');
+    for (let i = 0; i < 4; i++) {
+      const before = city;
+      city = city.replace(WX_EDGE, ' ').replace(/[\s\u200C]+/g, ' ').trim();
+      if (city === before) break;
+    }
+    return city.trim();
+  }
 
   async function weatherReply(c) {
     if (!bridge || !bridge.system || !bridge.system.weather) {
       return t('weather.onlyApp');
     }
-    let city = String(c || '')
-      .replace(WX_STRIP, ' ')
-      .replace(/[0-9۰-۹?؟!.,،:;]+/g, ' ')
-      .replace(/[\s\u200C]+/g, ' ')
-      .trim();
+    const city = wxExtractCity(c);
     const r = await bridge.system.weather(city || 'تهران');
     if (r && r.ok) {
       return t('weather.reply', { city: r.name, desc: LANG === 'en' ? (r.descEn || r.desc) : r.desc, temp: faNum(r.temp), feels: faNum(r.feels), hum: faNum(r.hum), wind: faNum(r.wind) });
     }
-    return (r && r.error) || t('weather.fail');
+    /* v0.29.2 — دیگر هیچ خطای آب‌وهوایی بن‌بست نیست: درخواست به هوش مصنوعی
+       ارجاع می‌شود (GLM/Gemini). گزارش کاربر: «ارجاع نمیده به ای آی» */
+    actLog('weather fail → AI fallback (city=' + (city || 'تهران')
+      + ', netFail=' + String(!!(r && r.netFail))
+      + '): ' + String((r && r.error) || '').slice(0, 80));
+    return AI_FALLBACK;
   }
 
   /* --- ماشین‌حساب صوتی: تبدیل جمله فارسی به عبارت ریاضی امن --- */
@@ -1926,7 +1950,11 @@
   }
   function calcReply(c) {
     const m = parseMath(c);
-    if (!m) return t('calc.fail');
+    if (!m) {
+      /* v0.29.2 — جملهٔ حسابی که پارس نشد بن‌بست نیست → هوش مصنوعی */
+      actLog('calc parse fail → AI fallback: ' + String(c || '').slice(0, 60));
+      return AI_FALLBACK;
+    }
     const v = Math.round(m.val * 1000) / 1000;
     return t('calc.reply', { x: faNum(m.expr.replace(/\*/g, '×').replace(/\//g, '÷')), y: faNum(String(v)) });
   }
@@ -2798,7 +2826,16 @@
         return;
       }
     }
-    const reply = rule ? await resolveReply(rule, cmd) : t('default.reply');
+    let reply = rule ? await resolveReply(rule, cmd) : t('default.reply');
+    /* v0.29.2 — قانونی که درخواست را فهمید ولی نتوانست انجام دهد (شهر پیدا
+       نشد / شبکه / پارس ریاضی) → دیگر بن‌بست نیست؛ همان درخواست به تحلیل
+       هوش مصنوعی می‌رود (گزارش کاربر: «ارجاع نمیده به ای آی») */
+    if (reply && typeof reply === 'object' && reply.__aiFallback) {
+      actLog('rule "' + ((rule && rule.t) || '?') + '" could not fulfill → AI fallback');
+      if (aiConnected()) { await aiHandleCommand(cmd); return; }
+      reply = t('weather.fail'); /* AI هم در دسترس نیست → پیام صادقانهٔ از پیش تعریف‌شده */
+      rcTag.textContent = t('tag.reply');
+    }
     if (!rule) rcTag.textContent = t('tag.reply');
 
     setTimeout(() => {
@@ -4707,7 +4744,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.29.1';
+  let appVersion = '0.29.2';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
