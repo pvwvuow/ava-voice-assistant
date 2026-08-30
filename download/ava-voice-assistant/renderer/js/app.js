@@ -209,7 +209,7 @@
     'set.stt.engine': ['موتور تشخیص گفتار', 'Speech recognition engine'],
     'set.stt.engineHint': ['«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper (۲-۳ ثانیه)، گوگل رایگان، GLM و آخر Gemini (دقیق ولی گاهی کند)', '"Auto": live web engine first; then fastest cloud engines — Whisper (2-3s), free Google, GLM, Gemini last (accurate but sometimes slow)'],
     'set.stt.auto': ['خودکار (پیشنهادی)', 'Auto (recommended)'], 'set.stt.web': ['فقط موتور وب گوگل', 'Google web engine only'],
-    'set.stt.google': ['فقط گوگل رایگان HTTP (نیاز به فیلترشکن)', 'Free Google HTTP only (needs VPN in some regions)'],
+    'set.stt.google': ['فقط گوگل رایگان HTTP (دی‌ان‌اس داخلی شکن — بدون نیاز به تغییر ویندوز)', 'Free Google HTTP only (built-in Shekan DNS bypass — no Windows change)'],
     'set.stt.glm': ['فقط GLM-ASR ابری (نیاز به کلید)', 'Cloud GLM-ASR only (needs key)'],
     'set.stt.lang': ['زبان گفتار', 'Speech language'],
     'set.stt.langHint': ['زبانی که با آن فرمان می‌گویی — تشخیص با همین زبان انجام می‌شود', 'The language you speak commands in — recognition uses it'],
@@ -309,7 +309,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۳ — سیستم جدید سرعت: تشخیص گفتار حالا «مسابقهٔ موازی» است — همهٔ موتورهای آماده (Whisper، گوگل، GLM، Gemini) هم‌زمان صدا زده می‌شوند و زودترین جواب برنده است؛ دیگر مجموع سقف‌های زمانیِ زنجیرهٔ ترتیبی روی شبکهٔ فیلترشده نمی‌آید (بدترین حالت از ~۶۰ ثانیه به ۲۰ ثانیه و معمولاً ۲-۵ ثانیه رسید). کاور موزیک هم از نو طراحی شد: یک کارت هنری تنها و تمیز — وینیل و هالهٔ پشت آن کامل حذف شد و کاور آهنگی که پخش می‌کنی فوراً می‌آید.', 'v0.23 — a genuinely new speed system: speech recognition is now a parallel race — every ready engine (Whisper, Google, GLM, Gemini) fires at once and the first answer wins; no more summed sequential timeouts on filtered networks (worst case drops from ~60s to 20s, usually 2-5s). The music cover was redesigned from scratch: one clean art panel — the vinyl and halo behind it are completely gone, and the playing track cover now loads instantly.'],
+    'about.desc': ['نسخه ۰.۲۴ — «شنیدن مثل کروم»: ریشهٔ تفاوت شنیدن برنامه با کروم پیدا و رفع شد — برنامه از DNS سیستم استفاده می‌کرد که روی شبکهٔ ایران گوگل را فیلتر می‌کند، در حالی که کروم با DNS امنِ خودش راحت می‌شنید. حالا آوا در شروع، میزبان‌های مهم (گوگل، جمنای، Whisper، GLM) را از DNS شکن/الکترو می‌پرسد و فقط داخل خود برنامه پین می‌کند — بدون تغییر تنظیمات ویندوز و بدون UAC؛ موتور وب کرومیوم (همان شنوندهٔ زندهٔ کروم که در پیش‌نمایش دیدی) داخل برنامه زنده می‌شود و همهٔ موتورهای ابری هم از فیلتر رد می‌شوند. موتور وب بعد از خطا ۹۰ ثانیه بعد خودش را دوباره امتحان می‌کند و وضعیت واقعی اتصال در activity.log و توست هشدار دیده می‌شود.', 'v0.24 — "hear like Chrome": we found and fixed why the app hears differently from Chrome — it used the system DNS, which is filtered for Google on Iranian networks, while Chrome has its own secure DNS. AVA now resolves the important hosts (Google, Gemini, Whisper, GLM) via Shekan/Electro DNS at boot and pins them inside the app only — no Windows settings change, no UAC; the Chromium web engine (the same live listener you saw in the preview) now works inside the app, and every cloud engine gets through the filter. The web engine re-probes 90s after a failure, and the real network state lands in activity.log plus a warning toast.'],
     'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
@@ -432,7 +432,7 @@
     'set.stt.engine': ['موتور تشخیص گفتار', 'Speech recognition engine'],
     'set.stt.engineHint': ['«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper (۲-۳ ثانیه)، گوگل رایگان، GLM و آخر Gemini (دقیق ولی گاهی کند)', '"Auto": live web engine first; then fastest cloud engines — Whisper (2-3s), free Google, GLM, Gemini last (accurate but sometimes slow)'],
     'set.stt.auto': ['خودکار (پیشنهادی)', 'Auto (recommended)'], 'set.stt.web': ['فقط موتور وب گوگل', 'Google web engine only'],
-    'set.stt.google': ['فقط گوگل رایگان HTTP (نیاز به فیلترشکن)', 'Free Google HTTP only (needs VPN in some regions)'],
+    'set.stt.google': ['فقط گوگل رایگان HTTP (دی‌ان‌اس داخلی شکن — بدون نیاز به تغییر ویندوز)', 'Free Google HTTP only (built-in Shekan DNS bypass — no Windows change)'],
     'set.stt.glm': ['فقط GLM-ASR ابری (نیاز به کلید)', 'Cloud GLM-ASR only (needs key)'],
     'set.stt.lang': ['زبان گفتار', 'Speech language'],
     'set.stt.langHint': ['زبانی که با آن فرمان می‌گویی — تشخیص با همین زبان انجام می‌شود', 'The language you speak commands in — recognition uses it'],
@@ -532,7 +532,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۸ هات‌فیکس — دستیار صوتی دوباره کامل کار می‌کند (فیکس مسیر موتورهای جمنای/Whisper)، تم و تنظیماتت بعد از هر ریستارت یا آپدیت سر جایشان می‌مانند، آپدیت‌ها فقط بخش‌های تغییرکرده را دانلود می‌کنند (تأیید SHA512)، پاسخ‌های هوش مصنوعی خیلی سریع‌تر شدند (بدون «فکر کردن» اضافه + سرچ فقط وقتی لازم است)، تماس دیسکورد صبورتر شد (صبر برای استارت دیسکورد + چندبار تلاش برای دکمهٔ تماس)، پلیر مینیمال شد: بدون کارت و اکولایزر، با آهنگ در حال پخشِ بزرگ — و یک لاگ عملکرد کامل که با بگو «آوا گزارش بفرست» به گیت‌هاب می‌آید.', 'v0.18 hotfix — voice assistant works again with Gemini/Whisper engines (dispatch fix), your theme and settings survive restarts and updates, delta updates are back (only changed chunks downloaded, SHA512-verified), AI replies are much faster (no extra thinking + search only when needed), Discord calls are patient (waits for Discord start + retries the call button), the player is minimal: no boxes or equalizer, a big now-playing section — and a full activity log you can send to GitHub by saying "AVA, send report".'],
+    'about.desc': ['نسخه ۰.۲۴ — «شنیدن مثل کروم»: ریشهٔ تفاوت شنیدن برنامه با کروم پیدا و رفع شد — برنامه از DNS سیستم استفاده می‌کرد که روی شبکهٔ ایران گوگل را فیلتر می‌کند، در حالی که کروم با DNS امنِ خودش راحت می‌شنید. حالا آوا در شروع، میزبان‌های مهم (گوگل، جمنای، Whisper، GLM) را از DNS شکن/الکترو می‌پرسد و فقط داخل خود برنامه پین می‌کند — بدون تغییر تنظیمات ویندوز و بدون UAC؛ موتور وب کرومیوم (همان شنوندهٔ زندهٔ کروم که در پیش‌نمایش دیدی) داخل برنامه زنده می‌شود و همهٔ موتورهای ابری هم از فیلتر رد می‌شوند. موتور وب بعد از خطا ۹۰ ثانیه بعد خودش را دوباره امتحان می‌کند و وضعیت واقعی اتصال در activity.log و توست هشدار دیده می‌شود.', 'v0.24 — "hear like Chrome": we found and fixed why the app hears differently from Chrome — it used the system DNS, which is filtered for Google on Iranian networks, while Chrome has its own secure DNS. AVA now resolves the important hosts (Google, Gemini, Whisper, GLM) via Shekan/Electro DNS at boot and pins them inside the app only — no Windows settings change, no UAC; the Chromium web engine (the same live listener you saw in the preview) now works inside the app, and every cloud engine gets through the filter. The web engine re-probes 90s after a failure, and the real network state lands in activity.log plus a warning toast.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -824,6 +824,9 @@
     'upd.downloadingToast': ['نسخه {x} در حال دانلود است…', 'Downloading version {x}…'],
     'dict.trigger': ['حالت تایپ صوتی روشن شد — هر چی بگویی در کادر تایپ نوشته می‌شود', 'Voice typing is on — everything you say goes into the typing box'],
     'dns.setVoice': ['در حال تنظیم DNS «{x}» روی ویندوز…', 'Setting DNS "{x}" on Windows…'],
+    /* ---------- v0.24 — شنیدن مثل کروم (دورزدن DNS داخلی) ---------- */
+    'net.googleFail': ['Google از داخل برنامه در دسترس نیست — شنوندهٔ سریع وب محدود می‌شود؛ اینترنت/فیلترشکن را چک کن (جزئیات در activity.log)', 'Google is unreachable from the app — fast web listening will be limited; check your internet/VPN (details in activity.log)'],
+    'set.net.status': ['وضعیت اتصال (سلف‌چک بعد از بوت)', 'Network status (self-check after boot)'],
   };
   const t = (key, vars) => {
     const e = I18N[key];
@@ -1147,6 +1150,24 @@
   }
   /* لاگ عملکرد (v0.18) — فقط داخل نرم‌افزار؛ هیچ‌وقت نمی‌شکند */
   const actLog = (msg) => { try { if (bridge && bridge.log && bridge.log.act) bridge.log.act(String(msg)); } catch (_) { /* noop */ } };
+  /* v0.24 — وضعیت شبکه از پروسهٔ اصلی (سلف‌چک TCP بعد از بوت):
+     اگر گوگل در دسترس نباشد، موتور وب (شنوندهٔ سریع مثل کروم) کار نمی‌کند —
+     یک بار در هر اجرا به کاربر با توست شفاف خبر بده */
+  try {
+    if (bridge && bridge.net && bridge.net.onStatus) {
+      bridge.net.onStatus((s) => {
+        try {
+          const items = (s && s.items) || [];
+          const g = items.find((i) => i.host === 'www.google.com');
+          actLog('net status received: ' + (items.map((i) => i.host + (i.ok ? ' ok' : ' FAIL')).join(', ') || 'empty'));
+          if (g && !g.ok && settings.extDns !== false && !sessionStorage.getItem('ava.netToast')) {
+            sessionStorage.setItem('ava.netToast', '1');
+            setTimeout(() => toast(t('net.googleFail'), '#i-info'), 800);
+          }
+        } catch (_) { /* noop */ }
+      });
+    }
+  } catch (_) { /* noop */ }
   (async () => {
     /* بارگذاری تنظیمات ذخیره‌شده در فایل — بعد از تعریف کامل صفحه */
     if (!bridge || !bridge.settings || !bridge.settings.load) return;
@@ -2574,7 +2595,12 @@
      تشخیص گفتار واقعی — زنجیره: موتور وب → گوگل رایگان (HTTP) → GLM-ASR
      بدون هیچ کلیدی؛ دمو فقط با تنظیم صریح کاربر.
      ============================================================ */
-  let rec = null, recActive = false, gotFinal = false, srBroken = false, demoNoticeShown = false;
+  let rec = null, recActive = false, gotFinal = false, srBroken = 0, demoNoticeShown = false;
+  /* v0.24 — srBroken اکنون «مهر زمانی بنچ» است نه پرچم همیشگی:
+     خطای اولیهٔ شبکه (مثلاً قبل از فعال شدن DNS) موتور وب را برای همیشه
+     نمی‌کشد — بعد از ۹۰ ثانیه دوباره شانس می‌گیرد (مثل کروم) */
+  const SR_BENCH_MS = 90000;
+  const srUsable = () => !!SRC && (!srBroken || Date.now() > srBroken);
   let webGotAny = false, webWatchdog = null, webFailStreak = 0;
   let recEpoch = 0; /* نسل‌شمار موتور وب — ریس onend/onresult جلسه قدیمی را می‌کشد (فیکس v0.13) */
   let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false, glmSilentMs = 0;
@@ -2590,7 +2616,7 @@
 
   function refreshEngineUI() {
     const eng = settings.sttEngine || 'auto';
-    const webUsable = SRC && !srBroken;
+    const webUsable = srUsable();
     if (webUsable && eng !== 'google' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.web')}`;
     else if (geminiSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.gemini')}`;
     else if (whisperSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'gemini') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.whisper')}`;
@@ -2656,10 +2682,10 @@
   }
   function resolveEngine() {
     const eng = settings.sttEngine || 'auto';
-    if (eng === 'web') return (SRC && !srBroken) ? 'web' : null;
+    if (eng === 'web') return srUsable() ? 'web' : null;
     if (eng === 'gemini' || eng === 'whisper' || eng === 'glm' || eng === 'google') return buildCloudChain()[0] || null;
     /* خودکار: اول وب (فوری و زنده)، بعد موتورهای ابری AI */
-    if (SRC && !srBroken) return 'web';
+    if (srUsable()) return 'web';
     return buildCloudChain()[0] || null;
   }
 
@@ -2672,7 +2698,12 @@
      با موتور بعدی گوش می‌دهیم (در همان وضعیت گوش دادن) */
   function fallbackFromWeb() {
     webFailStreak += 1;
-    if (webFailStreak >= 2) srBroken = true; /* این اجرا: دیگر وب را امتحان نکن */
+    if (webFailStreak >= 2) {
+      /* v0.24 — بنچ زمانی ۹۰ ثانیه‌ای به‌جای مرگ همیشگی (سر جایش ۲ تلاش پیاپی) */
+      srBroken = Date.now() + SR_BENCH_MS;
+      webFailStreak = 0;
+      actLog('stt web benched for 90s (2 fails) — will re-probe automatically');
+    }
     refreshEngineUI();
     if (state !== 'listening') return;
     const nxt = nextEngineAfterWeb();
@@ -2701,7 +2732,7 @@
     let webEarlyFinal = '';
     const QUICK_CMD_RE = /^(باز\s?کن|اجرا\s?کن|روشن\s?کن|خاموش\s?کن|ریستارت|کامپیوتر\s?(رو\s?)?(بخوابون|خاموش)|پخش|پاز|آهنگ\s?(بعدی|قبلی)|موزیک|مدیای|بلند\s?تر|کم\s?تر|میوت|بی\s?صدا|تنظیم\s?دی\s?ان\s?اس|دی\s?ان\s?اس|زنگ\s?بزن|تماس\s?بگیر|قطع\s?کن|یادم\s?بنداز|ساعت\s?چند|چند\s?ساعت|تاریخ|باتری|اسکرین\s?شات|قفل\s?کن|مانیتور\s?رو|پینگ)/i;
     const cutListening = (why) => {
-      if (myEpoch !== recEpoch || gotFinal || srBroken || state !== 'listening' || !webEarlyFinal) return;
+      if (myEpoch !== recEpoch || gotFinal || !srUsable() || state !== 'listening' || !webEarlyFinal) return;
       gotFinal = true;
       clearTimeout(webWatchdog);
       actLog(`stt web early-final(${why}) ${Date.now() - ut0}ms: ${webEarlyFinal.slice(0, 50)}`);
@@ -2773,11 +2804,13 @@
         clearTimeout(webWatchdog);
         clearTimeout(webStableTimer);
         recActive = false;
+        /* v0.24 — هر خطای موتور وب در لاگ عملکرد بنویسد تا عیب‌یابی کاربر ممکن باشد */
+        actLog('stt web error: ' + e.error);
         /* فالبک خودکار: گوگل رایگان (HTTP) → GLM ابری */
         if (state === 'listening' && (settings.sttEngine === 'auto')) {
           fallbackFromWeb();
         } else if (['network', 'service-not-allowed'].includes(e.error)) {
-          srBroken = true;
+          srBroken = Date.now() + SR_BENCH_MS;
           refreshEngineUI();
         }
       }
@@ -2787,7 +2820,7 @@
       recActive = false;
       clearTimeout(webWatchdog);
       clearTimeout(webStableTimer);
-      if (gotFinal || srBroken) return;
+      if (gotFinal || !srUsable()) return;
       /* v0.19 — if استاپ زودهنگام زدیم و گوگل دیگر final نفرستاد، همین متن میانی را اجرا کن */
       if (webEarlyFinal && webGotAny && state === 'listening') { cutListening('onend'); return; }
       if (state === 'listening') {
@@ -3850,8 +3883,8 @@
         rec.start();
         return;
       } catch (_) {
-        /* استارت موتور وب شکست خورد → زنجیره ادامه پیدا کند */
-        srBroken = true;
+        /* استارت موتور وب شکست خورد → زنجیره ادامه پیدا کند (بنچ ۹۰ ثانیه‌ای) */
+        srBroken = Date.now() + SR_BENCH_MS;
         refreshEngineUI();
         if (buildCloudChain()[0]) { startCloudListen(); return; }
         noEngine(t('stt.noEngineApp'));
@@ -4284,7 +4317,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.23.0';
+  let appVersion = '0.24.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

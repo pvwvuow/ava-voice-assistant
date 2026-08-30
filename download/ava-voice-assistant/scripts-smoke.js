@@ -868,6 +868,34 @@ app.whenReady().then(async () => {
       ok('v0.23 current-track ID3 priority enrichment (instant cover on play)', v23.prioEnrich);
     } catch (e) { console.log('SKIP | v0.23 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.97 v0.24 — hear-like-Chrome: in-app Shekan/Electro DNS bypass + web engine resilience
+    try {
+      const read24 = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const libjs = read24('lib/dns-bypass.js');
+      const mainjs24 = read24('main.js');
+      const preload24 = read24('preload.js');
+      const appjs24 = read24('renderer/js/app.js');
+      const v24 = {
+        libExports: libjs.includes('resolveHosts') && libjs.includes('hostResolverRules') && libjs.includes("require('dgram')") && libjs.includes('178.22.122.100') && libjs.includes('78.157.42.100'),
+        mainSwitch: mainjs24.includes("appendSwitch('host-resolver-rules'") && mainjs24.includes('ELECTRON_RUN_AS_NODE') && mainjs24.includes('dns-map.json') && mainjs24.includes('dns-probe.js'),
+        hosts: libjs.includes("'www.google.com'") && libjs.includes("'api.groq.com'") && libjs.includes("'translate.google.com'") && libjs.includes("'generativelanguage.googleapis.com'") && libjs.includes("'api.z.ai'"),
+        lookupPatch: mainjs24.includes('__avaPatched') && mainjs24.includes('nodeNet.connect'),
+        selfcheck: mainjs24.includes('net selfcheck:') && mainjs24.includes("send('ava:net-status'") && mainjs24.includes('netSelfCheck'),
+        webBench: appjs24.includes('SR_BENCH_MS = 90000') && appjs24.includes('const srUsable = () => !!SRC') && !appjs24.includes('srBroken = true'),
+        webErrLog: appjs24.includes("actLog('stt web error: ' + e.error)"),
+        netToast: appjs24.includes("'net.googleFail'") && appjs24.includes('ava.netToast') && appjs24.includes('bridge.net.onStatus'),
+        preloadBridge: preload24.includes("on('ava:net-status'"),
+        pkgLib: JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).build.files.some((f) => String(f).startsWith('lib/')),
+      };
+      ok('v0.24 dns-bypass module: UDP resolver + Shekan/Electro servers + chromium rules', v24.libExports);
+      ok('v0.24 main: host-resolver-rules switch before ready (sync probe, asar-safe, cached)', v24.mainSwitch);
+      ok('v0.24 pinned hosts cover speech/TTS/gemini/groq/z.ai endpoints', v24.hosts);
+      ok('v0.24 node dns.lookup patch (SNI-safe) + TCP self-check wired', v24.lookupPatch && v24.selfcheck);
+      ok('v0.24 web engine 90s re-probe bench instead of permanent death', v24.webBench);
+      ok('v0.24 every web engine error lands in activity.log + unreachable-Google toast', v24.webErrLog && v24.netToast);
+      ok('v0.24 preload net-status bridge + lib packaged in build.files', v24.preloadBridge && v24.pkgLib);
+    } catch (e) { console.log('SKIP | v0.24 markers | ' + String(e && e.message).slice(0, 80)); }
+
     // 8.94 v0.23 — runtime: race marker in JS scope + cover single panel
     try {
       const rt23 = await probe(`(() => ({
@@ -878,6 +906,16 @@ app.whenReady().then(async () => {
       ok('v0.23 eq chip inside cover in DOM (single panel, no vinyl)', rt23.eqChip && rt23.noVinyl);
       ok('v0.23 cover radius 26px round-4 design', rt23.coverRad === '26px', rt23.coverRad);
     } catch (e) { console.log('SKIP | v0.23 runtime | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.96 v0.24 — runtime: net-status bridge alive in renderer (hear-like-Chrome plumbing)
+    try {
+      const rt24 = await probe(`(() => ({
+        netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
+        aboutV24: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.24/.test(el.textContent) : false; })(),
+      }))()`);
+      ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
+      ok('v0.24 about page shows v0.24.0', rt24.aboutV24);
+    } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons
     try {

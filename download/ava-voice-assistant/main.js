@@ -5,7 +5,7 @@
  * اصلی با انیمیشن، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
 const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard, dialog } = require('electron');
-const { exec, spawn } = require('child_process');
+const { exec, spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -118,6 +118,171 @@ try {
   app.commandLine.appendSwitch('google-default-client-id', '446115136242-2p92k6onon4tnnd434e2f8sdcp8o9fr8.apps.googleusercontent.com');
   app.commandLine.appendSwitch('google-default-client-secret', 'uFBboTQBEsseYMwbGjXAcRYF');
 } catch (_) { /* noop */ }
+
+/* ---------- v0.24 — دور زدن DNS فیلترشدهٔ ایران (شکن/الکترو) بدون UAC ----------
+   ریشهٔ «نشنیدن صدا در برنامهٔ نصب‌شده» (گزارش کاربر: در کروم/پیش‌نمایش عالی
+   می‌شنود ولی در برنامه هنوز مشکل داریم):
+   • کروم به‌خاطر DNS امنِ خودش گوگل را راحت می‌بیند؛ برنامه از DNS سیستم
+     استفاده می‌کند که روی شبکهٔ ایران میزبان‌های گوگل را فیلتر می‌کند.
+   • نتیجه: موتور وب (همان شنوندهٔ کروم داخل برنامه) با خطای network می‌میرد
+     و موتورهای ابری هم «اتصال به سرور برقرار نشد» می‌دهند.
+   راه‌حل: قبل از باز شدن پنجره، آی‌پی واقعی میزبان‌های مهم از DNS شکن/الکترو
+   پرسیده و فقط «داخل برنامه» پین می‌شود — بدون تغییر DNS ویندوز، بدون UAC:
+   ۱) host-resolver-rules → موتور وب کرومیوم (webkitSpeechRecognition) مثل
+      خود کروم زنده می‌شود؛
+   ۲) پچ dns.lookup نود → همهٔ fetchهای پروسهٔ اصلی (گوگل/جمنای/Whisper/GLM)
+      از همان آی‌پی‌ها می‌روند.
+   باید قطعاً «قبل از ready» ثبت شود → پرس‌وجو با spawnSync سنکرون است؛
+   نتیجه در dns-map.json کش می‌شود تا بوت‌های بعدی آنی باشند. */
+const dnsBypass = require('./lib/dns-bypass');
+const DNS_HOSTS = dnsBypass.DEFAULT_HOSTS;
+const DNS_BOOT = { off: false, applied: false, cached: false, count: 0, rules: '' };
+let nodeDnsMap = new Map();
+
+function applyNodeDnsMap(map) {
+  nodeDnsMap = new Map(Object.entries(map || {}));
+  DNS_BOOT.count = nodeDnsMap.size;
+  DNS_BOOT.rules = dnsBypass.hostResolverRules(map);
+}
+
+/* پچ dns.lookup نود: میزبان‌های پین‌شده بدون DNS سیستم resolve می‌شوند.
+   نام میزبان دست‌نخورده می‌ماند → SNI/اعتبارسنجی گواهی درست انجام می‌شود. */
+(function patchNodeDns() {
+  try {
+    const dnsMod = require('dns');
+    if (dnsMod.__avaPatched) return;
+    const orig = dnsMod.lookup;
+    dnsMod.lookup = function (hostname, options, callback) {
+      const ip = nodeDnsMap.get(String(hostname));
+      if (ip) {
+        const cb = typeof options === 'function' ? options : callback;
+        if (typeof cb === 'function') { setTimeout(() => cb(null, ip, 4), 0); return; }
+      }
+      return orig.apply(this, typeof options === 'function' ? [hostname, options] : [hostname, options, callback]);
+    };
+    dnsMod.__avaPatched = true;
+  } catch (_) { /* noop */ }
+})();
+
+(function bootDnsBypass() {
+  try {
+    const ud = app.getPath('userData');
+    let cfg = {};
+    try { cfg = JSON.parse(fs.readFileSync(path.join(ud, 'ava-settings.json'), 'utf8')) || {}; } catch (_) { /* فایل نیست → پیش‌فرض روشن */ }
+    if (cfg.extDns === false) { DNS_BOOT.off = true; return; } /* کاربر خودش خاموش کرده */
+    const cachePath = path.join(ud, 'dns-map.json');
+    const readCache = () => {
+      try {
+        const c = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+        if (c && c.map && Object.keys(c.map).length) return c;
+      } catch (_) { /* noop */ }
+      return null;
+    };
+    /* کش تازهٔ ۱۰ دقیقه‌ای → بوت آنی بدون درخواست شبکه */
+    const fresh = readCache();
+    if (fresh && Date.now() - (fresh.t || 0) < 600000) {
+      applyNodeDnsMap(fresh.map);
+      DNS_BOOT.applied = true; DNS_BOOT.cached = true;
+      try { app.commandLine.appendSwitch('host-resolver-rules', DNS_BOOT.rules); } catch (_) { /* noop */ }
+      return;
+    }
+    /* پرس‌وجوی سنکرون از شکن/الکترو (حداکثر ~۲ ثانیه) — اسکریپت پروش باید
+       بیرون از asar باشد (پروسهٔ نود خالص asar را نمی‌خواند) */
+    const probePath = path.join(ud, 'dns-probe.js');
+    const cfgPath = path.join(ud, 'dns-probe.json');
+    try { fs.writeFileSync(probePath, fs.readFileSync(path.join(__dirname, 'lib', 'dns-bypass.js'))); } catch (_) { /* noop */ }
+    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300 })); } catch (_) { /* noop */ }
+    let out = '';
+    try {
+      const r = spawnSync(process.execPath, [probePath, cfgPath], {
+        env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }),
+        timeout: 2200, encoding: 'utf8', windowsHide: true,
+      });
+      out = String((r && r.stdout) || '');
+    } catch (_) { /* noop */ }
+    let map = null;
+    try {
+      const j = JSON.parse(out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1) || '{}');
+      if (j && j.ok && j.map && Object.keys(j.map).length) map = j.map;
+    } catch (_) { /* noop */ }
+    if (map) {
+      applyNodeDnsMap(map);
+      DNS_BOOT.applied = true;
+      try { app.commandLine.appendSwitch('host-resolver-rules', DNS_BOOT.rules); } catch (_) { /* noop */ }
+      try { fs.writeFileSync(cachePath, JSON.stringify({ t: Date.now(), map })); } catch (_) { /* noop */ }
+    } else {
+      /* پروش شکست خورد → اگر کش کهنه‌ای هست، از آن استفاده کن (بهتر از DNS فیلتر) */
+      const stale = readCache();
+      if (stale) {
+        applyNodeDnsMap(stale.map);
+        DNS_BOOT.applied = true; DNS_BOOT.cached = true;
+        try { app.commandLine.appendSwitch('host-resolver-rules', DNS_BOOT.rules); } catch (_) { /* noop */ }
+      }
+    }
+  } catch (_) { /* هیچ‌وقت بوت را نسُزان */ }
+})();
+
+/* نوسازی هر ۱۰ دقیقه (غیرمسدودکننده) — آی‌پی‌های تازه برای fetchهای نود */
+setInterval(() => {
+  if (DNS_BOOT.off) return;
+  try {
+    const ud = app.getPath('userData');
+    const probePath = path.join(ud, 'dns-probe.js');
+    const cfgPath = path.join(ud, 'dns-probe.json');
+    if (!fs.existsSync(probePath)) return;
+    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300 })); } catch (_) { /* noop */ }
+    const ch = spawn(process.execPath, [probePath, cfgPath], {
+      env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }), windowsHide: true,
+    });
+    let out = '';
+    ch.stdout.on('data', (d) => { out += d; });
+    ch.on('error', () => { /* noop */ });
+    ch.on('close', () => {
+      try {
+        const j = JSON.parse(String(out || '').slice(String(out).indexOf('{'), String(out).lastIndexOf('}') + 1) || '{}');
+        if (j && j.ok && j.map && Object.keys(j.map).length) {
+          const before = JSON.stringify([...nodeDnsMap.entries()]);
+          applyNodeDnsMap(j.map);
+          try { fs.writeFileSync(path.join(ud, 'dns-map.json'), JSON.stringify({ t: Date.now(), map: j.map })); } catch (_) { /* noop */ }
+          if (before !== JSON.stringify([...nodeDnsMap.entries()])) {
+            actLog('dns map refreshed: ' + nodeDnsMap.size + ' hosts pinned via shekan/electro');
+          }
+        }
+      } catch (_) { /* noop */ }
+    });
+  } catch (_) { /* noop */ }
+}, 600000).unref();
+
+/* v0.24 — سلف‌چک شبکه: TCP:443 به هر میزبان پین‌شده — نتیجه در activity.log
+   و برای رندرر (توست هشدار اگر گوگل در دسترس نباشد) */
+function netSelfCheck() {
+  try {
+    const nodeNet = require('node:net');
+    const items = DNS_HOSTS.map((h) => ({ host: h, ip: nodeDnsMap.get(h) || null, ok: false, ms: 0 }));
+    let pending = items.length;
+    if (!pending) return;
+    const done = () => {
+      try {
+        actLog('net selfcheck: ' + items.map((i) => i.host + ' ' + (i.ok ? 'ok ' + i.ms + 'ms' : 'FAIL')).join(' | '));
+        if (win && !win.isDestroyed()) win.webContents.send('ava:net-status', { at: Date.now(), items });
+      } catch (_) { /* noop */ }
+    };
+    for (const it of items) {
+      const t0 = Date.now();
+      let settled = false;
+      const fin = (okv) => {
+        if (settled) return;
+        settled = true;
+        it.ok = okv; it.ms = Date.now() - t0;
+        if (--pending <= 0) done();
+      };
+      const s = nodeNet.connect({ host: it.ip || it.host, port: 443 });
+      s.setTimeout(2500, () => { try { s.destroy(); } catch (_) { /* noop */ } fin(false); });
+      s.on('connect', () => { try { s.destroy(); } catch (_) { /* noop */ } fin(true); });
+      s.on('error', () => fin(false));
+    }
+  } catch (_) { /* noop */ }
+}
 
 /* electron-updater (فقط وقتی پکیج نصب باشد — خطا را ساکت رد می‌کنیم) */
 /* v0.21 — CancellationToken هم برمی‌داریم تا کاربر بتواند دانلود آپدیت را
@@ -2492,6 +2657,12 @@ ipcMain.handle('music:readHead', (_e, p, max) => {
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
+  /* v0.24 — گزارش وضعیت دورزدن DNS در لاگ عملکرد */
+  actLog('dns bypass: ' + (DNS_BOOT.off
+    ? 'off (extDns=false in ava-settings.json)'
+    : DNS_BOOT.applied
+      ? DNS_BOOT.count + ' hosts pinned' + (DNS_BOOT.cached ? ' (cache)' : ' via shekan/electro') + ' — web engine + cloud fetches bypass filtered system DNS'
+      : 'unavailable — system DNS in use (shekan/electro unreachable)'));
   /* سرو کردن رابط کاربری و مدل‌ها از ava://app + فایل‌های موزیک از ava-media:// */
   try { protocol.handle('ava', (req) => { try { console.log('AVA_REQ:' + req.url); } catch (_) {} return serveAvaFile(req.url); }); } catch (e) { console.error('ava protocol:', e); }
   try { protocol.handle('ava-media', (req) => serveMediaFile(req.url, req)); } catch (e) { console.error('ava-media protocol:', e); }
@@ -2499,6 +2670,9 @@ app.whenReady().then(() => {
   setupMicPermission();
   createWindow();
   setupAutoUpdater();
+
+  /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود) */
+  try { setTimeout(netSelfCheck, 2500); } catch (_) { /* noop */ }
 
   // میانبر سراسری گوش دادن (Push-to-talk)
   try {

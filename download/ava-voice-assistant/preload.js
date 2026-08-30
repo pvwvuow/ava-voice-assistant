@@ -139,6 +139,11 @@ contextBridge.exposeInMainWorld('ava', {
     get: () => ipcRenderer.invoke('log:get'),
   },
 
+  /* v0.24 — وضعیت شبکه (سلف‌چک TCP از پروسهٔ اصلی بعد از بوت) */
+  net: {
+    onStatus: (cb) => ipcRenderer.on('ava:net-status', (_e, s) => cb(s)),
+  },
+
   /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */
   custom: {
     run: (script) => ipcRenderer.invoke('custom:run', script),
