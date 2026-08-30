@@ -933,18 +933,49 @@ app.whenReady().then(async () => {
         fallback: l26.includes('async function resolveHost(') && l26.includes('dohTimeoutMs'),
         probeDoh: m26.includes('dohTimeoutMs: 2000') && m26.includes('timeout: 4600'),
         badModels: m26.includes('const gemBadModels = new Set()') && m26.includes('gemChainPruned(') && m26.includes('gemMarkBad(mdl)'),
-        netHint: m26.includes('const isNetFail') && m26.includes('دور می‌زند'),
+        netHint: m26.includes('const isNetFail') && m26.includes('اتصال به سرور برقرار نشد — چند لحظه بعد دوباره امتحان کن'),
         card: h26.includes('id="updCardWrap"') && a26.includes('function maybeUpdCard(') && a26.includes("'upd.cardTitle'") && c26.includes('#updCardWrap'),
       };
       ok('v0.26 DNS bypass always-on (decoupled from extDns, explicit dnsBypass opt-out)', v26.bypassOn);
       ok('v0.26 Shekan DoH fallback layer (wireformat POST, expired-cert tolerant)', v26.doh);
       ok('v0.26 resolveHost UDP→DoH fallback + boot probe timing widened', v26.fallback && v26.probeDoh);
       ok('v0.26 gemBadModels: 404 models never retried (stale user-typed model)', v26.badModels);
-      ok('v0.26 actionable network error (update hint, not just VPN)', v26.netHint);
+      ok('v0.26 network error exists (v0.27 made it neutral, no DNS/VPN words)', v26.netHint);
       ok('v0.26 loud boot update card (badge was invisible to user)', v26.card);
     } catch (e) { console.log('SKIP | v0.26 markers | ' + String(e && e.message).slice(0, 80)); }
 
-    // 8.94 v0.23 — runtime: race marker in JS scope + cover single panel
+    // 8.992 v0.27 — always-works offline voice: local on-device engine
+    // (sherpa-onnx + whisper int8), Chrome speech keys via env vars too,
+    // ZERO DNS/VPN words in user-facing errors, offline pack download
+    // flow (GitHub + HF mirror), TTS double-buffer prefetch
+    try {
+      const m27 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a27 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h27 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const p27 = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      const v27 = {
+        localEngine: m27.includes("require('sherpa-onnx-node')") && m27.includes("ipcMain.handle('stt:local'") && m27.includes('OfflineRecognizer'),
+        noExternalBuffer: m27.includes('function i16ToF32(') && !/sherpaNode\.readWave\(/.test(m27),
+        pack: m27.includes("ipcMain.handle('stt:local:download'") && m27.includes('OFFLINE_URLS') && m27.includes('stt:local:progress'),
+        keys: m27.includes('process.env.GOOGLE_API_KEY') && m27.includes("appendSwitch('google-api-key'"),
+        noDnsWords: !m27.includes('فیلترشکن/VPN را روشن کن') && !m27.includes('(DNS/فیلترینگ) — نسخهٔ') && m27.includes("'اتصال به سرور برقرار نشد — چند لحظه بعد دوباره امتحان کن'"),
+        chainLocal: a27.includes("if (localReady()) c.push('local')") && a27.includes("if (eng === 'local') return bridge.stt.local(") && a27.includes("'eng.local'"),
+        card: h27.includes('id="offCard"') && h27.includes('id="btnOfflineDl"') && a27.includes('function updateOfflineCard(') && a27.includes('refreshLocalStatus()'),
+        deps: p27.dependencies['sherpa-onnx-node'] && p27.optionalDependencies['sherpa-onnx-win-x64'] && Array.isArray(p27.build.asarUnpack),
+        tts: a27.includes('gTtsNext') && a27.includes('__avaB64'),
+        version: p27.version === '0.27.0',
+      };
+      ok('v0.27 local offline engine (sherpa-onnx + whisper int8, on-device)', v27.localEngine);
+      ok('v0.27 no external-buffer APIs (Electron-hardened PCM conversion)', v27.noExternalBuffer);
+      ok('v0.27 offline pack download flow (GitHub archive + HF mirror + progress)', v27.pack);
+      ok('v0.27 Chrome speech keys set via env vars AND command-line switches', v27.keys);
+      ok('v0.27 zero DNS/VPN wording in user-facing network errors', v27.noDnsWords);
+      ok('v0.27 local engine first in auto chain + race dispatch + engine UI', v27.chainLocal);
+      ok('v0.27 offline pack card in settings (download/progress/status)', v27.card);
+      ok('v0.27 packaging: native deps + asarUnpack for NAPI addon', v27.deps);
+      ok('v0.27 TTS double-buffer prefetch (zero gap between chunks)', v27.tts);
+      ok('v0.27 version 0.27.0', v27.version);
+    } catch (e) { console.log('SKIP | v0.27 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
@@ -959,10 +990,10 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.26/.test(el.textContent) : false; })(),
+        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.27') : false; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.26 about page shows v0.26.0', rt24.aboutV26);
+      ok('v0.27 about page shows v0.27.0', rt24.aboutV26);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons

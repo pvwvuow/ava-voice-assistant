@@ -124,12 +124,17 @@ contextBridge.exposeInMainWorld('ava', {
 
   /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید)
      v0.17: موتورهای کلاس AI — جمنای (با کلید جمنای خودت) و Whisper سازگار
-     با OpenAI (Groq/OpenAI/سرور محلی) — همان الگوی سایت‌های تایپ صوتی حرفه‌ای */
+     با OpenAI (Groq/OpenAI/سرور محلی) — همان الگوی سایت‌های تایپ صوتی حرفه‌ای
+     v0.27: موتور آفلاین همیشه-کار (sherpa-onnx + Whisper int8) — ۱۰۰٪ داخل ویندوز */
   stt: {
     transcribe: (payload) => ipcRenderer.invoke('stt:transcribe', payload),
     google: (payload) => ipcRenderer.invoke('stt:google', payload),
     gemini: (payload) => ipcRenderer.invoke('stt:gemini', payload),
     whisper: (payload) => ipcRenderer.invoke('stt:whisper', payload),
+    local: (payload) => ipcRenderer.invoke('stt:local', payload),
+    localStatus: () => ipcRenderer.invoke('stt:local:status'),
+    localDownload: () => ipcRenderer.invoke('stt:local:download'),
+    onLocalProgress: (cb) => ipcRenderer.on('stt:local:progress', (_e, s) => cb(s)),
   },
 
   /* لاگ عملکرد (v0.18) — ثبت واکنش‌های برنامه در userData/logs/activity.log

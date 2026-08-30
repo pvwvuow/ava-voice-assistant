@@ -2424,3 +2424,23 @@ body.music-playing .np-cover {
 .upd-card-primary:hover { background: #4be0a9; }
 .upd-card-ghost { background: transparent; color: #b9e8d4; border-color: rgba(255, 255, 255, 0.18); }
 .upd-card-ghost:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* ============================================================
+   v0.27 — بستهٔ آفلاین همیشه-کار (تنظیمات › تشخیص گفتار)
+   رنگ‌های ثابت (بدون var() گرادیانی) — سازگار با SwiftShader
+   ============================================================ */
+.off-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.off-progress {
+  height: 8px; border-radius: 6px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.off-progress i {
+  display: block; height: 100%; width: 4%;
+  background: #34d399; border-radius: 6px;
+  transition: width 0.4s ease;
+}
+.off-status { display: block; font-size: 11px; color: var(--text3, #7da893); line-height: 1.8; margin-top: 4px; }
+#offCard { border: 1px solid rgba(52, 211, 153, 0.25); border-radius: 12px; padding: 10px 12px; background: rgba(52, 211, 153, 0.05); }
+[data-theme="light"] #offCard { border-color: rgba(5, 150, 105, 0.3); background: rgba(5, 150, 105, 0.05); }
+[data-theme="light"] .off-progress i { background: #059669; }

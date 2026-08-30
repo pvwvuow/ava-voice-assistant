@@ -246,15 +246,25 @@
               <!-- تشخیص گفتار -->
               <div class="set-pane" data-pane="stt">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper، گوگل رایگان، GLM و آخر Gemini</span></span>
+                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب زنده؛ بعد آفلاین داخلی و سریع‌ترین‌های ابری — Whisper، گوگل رایگان، GLM و آخر Gemini</span></span>
                   <select id="optSttEngine" class="set-select">
                     <option value="auto" data-i18n="set.stt.auto">خودکار (پیشنهادی)</option>
+                    <option value="local" data-i18n="set.stt.local">فقط موتور آفلاین داخلی — بدون اینترنت، همیشه کار می‌کند</option>
                     <option value="web" data-i18n="set.stt.web">فقط موتور وب گوگل</option>
                     <option value="gemini" data-i18n="set.stt.gemini">فقط Gemini Audio — دقیق ولی گاهی کند (کلید جمنای)</option>
                     <option value="whisper" data-i18n="set.stt.whisper">فقط Whisper — سریع (Groq/OpenAI)</option>
-                    <option value="google" data-i18n="set.stt.google">فقط گوگل رایگان HTTP (نیاز به فیلترشکن)</option>
+                    <option value="google" data-i18n="set.stt.google">فقط گوگل رایگان HTTP (دی‌ان‌اس داخلی شکن — بدون نیاز به تغییر ویندوز)</option>
                     <option value="glm" data-i18n="set.stt.glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
                   </select>
+                </div>
+                <!-- v0.27 — بستهٔ آفلاین همیشه-کار: بدون اینترنت، بدون فیلترینگ -->
+                <div class="set-row col" id="offCard">
+                  <span class="set-info"><b data-i18n="set.off.title">صدای آفلاین — همیشه کار می‌کند</b><span data-i18n="set.off.desc">این بسته صدای تو را کاملاً داخل ویندوز تبدیل می‌کند: بدون اینترنت، بدون فیلترینگ، بدون کلید و بدون DNS. یک بار دانلود کن و برای همیشه خیالت راحت باشد.</span></span>
+                  <div class="off-actions">
+                    <button class="chip" id="btnOfflineDl"><svg class="ic"><use href="#i-download"/></svg><span id="offBtnTxt" data-i18n="set.off.dl">دانلود و نصب بستهٔ آفلاین (~۲۱۰MB)</span></button>
+                    <div class="off-progress" id="offProgress" hidden><i id="offBar"></i></div>
+                  </div>
+                  <span class="off-status" id="offStatus"></span>
                 </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.stt.wbase">آدرس سرور Whisper (سازگار با OpenAI)</b><span data-i18n="set.stt.wbaseHint">پیش‌فرض: Groq — whisper-large-v3-turbo رایگان و بسیار سریع است؛ آدرس OpenAI یا سرور محلی whisper.cpp هم می‌گذاری</span></span>
@@ -926,7 +936,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.26.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.27.0</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

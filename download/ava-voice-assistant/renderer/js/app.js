@@ -553,6 +553,19 @@
     'eng.google': ['موتور: گوگل رایگان', 'Engine: free Google'], 'eng.glm': ['موتور: GLM-ASR ابری', 'Engine: cloud GLM-ASR'],
     /* v0.17 — موتورهای کلاس AI */
     'eng.gemini': ['موتور: Gemini Audio (دقت AI)', 'Engine: Gemini Audio (AI-grade)'], 'eng.whisper': ['موتور: Whisper (سریع)', 'Engine: Whisper (fast)'],
+    /* v0.27 — موتور آفلاین همیشه-کار */
+    'eng.local': ['موتور: آفلاین داخلی — بدون اینترنت', 'Engine: built-in offline — no internet'],
+    'set.stt.local': ['فقط موتور آفلاین داخلی — بدون اینترنت، همیشه کار می‌کند', 'Built-in offline engine only — no internet, always works'],
+    'set.off.title': ['صدای آفلاین — همیشه کار می‌کند', 'Offline voice — always works'],
+    'set.off.desc': ['این بسته صدای تو را کاملاً داخل ویندوز تبدیل می‌کند: بدون اینترنت، بدون فیلترینگ، بدون کلید، بدون DNS. یک بار دانلود کن و برای همیشه خیالت راحت باشد.', 'This pack converts your speech entirely inside Windows: no internet, no filtering, no keys, no DNS. Download once and never worry again.'],
+    'set.off.dl': ['دانلود و نصب بستهٔ آفلاین (~۲۱۰MB)', 'Download & install offline pack (~210 MB)'],
+    'set.off.progress': ['در حال دانلود… {x}٪', 'Downloading… {x}%'],
+    'set.off.extract': ['در حال نصب…', 'Installing…'],
+    'set.off.ready': ['بستهٔ آفلاین نصب و آماده است — حتی بدون اینترنت می‌شنوم', 'Offline pack installed and ready — I hear you even offline'],
+    'set.off.done': ['نصب شد! از این به بعد حتی بدون اینترنت هم صدایت را می‌شنوم', 'Installed! I can now hear you even with no internet at all'],
+    'set.off.fail': ['دانلود ناموفق بود — دوباره امتحان کن', 'Download failed — please try again'],
+    'set.off.getHint': ['اگر موتورهای ابری روی شبکهٔ تو محدود هستند، این بسته راه‌حل قطعی است', 'If cloud engines are limited on your network, this pack is the definitive fix'],
+    'stt.noPackHint': ['هیچ موتوری جواب نداد — بستهٔ آفلاین را از تنظیمات › تشخیص گفتار نصب کن تا بدون اینترنت هم کار کند', 'No engine answered — install the offline pack (Settings › Speech) to work with no internet'],
     'stt.tryGemini': ['تبدیل صدا با جمنای…', 'Transcribing with Gemini…'],
     'stt.tryWhisper': ['تبدیل صدا با Whisper…', 'Transcribing with Whisper…'],
     'set.stt.gemini': ['فقط Gemini Audio — دقیق ولی روی بعضی شبکه‌ها کند (کلید جمنای)', 'Gemini Audio only — accurate but can be slow on some networks (Gemini key)'],
@@ -1233,6 +1246,7 @@
   function stopGoogleSpeak() {
     gTtsQueue = [];
     gTtsPlaying = false;
+    gTtsNext = null;
     if (gTtsAudio) {
       try { gTtsAudio.pause(); } catch (_) { /* noop */ }
       gTtsAudio.src = '';
@@ -1240,16 +1254,29 @@
     }
   }
 
+  /* v0.27 — دوبوفری: تکهٔ بعدی هنگام پخش تکهٔ فعلی ساخته و decode می‌شود
+     → فاصلهٔ بین جمله‌ها تقریباً صفر (تقاضای گزارش عامل خارجی) */
+  let gTtsNext = null;
   function playNextGoogleChunk() {
     if (!gTtsQueue.length) { gTtsPlaying = false; return; }
     const b64 = gTtsQueue.shift();
     try {
-      const au = new Audio('data:audio/mpeg;base64,' + b64);
+      let au = gTtsNext; gTtsNext = null;
+      if (!au || au.__avaB64 !== b64) au = new Audio('data:audio/mpeg;base64,' + b64);
+      au.__avaB64 = b64;
       gTtsAudio = au;
       gTtsPlaying = true;
       au.onended = playNextGoogleChunk;
       au.onerror = () => { gTtsPlaying = false; };
       au.play().catch(() => { gTtsPlaying = false; });
+      /* پیش‌بارگذاری تکهٔ بعدی — هم‌زمان با پخش همین تکه */
+      if (gTtsQueue.length && !gTtsNext) {
+        try {
+          gTtsNext = new Audio('data:audio/mpeg;base64,' + gTtsQueue[0]);
+          gTtsNext.__avaB64 = gTtsQueue[0];
+          gTtsNext.load();
+        } catch (_) { gTtsNext = null; }
+      }
     } catch (_) { gTtsPlaying = false; }
   }
 
@@ -2636,6 +2663,42 @@
   const srUsable = () => !!SRC && (!srBroken || Date.now() > srBroken);
   const ASR_MODEL = 'glm-asr-2512';
 
+  /* v0.27 — موتور آفلاین همیشه-کار (sherpa-onnx + Whisper int8 داخل ویندوز):
+     بدون اینترنت، بدون فیلترینگ، بدون کلید — ضامن «همیشه کار کردن» صدا */
+  let localStat = { installed: false, ready: false, downloading: false };
+  const localReady = () => !!localStat.ready;
+  function updateOfflineCard() {
+    const st = $('#offStatus'), bt = $('#offBtnTxt'), btn = $('#btnOfflineDl'), pr = $('#offProgress');
+    if (!st || !bt || !btn) return;
+    if (pr) pr.hidden = true;
+    if (localStat.ready) {
+      st.textContent = t('set.off.ready');
+      bt.textContent = t('set.off.dl');
+      btn.disabled = false;
+    } else {
+      st.textContent = t('set.off.getHint');
+      bt.textContent = t('set.off.dl');
+      btn.disabled = !!localStat.downloading;
+    }
+  }
+  function setOffProgress(pct, stage) {
+    const pr = $('#offProgress'), bar = $('#offBar'), st = $('#offStatus');
+    if (!pr) return;
+    if (!pct || pct <= 0 || pct >= 100) { if (pct >= 100 && st) st.textContent = t('set.off.extract'); return; }
+    pr.hidden = false;
+    if (bar) bar.style.width = Math.max(4, Math.min(100, pct)) + '%';
+    if (st) st.textContent = stage === 'extract' ? t('set.off.extract') : t('set.off.progress', { x: faNum(Math.round(pct)) });
+  }
+  async function refreshLocalStatus() {
+    if (!bridge || !bridge.stt || !bridge.stt.localStatus) return;
+    try {
+      const s = await bridge.stt.localStatus();
+      localStat = { installed: !!s.installed, ready: !!s.ready, downloading: !!s.downloading };
+    } catch (_) { /* noop */ }
+    updateOfflineCard();
+    refreshEngineUI();
+  }
+
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
   /* v0.17 — موتورهای کلاس AI (الگوی typeo/iotype): ترنسکریپت با مدل هوش مصنوعی */
   const geminiSttReady = () => !!(bridge && bridge.stt && bridge.stt.gemini && settings.geminiKey);
@@ -2644,11 +2707,13 @@
   function refreshEngineUI() {
     const eng = settings.sttEngine || 'auto';
     const webUsable = srUsable();
-    if (webUsable && eng !== 'google' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.web')}`;
-    else if (geminiSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.gemini')}`;
-    else if (whisperSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'gemini') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.whisper')}`;
-    else if (googleReady() && eng !== 'web' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.google')}`;
-    else if (glmReady() && eng !== 'web' && eng !== 'google' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.glm')}`;
+    if (eng === 'local' && localReady()) sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.local')}`;
+    else if (webUsable && eng !== 'google' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper' && eng !== 'local') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.web')}`;
+    else if (localReady() && eng !== 'web' && eng !== 'google' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.local')}`;
+    else if (geminiSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'whisper' && eng !== 'local') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.gemini')}`;
+    else if (whisperSttReady() && eng !== 'web' && eng !== 'glm' && eng !== 'google' && eng !== 'gemini' && eng !== 'local') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.whisper')}`;
+    else if (googleReady() && eng !== 'web' && eng !== 'glm' && eng !== 'gemini' && eng !== 'whisper' && eng !== 'local') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.google')}`;
+    else if (glmReady() && eng !== 'web' && eng !== 'google' && eng !== 'gemini' && eng !== 'whisper' && eng !== 'local') sbEngine.innerHTML = `<i class="dot ok"></i>${t('eng.glm')}`;
     else if (settings.demoMode) sbEngine.innerHTML = `<i class="dot warn"></i>${t('eng.demo')}`;
     else sbEngine.innerHTML = `<i class="dot err"></i>${t('eng.none')}`;
   }
@@ -2689,11 +2754,12 @@
     if (eng === 'whisper') return whisperSttReady() ? ['whisper'] : [];
     if (eng === 'glm') return glmReady() ? ['glm'] : [];
     if (eng === 'google') return googleReady() ? ['google'] : [];
-    /* خودکار: سریع‌ترین‌ها جلو — v0.22 به درخواست گزارش کاربر تغییر کرد:
-       در لاگ کاربر Gemini STT بین ۲۴ تا ۷۵ ثانیه طول می‌کشید در حالی که
-       Whisper (Groq) و گوگل رایگان ۲-۵ ثانیه‌ای جواب می‌دادند. ترتیب جدید:
-       Whisper → گوگل رایگان → GLM → Gemini (دقیق‌ترین ولی کندترین، آخر) */
+    if (eng === 'local') return localReady() ? ['local'] : [];
+    /* خودکار: سریع‌ترین‌ها جلو — v0.27: موتور آفلاین اول (همیشه جواب می‌دهد،
+       ۲-۳ ثانیه، بدون اینترنت)؛ بعد Whisper (Groq) و گوگل رایگان ۲-۵ ثانیه‌ای؛
+       GLM و Gemini آخر (دقیق‌ترین ولی کندترین/وابسته به شبکه) */
     let c = [];
+    if (localReady()) c.push('local');
     if (whisperSttReady()) c.push('whisper');
     if (googleReady()) c.push('google');
     if (glmReady()) c.push('glm');
@@ -2710,8 +2776,9 @@
   function resolveEngine() {
     const eng = settings.sttEngine || 'auto';
     if (eng === 'web') return srUsable() ? 'web' : null;
+    if (eng === 'local') return localReady() ? 'local' : null;
     if (eng === 'gemini' || eng === 'whisper' || eng === 'glm' || eng === 'google') return buildCloudChain()[0] || null;
-    /* خودکار: اول وب (فوری و زنده)، بعد موتورهای ابری AI */
+    /* خودکار: اول وب (فوری و زنده)، بعد آفلاین/ابری */
     if (srUsable()) return 'web';
     return buildCloudChain()[0] || null;
   }
@@ -3043,13 +3110,17 @@
         setState('idle');
         statusText.textContent = t('stt.failAll', { x: (lastErr || '—').slice(0, 120) });
         sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
-        if (lastErr) toast(lastErr.slice(0, 150), '#i-info');
+        /* v0.27 — راه‌حل قطعی وقتی هیچ موتوری جواب نداد: بستهٔ آفلاین */
+        if (!localStat.installed) toast(t('stt.noPackHint'), '#i-info');
+        else if (lastErr) toast(lastErr.slice(0, 150), '#i-info');
         if (dictation.active) setTimeout(rearmDictation, 1500);
       }
     };
     chain.forEach((eng) => {
       const te0 = Date.now();
       const pr = (async () => {
+        /* v0.27 — آفلاین: همان PCM ۱۶k، ۱۰۰٪ داخل ویندوز، بدون هیچ شبکه‌ای */
+        if (eng === 'local') return bridge.stt.local({ pcm: pcmBytes, rate: 16000, lang: settings.sttLang || 'fa-IR' });
         if (eng === 'google') return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang: settings.sttLang || 'fa-IR' });
         const b = new Uint8Array(await wavBlob.arrayBuffer());
         if (b.length < 900) return { ok: false, error: 'short-audio' };
@@ -4184,7 +4255,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.26.0';
+  let appVersion = '0.27.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4702,6 +4773,32 @@
     store.set('googleKey', settings.googleKey);
     refreshEngineUI();
     toast(settings.googleKey ? t('toast.gKeySaved') : t('toast.gKeyCleared'), '#i-key');
+  });
+
+  /* v0.27 — بستهٔ آفلاین همیشه-کار: دانلود یک‌بار، تبدیل صدای برای همیشه داخلی */
+  const btnOfflineDl = $('#btnOfflineDl');
+  if (btnOfflineDl) btnOfflineDl.addEventListener('click', async () => {
+    if (!bridge || !bridge.stt || !bridge.stt.localDownload) { toast(t('toast.onlyApp'), '#i-info'); return; }
+    if (localStat.downloading) return;
+    localStat.downloading = true;
+    btnOfflineDl.disabled = true;
+    updateOfflineCard();
+    setOffProgress(1, 'dl');
+    const r = await bridge.stt.localDownload().catch(() => ({ ok: false }));
+    localStat.downloading = false;
+    localStat.installed = !!(r && (r.ok || r.already));
+    localStat.ready = !!(r && r.ready);
+    btnOfflineDl.disabled = false;
+    setOffProgress(100, r && r.ok ? 'done' : '');
+    if (r && r.ok) {
+      toast(t('set.off.done'), '#i-wave');
+      setTimeout(() => setOffProgress(0, ''), 1500);
+    } else {
+      toast(t('set.off.fail'), '#i-info');
+      setTimeout(() => setOffProgress(0, ''), 800);
+    }
+    updateOfflineCard();
+    refreshEngineUI();
   });
 
   /* v0.17 — تنظیمات Whisper سازگار با OpenAI (Groq/OpenAI/سرور محلی) */
@@ -6319,6 +6416,11 @@
   applyI18n();
   statusText.innerHTML = IDLE_HINT;
   refreshEngineUI();
+  refreshLocalStatus(); /* v0.27 — وضعیت بستهٔ آفلاین */
+  /* پیشرفت دانلود بستهٔ آفلاین از پروسهٔ اصلی */
+  if (bridge && bridge.stt && bridge.stt.onLocalProgress) {
+    bridge.stt.onLocalProgress((s) => setOffProgress((s && s.pct) || 0, s && s.stage));
+  }
   renderCustomChips();
   renderTypingCmds();
   renderDnsProfiles();

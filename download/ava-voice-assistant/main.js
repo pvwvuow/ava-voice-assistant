@@ -113,10 +113,21 @@ function serveMediaFile(reqUrl, req) {
    (همان کلیدی که درخواست‌های HTTP هم استفاده می‌کنند) موتور وب واقعی و
    استریمی گوگل داخل برنامه بالا می‌آید. باید قبل از ready ثبت شود. */
 const GOOGLE_KEY_DEFAULT = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw';
+const GOOGLE_CLIENT_ID_DEFAULT = '446115136242-2p92k6onon4tnnd434e2f8sdcp8o9fr8.apps.googleusercontent.com';
+const GOOGLE_CLIENT_SECRET_DEFAULT = 'uFBboTQBEsseYMwbGjXAcRYF';
+/* v0.27 — علاوه بر سوییچ‌های خط فرمان، متغیرهای محیطی هم ست می‌شوند؛
+   کرومیوم در برخی مسیرها فقط env را می‌خواند (سند رسمی Electron:
+   GOOGLE_API_KEY / GOOGLE_DEFAULT_CLIENT_ID / GOOGLE_DEFAULT_CLIENT_SECRET).
+   با هر دو مسیر، webkitSpeechRecognition دقیقاً مثل خود کروم (dictation.io) زنده می‌شود. */
+try {
+  process.env.GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || GOOGLE_KEY_DEFAULT;
+  process.env.GOOGLE_DEFAULT_CLIENT_ID = process.env.GOOGLE_DEFAULT_CLIENT_ID || GOOGLE_CLIENT_ID_DEFAULT;
+  process.env.GOOGLE_DEFAULT_CLIENT_SECRET = process.env.GOOGLE_DEFAULT_CLIENT_SECRET || GOOGLE_CLIENT_SECRET_DEFAULT;
+} catch (_) { /* noop */ }
 try {
   app.commandLine.appendSwitch('google-api-key', GOOGLE_KEY_DEFAULT);
-  app.commandLine.appendSwitch('google-default-client-id', '446115136242-2p92k6onon4tnnd434e2f8sdcp8o9fr8.apps.googleusercontent.com');
-  app.commandLine.appendSwitch('google-default-client-secret', 'uFBboTQBEsseYMwbGjXAcRYF');
+  app.commandLine.appendSwitch('google-default-client-id', GOOGLE_CLIENT_ID_DEFAULT);
+  app.commandLine.appendSwitch('google-default-client-secret', GOOGLE_CLIENT_SECRET_DEFAULT);
 } catch (_) { /* noop */ }
 
 /* ---------- v0.24 — دور زدن DNS فیلترشدهٔ ایران (شکن/الکترو) بدون UAC ----------
@@ -1251,6 +1262,11 @@ ipcMain.handle('sys:save-audio', async (_e, data) => {
 function settingsFile() {
   try { return path.join(app.getPath('userData'), 'ava-settings.json'); } catch (_) { return null; }
 }
+/* خواندن مستقیم تنظیمات از فایل — برای پروسهٔ اصلی (موتور آفلاین و…) */
+function loadedSettings() {
+  const f = settingsFile();
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')) || {}; } catch (_) { return {}; }
+}
 ipcMain.handle('settings:load', () => {
   const f = settingsFile();
   if (!f) return {};
@@ -1531,9 +1547,11 @@ const isNetFail = (m) => /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAI
 const netErr = (e) => {
   const m = String((e && e.message) || e);
   if (isNetFail(m)) {
-    /* v0.26 — پیام کارآمد: نه فقط «فیلترشکن روشن کن» — کاربر باید بداند
-       نسخهٔ جدید خودش این را دور می‌زند */
-    return 'اتصال به سرور برقرار نشد (DNS/فیلترینگ) — نسخهٔ ۰.۲۶ به‌بعد خودکار DNS شکن را دور می‌زند؛ اگر نسخهٔ برنامه‌ات عقب است از دکمهٔ بروزرسانی نصبش کن';
+    /* v0.27 — دیگر هیچ پیامی دربارهٔ DNS/فیلترشکن به کاربر نشان داده نمی‌شود
+       (درخواست صریح کاربر). جزئیات فنی فقط در activity.log می‌رود؛ پیام کاربر
+       خنثی است و راه‌حل واقعی (بستهٔ آفلاین) را تنظیمات پیشنهاد می‌دهد. */
+    actLog('net-level failure (technical, not shown to user): ' + m.slice(0, 120));
+    return 'اتصال به سرور برقرار نشد — چند لحظه بعد دوباره امتحان کن';
   }
   return m.slice(0, 140);
 };
@@ -1849,7 +1867,8 @@ ipcMain.handle('stt:google', async (_e, p) => {
     if (!r.ok) {
       let msg = `HTTP ${r.status}`;
       try { const j = JSON.parse(raw); msg = (j.error && j.error.message) || msg; } catch (_) { /* noop */ }
-      if (r.status === 403) msg = 'دسترسی گوگل رد شد (403) — فیلترشکن/VPN را روشن کن یا در تنظیمات کلید اختصاصی بگذار';
+      /* v0.27 — پیام خنثی؛ بدون فیلترشکن/DNS (جزئیات فنی فقط در لاگ) */
+      if (r.status === 403) { msg = 'دسترسی گوگل موقتا برقرار نشد — با بستهٔ آفلاین، صدای تو همیشه تبدیل می‌شود'; actLog('stt:google 403 — key=' + (key ? 'custom' : 'builtin')); }
       if (r.status >= 500) msg = 'سرور گوگل موقتا در دسترس نیست — چند لحظه بعد دوباره امتحان کن';
       return { ok: false, error: `گوگل: ${String(msg).slice(0, 140)}` };
     }
@@ -1874,6 +1893,202 @@ ipcMain.handle('stt:google', async (_e, p) => {
     };
   } catch (e) {
     return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ============================================================
+   v0.27 — موتور آفلاین همیشه-کار (sherpa-onnx + Whisper int8)
+   ============================================================
+   درخواست صریح کاربر: «اصلاً چرا باید برای برقراری ارتباط به اینترنت/DNS
+   وابسته باشیم؟» — این موتور ۱۰۰٪ داخل ویندوز اجرا می‌شود: بدون اینترنت،
+   بدون فیلترینگ، بدون کلید، بدون DNS. حتی اگر همه‌چیز فیلتر باشد صدای
+   کاربر تبدیل می‌شود.
+   • پروژهٔ متن‌باز: https://github.com/k2-fsa/sherpa-onnx (Apache-2.0)
+   • مدل: Whisper base چندزبانهٔ OpenAI، کوانتیزه int8، زبان فارسی
+   • بسته: یک‌بار دانلود ~۲۱۰MB از GitHub/HF → اجرای همیشگی آفلاین
+   ⚠ قیدهای سخت Electron (با تست واقعی ثابت شد):
+     - هرگز sherpa.readWave صدا نزن (external buffer → Electron اجازه
+       نمی‌دهد: «External buffers are not allowed»)؛ PCM را خودمان از
+       Int16 به Float32 تبدیل می‌کنیم؛
+     - addon فقط از مسیرهای asar-unpacked/ماژول‌محلی لود شود. */
+
+let sherpaNode = null;        /* ماژول sherpa-onnx-node */
+let sherpaFailed = '';        /* اگر لود نشد — دلیل، برای لاگ */
+let offlineRec = null;        /* OfflineRecognizer آماده */
+let offlineLang = '';         /* زبان ساخته‌شدهٔ فعلی */
+let offlineBusy = false;      /* decode در جریان است (تک‌نفره) */
+let offlineDl = null;         /* { on, pct } دانلود جاری */
+const OFFLINE_FILES = ['base-encoder.int8.onnx', 'base-decoder.int8.onnx', 'base-tokens.txt'];
+const offlineDir = () => path.join(app.getPath('userData'), 'models', 'whisper-base-int8');
+
+const offlineInstalled = () => {
+  try {
+    const d = offlineDir();
+    return OFFLINE_FILES.every((f) => { try { return fs.statSync(path.join(d, f)).size > 1000; } catch (_) { return false; } });
+  } catch (_) { return false; }
+};
+
+/* تبدیل Int16 → Float32 در [-1,1] — همان قرارداد شکل‌موج؛ بدون بافر خارجی */
+function i16ToF32(buf) {
+  const n = Math.floor(buf.length / 2);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = buf.readInt16LE(i * 2) / 32768;
+  return out;
+}
+
+function offlineLangCode(settings) {
+  const l = String((settings && settings.sttLang) || 'fa-IR');
+  return /^en/i.test(l) ? 'en' : 'fa';
+}
+
+function loadOfflineEngine(settings, force) {
+  if (offlineRec && !force && offlineLang === offlineLangCode(settings)) return offlineRec ? { ok: true } : { ok: false, error: sherpaFailed };
+  offlineLang = offlineLangCode(settings);
+  if (!sherpaNode) {
+    try { sherpaNode = require('sherpa-onnx-node'); }
+    catch (e) {
+      sherpaFailed = 'sherpa-onnx-node load failed: ' + String(e && e.message).slice(0, 90);
+      actLog('offline engine: ' + sherpaFailed);
+      return { ok: false, error: sherpaFailed };
+    }
+  }
+  if (!offlineInstalled()) return { ok: false, error: 'offline-pack-missing' };
+  try {
+    const d = offlineDir();
+    offlineRec = new sherpaNode.OfflineRecognizer({
+      modelConfig: {
+        whisper: {
+          encoder: path.join(d, 'base-encoder.int8.onnx'),
+          decoder: path.join(d, 'base-decoder.int8.onnx'),
+          language: offlineLang,
+          task: 'transcribe',
+          tailPaddings: -1,
+          enableTokenTimestamps: 0,
+          enableSegmentTimestamps: 0,
+        },
+        tokens: path.join(d, 'base-tokens.txt'),
+        numThreads: 2,
+        debug: 0,
+        provider: 'cpu',
+      },
+    });
+    actLog('offline engine ready (whisper-base int8, lang=' + offlineLang + ')');
+    return { ok: true };
+  } catch (e) {
+    offlineRec = null;
+    sherpaFailed = 'recognizer init failed: ' + String(e && e.message).slice(0, 90);
+    actLog('offline engine: ' + sherpaFailed);
+    return { ok: false, error: sherpaFailed };
+  }
+}
+
+ipcMain.handle('stt:local:status', () => {
+  const inst = offlineInstalled();
+  let ready = false;
+  if (inst) ready = !!(loadOfflineEngine(loadedSettings()) || {}).ok;
+  return { installed: inst, ready, busy: offlineBusy, downloading: !!(offlineDl && offlineDl.on), error: sherpaFailed || undefined };
+});
+
+ipcMain.handle('stt:local', async (_e, p) => {
+  const { pcm, rate, lang } = p || {};
+  if (!pcm || !pcm.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
+  if (offlineBusy) return { ok: false, error: 'موتور آفلاین مشغول است' };
+  if (offlineDl && offlineDl.on) return { ok: false, error: 'بستهٔ آفلاین در حال دانلود است' };
+  const init = loadOfflineEngine({ sttLang: lang }, false);
+  if (!init.ok) return { ok: false, error: init.error === 'offline-pack-missing' ? 'بستهٔ آفلاین نصب نیست' : (init.error || 'offline-unavailable') };
+  offlineBusy = true;
+  const t0 = Date.now();
+  try {
+    const f32 = i16ToF32(Buffer.from(pcm));
+    if (f32.length < 1600) return { ok: false, error: 'صدا خیلی کوتاه است' };
+    const stream = offlineRec.createStream();
+    stream.acceptWaveform({ sampleRate: Number(rate) || 16000, samples: f32 });
+    offlineRec.decode(stream);
+    const res = offlineRec.getResult(stream);
+    const text = String((res && res.text) || '').trim();
+    actLog('stt local ok (' + (Date.now() - t0) + 'ms, ' + Math.round(f32.length / 16000) + 's audio)');
+    return { ok: !!text, text, offline: true, error: text ? undefined : 'موتور آفلاین متنی برنگرداند — کمی بلندتر حرف بزن' };
+  } catch (e) {
+    actLog('stt local fail: ' + String(e && e.message).slice(0, 120));
+    return { ok: false, error: 'تبدیل آفلاین ناموفق بود — چند لحظه بعد دوباره امتحان کن' };
+  } finally {
+    offlineBusy = false;
+  }
+});
+
+/* دانلود بستهٔ آفلاین: GitHub (اصلی) → HuggingFace (فایل‌به‌فایل، فالبک) */
+const OFFLINE_URLS = {
+  archive: 'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.tar.bz2',
+  files: 'https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/',
+};
+
+function offlineProgress(win, pct, stage) {
+  try { if (win && !win.isDestroyed()) win.webContents.send('stt:local:progress', { pct: Math.round(pct), stage: stage || 'dl' }); } catch (_) { /* noop */ }
+}
+
+async function offlineDownloadFile(url, dest, onPct, absFrom, absTo) {
+  const r = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(1800000) });
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + url.slice(0, 80));
+  const total = Number(r.headers.get('content-length')) || 0;
+  const tmp = dest + '.part';
+  const ws = fs.createWriteStream(tmp);
+  const reader = r.body.getReader();
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    got += value.length;
+    ws.write(Buffer.from(value));
+    if (total && onPct) onPct(absFrom + (got / total) * (absTo - absFrom));
+  }
+  await new Promise((res) => ws.end(res));
+  fs.renameSync(tmp, dest);
+  return got;
+}
+
+ipcMain.handle('stt:local:download', async (e) => {
+  if (offlineDl && offlineDl.on) return { ok: false, error: 'دانلود از قبل در جریان است' };
+  if (offlineInstalled()) { const r = loadOfflineEngine(loadedSettings(), true); return { ok: true, already: true, ready: r.ok }; }
+  const win = (() => { try { return BrowserWindow.fromWebContents(e.sender); } catch (_) { return null; } })();
+  offlineDl = { on: true, pct: 0 };
+  const d = offlineDir();
+  const archPath = path.join(app.getPath('temp'), 'ava-whisper-base.tar.bz2');
+  try {
+    fs.mkdirSync(d, { recursive: true });
+    actLog('offline pack download started');
+    /* مسیر ۱: آرشیو کامل از GitHub */
+    try {
+      await offlineDownloadFile(OFFLINE_URLS.archive, archPath, (p) => offlineProgress(win, p * 100, 'dl'), 0, 0.85);
+      offlineProgress(win, 86, 'extract');
+      /* فقط فایل‌های int8 استخراج می‌شوند (bsdtar ویندوز ۱۰+/گنوتار لینوکس) */
+      for (const f of OFFLINE_FILES) {
+        const r = spawnSync('tar', ['-xjf', archPath, '-C', d, '--strip-components=1', 'sherpa-onnx-whisper-base/' + f], { encoding: 'utf8', timeout: 300000, windowsHide: true });
+        if (r.status !== 0 || !fs.existsSync(path.join(d, f))) throw new Error('extract failed: ' + f + ' ' + String((r.stderr || '')).slice(0, 80));
+      }
+    } catch (archErr) {
+      /* مسیر ۲: فایل‌به‌فایل از HuggingFace */
+      actLog('offline pack archive path failed (' + String(archErr && archErr.message).slice(0, 80) + ') — trying HF file-by-file');
+      let done = 0;
+      for (const f of OFFLINE_FILES) {
+        const from = 0.4 + done / OFFLINE_FILES.length * 0.45;
+        const to = 0.4 + (done + 1) / OFFLINE_FILES.length * 0.45;
+        await offlineDownloadFile(OFFLINE_URLS.files + f, path.join(d, f), (p) => offlineProgress(win, p * 100, 'dl'), from, to);
+        done += 1;
+      }
+    }
+    try { fs.unlinkSync(archPath); } catch (_) { /* noop */ }
+    if (!offlineInstalled()) throw new Error('files incomplete after download');
+    offlineProgress(win, 97, 'load');
+    const r = loadOfflineEngine(loadedSettings(), true);
+    offlineProgress(win, 100, 'done');
+    actLog('offline pack installed + engine ready=' + r.ok);
+    return { ok: true, ready: r.ok };
+  } catch (err) {
+    actLog('offline pack download failed: ' + String(err && err.message).slice(0, 140));
+    try { fs.unlinkSync(archPath); } catch (_) { /* noop */ }
+    return { ok: false, error: 'دانلود ناموفق بود — اتصال را چک کن و دوباره بزن' };
+  } finally {
+    offlineDl = { on: false, pct: 0 };
   }
 });
 
