@@ -917,6 +917,33 @@ app.whenReady().then(async () => {
       ok('v0.25 epoch-guarded teardown + new status lines (heardLive/failAll)', v25.teardown && v25.i18n);
     } catch (e) { console.log('SKIP | v0.25 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.991 v0.26 — guaranteed connectivity: DNS bypass always-on (decoupled
+    // from extDns), Shekan DoH fallback layer (UDP:53 blocked ISPs),
+    // gemBadModels 404 negative memory, actionable net error, loud boot
+    // update card (badge was invisible — user never got v0.22..v0.25!)
+    try {
+      const m26 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const l26 = fs.readFileSync(path.join(__dirname, 'lib/dns-bypass.js'), 'utf8');
+      const a26 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h26 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const c26 = fs.readFileSync(path.join(__dirname, 'renderer/css/styles.css'), 'utf8');
+      const v26 = {
+        bypassOn: m26.includes('if (cfg.dnsBypass === false)') && !m26.includes('cfg.extDns === false'),
+        doh: l26.includes('function queryDoH(') && l26.includes("DOH_ENDPOINTS = ['https://free.shecan.ir/dns-query']") && l26.includes('rejectUnauthorized: false'),
+        fallback: l26.includes('async function resolveHost(') && l26.includes('dohTimeoutMs'),
+        probeDoh: m26.includes('dohTimeoutMs: 2000') && m26.includes('timeout: 4600'),
+        badModels: m26.includes('const gemBadModels = new Set()') && m26.includes('gemChainPruned(') && m26.includes('gemMarkBad(mdl)'),
+        netHint: m26.includes('const isNetFail') && m26.includes('دور می‌زند'),
+        card: h26.includes('id="updCardWrap"') && a26.includes('function maybeUpdCard(') && a26.includes("'upd.cardTitle'") && c26.includes('#updCardWrap'),
+      };
+      ok('v0.26 DNS bypass always-on (decoupled from extDns, explicit dnsBypass opt-out)', v26.bypassOn);
+      ok('v0.26 Shekan DoH fallback layer (wireformat POST, expired-cert tolerant)', v26.doh);
+      ok('v0.26 resolveHost UDP→DoH fallback + boot probe timing widened', v26.fallback && v26.probeDoh);
+      ok('v0.26 gemBadModels: 404 models never retried (stale user-typed model)', v26.badModels);
+      ok('v0.26 actionable network error (update hint, not just VPN)', v26.netHint);
+      ok('v0.26 loud boot update card (badge was invisible to user)', v26.card);
+    } catch (e) { console.log('SKIP | v0.26 markers | ' + String(e && e.message).slice(0, 80)); }
+
     // 8.94 v0.23 — runtime: race marker in JS scope + cover single panel
     try {
       const rt23 = await probe(`(() => ({
@@ -932,10 +959,10 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV25: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.25/.test(el.textContent) : false; })(),
+        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.26/.test(el.textContent) : false; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.25 about page shows v0.25.0', rt24.aboutV25);
+      ok('v0.26 about page shows v0.26.0', rt24.aboutV26);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons

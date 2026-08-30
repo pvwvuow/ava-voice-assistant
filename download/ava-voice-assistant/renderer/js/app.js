@@ -819,6 +819,12 @@
     'set.ai.openaiKeyHint': ['از platform.openai.com — با GPT جواب می‌دهد. چند کلید را می‌توانی با ویرگول بدهی (چرخش خودکار)', 'From platform.openai.com — answers with GPT. Multiple keys can be comma separated (auto rotation)'],
     'set.ai.openaiPh': ['sk-… , sk-… (چند کلید با ویرگول)', 'sk-… , sk-… (comma separated)'],
     'upd.badge': ['آپدیت جدید', 'Update'],
+    /* v0.26 — کارت بروزرسانی بوت */
+    'upd.cardTitle': ['نسخهٔ جدید آوا منتشر شد', 'A new AVA version is out'],
+    'upd.cardVer': ['نسخهٔ {x} آمادهٔ نصب است', 'Version {x} is ready to install'],
+    'upd.cardBody': ['مکالمهٔ صوتی از صفر بازسازی شده، فیلترینگ/DNS خودکار دور زده می‌شود و سرعت پاسخ چند برابر شده — برای شنیدنِ درست حتماً نصبش کن', 'Voice conversation was rebuilt from scratch, DNS filtering is bypassed automatically and responses are several times faster — please install it for correct listening'],
+    'upd.cardNow': ['همین حالا دانلود و نصب', 'Download & install now'],
+    'upd.cardLater': ['بعداً', 'Later'],
     'toast.saved': ['ذخیره شد', 'Saved'],
     'upd.badgeReady': ['نصب آپدیت', 'Install update'],
     'upd.badgeDl': ['دانلود {x}٪', 'Downloading {x}%'],
@@ -4178,7 +4184,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.25.0';
+  let appVersion = '0.26.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4819,6 +4825,35 @@
     });
   }
 
+  /* v0.26 — کارت بروزرسانی بوت: هر بار باز شدن برنامه، اگر نسخهٔ جدید باشد،
+     یک کارت واضح وسط صفحه می‌آید (بج نوار بالا دیده نمی‌شد و کاربر بی‌خبر
+     می‌ماند که همهٔ مشکلاتش در نسخهٔ جدید حل شده). یک بار در هر نشست. */
+  const updCardWrap = $('#updCardWrap');
+  function maybeUpdCard(s) {
+    try {
+      if (!updCardWrap || !s || !s.version) return;
+      if (sessionStorage.getItem('ava.updCardShown') === s.version) return;
+      sessionStorage.setItem('ava.updCardShown', s.version);
+      const cv = $('#updCardVer');
+      if (cv) cv.textContent = t('upd.cardVer', { x: faNum(s.version) });
+      const cb = $('#updCardBody');
+      if (cb) cb.textContent = t('upd.cardBody');
+      const cn = $('#updCardNow');
+      if (cn) cn.textContent = t('upd.cardNow');
+      const cl = $('#updCardLater');
+      if (cl) cl.textContent = t('upd.cardLater');
+      updCardWrap.hidden = false;
+    } catch (_) { /* noop */ }
+  }
+  if (updCardWrap) {
+    $('#updCardNow') && $('#updCardNow').addEventListener('click', () => {
+      updCardWrap.hidden = true;
+      startUpdDownload();
+      showView('settings'); /* کاربر پیشرفت دانلود را ببیند */
+    });
+    $('#updCardLater') && $('#updCardLater').addEventListener('click', () => { updCardWrap.hidden = true; });
+  }
+
   function setUpdUI(s) {
     updProgress.hidden = true;
     btnInstallUpdate.hidden = true;
@@ -4837,12 +4872,14 @@
         /* v0.21 — نسخهٔ جدید پیدا شد؛ دانلود فقط با کلیک کاربر */
         if (btnUpdDownload) btnUpdDownload.hidden = false;
         setBadge('available', s.version);
+        maybeUpdCard(s); /* v0.26 — بج کافی نبود؛ کارت بوت */
         break;
       case 'available-manual':
         updNote.textContent = t('upd.availableManual', { x: faNum(s.version || '') });
         if (btnManualDl) btnManualDl.hidden = false;
         if (btnUpdDownload) btnUpdDownload.hidden = false;
         setBadge('available', s.version);
+        maybeUpdCard(s); /* v0.26 */
         break;
       case 'downloading': {
         const pct = faNum(s.percent || 0);

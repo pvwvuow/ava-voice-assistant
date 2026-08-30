@@ -926,8 +926,23 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.25.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.26.0</span></div>
   </div>
+
+<!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و
+     کاربر بی‌خبر می‌ماند که نسخهٔ جدید (با بازسازی مکالمه + دورزدن فیلترینگ) منتشر شده -->
+<div id="updCardWrap" hidden>
+  <div id="updCard" role="dialog" aria-modal="true" aria-labelledby="updCardTitle">
+    <div class="upd-card-ic"><svg class="ic"><use href="#i-download"/></svg></div>
+    <h3 id="updCardTitle">نسخهٔ جدید آوا منتشر شد</h3>
+    <p id="updCardVer"></p>
+    <p id="updCardBody">مکالمهٔ صوتی از صفر بازسازی شده و فیلترینگ/DNS خودکار دور زده می‌شود — برای شنیدنِ درست حتماً نصبش کن</p>
+    <div class="upd-card-row">
+      <button class="upd-card-btn upd-card-primary" id="updCardNow">همین حالا دانلود و نصب</button>
+      <button class="upd-card-btn upd-card-ghost" id="updCardLater">بعداً</button>
+    </div>
+  </div>
+</div>
 
   <script src="js/app.js"></script>
 </body>

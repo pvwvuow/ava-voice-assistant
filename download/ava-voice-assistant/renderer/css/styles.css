@@ -2381,3 +2381,46 @@ body.music-playing .np-cover {
 .m-row + .m-row:hover { border-top-color: transparent; }
 .m-row:hover + .m-row { border-top-color: transparent; }
 [data-theme="light"] .m-row + .m-row { border-top-color: rgba(38, 22, 92, 0.07); }
+
+/* ============================================================
+   v0.26 — کارت بروزرسانی بوت (بج دیده نمی‌شد؛ کارت واضح وسط صفحه)
+   SwiftShader-safe: فقط رنگ ثابت + سایه — بدون گرادیان متحرک/چرخش
+   ============================================================ */
+#updCardWrap {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(2, 8, 6, 0.62);
+  direction: rtl;
+}
+#updCard {
+  width: min(400px, calc(100vw - 48px));
+  background: #0b2a20;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  padding: 22px 22px 18px;
+  text-align: center;
+  color: #e7fff4;
+  font-family: inherit;
+}
+.upd-card-ic {
+  width: 52px; height: 52px; margin: 0 auto 10px;
+  border-radius: 14px;
+  background: var(--acc2, #34d399);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--acc-ink, #062b1d);
+}
+.upd-card-ic .ic { width: 26px; height: 26px; }
+#updCard h3 { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: #ffffff; }
+#updCardVer { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--acc2, #34d399); }
+#updCardBody { margin: 0 0 16px; font-size: 13px; line-height: 1.9; color: #b9e8d4; }
+.upd-card-row { display: flex; gap: 10px; }
+.upd-card-btn {
+  flex: 1; padding: 11px 12px; border-radius: 12px;
+  font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+  border: 1px solid transparent;
+}
+.upd-card-primary { background: var(--acc2, #34d399); color: var(--acc-ink, #062b1d); }
+.upd-card-primary:hover { background: #4be0a9; }
+.upd-card-ghost { background: transparent; color: #b9e8d4; border-color: rgba(255, 255, 255, 0.18); }
+.upd-card-ghost:hover { background: rgba(255, 255, 255, 0.06); }

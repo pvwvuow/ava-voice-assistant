@@ -21,11 +21,21 @@
       صدا می‌زند تا نتیجه قطعاً پیش از ساخت پنجره آماده باشد. */
 
 const dgram = require('dgram');
+const https = require('https');
 
 /* پروفایل‌های رسمی شکن و الکترو */
 const SHECAN = ['178.22.122.100', '185.51.200.2'];
 const ELECTRO = ['78.157.42.100', '78.157.42.101'];
 const DEFAULT_SERVERS = SHECAN.concat(ELECTRO);
+
+/* v0.26 — لایهٔ دوم: DoH (DNS-over-HTTPS، RFC 8484 wireformat POST)
+   بعضی ISPهای ایران UDP:53 به DNSهای شخص ثالث را کلاً می‌بندند؛ در آن حالت
+   پرس‌وجوی UDP همه‌جا Timeout می‌خورد. DoH روی TCP:443 است و تقریباً هیچ‌وقت
+   بسته نیست. TLS شکن منقضی شده (تیر ۱۴۰۵) → rejectUnauthorized:false —
+   دقیقاً هم‌سطح اعتمادِ DNS یو‌دی‌پی (که خودش هم احراز هویت ندارد)؛
+   حتی اگر کسی آی‌پی دروغ بدهد، اتصال اصلی TLS با گواهی واقعی سرویس مقصد
+   اعتبارسنجی می‌شود و فقط «شکست می‌خورد» — هیچ داده‌ای لو نمی‌رود. */
+const DOH_ENDPOINTS = ['https://free.shecan.ir/dns-query'];
 
 /* میزبان‌هایی که برنامه واقعاً با آن‌ها «می‌شنود» و «حرف می‌زند» */
 const DEFAULT_HOSTS = [
@@ -131,22 +141,59 @@ function queryOne(server, name, timeoutMs) {
   });
 }
 
-/* پرس‌وجوی هم‌زمان به همهٔ سرورها — اولین جواب درست برنده است */
-function resolveHost(name, opts) {
+/* v0.26 — یک پرس‌وجوی DoH (wireformat POST) — همیشه resolve می‌شود */
+function queryDoH(endpoint, name, timeoutMs) {
+  return new Promise((resolve) => {
+    let done = false;
+    const fin = (v) => { if (!done) { done = true; try { req.destroy(); } catch (_) { /* noop */ } resolve(v); } };
+    let q;
+    try { q = buildQuery((Math.random() * 0xffff) | 1, name); } catch (_) { resolve(null); return; }
+    let u;
+    try { u = new URL(String(endpoint || '')); } catch (_) { resolve(null); return; }
+    const req = https.request({
+      hostname: u.hostname,
+      port: Number(u.port) || 443,
+      path: u.pathname + (u.search || ''),
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/dns-message',
+        'Accept': 'application/dns-message',
+        'Content-Length': q.length,
+      },
+      timeout: Math.max(400, Number(timeoutMs) || 2500),
+      rejectUnauthorized: false, /* گواهی شکن منقضی است — هم‌سطح اعتماد UDP DNS */
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        try {
+          if (res.statusCode !== 200) return fin(null);
+          fin(parseA(Buffer.concat(chunks)));
+        } catch (_) { fin(null); }
+      });
+      res.on('error', () => fin(null));
+    });
+    req.on('timeout', () => fin(null));
+    req.on('error', () => fin(null));
+    try { req.end(q); } catch (_) { fin(null); }
+  });
+}
+
+/* پرس‌وجوی هم‌زمان به همهٔ سرورها — اولین جواب درست برنده است؛
+   v0.26 — اگر همهٔ UDPها خواب بودند، DoH شکن (TCP:443) امتحان می‌شود */
+async function resolveHost(name, opts) {
   const o = opts || {};
   const servers = Array.isArray(o.servers) && o.servers.length ? o.servers : DEFAULT_SERVERS;
   const timeoutMs = Number(o.timeoutMs) || 1200;
-  return new Promise((resolve) => {
-    let remaining = servers.length;
-    let settled = false;
-    const done = (v) => { if (!settled) { settled = true; resolve(v); } };
-    for (const s of servers) {
-      queryOne(s, name, timeoutMs).then((ip) => {
-        if (ip && !settled) { done(ip); return; }
-        if (!ip && --remaining === 0) done(null);
-      });
-    }
-  });
+  const results = await Promise.all(servers.map((s) => queryOne(s, name, timeoutMs)));
+  const udpOk = results.find(Boolean);
+  if (udpOk) return udpOk;
+  const dohs = Array.isArray(o.doh) ? o.doh : DOH_ENDPOINTS;
+  for (const ep of dohs) {
+    const ip = await queryDoH(ep, name, Number(o.dohTimeoutMs) || 2500);
+    if (ip) return ip;
+  }
+  return null;
 }
 
 /* چند میزبان با هم — خروجی فقط جواب‌های موفق */
@@ -191,6 +238,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  SHECAN, ELECTRO, DEFAULT_SERVERS, DEFAULT_HOSTS,
-  buildQuery, parseA, queryOne, resolveHost, resolveHosts, hostResolverRules,
+  SHECAN, ELECTRO, DEFAULT_SERVERS, DEFAULT_HOSTS, DOH_ENDPOINTS,
+  buildQuery, parseA, queryOne, queryDoH, resolveHost, resolveHosts, hostResolverRules,
 };

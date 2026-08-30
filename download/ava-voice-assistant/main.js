@@ -169,7 +169,11 @@ function applyNodeDnsMap(map) {
     const ud = app.getPath('userData');
     let cfg = {};
     try { cfg = JSON.parse(fs.readFileSync(path.join(ud, 'ava-settings.json'), 'utf8')) || {}; } catch (_) { /* فایل نیست → پیش‌فرض روشن */ }
-    if (cfg.extDns === false) { DNS_BOOT.off = true; return; } /* کاربر خودش خاموش کرده */
+    /* v0.26 — این دورزنی «خط زندگیِ اتصال» کاربر ایرانی است و دیگر به گزینهٔ
+       extDns ربطی ندارد (آن فقط «تغییر DNS ویندوز» است). همیشه روشن می‌ماند؛
+       فقط انصراف صریح با کلید اختصاصی dnsBypass=false خاموشش می‌کند.
+       (ava-settings.json کاربر extDns=false داشت و دورزنی از کار می‌افتاد!) */
+    if (cfg.dnsBypass === false) { DNS_BOOT.off = true; return; }
     const cachePath = path.join(ud, 'dns-map.json');
     const readCache = () => {
       try {
@@ -191,12 +195,15 @@ function applyNodeDnsMap(map) {
     const probePath = path.join(ud, 'dns-probe.js');
     const cfgPath = path.join(ud, 'dns-probe.json');
     try { fs.writeFileSync(probePath, fs.readFileSync(path.join(__dirname, 'lib', 'dns-bypass.js'))); } catch (_) { /* noop */ }
-    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300 })); } catch (_) { /* noop */ }
+    /* v0.26 — dohTimeoutMs هم داده می‌شود تا اگر UDPها بسته بودند، DoH
+       (TCP:443) در همین پرس‌وجوی سنکرون فرصت نجات بدهد */
+    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300, dohTimeoutMs: 2000 })); } catch (_) { /* noop */ }
     let out = '';
     try {
       const r = spawnSync(process.execPath, [probePath, cfgPath], {
         env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }),
-        timeout: 2200, encoding: 'utf8', windowsHide: true,
+        timeout: 4600, /* v0.26: ۲.۲→۴.۶ ثانیه — فرصت فالبک DoH بعد از شکست UDP */
+        encoding: 'utf8', windowsHide: true,
       });
       out = String((r && r.stdout) || '');
     } catch (_) { /* noop */ }
@@ -230,7 +237,7 @@ setInterval(() => {
     const probePath = path.join(ud, 'dns-probe.js');
     const cfgPath = path.join(ud, 'dns-probe.json');
     if (!fs.existsSync(probePath)) return;
-    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300 })); } catch (_) { /* noop */ }
+    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300, dohTimeoutMs: 2500 })); } catch (_) { /* noop */ }
     const ch = spawn(process.execPath, [probePath, cfgPath], {
       env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }), windowsHide: true,
     });
@@ -1520,10 +1527,13 @@ ipcMain.handle('sys:weather', async (_e, city) => {
    base پیش‌فرض: https://api.z.ai/api/paas/v4  (سازگار با open.bigmodel.cn)
    ============================================================ */
 const trimBase = (b) => String(b || 'https://api.z.ai/api/paas/v4').replace(/\/+$/, '');
+const isNetFail = (m) => /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|aborted|timed?\s?out|اتصال به سرور برقرار نشد/i.test(String(m || ''));
 const netErr = (e) => {
   const m = String((e && e.message) || e);
-  if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|aborted|timed?\s?out/i.test(m)) {
-    return 'اتصال به سرور برقرار نشد — اینترنت یا فیلترشکن را بررسی کن';
+  if (isNetFail(m)) {
+    /* v0.26 — پیام کارآمد: نه فقط «فیلترشکن روشن کن» — کاربر باید بداند
+       نسخهٔ جدید خودش این را دور می‌زند */
+    return 'اتصال به سرور برقرار نشد (DNS/فیلترینگ) — نسخهٔ ۰.۲۶ به‌بعد خودکار DNS شکن را دور می‌زند؛ اگر نسخهٔ برنامه‌ات عقب است از دکمهٔ بروزرسانی نصبش کن';
   }
   return m.slice(0, 140);
 };
@@ -1917,6 +1927,20 @@ function geminiModelChain(userModel) {
 let gemWorkingModel = ''; // آخرین مدل کاری چت
 let gemSttWorkingModel = ''; // آخرین مدل کاری STT
 
+/* v0.26 — حافظهٔ منفی مدل‌ها: مدلی که ۴۰۴ «پیدا نشد» داد دیگر امتحان نمی‌شود
+   (مثلاً مدل اشتباه تایپ‌شدهٔ کاربر مثل gemini-3.5-flash) تا هر درخواست یک
+   اسلات اضافه و چند ثانیه هدر ندهد */
+const gemBadModels = new Set();
+const gemChainPruned = (list) => {
+  const kept = list.filter((m) => !gemBadModels.has(String(m)));
+  return kept.length ? kept : list.slice(0, 1); /* هرگز زنجیره را خالی نگذار */
+};
+const gemMarkBad = (m) => {
+  try { if (gemBadModels.size < 16) gemBadModels.add(String(m)); } catch (_) { /* noop */ }
+};
+const gemIsModel404 = (status, msg) =>
+  status === 404 || (status === 400 && /not found|not supported|is not a valid model/i.test(String(msg || '')));
+
 ipcMain.handle('stt:gemini', async (_e, p) => {
   const { buf, key, model, lang } = p || {};
   const keys = splitKeys(key);
@@ -1928,8 +1952,10 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
     `The spoken language is ${String(lang || 'fa-IR')} unless it is clearly another language. ` +
     'Return ONLY the transcription text with correct punctuation and Persian spacing (نیم‌فاصله where appropriate). No commentary, no quotes.';
   let lastErr = null;
-  /* v0.21 — مدل کاری اول + کلید خراب → کلید بعدی (نه همهٔ مدل‌ها) */
-  const models = [...new Set([gemSttWorkingModel, ...geminiModelChain(model)].filter(Boolean))];
+  let sawNetFail = false; /* v0.26 — اگر همهٔ خطاها شبکه‌ای بود، پیام دقیق‌تر */
+  /* v0.21 — مدل کاری اول + کلید خراب → کلید بعدی (نه همهٔ مدل‌ها)
+     v0.26 — مدل‌های ۴۰۴شده از حافظهٔ منفی حذف می‌شوند */
+  const models = gemChainPruned([...new Set([gemSttWorkingModel, ...geminiModelChain(model)].filter(Boolean))]);
   for (const k of keys) {
     for (const mdl of models) {
       try {
@@ -1947,6 +1973,8 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = `Gemini-ASR: ${String(msg).slice(0, 120)}`;
+          if (gemIsModel404(r.status, msg)) gemMarkBad(mdl); /* v0.26 */
+          if (isNetFail(String(msg))) sawNetFail = true;
           /* کلید نامعتبر/محدود → امتحان بقیهٔ مدل‌ها با همین کلید بی‌فایده است */
           if ([401, 403, 429].includes(r.status)) break;
           continue;
@@ -1958,9 +1986,11 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
         if (!text) { lastErr = 'Gemini-ASR: پاسخ خالی بود'; continue; }
         gemSttWorkingModel = mdl; /* v0.21 — دفعه بعد اول همین امتحان می‌شود */
         return { ok: true, text, model: mdl };
-      } catch (e) { lastErr = netErr(e); }
+      } catch (e) { lastErr = netErr(e); sawNetFail = sawNetFail || isNetFail(String(lastErr)); }
     }
   }
+  /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ هم صریح بنویس (تشنخیص آسان) */
+  if (sawNetFail) actLog('gemini-asr: all attempts failed at NETWORK level (DNS/فیلترینگ) — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
   return { ok: false, error: (lastErr || 'Gemini-ASR پاسخ نداد') };
 });
 
@@ -2097,11 +2127,14 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+  let lastErr = null;
+  let sawNetFail = false; /* v0.26 */
   /* زنجیرهٔ مدل: اول مدلِ انتخابی کاربر، بعد جدیدترین فلاش (نام مستعار همیشه‌سبز)
      و بعد نسل‌های قدیمی‌تر به‌عنوان فالبک — اگر مدلی منسوخ شده باشد (404)، خودکار
      مدل بعدی امتحان می‌شود تا «دیگر در دسترس نیست» دیگر به کاربر نرسد.
-     v0.21 — مدل کاریِ آخر در اول زنجیره (دومین سوال به بعد = سریع‌ترین مسیر) */
-  const models = [...new Set([
+     v0.21 — مدل کاریِ آخر در اول زنجیره (دومین سوال به بعد = سریع‌ترین مسیر)
+     v0.26 — مدل‌های ۴۰۴شده از حافظهٔ منفی حذف می‌شوند (gemBadModels) */
+  const models = gemChainPruned([...new Set([
     gemWorkingModel,
     String(model || '').trim(),
     'gemini-flash-latest',
@@ -2109,8 +2142,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
     'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
     'gemini-2.0-flash-lite',
-  ])].filter(Boolean);
-  let lastErr = null;
+  ])].filter(Boolean));
   /* چرخش کلید × مدل: کلید محدود/خراب → کلید بعدی؛ مدل نبود → مدل بعدی */
   for (const k of keys) {
     for (const mdl of models) {
@@ -2150,6 +2182,8 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = `Gemini: ${String(msg).slice(0, 140)}`;
+          if (gemIsModel404(r.status, msg)) gemMarkBad(mdl); /* v0.26 */
+          if (isNetFail(String(msg))) sawNetFail = true;
           /* v0.21 — کلید بی‌اعتبار/محدود (401/403/429) → بقیهٔ مدل‌ها با همین کلید
              بی‌فایده‌اند؛ بلافاصله کلید بعدی (قبلاً تا ۶ مدل × ۶۰ ثانیه معطل می‌شد) */
           if ([401, 403, 429].includes(r.status)) break;
@@ -2164,9 +2198,12 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         return { ok: true, text, model: mdl, keyIndex: keys.indexOf(k) };
       } catch (e) {
         lastErr = netErr(e);
+        sawNetFail = sawNetFail || isNetFail(String(lastErr));
       }
     }
   }
+  /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ صریح بنویس (تشخیص آسان کاربر) */
+  if (sawNetFail) actLog('gemini-chat: all attempts failed at NETWORK level (DNS/فیلترینگ) — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
   return { ok: false, error: (lastErr || 'هیچ کلید Gemini جواب نداد') + ` (مدل‌های امتحان‌شده: ${models.join('، ')})` };
 });
 
@@ -2659,7 +2696,7 @@ app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
   /* v0.24 — گزارش وضعیت دورزدن DNS در لاگ عملکرد */
   actLog('dns bypass: ' + (DNS_BOOT.off
-    ? 'off (extDns=false in ava-settings.json)'
+    ? 'off (dnsBypass=false in ava-settings.json — explicit opt-out)'
     : DNS_BOOT.applied
       ? DNS_BOOT.count + ' hosts pinned' + (DNS_BOOT.cached ? ' (cache)' : ' via shekan/electro') + ' — web engine + cloud fetches bypass filtered system DNS'
       : 'unavailable — system DNS in use (shekan/electro unreachable)'));
