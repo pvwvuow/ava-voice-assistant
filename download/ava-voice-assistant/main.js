@@ -1343,6 +1343,29 @@ ipcMain.handle('settings:save', (_e, obj) => {
   } catch (_) { return false; }
 });
 
+/* v0.31.0 — یادداشت‌های صوتی: فایل مستقل ava-notes.json (جدای settings تا
+   ذخیرهٔ تنظیمات هرگز یادداشت‌ها را نبلعد) — آرایهٔ {t, x}، جدیدترین اول */
+function notesFile() {
+  try { return path.join(app.getPath('userData'), 'ava-notes.json'); } catch (_) { return ''; }
+}
+ipcMain.handle('notes:load', () => {
+  const f = notesFile();
+  if (!f) return [];
+  try {
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return Array.isArray(j) ? j.slice(0, 200) : [];
+  } catch (_) { return []; }
+});
+ipcMain.handle('notes:save', (_e, arr) => {
+  const f = notesFile();
+  if (!f || !Array.isArray(arr)) return false;
+  try {
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(arr.slice(0, 200), null, 2));
+    return true;
+  } catch (_) { return false; }
+});
+
 /* ============================================================
    تایپ در برنامه فعال (حالت تایپ صوتی → خروجی پیست در هر برنامه)
    متن به کلیپ‌بورد می‌رود و Ctrl+V در پنجره فعال زده می‌شود.
@@ -1565,29 +1588,91 @@ const WMO_EN = {
   80: 'Light showers', 81: 'Showers', 82: 'Violent showers', 85: 'Snow showers', 86: 'Heavy snow showers',
   95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Severe thunderstorm',
 };
+/* v0.31.0 — دیکشنری آفلاین شهرهای ایران (مختصات رسمی) — حالا در سطح ماژول تا
+   هم آب‌وهوا و هم اوقات شرعی/مختصات (sys:geo) از یک منبع مشترک استفاده کنند.
+   اگر geocoding در فیلترینگ از دسترس خارج شود یا جواب ندهد، شهرهای اصلی ایران
+   بدون هیچ سرور کمکی کار می‌کنند. بجنورد (گزارش کاربر) در فهرست است. */
+const IR_CITIES = {
+  'تهران': [35.6892, 51.389], 'مشهد': [36.2605, 59.6168], 'اصفهان': [32.6539, 51.666],
+  'تبریز': [38.08, 46.2919], 'شیراز': [29.5918, 52.5837], 'کرج': [35.8355, 50.9915],
+  'اهواز': [31.3183, 48.6706], 'قم': [34.6416, 50.8746], 'کرمانشاه': [34.3142, 47.065],
+  'ارومیه': [37.5527, 45.0761], 'رشت': [37.2808, 49.5832], 'زاهدان': [29.4963, 60.8629],
+  'همدان': [34.7992, 48.5146], 'کرمان': [30.2839, 57.0834], 'یزد': [31.8974, 54.3569],
+  'اردبیل': [38.2498, 48.2933], 'بندرعباس': [27.1865, 56.2808], 'اراک': [34.0917, 48.463],
+  'زنجان': [36.6736, 48.4787], 'سنندج': [35.3219, 46.9862], 'قزوین': [36.2688, 50.0041],
+  'بجنورد': [37.4747, 57.329], 'بیرجند': [32.8663, 59.2211], 'ایلام': [33.6374, 46.4227],
+  'یاسوج': [30.6684, 51.588], 'شهرکرد': [32.3256, 50.8644], 'ساری': [36.5633, 53.0601],
+  'گرگان': [36.8427, 54.4441], 'خرمآباد': [33.4878, 48.3558], 'سمنان': [35.5729, 53.3971],
+  'بوشهر': [28.9234, 50.8203], 'آبادان': [30.3392, 48.3043], 'دزفول': [32.3814, 48.4056],
+  'کیش': [26.5578, 54.0229], 'قشم': [26.9581, 56.2719], 'نیشابور': [36.2133, 58.7958],
+  'سبزوار': [36.2127, 57.6819], 'ملایر': [34.2993, 48.8184], 'مراغه': [37.3895, 46.2382],
+  'مرند': [38.4329, 45.7749], 'لنگرود': [37.1961, 50.1536], 'چالوس': [36.6515, 51.4273],
+};
+const cityNorm = (s) => String(s || '').replace(/[\s\u200C]+/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک');
+
+/* v0.31.0 — مختصات شهر برای محاسبه‌های محلی رندرر (اوقات شرعی آفلاین) */
+ipcMain.handle('sys:geo', (_e, city) => {
+  const c = String(city || '').trim().slice(0, 60);
+  if (!c) return { ok: false };
+  const local = IR_CITIES[cityNorm(c)];
+  if (local) return { ok: true, name: c, lat: local[0], lng: local[1] };
+  return { ok: false, name: c };
+});
+
+/* v0.31.0 — قیمت لحظه‌ای ارز/طلا/سکه/رمزارز — بدون کلید، از tgju (سایت رسمی
+   بازار ایران؛ در فیلترینگ هم در دسترس است) با زنجیرهٔ mirror. اعداد «ریال»
+   هستند و رندرر به تومان (÷۱۰) تبدیل می‌کند؛ رمزارز دو رقم دارد: دلاری (plain)
+   و ریالی (-irr). پاسخ صادقانه: هر کی غایب بود همان جا گزارش می‌شود. */
+const TGFETCH_TIMEOUT = 12000;
+async function tgjuFetch() {
+  const mirrors = [
+    'https://call.tgju.org/ajax.json',
+    'https://call3.tgju.org/ajax.json',
+    'https://call4.tgju.org/ajax.json',
+  ];
+  let lastErr = '';
+  for (const u of mirrors) {
+    try {
+      const r = await cloudFetch(u, { signal: AbortSignal.timeout(TGFETCH_TIMEOUT) });
+      if (!r.ok) { lastErr = `HTTP ${r.status} @ ${u}`; continue; }
+      const j = await r.json().catch(() => null);
+      if (j && j.current && Object.keys(j.current).length > 50) return j.current;
+      lastErr = 'payload unreadable @ ' + u;
+    } catch (e) {
+      lastErr = String((e && e.message) || e).slice(0, 100) + ' @ ' + u;
+    }
+  }
+  throw new Error(lastErr || 'all tgju mirrors failed');
+}
+const RATED_KEYS = [
+  'price_dollar_rl', 'price_eur', 'price_gbp', 'price_aed',
+  'geram18', 'mesghal', 'ons',
+  'sekee', 'sekeb', 'nim', 'rob', 'gerami',
+  'crypto-bitcoin', 'crypto-bitcoin-irr', 'crypto-ethereum', 'crypto-ethereum-irr',
+  'crypto-tether', 'crypto-tether-irr', 'crypto-solana', 'crypto-solana-irr',
+  'crypto-dogecoin', 'crypto-dogecoin-irr', 'crypto-binance-coin', 'crypto-binance-coin-irr',
+];
+ipcMain.handle('sys:rates', async () => {
+  try {
+    const cur = await tgjuFetch();
+    const q = {};
+    for (const k of RATED_KEYS) {
+      const it = cur[k];
+      if (!it || it.p == null) continue;
+      const p = parseFloat(String(it.p).replace(/,/g, ''));
+      if (!isFinite(p) || p <= 0) continue;
+      q[k] = { p, dp: parseFloat(String(it.dp || '0').replace(/,/g, '')) || 0, dt: String(it.dt || '') };
+    }
+    if (!Object.keys(q).length) return { ok: false, error: 'سرویس قیمت پاسخ خالی داد', netFail: true };
+    return { ok: true, q };
+  } catch (e) {
+    return { ok: false, error: netErr(e), netFail: isNetFail(e && e.message) };
+  }
+});
+
 ipcMain.handle('sys:weather', async (_e, city) => {
   const c = String(city || 'تهران').trim().slice(0, 60) || 'تهران';
-  /* v0.29.2 — دیکشنری آفلاین شهرهای ایران (مختصات رسمی). اگر geocoding در
-     فیلترینگ از دسترس خارج شود یا جواب ندهد، آب‌وهوای شهرهای اصلی ایران
-     بدون هیچ سرور کمکی کار می‌کند. بجنورد (گزارش کاربر) در فهرست است. */
-  const IR_CITIES = {
-    'تهران': [35.6892, 51.389], 'مشهد': [36.2605, 59.6168], 'اصفهان': [32.6539, 51.666],
-    'تبریز': [38.08, 46.2919], 'شیراز': [29.5918, 52.5837], 'کرج': [35.8355, 50.9915],
-    'اهواز': [31.3183, 48.6706], 'قم': [34.6416, 50.8746], 'کرمانشاه': [34.3142, 47.065],
-    'ارومیه': [37.5527, 45.0761], 'رشت': [37.2808, 49.5832], 'زاهدان': [29.4963, 60.8629],
-    'همدان': [34.7992, 48.5146], 'کرمان': [30.2839, 57.0834], 'یزد': [31.8974, 54.3569],
-    'اردبیل': [38.2498, 48.2933], 'بندرعباس': [27.1865, 56.2808], 'اراک': [34.0917, 48.463],
-    'زنجان': [36.6736, 48.4787], 'سنندج': [35.3219, 46.9862], 'قزوین': [36.2688, 50.0041],
-    'بجنورد': [37.4747, 57.329], 'بیرجند': [32.8663, 59.2211], 'ایلام': [33.6374, 46.4227],
-    'یاسوج': [30.6684, 51.588], 'شهرکرد': [32.3256, 50.8644], 'ساری': [36.5633, 53.0601],
-    'گرگان': [36.8427, 54.4441], 'خرمآباد': [33.4878, 48.3558], 'سمنان': [35.5729, 53.3971],
-    'بوشهر': [28.9234, 50.8203], 'آبادان': [30.3392, 48.3043], 'دزفول': [32.3814, 48.4056],
-    'کیش': [26.5578, 54.0229], 'قشم': [26.9581, 56.2719], 'نیشابور': [36.2133, 58.7958],
-    'سبزوار': [36.2127, 57.6819], 'ملایر': [34.2993, 48.8184], 'مراغه': [37.3895, 46.2382],
-    'مرند': [38.4329, 45.7749], 'لنگرود': [37.1961, 50.1536], 'چالوس': [36.6515, 51.4273],
-  };
-  const norm = (s) => String(s || '').replace(/[\s\u200C]+/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک');
-  const local = IR_CITIES[norm(c)];
+  const local = IR_CITIES[cityNorm(c)];
   const wFail = (msg, netFail) => (netFail ? { ok: false, error: msg, netFail: true } : { ok: false, error: msg });
   try {
     let g = local ? { latitude: local[0], longitude: local[1], name: c } : null;

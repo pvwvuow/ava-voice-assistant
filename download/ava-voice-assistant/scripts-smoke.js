@@ -1234,6 +1234,46 @@ app.whenReady().then(async () => {
       ok('v0.30 voice: state query («وضعیت میکروفون دیسکورد») wired + i18n both dicts', v30.vstate);
       ok('v0.30 version markers (0.29.x/0.3x)', v30.ver);
     } catch (e) { console.log('SKIP | v0.30 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98958 v0.31.0 — فیوچرهای جدید (درخواست کاربر: «برو برای اضافه کردن
+    // فیوچرهای جدید»): (۱) قیمت لحظه‌ای ارز/طلا/سکه/رمزارز بدون کلید از tgju
+    // با زنجیرهٔ mirror و cloudFetch (ریال÷۱۰ = تومان، رمزارز دلاری+تومانی)،
+    // (۲) اوقات شرعی ۱۰۰٪ آفلاین با هستهٔ نجومی روش ژئوفیزیک تهران (۱۷٫۷/۱۴/۴٫۵
+    // + نیمه‌شب جعفری) — اعتبارسنجی زنده: ۰-۱ دقیقه اختلاف با aladhan method=7
+    // در ۵ شهر × ۳ تاریخ، مختصات از دیکشنری مشترک IR_CITIES (sys:geo)،
+    // (۳) یادداشت صوتی ماندگار در فایل مستقل ava-notes.json، (۴) تاریخ میلادی
+    // مکمل شمسی، (۵) کاور امن موزیک (onerror تصویر شکسته را حذف می‌کند).
+    // هر شکست → AI_FALLBACK (هیچ بن‌بستی مثل v0.29.2 نمی‌ماند).
+    try {
+      const m31 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a31 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const p31 = fs.readFileSync(path.join(__dirname, 'preload.js'), 'utf8');
+      const s31 = (src, a, b) => { const i = src.indexOf(a); const j = src.indexOf(b, i); return i >= 0 && j > i ? src.slice(i, j) : ''; };
+      const v31 = {
+        rates: m31.includes("ipcMain.handle('sys:rates'") && m31.includes('https://call.tgju.org/ajax.json') && m31.includes('https://call3.tgju.org/ajax.json') && m31.includes('https://call4.tgju.org/ajax.json') && /await cloudFetch\(u,/.test(m31),
+        geo: m31.includes("ipcMain.handle('sys:geo'") && (m31.match(/const IR_CITIES = \{/g) || []).length === 1 && m31.includes("'بجنورد': [37.4747, 57.329]"),
+        notes: m31.includes("ipcMain.handle('notes:load'") && m31.includes("ipcMain.handle('notes:save'") && m31.includes('ava-notes.json'),
+        preload: p31.includes("rates: () => ipcRenderer.invoke('sys:rates')") && p31.includes("geo: (city) => ipcRenderer.invoke('sys:geo', city)") && p31.includes("load: () => ipcRenderer.invoke('notes:load')"),
+        rmap: a31.includes('const RATE_MAP = [') && a31.includes('function ratesDetect') && a31.includes('function rateLine') && a31.includes('price_dollar_rl') && a31.includes('crypto-bitcoin-irr') && a31.includes('geram18') && a31.includes('sekee') && a31.includes("ids = ['dollar', 'gold18', 'emami']"),
+        rgate: a31.includes('r: (c) => ratesReply(c)') && s31(a31, 'async function ratesReply', 'async function prayerReply').includes('return AI_FALLBACK'),
+        pray: a31.includes('function prayerTimesCore') && a31.includes('riseSet(17.7)') && a31.includes('riseSet(4.5)') && a31.includes('riseSet(14)') && a31.includes('function prExtractCity') && a31.includes('function prWhich') && a31.includes('r: (c) => prayerReply(c)') && a31.includes('نیمه‌شب شرعی'),
+        noteR: a31.includes('function notesParseOp') && a31.includes('function notesReply') && a31.includes('r: (c) => notesReply(c)') && a31.includes('unshift({ t: Date.now(), x: text.slice(0, 500) })') && a31.includes("notes.save(kept)"),
+        i18n: a31.includes("'rates.ask'") && a31.includes("'prayer.city'") && a31.includes("'notes.added'") && a31.includes("'notes.cleared'") && a31.includes("'date.greg'") && a31.includes('fa-IR-u-ca-gregory'),
+        cover: a31.includes('function setCoverArt') && a31.includes('im.onerror') && a31.includes('setCoverArt(mCover, tr, true)') && a31.includes('setCoverArt(mwCover, tr, false)'),
+        ver: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a31) && JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version === '0.31.0',
+      };
+      ok('v0.31 rates: sys:rates IPC + tgju 3-mirror chain via cloudFetch', v31.rates);
+      ok('v0.31 geo: sys:geo + single hoisted IR_CITIES shared dict', v31.geo);
+      ok('v0.31 notes: independent ava-notes.json store (settings can never swallow notes)', v31.notes);
+      ok('v0.31 preload: rates/geo/notes bridges exposed', v31.preload);
+      ok('v0.31 rates: RATE_MAP + pure detect/line + basket fallback + honest AI_FALLBACK', v31.rmap && v31.rgate);
+      ok('v0.31 prayer: offline Tehran-method core (17.7/4.5/14 + Jafari midnight) + city/which + voice gate', v31.pray);
+      ok('v0.31 notes voice: add/read/delLast/delAll parser + persistent capped save', v31.noteR);
+      ok('v0.31 i18n: rates/prayer/notes/date.greg keys + Gregorian date rule', v31.i18n);
+      ok('v0.31 music: safe cover art (onerror removes broken blob)', v31.cover);
+      ok('v0.31 version markers 0.31.0', v31.ver);
+    } catch (e) { console.log('SKIP | v0.31 markers | ' + String(e && e.message).slice(0, 80)); }
+
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),

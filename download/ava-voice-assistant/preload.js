@@ -38,8 +38,18 @@ contextBridge.exposeInMainWorld('ava', {
     info: () => ipcRenderer.invoke('app:info'),
     /* آب‌وهوا از Open-Meteo (بدون کلید) */
     weather: (city) => ipcRenderer.invoke('sys:weather', city),
+    /* v0.31.0 — مختصات شهر از دیکشنری آفلاین (برای محاسبهٔ محلی اوقات شرعی) */
+    geo: (city) => ipcRenderer.invoke('sys:geo', city),
+    /* v0.31.0 — قیمت لحظه‌ای ارز/طلا/سکه/رمزارز (tgju، بدون کلید) */
+    rates: () => ipcRenderer.invoke('sys:rates'),
     /* تایپ متن در برنامه فعال — حالت تایپ صوتی با خروجی پیست (Ctrl+V) */
     typeText: (text) => ipcRenderer.invoke('sys:type-text', text),
+  },
+
+  /* v0.31.0 — یادداشت‌های صوتی (ava-notes.json در پوشهٔ خود برنامه) */
+  notes: {
+    load: () => ipcRenderer.invoke('notes:load'),
+    save: (arr) => ipcRenderer.invoke('notes:save', arr),
   },
 
   /* مدیریت DNS ویندوز (اعمال با تأیید مدیر/UAC)

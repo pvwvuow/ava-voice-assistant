@@ -151,11 +151,11 @@ if (hasPwsh && body) {
      !/if \(-not \$fg\) \{ return '' \}/.test(blind) && /if \(-not \$fg\) \{ return '' \}/.test(body));
 }
 
-console.log('\n[8] versions 0.30.0');
+console.log('\n[8] versions 0.30+ (v0.31: forward-compatible)');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.30.0', pkg.version === '0.30.0', pkg.version);
-ok('about box v0.30.0', htmlSrc.includes('>v0.30.0</span>'));
-ok('app.js appVersion 0.30.0', appSrc.includes("let appVersion = '0.30.0';"));
+ok('package.json 0.30+', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
+ok('about box 0.30+', />v0\.(29|3\d)\.\d+<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.30+', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

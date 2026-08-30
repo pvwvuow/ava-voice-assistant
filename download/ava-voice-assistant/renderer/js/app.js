@@ -924,6 +924,25 @@
     'set.ai.gemBadFormat': ['کلید جمنای معمولاً با «AIza» شروع می‌شود — اگر مطمئنی درست است، بی‌خیال این پیام', 'A Gemini key usually starts with "AIza" — ignore this notice if you are sure it is right'],
     'set.ai.gemErrKey': ['کلید جمنای معتبر نیست — از aistudio.google.com کلید بگیر و کامل بچسبان (با AIza شروع می‌شود)', 'The Gemini key is not valid — get a free one from aistudio.google.com and paste it fully (starts with AIza)'],
     'set.ai.gemErrLoc': ['گوگل جمنای را برای سرزمین تو محدود کرده — موتورهای دیگر آوا همین حالا جواب می‌دهند (خودکار/گوگل/بستهٔ آفلاین)', 'Google restricts Gemini in your region — the other AVA engines answer right now (Auto / Google / offline pack)'],
+    /* --- v0.31.0: قیمت‌ها / اوقات شرعی / یادداشت / تاریخ میلادی --- */
+    'rates.up': ['کمی بالاتر از قبل', 'a bit higher'],
+    'rates.down': ['کمی پایین‌تر از قبل', 'a bit lower'],
+    'rates.usd': ['دلار', 'USD'],
+    'rates.approx': ['حدود', 'about'],
+    'rates.onlyApp': ['قیمت لحظه‌ای فقط داخل برنامهٔ ویندوزی آوا کار می‌کند', 'Live rates work inside the Windows app only'],
+    'rates.ask': ['بگو «قیمت دلار چنده» یا «قیمت طلا چنده» — دلار، یورو، پوند، درهم، طلا، مثقال، انس جهانی، سکه‌ها و رمزارزها را لحظه‌ای می‌گویم', 'Say "dollar price" or "gold price" — I report live rates for currency, gold, coins and crypto'],
+    'date.greg': ['تاریخ میلادی امروز: {x}', 'Gregorian date today: {x}'],
+    'prayer.city': ['اوقات شرعی {city} — {x}', 'Prayer times in {city} — {x}'],
+    'prayer.onlyApp': ['اوقات شرعی فقط داخل برنامهٔ ویندوزی آوا کار می‌کند', 'Prayer times work inside the Windows app only'],
+    'prayer.fail': ['اوقات شرعی برای اینجا محاسبه نشد', 'Prayer times could not be computed here'],
+    'notes.added': ['ثبت شد ✓ — یادداشت شمارهٔ {n}: «{x}»', 'Saved ✓ — note #{n}: "{x}"'],
+    'notes.ask': ['متن یادداشت را هم بگو — مثلاً: «یادداشت کن که فردا ساعت ۵ جلسه دارم»', 'Say the note text too — e.g. "take a note: meeting at 5 tomorrow"'],
+    'notes.empty': ['هنوز یادداشتی نداری — بگو «یادداشت کن که …»', 'No notes yet — say "take a note: …"'],
+    'notes.list': ['یادداشت‌هات ({n} تا):', 'Your notes ({n}):'],
+    'notes.deletedLast': ['آخرین یادداشت پاک شد — «{x}»', 'Last note deleted — "{x}"'],
+    'notes.cleared': ['همهٔ یادداشت‌ها پاک شد', 'All notes cleared'],
+    'notes.saveFail': ['یادداشت ذخیره نشد — دوباره امتحان کن', 'Could not save the note — try again'],
+    'notes.onlyApp': ['یادداشت فقط داخل برنامهٔ ویندوزی آوا کار می‌کند', 'Notes work inside the Windows app only'],
   };
   const t = (key, vars) => {
     const e = I18N[key];
@@ -1971,6 +1990,295 @@
     return t('calc.reply', { x: faNum(m.expr.replace(/\*/g, '×').replace(/\//g, '÷')), y: faNum(String(v)) });
   }
 
+  /* ============================================================
+     v0.31.0 — فیوچرهای جدید
+     ۱) قیمت لحظه‌ای ارز/طلا/سکه/رمزارز (tgju — بدون کلید، مسیر cloudFetch)
+     ۲) اوقات شرعی ۱۰۰٪ آفلاین (محاسبهٔ نجومی — روش ژئوفیزیک دانشگاه تهران)
+     ۳) یادداشت صوتی ماندگار (ava-notes.json)
+     ۴) تاریخ میلادی به‌عنوان مکمل تاریخ شمسی
+     ============================================================ */
+
+  /* --- ۱) قیمت‌ها -------------------------------------------------- */
+  const moneyFa = (n) => faNum(String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+  /* عدد بزرگ تومان به خوانا: «۱۶٫۳ میلیارد تومان» */
+  const bigToman = (n) => {
+    if (n >= 1e9) return faNum((Math.round(n / 1e8) / 10).toFixed(1)).replace('.0', '') + ' میلیارد تومان';
+    if (n >= 1e6) return faNum(Math.round(n / 1e6)) + ' میلیون تومان';
+    return moneyFa(n) + ' تومان';
+  };
+  /* unit: toman = ریال÷۱۰ | usd = دلار | dual = دلاری + تومانی (-irr) */
+  const RATE_MAP = [
+    { id: 'ounce', fa: 'انس جهانی طلا', unit: 'usd', keys: ['ons'], rx: /انس\s*جهانی|انس\s*طلا|اونس\s*جهانی|ounce/i },
+    { id: 'gold18', fa: 'طلای ۱۸ عیار', unit: 'toman', keys: ['geram18'], rx: /طلای?\s*(۱۸|18)|گرم\s*طلا|طلای?\s*عیار|طلا(?!یی)/i },
+    { id: 'mesghal', fa: 'مثقال طلا', unit: 'toman', keys: ['mesghal'], rx: /مثقال/i },
+    { id: 'dollar', fa: 'دلار', unit: 'toman', keys: ['price_dollar_rl'], rx: /دلار|دولار|dollar/i },
+    { id: 'euro', fa: 'یورو', unit: 'toman', keys: ['price_eur'], rx: /یورو|ارو\b|euro/i },
+    { id: 'pound', fa: 'پوند', unit: 'toman', keys: ['price_gbp'], rx: /پوند|pound/i },
+    { id: 'dirham', fa: 'درهم', unit: 'toman', keys: ['price_aed'], rx: /درهم|dirham/i },
+    { id: 'nim', fa: 'نیم سکه', unit: 'toman', keys: ['nim'], rx: /نیم\s*سکه/i },
+    { id: 'rob', fa: 'ربع سکه', unit: 'toman', keys: ['rob'], rx: /ربع\s*سکه/i },
+    { id: 'gerami', fa: 'سکه گرمی', unit: 'toman', keys: ['gerami'], rx: /سکه\s*گرمی|گرمی/i },
+    { id: 'bahar', fa: 'سکه بهار آزادی', unit: 'toman', keys: ['sekeb'], rx: /بهار\s*آزادی|سکه\s*بهار/i },
+    { id: 'emami', fa: 'سکه امامی', unit: 'toman', keys: ['sekee'], rx: /امامی|سکه(?!‌ی)/i },
+    { id: 'btc', fa: 'بیت‌کوین', unit: 'dual', keys: ['crypto-bitcoin', 'crypto-bitcoin-irr'], rx: /بیت\s?کوی?ین|bitcoin|\bbtc\b/i },
+    { id: 'eth', fa: 'اتریوم', unit: 'dual', keys: ['crypto-ethereum', 'crypto-ethereum-irr'], rx: /اتریوم|ethereum|\beth\b/i },
+    { id: 'usdt', fa: 'تتر', unit: 'dual', keys: ['crypto-tether', 'crypto-tether-irr'], rx: /تتر|tether|usdt/i },
+    { id: 'sol', fa: 'سولانا', unit: 'dual', keys: ['crypto-solana', 'crypto-solana-irr'], rx: /سولانا|solana/i },
+    { id: 'doge', fa: 'دوجکوین', unit: 'dual', keys: ['crypto-dogecoin', 'crypto-dogecoin-irr'], rx: /دوج|dogecoin|doge/i },
+    { id: 'bnb', fa: 'بایننس کوین', unit: 'dual', keys: ['crypto-binance-coin', 'crypto-binance-coin-irr'], rx: /بایننس|binance/i },
+  ];
+  /* تشخیص خالص دارایی‌ها — تابع خالص برای تست خودکار (ترتیب مهم است) */
+  function ratesDetect(c) {
+    const s = String(c || '');
+    const ids = RATE_MAP.filter((a) => a.rx.test(s)).map((a) => a.id);
+    /* اولویت‌ها: «انس طلا» فقط انس، «نیم/ربع سکه» فقط خودش، «سکه» تنها = امامی */
+    if (ids.includes('ounce') && ids.includes('gold18') && !/گرم\s*طلا/i.test(s)) {
+      return ids.filter((x) => x !== 'gold18');
+    }
+    if (ids.includes('emami') && (ids.includes('nim') || ids.includes('rob') || ids.includes('gerami') || ids.includes('bahar')) && !/امامی/i.test(s)) {
+      return ids.filter((x) => x !== 'emami');
+    }
+    return ids;
+  }
+  const rateTrend = (it) => {
+    const dp = (it && it.dp) || 0;
+    if (Math.abs(dp) < 0.05) return '';
+    return (dp > 0 || (it && it.dt) === 'high') ? t('rates.up') : t('rates.down');
+  };
+  /* ساخت یک خط قیمت — تابع خالص برای تست (q = خروجی sys:rates) */
+  function rateLine(id, q) {
+    const a = RATE_MAP.find((x) => x.id === id);
+    if (!a || !q) return '';
+    const it = q[a.keys[0]];
+    if (!it || !isFinite(it.p) || it.p <= 0) return '';
+    const tr = rateTrend(it);
+    if (a.unit === 'usd') return `${a.fa}: ${moneyFa(it.p)} ${t('rates.usd')}${tr ? ' — ' + tr : ''}`;
+    if (a.unit === 'toman') return `${a.fa}: ${moneyFa(it.p / 10)}${tr ? ' — ' + tr : ''}`;
+    /* dual: دلاری + تومانی از کلید -irr */
+    const irr = q[a.keys[1]];
+    const tom = irr && isFinite(irr.p) && irr.p > 0 ? ` (${t('rates.approx')} ${bigToman(irr.p / 10)})` : '';
+    return `${a.fa}: ${moneyFa(it.p)} ${t('rates.usd')}${tom}${tr ? ' — ' + tr : ''}`;
+  }
+  async function ratesReply(c) {
+    if (!bridge || !bridge.system || !bridge.system.rates) return t('rates.onlyApp');
+    let ids = ratesDetect(c);
+    if (!ids.length) ids = ['dollar', 'gold18', 'emami']; /* «ارز چنده» و امثالش → سبد خلاصه */
+    const r = await bridge.system.rates();
+    if (r && r.ok && r.q && typeof r.q === 'object') {
+      const parts = ids.map((id) => rateLine(id, r.q)).filter(Boolean);
+      if (parts.length) {
+        actLog('rates ok: ' + ids.join(','));
+        return parts.join('؛ ');
+      }
+      actLog('rates keys missing: ' + ids.join(',') + ' → AI fallback');
+      return AI_FALLBACK; /* سرویس شکل عوض کرده → هوش مصنوعی */
+    }
+    actLog('rates fail → AI fallback (netFail=' + String(!!(r && r.netFail)) + '): ' + String((r && r.error) || '').slice(0, 80));
+    return AI_FALLBACK;
+  }
+
+  /* --- ۲) اوقات شرعی (آفلاین کامل) --------------------------------- */
+  /* هستهٔ نجومی — روش مؤسسهٔ ژئوفیزیک دانشگاه تهران
+     (صبح ۱۷٫۷°، عشا ۱۴°، مغرب ۴٫۵° زیر افق، نیمه‌شب جعفری = وسط مغرب تا صبح
+      فردا — همان تعریف تقویم رسمی ایران). اعتبارسنجی‌شده با سرویس aladhan
+      method=7: اختلاف ۰-۱ دقیقه در ۵ شهر × ۳ تاریخ. واحد: ساعت اعشاری محلی. */
+  function prayerTimesCore(lat, lng, date, tzOff) {
+    const rad = Math.PI / 180;
+    const dtr = (d) => d * rad;
+    const rtd = (r) => r / rad;
+    const fix = (a, b) => { const v = a - b * Math.floor(a / b); return v < 0 ? v + b : v; };
+    const jd = (y, m, d) => {
+      if (m <= 2) { y -= 1; m += 12; }
+      const A = Math.floor(y / 100), B = 2 - A + Math.floor(A / 4);
+      return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
+    };
+    const sunPos = (jdp) => {
+      const D = jdp - 2451545.0;
+      const g = fix(357.529 + 0.98560028 * D, 360);
+      const q = fix(280.459 + 0.98564736 * D, 360);
+      const L = fix(q + 1.915 * Math.sin(dtr(g)) + 0.020 * Math.sin(dtr(2 * g)), 360);
+      const e = 23.439 - 0.00000036 * D;
+      const RA = fix(rtd(Math.atan2(Math.cos(dtr(e)) * Math.sin(dtr(L)), Math.cos(dtr(L)))) / 15, 24);
+      const eqt = q / 15 - RA;
+      const decl = rtd(Math.asin(Math.sin(dtr(e)) * Math.sin(dtr(L))));
+      return { decl, eqt };
+    };
+    const baseJ = jd(date.getFullYear(), date.getMonth() + 1, date.getDate()) - lng / (15 * 24);
+    /* فاصلهٔ ساعت تا لحظه‌ای که خورشید به «زاویهٔ زیر افق» می‌رسد */
+    const Tdeg = (angle) => {
+      const { decl } = sunPos(baseJ + 0.5);
+      const c = (-Math.sin(dtr(angle)) - Math.sin(dtr(decl)) * Math.sin(dtr(lat))) /
+        (Math.cos(dtr(decl)) * Math.cos(dtr(lat)));
+      if (c > 1 || c < -1) return null;
+      return rtd(Math.acos(c)) / 15;
+    };
+    const sunEqt = () => sunPos(baseJ + 0.5).eqt;
+    const dhuhr = 12 + tzOff - lng / 15 - sunEqt();
+    const riseSet = (angle) => {
+      const t = Tdeg(angle);
+      return t == null ? null : { rise: dhuhr - t, set: dhuhr + t };
+    };
+    const rs083 = riseSet(0.833); /* طلوع/غروب: قطر قرص + شکست نور */
+    const rs45 = riseSet(4.5);    /* مغرب روش تهران */
+    const asrAngle = -rtd(Math.atan(1 / (1 + Math.tan(dtr(Math.abs(lat - sunPos(baseJ + 0.5).decl))))));
+    const rsAsr = riseSet(asrAngle);
+    const rs177 = riseSet(17.7);
+    const rs14 = riseSet(14);
+    /* نیمه‌شب شرعی جعفری: وسطِ غروبِ امروز تا اذان صبح فردا */
+    const baseJ2 = jd(date.getFullYear(), date.getMonth() + 1, date.getDate() + 1) - lng / (15 * 24);
+    const decl2 = sunPos(baseJ2 + 0.5).decl;
+    const eqt2 = sunPos(baseJ2 + 0.5).eqt;
+    const dhuhr2 = 12 + tzOff - lng / 15 - eqt2;
+    const c2 = (-Math.sin(dtr(17.7)) - Math.sin(dtr(decl2)) * Math.sin(dtr(lat))) /
+      (Math.cos(dtr(decl2)) * Math.cos(dtr(lat)));
+    const fajr2 = (Math.abs(c2) <= 1) ? dhuhr2 - rtd(Math.acos(c2)) / 15 : null;
+    const maghrib = rs45 ? rs45.set : (rs083 ? rs083.set + 0.15 : null);
+    const midnight = (maghrib != null && fajr2 != null) ? maghrib + ((fajr2 + 24 - maghrib) / 2) : null;
+    const f = (x) => (x == null ? null : Math.round(x * 60) / 60);
+    return {
+      fajr: f(rs177 ? rs177.rise : null),
+      sunrise: f(rs083 ? rs083.rise : null),
+      dhuhr: f(dhuhr),
+      asr: f(rsAsr ? rsAsr.set : null),
+      sunset: f(rs083 ? rs083.set : null),
+      maghrib: f(maghrib),
+      isha: f(rs14 ? rs14.set : null),
+      midnight: f(midnight && midnight >= 24 ? midnight - 24 : midnight),
+    };
+  }
+  const PR_LABELS = {
+    fajr: ['اذان صبح', 'Fajr'], sunrise: ['طلوع آفتاب', 'Sunrise'], dhuhr: ['اذان ظهر', 'Dhuhr'],
+    asr: ['اذان عصر', 'Asr'], sunset: ['غروب آفتاب', 'Sunset'], maghrib: ['اذان مغرب', 'Maghrib'],
+    isha: ['اذان عشا', 'Isha'], midnight: ['نیمه‌شب شرعی', 'Midnight'],
+  };
+  const PR_STRIP =
+    /(اوقات\s*شرعی|اوقات|شرعی|اذان|اذون|نماز|وقت|چند\s?مه|چنده|چند(?=\s|$)|چیه|بگو|لطفا|لطفاً|امروز|امشب|دیشب|الان|شهر|ساعت|عشر)/gi;
+  const PR_NAMES =
+    /(نیمه\s*شب|صبح|سحر|پیشین|طلوع|آفتاب(?!ی)|ظهر|عصر(?!ها)|غروب|مغرب|عشا|(?<![مب])شب(?!ه))/gi;
+  function prWhich(c) {
+    const s = String(c || '');
+    const w = [];
+    if (/نیمه\s*شب/i.test(s)) w.push('midnight');
+    if (/صبح|سحر|پیشین/i.test(s)) w.push('fajr');
+    if (/طلوع|آفتاب(?!ی)/i.test(s)) w.push('sunrise');
+    if (/ظهر(?![^.]{0,6}(صبح|عصر|مغرب|عشا))/i.test(s) && !w.includes('dhuhr')) w.push('dhuhr');
+    if (/عصر(?![^.]{0,6}(صبح|مغرب|عشا))/i.test(s)) w.push('asr');
+    if (/غروب/i.test(s)) w.push('sunset');
+    if (/مغرب/i.test(s)) w.push('maghrib');
+    if (/عشا|شب(?!ه)/i.test(s) && !w.includes('midnight')) w.push('isha');
+    return w.length ? w : ['fajr', 'sunrise', 'dhuhr', 'maghrib', 'isha'];
+  }
+  function prExtractCity(c) {
+    let city = String(c || '')
+      .replace(PR_STRIP, ' ')
+      .replace(PR_NAMES, ' ')
+      .replace(/[0-9۰-۹?؟!.,،:;]+/g, ' ');
+    for (let i = 0; i < 4; i++) {
+      const before = city;
+      city = city.replace(WX_EDGE, ' ').replace(/[\s\u200C]+/g, ' ').trim();
+      if (city === before) break;
+    }
+    return city.trim();
+  }
+  const prHM = (x) => {
+    if (x == null) return '';
+    let h = Math.floor(x), m = Math.round((x - h) * 60);
+    if (m === 60) { h += 1; m = 0; }
+    return faNum(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'));
+  };
+  async function prayerReply(c) {
+    if (!bridge || !bridge.system || !bridge.system.geo) return t('prayer.onlyApp');
+    const city = prExtractCity(c) || 'تهران';
+    const geo = await bridge.system.geo(city);
+    if (!geo || !geo.ok) {
+      actLog('prayer city unknown (' + city + ') → AI fallback');
+      return AI_FALLBACK; /* شهر ناشناخته → هوش مصنوعی */
+    }
+    const tzOff = -new Date().getTimezoneOffset() / 60;
+    const tm = prayerTimesCore(geo.lat, geo.lng, new Date(), tzOff);
+    const which = prWhich(c);
+    const parts = which
+      .filter((k) => tm[k] != null)
+      .map((k) => `${LANG === 'en' ? PR_LABELS[k][1] : PR_LABELS[k][0]} ${prHM(tm[k])}`);
+    if (!parts.length) return t('prayer.fail');
+    actLog('prayer ok: ' + (geo.name || city) + ' [' + which.join(',') + ']');
+    return t('prayer.city', { city: geo.name || city, x: parts.join(' · ') });
+  }
+
+  /* --- ۳) یادداشت صوتی ماندگار ------------------------------------- */
+  let NOTES = null;
+  async function notesLoad() {
+    if (NOTES) return NOTES;
+    try {
+      NOTES = (bridge && bridge.notes) ? (await bridge.notes.load() || []) : [];
+    } catch (_) { NOTES = []; }
+    if (!Array.isArray(NOTES)) NOTES = [];
+    return NOTES;
+  }
+  /* تشخیص عملیات یادداشت — تابع خالص برای تست: {op, text} */
+  function notesParseOp(c) {
+    const s = String(c || '');
+    if (/یادداشت[^.]{0,20}(پاک|حذف)|پاک[^.]{0,10}یادداشت|حذف[^.]{0,10}یادداشت|clear (my )?notes|delete (my )?notes/i.test(s)) {
+      return { op: /همه|تمام|کل|all/i.test(s) ? 'delAll' : 'delLast' };
+    }
+    if (/یادداشت[^.]{0,16}(بخون|بخوان|خوندن|نشون|لیست|کدوم)|یادداشت‌?هام|یادداشت\s*ها|my notes|read (my )?notes|list notes/i.test(s)) {
+      return { op: 'read' };
+    }
+    if (/یادداشت|note (down|to self)|take a note/i.test(s)) {
+      let x = s
+        .replace(/یادداشت\s*(کن|بکن|بنویس|بنیویس|ثبت\s*کن|اضافه\s*کن|بگیر)\s*(که|بازه|باشه|:|،)?/gi, ' ')
+        .replace(/(بنویس|ثبت\s*کن|اضافه\s*کن|بگیر)[^.]{0,8}یادداشت/gi, ' ')
+        .replace(/یادداشت(‌هام|ها|م)?/gi, ' ')
+        .replace(/note (down|to self)|take a note/gi, ' ')
+        /* فقط حرف‌پرانه‌های «آغاز» بریده می‌شوند (نه همه‌جا — «یک ساعت» داخل
+           متن یادداشت باید سالم بماند) + ZWNJ وای‌فای و امثالش حفظ می‌شود */
+        .replace(/^([\s:,،]*(?:لطفا|لطفاً|یه|یک|یکی|که|بازه|باشه)(?=\s|$)\s*)+/gi, ' ')
+        .replace(/[\s:,،]+/g, ' ')
+        .trim();
+      x = x.replace(/^(رو|را|کن|بکن|بگو|بده|به\s*من)\s+/i, '').replace(/\s+(رو|را|کن|بکن)$/i, '').trim();
+      return { op: 'add', text: x };
+    }
+    return { op: 'none' };
+  }
+  async function notesReply(c) {
+    const op = notesParseOp(c);
+    if (!bridge || !bridge.notes) return t('notes.onlyApp');
+    if (op.op === 'read') {
+      const arr = await notesLoad();
+      if (!arr.length) return t('notes.empty');
+      const lines = arr.slice(0, 8).map((n, i) => faNum(i + 1) + ') ' + String(n.x || '').slice(0, 80));
+      actLog('notes read: ' + arr.length);
+      return t('notes.list', { n: faNum(arr.length) }) + ' ' + lines.join(' — ') + (arr.length > 8 ? ' …' : '');
+    }
+    if (op.op === 'delLast') {
+      const arr = await notesLoad();
+      if (!arr.length) return t('notes.empty');
+      const rem = arr.shift();
+      NOTES = arr;
+      const ok = await bridge.notes.save(arr);
+      actLog('notes delLast ok=' + String(ok) + ' total=' + arr.length);
+      return ok ? t('notes.deletedLast', { x: String((rem && rem.x) || '').slice(0, 80) }) : t('notes.saveFail');
+    }
+    if (op.op === 'delAll') {
+      NOTES = [];
+      const ok = await bridge.notes.save([]);
+      actLog('notes delAll ok=' + String(ok));
+      return ok ? t('notes.cleared') : t('notes.saveFail');
+    }
+    if (op.op === 'add') {
+      const text = String(op.text || '').trim();
+      if (text.length < 2) return t('notes.ask');
+      const arr = await notesLoad();
+      arr.unshift({ t: Date.now(), x: text.slice(0, 500) });
+      const kept = arr.slice(0, 200);
+      const ok = await bridge.notes.save(kept);
+      if (ok) NOTES = kept;
+      actLog('notes add ok=' + String(ok) + ' total=' + kept.length);
+      return ok ? t('notes.added', { n: faNum(kept.length), x: text.slice(0, 90) }) : t('notes.saveFail');
+    }
+    return t('notes.ask');
+  }
+
   const RULES = [
     /* --- پاور: خواب / خاموش / ریستارت / مانیتور (نسخه ۰.۱۰) --- */
     {
@@ -2001,6 +2309,15 @@
     {
       k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?(چطور|چنده|چی|چیکار)|درجه[\s\u200C]?هوا|چند\s?درجه|دما|weather/i, t: 'آب‌وهوا', i: '#i-cloud',
       r: (c) => weatherReply(c),
+    },
+    /* --- v0.31.0: قیمت لحظه‌ای + اوقات شرعی (قبل از جستجو/ساعت تا قاطی نشوند) --- */
+    {
+      k: /((قیمت|نرخ)[^.]{0,24}(دلار|دولار|یورو|پوند|درهم|طلا|مثقال|انس|اونس|سکه|گرمی|بیت|کوین|تتر|اتریوم|سولانا|دوج|بایننس|ارز)|(دلار|دولار|یورو|پوند|درهم|طلا|مثقال|انس|اونس|سکه|بیت\s?کوین|تتر|اتریوم|سولانا|دوج|بایننس|ارز)[^.]{0,10}(چنده|چند\s?مه|چند\s?میشه|چقدر|قیمتش)|(price|rate)\s+(of\s+)?(dollar|euro|gold|bitcoin|crypto|tether))/i,
+      t: 'قیمت لحظه‌ای', i: '#i-pulse', r: (c) => ratesReply(c),
+    },
+    {
+      k: /اوقات\s*شرعی|شرعی|اذان|اذون|نماز[^.]{0,10}(چنده|چند|ساعت|وقت)|وقت\s*نماز|prayer times?/i,
+      t: 'اوقات شرعی', i: '#i-clock', r: (c) => prayerReply(c),
     },
     {
       k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
@@ -2069,7 +2386,11 @@
       },
     },
     { k: /ساعت|چند\s?ساعته|what time|the time/i, t: 'ساعت', i: '#i-clock', r: () => t('time.reply', { x: fmtTime() }) },
-    { k: /تاریخ|چندمه|امروز|what('s| is) (the )?date|today'?s date/i, t: 'تاریخ', i: '#i-clock', r: () => t('date.reply', { x: fmtDate() }) },
+    { k: /تاریخ|چندمه|امروز|what('s| is) (the )?date|today'?s date/i, t: 'تاریخ', i: '#i-clock',
+      /* v0.31.0 — «تاریخ میلادی امروز» هم پشتیبانی شد (پیش‌فرض: شمسی) */
+      r: (c) => /میلادی|gregorian/i.test(c)
+        ? t('date.greg', { x: new Intl.DateTimeFormat(LANG === 'en' ? 'en-US' : 'fa-IR-u-ca-gregory', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date()) })
+        : t('date.reply', { x: fmtDate() }) },
 
     /* --- ابزار --- */
     /* --- یادآوری واقعی (v0.12): ساعت مطلق یا مدت + متن --- */
@@ -2078,6 +2399,8 @@
       r: (c) => reminderReply(c),
     },
     { k: /تایمر|هشدار\s?بذار|timer/i, t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
+    /* v0.31.0 — یادداشت صوتی ماندگار */
+    { k: /یادداشت|یادداشتم|note (down|to self)|take a note|my notes/i, t: 'یادداشت', i: '#i-note', r: (c) => notesReply(c) },
 
     /* --- مدیای سیستم (هر پلیری — Spotify/مرورگر و…) --- */
     { k: /مدیا[^.]{0,10}(بعدی|بعد)|پلیر[^.]{0,10}(بعدی|بعد)|آهنگ بعدی پلیر|media next|next (track|media)/i, t: 'مدیای بعدی', i: '#i-music', run: 'media_next', r: () => (LANG === 'en' ? 'Next track on the system player.' : 'آهنگ بعدی در پلیر سیستم.') },
@@ -4766,7 +5089,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.30.0';
+  let appVersion = '0.31.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -6470,6 +6793,23 @@
     renderMusicList();
   }
 
+  /* v0.31.0 — کاور امن: اگر blob خراب بود (ID3 ناقص/انکودینگ عجیب)، img خودش
+     را حذف می‌کند و tr.cover پاک می‌شود تا آیکون «تصویر شکسته» هیچ‌وقت دیده
+     نشود؛ ردیف‌ها هم دوباره رندر می‌شوند تا واترمارک کاور قدیمی نماند */
+  function setCoverArt(el, tr, rerender) {
+    if (!el) return;
+    const old = el.querySelector('img');
+    if (old) old.remove();
+    if (!tr || !tr.cover) return;
+    el.insertAdjacentHTML('afterbegin', `<img src="${tr.cover}" alt=""/>`);
+    const im = el.querySelector('img');
+    if (im) im.onerror = () => {
+      im.remove();
+      tr.cover = null;
+      if (rerender) { try { renderMusicList(); } catch (_) { /* noop */ } }
+    };
+  }
+
   function updatePlayerUI() {
     const tr = music.tracks[music.cur];
     const playing = music.playing;
@@ -6484,18 +6824,9 @@
       if (mArtist) mArtist.textContent = tr.artist || String(tr.name || (tr.file && tr.file.name) || '').replace(/\.[^.]+$/, '');
       if (mwTitle) mwTitle.textContent = tr.title;
       if (mwArtist) mwArtist.textContent = tr.artist || '';
-      /* کاور */
-      const coverHtml = tr.cover ? `<img src="${tr.cover}" alt=""/>` : '';
-      if (mCover) {
-        const old = mCover.querySelector('img');
-        if (old) old.remove();
-        if (tr.cover) mCover.insertAdjacentHTML('afterbegin', coverHtml);
-      }
-      if (mwCover) {
-        const oldW = mwCover.querySelector('img');
-        if (oldW) oldW.remove();
-        if (tr.cover) mwCover.insertAdjacentHTML('afterbegin', coverHtml);
-      }
+      /* کاور (v0.31.0 — با onerror امن) */
+      setCoverArt(mCover, tr, true);
+      setCoverArt(mwCover, tr, false);
       if (musicWidget) musicWidget.hidden = !settings.extMusic || music.widgetDismissedFor === music.cur; /* افزونهٔ موزیک خاموش یا با درگ بسته شده → مخفی */
     } else {
       if (musicWidget) musicWidget.hidden = true;
