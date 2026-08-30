@@ -754,10 +754,29 @@ function setupAutoUpdater() {
        توسط electron-updater تأیید می‌شود و اگر خراب بود خودکار دانلود کامل
        انجام می‌گیرد؛ لایه‌های ۲ و ۳ به‌روزرسان هم همچنان پشتیبان هستند. */
     try { autoUpdater.disableDifferentialDownload = false; } catch (_) { /* noop */ }
+    /* v0.19 — لاگ تفصیلی electron-updater (دلتا یا کامل؟ چند بایت؟) در updater.log */
+    try {
+      autoUpdater.logger = {
+        info: (m) => updLog('updater: ' + m),
+        warn: (m) => updLog('updater warn: ' + m),
+        error: (m) => updLog('updater error: ' + m),
+        debug: (m) => updLog('updater debug: ' + m),
+      };
+    } catch (_) { /* noop */ }
     autoUpdater.on('checking-for-update', () => sendUI('updater:status', { state: 'checking' }));
     autoUpdater.on('update-available', (i) => { actLog(`updater available v${i && i.version}`, 'update'); sendUI('updater:status', { state: 'available', version: i && i.version }); });
     autoUpdater.on('update-not-available', () => { actLog('updater: already latest', 'update'); sendUI('updater:status', { state: 'none' }); });
-    autoUpdater.on('download-progress', (p) => sendUI('updater:status', { state: 'downloading', percent: Math.round(p.percent || 0) }));
+    let lastUpdMile = 0;
+    autoUpdater.on('download-progress', (p) => {
+      sendUI('updater:status', { state: 'downloading', percent: Math.round(p.percent || 0) });
+      /* ثبت بایت واقعی منتقل‌شده — اگر دلتا کار کند transferred ≪ total است */
+      const mile = Math.floor((p.percent || 0) / 20);
+      if (mile > lastUpdMile) {
+        lastUpdMile = mile;
+        const mb = (n) => ((n || 0) / 1048576).toFixed(1);
+        actLog(`updater download ${Math.round(p.percent || 0)}% transferred=${mb(p.transferred)}MB / total=${mb(p.total)}MB ${p.transferred < (p.total || 0) * 0.8 ? '(DELTA)' : ''}`, 'update');
+      }
+    });
     autoUpdater.on('update-downloaded', (i) => { actLog(`updater downloaded v${i && i.version}`, 'update'); sendUI('updater:status', { state: 'ready', version: i && i.version }); });
     autoUpdater.on('error', (e) => {
       const msg = String((e && e.message) || e);
@@ -1214,7 +1233,7 @@ ipcMain.handle('ai:chat', async (_e, p) => {
           model: model || 'glm-4.6',
           messages: messages.slice(-16), // فقط ۸ رد و بدل آخر
           temperature: typeof temperature === 'number' ? temperature : 0.6,
-          max_tokens: 1024,
+          max_tokens: 700, /* v0.19 — پاسخ کوتاه‌تر = سریع‌تر (حداکثر ۳ جمله در راهنمای سیستم) */
           stream: false,
         }),
         signal: AbortSignal.timeout(60000),
@@ -1767,7 +1786,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
           .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
         const body = {
           contents,
-          generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0.6, maxOutputTokens: 700 },
         };
         /* v0.18 — سرعت: مدل‌های نسل 2.5/3 بدون «فکر کردن» جواب می‌دهند
            (thinkingBudget=0 — تا ۵۰-۷۰٪ سریع‌تر) */
@@ -1823,7 +1842,7 @@ ipcMain.handle('ai:openai', async (_e, p) => {
           model: model || 'gpt-4o-mini',
           messages: messages.slice(-16),
           temperature: 0.6,
-          max_tokens: 1024,
+          max_tokens: 700, /* v0.19 — سریع‌تر */
         }),
         signal: AbortSignal.timeout(60000),
       });

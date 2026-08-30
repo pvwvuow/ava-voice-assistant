@@ -714,6 +714,30 @@ app.whenReady().then(async () => {
       await probe(`ava.log.act('smoke: runtime log test').then(() => 'logged')`);
     } catch (e) { console.log('SKIP | v0.18 runtime | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.96 v0.19 — latency overhaul: early finalize, shorter watchdog/silence,
+    // instant heard-card, faster typing, AI speed, updater differential logging
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const v19 = {
+        earlyFinal: appjs.includes('webStableTimer') && appjs.includes('cutListening(') && appjs.includes('webEarlyFinal && webGotAny && state'),
+        quickCmd: appjs.includes('const QUICK_CMD_RE =') && appjs.includes("isQuick ? 750 : 1100"),
+        shortWatchdog: appjs.includes("}, 3500);") && !appjs.includes("}, 7500);"),
+        shortSilence: appjs.includes('G_SIL_MS = 1500') && appjs.includes('GLM_SIL_MS = 1500'),
+        heardCard: appjs.includes("rcTag.textContent = t('tag.heard')") && appjs.includes('utterance total'),
+        fastType: appjs.includes('i += 2;') && appjs.includes("}, 8);"),
+        aiFast: mainjs.includes('maxOutputTokens: 700') && mainjs.includes('max_tokens: 700'),
+        updaterLog: mainjs.includes('autoUpdater.logger = {') && mainjs.includes('(DELTA)') && mainjs.includes('transferred=${mb(p.transferred)}'),
+      };
+      ok('v0.19 early-finalize (stable interim) for web engine', v19.earlyFinal && v19.quickCmd);
+      ok('v0.19 watchdog 3.5s + silence 1.5s', v19.shortWatchdog && v19.shortSilence);
+      ok('v0.19 instant heard-card + total latency log', v19.heardCard);
+      ok('v0.19 faster reply typing (8ms×2ch)', v19.fastType);
+      ok('v0.19 AI short replies (700 tokens)', v19.aiFast);
+      ok('v0.19 updater differential logging (DELTA marker)', v19.updaterLog);
+    } catch (e) { console.log('SKIP | v0.19 markers | ' + String(e && e.message).slice(0, 80)); }
+
     // 9. v0.16.2 — TDZ regression: cold boot with safeMode/noFx preset must survive.
     // User crash report v0.16.1: applyPerf() ran at boot before `let vizRaf` (app.js:4936)
     // executed, called vizStop() → TDZ ReferenceError → whole IIFE died → crash panel.
