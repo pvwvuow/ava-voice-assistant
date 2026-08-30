@@ -2102,11 +2102,23 @@ switch ($action) {
 }
 
 ipcMain.handle('discord:cmd', async (_e, p) => {
-  const { action, name, userId, bg, dx, dy } = p || {};
+  const { action, name, userId, bg, dx, dy, assist } = p || {};
   const A = String(action || '');
   const mode = bg ? 'bg' : 'fg';
   const dxN = Math.max(10, Math.min(320, Number(dx) || 46));
   const dyN = Math.max(10, Math.min(220, Number(dy) || 52));
+  /* v0.20 — حالت «کمکی»: صفر ورودی شبیه‌سازی‌شده؛ فقط باز کردن صفحهٔ مخاطب
+     با دیپ‌لینک رسمی (یا فوکوس دیسکورد) — کاملاً مطابق قوانین دیسکورد */
+  if (A === 'call' && assist === true) {
+    if (userId && /^\d{5,25}$/.test(String(userId).trim())) {
+      actLog(`discord call(assist) userId=${String(userId).trim().slice(0, 4)}…`, 'discord');
+      try { await shell.openExternal(`discord://discord.com/channels/@me/${String(userId).trim()}`); } catch (_) { /* noop */ }
+      return { ok: true, result: 'OK:ASSIST' };
+    }
+    actLog('discord call(assist) no-userId → focus only', 'discord');
+    const r = await runDiscordPs('focus', 'fg', '', dxN, dyN);
+    return { ok: r && r.ok, result: 'OK:ASSIST', error: r && r.error };
+  }
   /* تماس با مخاطب ثبت‌شده: دیپ‌لینک مستقیم DM را باز می‌کند (بدون Ctrl+K)،
      بعد دکمهٔ «شروع تماس» کلیک می‌شود — فیکس «به صفحه می‌رود ولی زنگ نمی‌زند» */
   if (A === 'call' && userId && /^\d{5,25}$/.test(String(userId).trim())) {

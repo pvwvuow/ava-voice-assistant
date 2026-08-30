@@ -165,7 +165,6 @@
     'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
-    'disc.dmOnly': ['پیام‌رسان دیسکورد باز شد ولی دکمهٔ تماس پیدا نشد — مختصات دکمه را در تنظیمات دیسکورد آزمایش/تنظیم کن', 'Discord DM opened but the call button was not found — calibrate it in Discord settings'],
     'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
     'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
     'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
@@ -309,7 +308,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۹ سرعت — دستیار حالا با تمام وجود سریع است: پایان جمله بدون انتظار اضافه تشخیص داده می‌شود (متن ثابت ۱.۱ ثانیه = اجرا؛ فرمان کامل‌نما ۰.۷۵ ثانیه)، سکوت پایانی ۲.۲→۱.۵ ثانیه، سگ‌بان موتور وب ۷.۵→۳.۵ ثانیه، متن شنیده‌شده همان لحظه با برچسب «شنیدم» در کارت می‌نشیند، تایپ پاسخ ۲ برابر سریع‌تر، جواب‌های AI کوتاه‌تر (۷۰۰ توکن) و لاگ دقیق دلتا-آپدیت با مارک DELTA — نکته: آپدیت اول بعد از ۰.۱۹ کامل دانلود می‌شود (کش نصّاب قبلی خالی است)؛ از آپدیت بعدی فقط قطعه‌های تغییرکرده.', 'v0.19 speed — end-of-sentence detected without extra waiting (stable interim 1.1s executes immediately; complete-looking commands 0.75s), trailing silence 2.2→1.5s, web-engine watchdog 7.5→3.5s, heard text appears instantly with a "Heard" tag, reply typing 2× faster, shorter AI answers (700 tokens) and precise delta-update logging with a DELTA marker — note: the first update after 0.19 is still a full download (previous installer not cached); afterwards only changed chunks download.'],
+    'about.desc': ['نسخه ۰.۲۰ هوشمندتر — لایهٔ نرمال‌سازی فارسی (ی/ک عربی و اعداد فارسی) و اجرای عملی فرمان‌های پیچیده با جمنای: حالا می‌گویی «آهنگ بعدی رو پخش کن و صدا رو هم زیاد کن» و آوا واقعاً هر دو را انجام می‌دهد (Function Calling امن با لیست سفید + تأیید برای کارهای حساس) — تماس دیسکورد حالا دو حالت دارد: کمکی (کاملاً مطابق قوانین دیسکورد) یا خودکار (آزمایشی، بدون هیچ توکن/API).', 'v0.20 smarter — Persian normalization layer (Arabic Yeh/Kaf, Persian digits), AI function-calling for complex and multi-action requests executed safely by local code with a strict whitelist and confirmation for sensitive actions, and Discord calling with two modes: Assist (fully within Discord rules) or Auto (experimental input simulation, no token/API).'],
     'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
@@ -383,6 +382,11 @@
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
     'disc.dmOnly': ['پیام‌رسان دیسکورد باز شد ولی دکمهٔ تماس پیدا نشد — مختصات دکمه را در تنظیمات دیسکورد آزمایش/تنظیم کن', 'Discord DM opened but the call button was not found — calibrate it in Discord settings'],
+    'disc.assist': ['صفحهٔ مخاطب در دیسکورد باز شد — فقط دکمهٔ تماس را بزن ✓', 'Contact page is open in Discord — just press the call button ✓'],
+    'set.dc.callMode': ['روش شروع تماس', 'How calls start'],
+    'set.dc.callModeHint': ['«کمکی»: فقط صفحهٔ مخاطب باز می‌شود و خودت دکمهٔ تماس را می‌زنی — کاملاً مطابق قوانین دیسکورد. «خودکار (آزمایشی)»: آوا کلید/کلیک شبیه‌سازی‌شده به پنجرهٔ دیسکورد خودت می‌فرستد (مثل ماکروهای دسترسی‌پذیری) — هیچ توکن یا API دیسکورد استفاده نمی‌شود، ولی ممکن است روی بعضی نسخه‌ها کار نکند', '"Assist": only opens the contact page and you press call — fully within Discord rules. "Auto (experimental)": AVA sends simulated keys/clicks to your own Discord window (like accessibility macros) — no Discord token or API involved, but it may not work on every version'],
+    'set.dc.modeAuto': ['خودکار (آزمایشی)', 'Auto (experimental)'],
+    'set.dc.modeAssist': ['کمکی — امن', 'Assist — safe'],
     'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
     'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
     'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
@@ -564,6 +568,8 @@
     'tag.reply': ['پاسخ آوا', 'AVA reply'], 'tag.custom': ['فرمان سفارشی', 'Custom command'], 'tag.demo': ['شبیه‌سازی دمو', 'Demo simulation'],
     'tag.ai': ['هوش مصنوعی', 'AI'], 'tag.aiCmd': ['هوش مصنوعی + فرمان جدید', 'AI + new command'],
     'tag.heard': ['شنیدم', 'Heard'],
+    'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
+    'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
     'default.reply': ['این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!', 'I have not learned this command yet. Connect the AI (GLM chat tab › sign in) and I will analyze anything you ask there!'],
     'suggest.say': ['بگو', 'Say'],
     'toast.welcome': ['آوا آماده است — اجرای واقعی فرمان‌ها فعال است', 'AVA is ready — real command execution is on'],
@@ -1079,6 +1085,7 @@
     /* v0.17 — افزونهٔ دیسکورد: مخاطبین و اجرای بک‌گراند */
     discordContacts: store.get('discordContacts', []), /* [{id, name, userId, note}] */
     discordBg: store.get('discordBg', true),           /* بدون به‌هم‌ریختن بازی */
+    discordCallMode: store.get('discordCallMode', 'auto'), /* auto=آزمایشی | assist=امن */
     discordCallDx: store.get('discordCallDx', 46),     /* فاصلهٔ دکمهٔ تماس از راست */
     discordCallDy: store.get('discordCallDy', 52),     /* فاصله از بالا */
     micId: store.get('micId', ''),
@@ -2331,10 +2338,31 @@
     return t('report.sent');
   }
 
+  /* ============================================================
+     نرمال‌سازی متن فارسی (v0.20 — لایهٔ utils پروژهٔ مرجع)
+     ي/ى عربی → ی، ك عربی → ک، اعراب و کشیده حذف، اعداد فارسی/عربی → انگلیسی،
+     نیم‌فاصله → فاصله — تا قوانین regex و تطبیق برنامه‌ها سردرگم نشوند
+     (فقط در خط فرمان‌ها؛ متن تایپ صوتی دست‌نخورده می‌ماند)
+     ============================================================ */
+  function normFaFull(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[\u064A\u0649]/g, '\u06CC')
+      .replace(/\u0643/g, '\u06A9')
+      .replace(/\u0640/g, '')
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+      .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/\u200C/g, ' ')
+      .replace(/[\u00AB\u00BB]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   async function runCommand(cmd, opts) {
     if (!cmd) return;
     if (cmdBusy) return;
-    const raw = String(cmd).trim();
+    let raw = String(cmd).trim();
     actLog('cmd: ' + raw.slice(0, 120));
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
     const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ|برام\s*تایپ\s*کن|برایم\s*تایپ\s*کن|این\s*(رو|را)\s*تایپ\s*کن|تایپش\s*کن/i;
@@ -2346,6 +2374,8 @@
       return;
     }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
+    /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد) */
+    raw = normFaFull(raw);
     /* ارسال گزارش عملکرد (v0.18) — «آوا گزارش بفرست» */
     if (/گزارش\s*(بفرست|بده|بگیر)|لاگ\s*(بفرست|بده)|گزارش\s*مشکل|ارسال\s*گزارش|send\s+log\s+report/i.test(raw)) {
       if (cmdBusy) return;
@@ -4133,7 +4163,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.19.0';
+  let appVersion = '0.20.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4241,6 +4271,7 @@
   function discordCtx() {
     return {
       bg: !!settings.discordBg,
+      assist: settings.discordCallMode === 'assist',
       dx: Number(settings.discordCallDx) || 46,
       dy: Number(settings.discordCallDy) || 52,
     };
@@ -4254,7 +4285,8 @@
       /* شفاف‌سازی: در حالت بک‌گراند کلیدها به دیسکورد فرستاده می‌شوند ولی
          قابل تأیید نیست — اگر اثری دیدی نشد، حالت بک‌گراند را خاموش کن */
       const res = String((r && r.result) || '');
-      if (res === 'OK:DM_OPENED') toast(t('disc.dmOnly'), '#i-info');
+      if (res === 'OK:ASSIST') toast(t('disc.assist'), '#i-smile');
+      else if (res === 'OK:DM_OPENED') toast(t('disc.dmOnly'), '#i-info');
       else toast(okMsg || t('disc.done'), '#i-check');
     } else toast((r && r.error) || t('disc.fail'), '#i-info');
     return r;
@@ -4354,6 +4386,12 @@
     settings.discordBg = optDiscordBg.checked;
     store.set('discordBg', settings.discordBg);
     toast(settings.discordBg ? t('set.dc.bgOn') : t('set.dc.bgOff'), '#i-smile');
+  });
+  const optDiscordCallMode = $('#optDiscordCallMode');
+  if (optDiscordCallMode) optDiscordCallMode.addEventListener('change', () => {
+    settings.discordCallMode = optDiscordCallMode.value === 'assist' ? 'assist' : 'auto';
+    store.set('discordCallMode', settings.discordCallMode);
+    toast(settings.discordCallMode === 'assist' ? (LANG === 'en' ? 'Assist mode — fully within Discord rules.' : 'حالت کمکی — کاملاً مطابق قوانین دیسکورد.') : (LANG === 'en' ? 'Auto mode — experimental input simulation.' : 'حالت خودکار — آزمایشی.'), '#i-smile');
   });
   const bindDxy = (el, key) => {
     if (!el) return;
@@ -4479,6 +4517,7 @@
     const owm = $('#optWhisperModel'); if (owm) owm.value = settings.whisperModel || 'whisper-large-v3-turbo';
     if (typeof renderDiscordContacts === 'function') renderDiscordContacts();
     const odb = $('#optDiscordBg'); if (odb) odb.checked = !!settings.discordBg;
+    const odm = $('#optDiscordCallMode'); if (odm) odm.value = settings.discordCallMode || 'auto';
     const odx = $('#optDiscordCallDx'); if (odx) odx.value = String(settings.discordCallDx || 46);
     const ody = $('#optDiscordCallDy'); if (ody) ody.value = String(settings.discordCallDy || 52);
     /* هشدار «مدل جمنای بدون کلید» — ریشهٔ سردرگمی قبلی کاربر */
@@ -4935,7 +4974,23 @@
     '- type=open_url: باز کردن وب‌سایت؛ value آدرس کامل https\n' +
     '- type=run: اجرای فرمان آماده؛ value یکی از: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, vol_set, recycle_empty\n' +
     '- type=ps: اسکریپت کوتاه تک‌خطی و غیرمخرب PowerShell\n' +
-    'مثال: اگر کاربر گفت «فرمان باز کردن تلگرام بساز»، بلوک را با open_url و آدرس https://web.telegram.org بساز.';
+    'مثال: اگر کاربر گفت «فرمان باز کردن تلگرام بساز»، بلوک را با open_url و آدرس https://web.telegram.org بساز.\n' +
+    'اگر درخواست کاربر «انجام دادن یک کار» یا چند کار همزمان است (باز کردن برنامه، صدا، موزیک، دیسکورد، یادآوری، سایت، DNS)، به جای توضیح طولانی فقط این بلوک را بده:\n' +
+    '<<<DO>>>\n' +
+    '{"reply":"جواب کوتاه صوتی","actions":[{"act":"...","value":"..."}]}\n' +
+    '<<<END>>>\n' +
+    'کارهای مجاز act (حداکثر ۳ اکشن؛ فقط همین لیست):\n' +
+    '- open_app: value=نام برنامه (کروم، تلگرام، فتوشاپ، بازی‌ها…)\n' +
+    '- open_url: value=آدرس https؛ web_search: value=عبارت جستجو\n' +
+    '- vol_up / vol_down / vol_mute؛ vol_set: value=عدد 0 تا 100\n' +
+    '- media_next / media_prev / media_toggle (پلیر سیستم)\n' +
+    '- music_play: value=اسم آهنگ یا خالی؛ music_pause\n' +
+    '- screenshot / lock / monitor_off / minimize_all / recycle_empty؛ sys_sleep: فقط با درخواست صریح کاربر (برنامه تأیید می‌گیرد)\n' +
+    '- dns_set: value=اسم پروفایل DNS؛ dns_reset (بدون value)\n' +
+    '- reminder_add: value=متن کامل با زمان (مثل: ۲۰ دقیقه دیگه چایی درست کن)\n' +
+    '- discord_call: value=اسم مخاطب ذخیره‌شده؛ discord_mute؛ discord_hangup\n' +
+    '- run_custom: value=عنوان فرمان سفارشی قبلی\n' +
+    'اگر فقط سوال است، جواب متنی کوتاه بده و هیچ بلوکی ننویس؛ اگر هم کار و هم سوال است، بلوک DO با reply بده.';
   const AI_SYSTEM_EN =
     'You are the AI brain of AVA, a Persian/English voice assistant for Windows.\n' +
     'Reply in the user\'s language, short (max 3 sentences), friendly and helpful.\n' +
@@ -4947,7 +5002,13 @@
     '- type=open_url: open a website; value is a full https URL\n' +
     '- type=run: run a built-in command; value one of: open_chrome, open_notepad, open_calc, open_explorer, open_vscode, open_taskmgr, open_settings, open_paint, open_youtube, open_music, open_downloads, open_documents, minimize_all, lock, screenshot, vol_up, vol_down, vol_mute, vol_set, recycle_empty\n' +
     '- type=ps: short single-line non-destructive PowerShell script\n' +
-    'Example: "make a command to open Telegram" → block with open_url and https://web.telegram.org';
+    'Example: "make a command to open Telegram" → block with open_url and https://web.telegram.org\n' +
+    'If the request is "do an action" or several actions (open app, volume, music, discord, reminder, site, DNS), reply with only this block:\n' +
+    '<<<DO>>>\n' +
+    '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
+    '<<<END>>>\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, discord_call, discord_mute, discord_hangup, run_custom.\n' +
+    'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
   let chatBusy = false;
@@ -4983,6 +5044,142 @@
       if (j && j.title && j.action && j.action.type && j.action.value) add = j;
     } catch (_) { /* noop */ }
     return { reply: t.replace(m[0], '').trim(), add };
+  }
+
+  /* ---------- v0.20 — پروتکل اجرای عملی (Function Calling) ----------
+     الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
+     فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
+     می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_hangup', 'run_custom'];
+  function parseDo(text) {
+    const t = String(text || '');
+    const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
+    if (!m) return { reply: t.trim(), do: null };
+    let d = null;
+    try {
+      const j = JSON.parse(m[1].replace(/^```(?:json)?/i, '').replace(/```$/, '').trim());
+      const acts = Array.isArray(j && j.actions)
+        ? j.actions.slice(0, 3)
+            .filter((a) => a && DO_ACTS.includes(a.act))
+            .map((a) => ({ act: a.act, value: String(a.value == null ? '' : a.value).slice(0, 200).trim() }))
+        : [];
+      if (acts.length) d = { reply: String((j && j.reply) || '').slice(0, 300), actions: acts };
+    } catch (_) { /* noop */ }
+    return { reply: t.replace(m[0], '').trim(), do: d };
+  }
+  const DO_RUN_LABEL = {
+    vol_up: () => LANG === 'en' ? 'Volume raised.' : 'صدای سیستم را بلندتر کردم.',
+    vol_down: () => LANG === 'en' ? 'Volume lowered.' : 'صدای سیستم را کمتر کردم.',
+    vol_mute: () => LANG === 'en' ? 'Sound is muted.' : 'صدا قطع/وصل شد.',
+    media_next: () => LANG === 'en' ? 'Next track.' : 'آهنگ بعدی در پلیر سیستم.',
+    media_prev: () => LANG === 'en' ? 'Previous track.' : 'آهنگ قبلی در پلیر سیستم.',
+    media_toggle: () => LANG === 'en' ? 'Play/pause toggled.' : 'پخش/توقف پلیر سیستم انجام شد.',
+    lock: () => LANG === 'en' ? 'PC locked.' : 'صفحه قفل شد.',
+    screenshot: () => LANG === 'en' ? 'Screenshot saved to Pictures.' : 'اسکرین‌شات در پوشهٔ تصاویر ذخیره شد.',
+    monitor_off: () => t('pow.monitorOff'),
+    minimize_all: () => LANG === 'en' ? 'All windows minimized.' : 'همهٔ پنجره‌ها کمینه شدند.',
+    recycle_empty: () => LANG === 'en' ? 'Recycle bin emptied.' : 'سطل بازیافت خالی شد.',
+  };
+  async function executeDoActions(actions) {
+    const outs = [];
+    for (const a of actions) {
+      try {
+        switch (a.act) {
+          case 'open_app': {
+            if (!bridge || !bridge.apps) { outs.push(t('toast.onlyApp')); break; }
+            await ensureAppsList();
+            let hit = matchSysApp(a.value);
+            if (!hit) { statusText.textContent = t('app.scanning'); await ensureAppsList(true).catch(() => { /* noop */ }); hit = matchSysApp(a.value); }
+            if (hit) {
+              const r = await bridge.apps.launch({ name: hit.app.name, exe: hit.app.exe }).catch(() => null);
+              outs.push(r && r.ok ? t('app.open', { x: hit.app.name }) : t('app.launchFail', { x: hit.app.name }));
+            } else outs.push(t('app.notFound', { x: a.value }));
+            break;
+          }
+          case 'open_url': case 'web_search': {
+            if (!bridge || !bridge.system) { outs.push(t('toast.onlyApp')); break; }
+            const r = await bridge.system.run(a.act === 'open_url' ? 'web_open' : 'web_search', a.value).catch(() => ({ ok: false }));
+            outs.push(r && r.ok ? (a.act === 'open_url' ? (LANG === 'en' ? 'Opened the link.' : 'لینک را باز کردم.') : (LANG === 'en' ? 'Search opened.' : 'جستجو را باز کردم.')) : (LANG === 'en' ? 'Could not open it.' : 'باز نشد.'));
+            break;
+          }
+          case 'vol_up': case 'vol_down': case 'vol_mute': case 'media_next': case 'media_prev': case 'media_toggle': case 'lock': case 'screenshot': case 'minimize_all': case 'recycle_empty': {
+            if (!canRun) { outs.push(t('toast.onlyApp')); break; }
+            const r = await bridge.system.run(a.act).catch(() => ({ ok: false }));
+            outs.push((r && r.ok ? DO_RUN_LABEL[a.act]() : (LANG === 'en' ? 'Failed.' : 'انجام نشد.')));
+            break;
+          }
+          case 'vol_set': {
+            if (!canRun) { outs.push(t('toast.onlyApp')); break; }
+            const v = Math.max(0, Math.min(100, Number(a.value) || 0));
+            const r = await bridge.system.run('vol_set', String(v)).catch(() => ({ ok: false }));
+            outs.push(r && r.ok ? (LANG === 'en' ? `Volume set to ${v}.` : `صدا روی ${v} تنظیم شد.`) : (LANG === 'en' ? 'Failed.' : 'انجام نشد.'));
+            break;
+          }
+          case 'monitor_off': case 'sys_sleep': {
+            if (!canRun) { outs.push(t('toast.onlyApp')); break; }
+            if (a.act === 'sys_sleep') {
+              const okGo = await askConfirm({
+                title: LANG === 'en' ? 'Sleep the PC?' : 'کامپیوتر بخوابد؟',
+                text: LANG === 'en' ? 'The AI requested to sleep the system. Confirm?' : 'هوش مصنوعی درخواست خواب‌شدن سیستم را داده — تأیید می‌کنی؟',
+              });
+              if (!okGo) { outs.push(t('cf.skip')); break; }
+            }
+            outs.push(await runPower(a.act));
+            break;
+          }
+          case 'music_play': {
+            if (!settings.extMusic || typeof playTrack !== 'function') { outs.push(LANG === 'en' ? 'Music extension is off.' : 'افزونهٔ موزیک خاموش است.'); break; }
+            const q = normFaFull(a.value);
+            let idx = -1;
+            if (q) idx = music.tracks.findIndex((tr) => normFaFull(tr.title).includes(q) || normFaFull(tr.artist || '').includes(q));
+            if (idx < 0 && music.cur >= 0) idx = music.cur;
+            if (idx < 0 && music.tracks.length) idx = 0;
+            if (idx < 0) { outs.push(LANG === 'en' ? 'No tracks — pick a folder first.' : 'هنوز آهنگی نیست — اول پوشه انتخاب کن.'); break; }
+            playTrack(idx);
+            outs.push(LANG === 'en' ? 'Playing.' : 'پخش می‌کنم.');
+            break;
+          }
+          case 'music_pause': {
+            if (typeof mAudio !== 'undefined' && mAudio) { mAudio.pause(); outs.push(LANG === 'en' ? 'Music paused.' : 'موزیک متوقف شد.'); }
+            break;
+          }
+          case 'dns_set': case 'dns_reset': {
+            outs.push(await runDnsCommand(a.act === 'dns_reset' ? 'دی ان اس رو بردار' : `${a.value} رو تنظیم کن`));
+            break;
+          }
+          case 'reminder_add': {
+            outs.push(await reminderReply(a.value));
+            break;
+          }
+          case 'discord_call': {
+            const ct = resolveDiscordContact(a.value);
+            await runDiscordCmd('call', ct ? ct.name : a.value, t('disc.calling', { x: ct ? ct.name : a.value }), ct ? ct.userId : '');
+            outs.push(t('disc.calling', { x: ct ? ct.name : a.value }));
+            break;
+          }
+          case 'discord_mute': {
+            await runDiscordCmd('mute', '', t('disc.muted'));
+            outs.push(t('disc.muted'));
+            break;
+          }
+          case 'discord_hangup': {
+            await runDiscordCmd('hangup', '', t('disc.hangup'));
+            outs.push(t('disc.hangup'));
+            break;
+          }
+          case 'run_custom': {
+            const cc = customCmds.find((c) => normFaFull(c.title || '') === normFaFull(a.value)) || customCmds.find((c) => (c.phrases || []).some((p) => normFaFull(a.value).includes(normFa(p))));
+            if (!cc) { outs.push(LANG === 'en' ? `Custom command "${a.value}" not found.` : `فرمان سفارشی «${a.value}» پیدا نشد.`); break; }
+            outs.push(await runCustom(cc));
+            break;
+          }
+          default: break;
+        }
+      } catch (e) {
+        outs.push((LANG === 'en' ? 'Action failed: ' : 'انجام نشد: ') + String((e && e.message) || e).slice(0, 80));
+      }
+    }
+    return outs.filter(Boolean).join(' — ');
   }
 
   /* --- تب‌های چت: چت سریع / صفحه GLM --- */
@@ -5176,6 +5373,25 @@
     try {
       const r = await aiAsk(cmd);
       if (r && r.ok) {
+        /* v0.20 — اول پروتکل اجرای عملی (Function Calling): اگر AI تصمیم گرفت
+           کاری انجام شود، اجرای واقعی با کد محلی و مسیرهای امن آوا است */
+        const doRes = parseDo(r.text);
+        if (doRes.do) {
+          actLog('ai DO: ' + doRes.do.actions.map((a) => a.act + (a.value ? '(' + a.value.slice(0, 24) + ')' : '')).join(' + '));
+          const actReply = await executeDoActions(doRes.do.actions);
+          const finalReply = [doRes.do.reply, actReply].filter(Boolean).join(' — ');
+          chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: finalReply });
+          setState('success');
+          statusText.textContent = t('ai.got');
+          rcTag.textContent = t('tag.aiDo') + (r.via ? ' · ' + r.via : '');
+          typeText(rcReply, finalReply || '…');
+          speak(finalReply);
+          pushHistory(cmd, true);
+          handsFreeRearm();
+          cmdBusy = false;
+          setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+          return;
+        }
         const { reply, add } = parseAdd(r.text);
         chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: r.text });
         setState('success');

@@ -354,6 +354,13 @@
                   <span class="sw"><input type="checkbox" id="optDiscordBg"/><i></i></span>
                 </label>
                 <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.callMode">روش شروع تماس</b><span data-i18n="set.dc.callModeHint">«کمکی»: فقط صفحهٔ مخاطب باز می‌شود و خودت دکمهٔ تماس را می‌زنی — کاملاً مطابق قوانین دیسکورد. «خودکار (آزمایشی)»: آوا کلید/کلیک شبیه‌سازی‌شده به پنجرهٔ دیسکورد خودت می‌فرستد (مثل ماکروهای دسترسی‌پذیری) — هیچ توکن یا API دیسکورد استفاده نمی‌شود، ولی ممکن است روی بعضی نسخه‌ها کار نکند</span></span>
+                  <select id="optDiscordCallMode" class="set-select">
+                    <option value="auto" data-i18n="set.dc.modeAuto">خودکار (آزمایشی)</option>
+                    <option value="assist" data-i18n="set.dc.modeAssist">کمکی — امن</option>
+                  </select>
+                </div>
+                <div class="set-row">
                   <span class="set-info"><b data-i18n="set.dc.cal">مکان دکمهٔ تماس (فالبک)</b><span data-i18n="set.dc.calHint">وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند</span></span>
                   <div class="dc-cal">
                     <input type="number" id="optDiscordCallDx" class="set-input num" min="10" max="320" value="46" aria-label="X" />
@@ -895,7 +902,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.19.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.20.0</span></div>
   </div>
 
   <script src="js/app.js"></script>

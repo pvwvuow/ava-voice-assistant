@@ -738,6 +738,27 @@ app.whenReady().then(async () => {
       ok('v0.19 updater differential logging (DELTA marker)', v19.updaterLog);
     } catch (e) { console.log('SKIP | v0.19 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.95 v0.20 — reference-architecture parity: normalization layer,
+    // AI function-calling (DO protocol), discord assist call mode
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const html = read('renderer/index.html');
+      const v20 = {
+        normLayer: /function normFaFull\(s\)/.test(appjs) && appjs.includes('raw = normFaFull(raw);') && appjs.includes('\\u06F0-\\u06F9'),
+        doProtocol: /function parseDo\(text\)/.test(appjs) && /async function executeDoActions\(actions\)/.test(appjs) && appjs.includes('const DO_ACTS = ['),
+        doPrompt: appjs.includes('<<<DO>>>') && appjs.includes('discord_call') && appjs.includes('run_custom'),
+        doHook: appjs.includes('const doRes = parseDo(r.text);') && appjs.includes("rcTag.textContent = t('tag.aiDo')"),
+        doSafe: appjs.includes("DO_ACTS.includes(a.act)") && appjs.includes("askConfirm({") && appjs.includes("Sleep the PC?"),
+        callMode: appjs.includes("discordCallMode") && html.includes('optDiscordCallMode') && mainjs.includes("assist === true") && mainjs.includes("OK:ASSIST"),
+      };
+      ok('v0.20 Persian normalization layer in pipeline', v20.normLayer);
+      ok('v0.20 AI function-calling (DO protocol + executor)', v20.doProtocol && v20.doPrompt && v20.doHook);
+      ok('v0.20 DO whitelist + sleep confirm', v20.doSafe);
+      ok('v0.20 discord assist call mode (ToS-safe option)', v20.callMode);
+    } catch (e) { console.log('SKIP | v0.20 markers | ' + String(e && e.message).slice(0, 80)); }
+
     // 9. v0.16.2 — TDZ regression: cold boot with safeMode/noFx preset must survive.
     // User crash report v0.16.1: applyPerf() ran at boot before `let vizRaf` (app.js:4936)
     // executed, called vizStop() → TDZ ReferenceError → whole IIFE died → crash panel.
