@@ -141,7 +141,7 @@ ok('first path = chromium net.fetch (system proxy honored)', mainSrc.includes('c
 ok('fallback = node fetch (pinned DNS), NOT self-recursion', /catch \(eCh\) \{\s*\n\s*const r = await fetch\(url, o\);/.test(mainSrc));
 const cfCount = (mainSrc.match(/await cloudFetch\(/g) || []).length;
 ok('cloud call sites swapped (>=14)', cfCount >= 14, cfCount);
-ok('z.ai webview page-script fetches untouched', mainSrc.includes("await fetch('/api/models'") && mainSrc.includes("await fetch('/api/chat/completions'"));
+ok('z.ai webview page-script still fetches (v0.29.3: models plain + completions via zfetch v2→v1)', mainSrc.includes("await fetch('/api/models'") && mainSrc.includes("zfetch('/api/v2')"));
 ok('one-time via log (chromium/node)', mainSrc.includes("actLog('cloud fetch path: '"));
 ok('netDeepDiag: system proxy probe logged', mainSrc.includes("actLog('net system proxy for googleapis: '"));
 ok('netDeepDiag: real https-check of generativelanguage', mainSrc.includes('net https-check generativelanguage'));

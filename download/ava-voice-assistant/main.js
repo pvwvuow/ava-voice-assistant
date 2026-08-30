@@ -1764,18 +1764,55 @@ function buildZaiPageScript(messages, model) {
         } catch (e) { mdl = 'GLM-4.6'; }
       }
       const uuid = function () { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1e6); };
-      const r = await fetch('/api/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({
-          stream: true,
-          chat_id: uuid(),
-          id: uuid(),
-          model: mdl,
-          messages: CFG.messages,
-          features: { enable_thinking: false },
-        }),
+      /* v0.29.3 — z.ai مسیر v1 را کاملاً بست (۴۰۴ برای همه؛ لاگ کاربر: «z.ai: Not Found»).
+         نسخهٔ v2 زنده است (۴۰۱ با توکن بدهکار). الگوریتم امضا از باندل فرانت‌اند
+         z.ai بازسازی شده: v = HMAC('key-…',''+floor(ts/300000))؛ sig = HMAC(v,
+         sortedPayload|base64(prompt)|ts) — js-sha256 hmac(key,msg) → WebCrypto همان. */
+      let uid = '';
+      try {
+        const ui = JSON.parse(localStorage.getItem('user') || localStorage.getItem('user_info') || '{}');
+        uid = String((ui && (ui.id || ui.user_id)) || '');
+      } catch (e) {}
+      const hexHmac = async function (keyStr, msgStr) {
+        const enc = new TextEncoder();
+        const k = await crypto.subtle.importKey('raw', enc.encode(keyStr), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+        const sb = await crypto.subtle.sign('HMAC', k, enc.encode(msgStr));
+        return Array.from(new Uint8Array(sb)).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+      };
+      const sigTs = String(Date.now());
+      const sigBucket = String(Math.floor(Number(sigTs) / 300000));
+      const sigRid = uuid();
+      const sigPrompt = String((CFG.messages[CFG.messages.length - 1] && CFG.messages[CFG.messages.length - 1].content) || '').trim().slice(0, 2000);
+      const sigBytes = new TextEncoder().encode(sigPrompt);
+      let sigBin = '';
+      for (let si = 0; si < sigBytes.length; si++) sigBin += String.fromCharCode(sigBytes[si]);
+      const sigB64 = btoa(sigBin);
+      const sigV = await hexHmac('key-@@@@)))()((9))-xxxx&&&%%%%%', sigBucket);
+      const sigX = await hexHmac(sigV, 'requestId,' + sigRid + ',timestamp,' + sigTs + ',user_id,' + uid + '|' + sigB64 + '|' + sigTs);
+      const zq = 'timestamp=' + encodeURIComponent(sigTs) + '&requestId=' + encodeURIComponent(sigRid) + '&user_id=' + encodeURIComponent(uid) + '&signature_timestamp=' + encodeURIComponent(sigTs);
+      const zbody = JSON.stringify({
+        stream: true,
+        chat_id: uuid(),
+        id: uuid(),
+        model: mdl,
+        messages: CFG.messages,
+        signature_prompt: sigPrompt,
+        features: { enable_thinking: false },
       });
+      const zfetch = function (base) {
+        return fetch(base + '/chat/completions?' + zq, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+            'X-FE-Version': 'prod-fe-1.1.92',
+            'X-Signature': sigX,
+          },
+          body: zbody,
+        });
+      };
+      let r = await zfetch('/api/v2');
+      if (r.status === 404) r = await zfetch('/api'); /* فالبک v1 در استقرارهای قدیمی */
       if (r.status === 401) return { ok: false, needLogin: true, error: 'expired' };
       if (!r.ok) return { ok: false, error: 'HTTP ' + r.status };
       const ct = String(r.headers.get('content-type') || '');
@@ -1850,12 +1887,26 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
   }
   const ZAI = 'https://chat.z.ai';
   const chatId = crypto.randomUUID();
+  /* v0.29.3 — امضای HMAC برای مسیر v2 (بازسازی الگوریتم باندل z.ai؛
+     js-sha256 hmac(key,msg) = createHmac(key).update(msg).hex). v1 مرده است
+     (۴۰۴ برای همه) — لاگ کاربر: «z.ai: Not Found» بعد از ۲۹ ثانیه. */
+  const zSigTs = String(Date.now());
+  const zSigBucket = String(Math.floor(Number(zSigTs) / 300000));
+  const zSigRid = crypto.randomUUID();
+  const zSigPrompt = String((messages[messages.length - 1] && messages[messages.length - 1].content) || '').trim().slice(0, 2000);
+  const zSigB64 = Buffer.from(zSigPrompt, 'utf8').toString('base64');
+  const zHmac = (k, m) => crypto.createHmac('sha256', k).update(m, 'utf8').digest('hex');
+  const zSigV = zHmac('key-@@@@)))()((9))-xxxx&&&%%%%%', zSigBucket);
+  const zSigX = zHmac(zSigV, 'requestId,' + zSigRid + ',timestamp,' + zSigTs + ',user_id,|' + zSigB64 + '|' + zSigTs);
+  const zQs = 'timestamp=' + encodeURIComponent(zSigTs) + '&requestId=' + encodeURIComponent(zSigRid)
+    + '&user_id=' + '&signature_timestamp=' + encodeURIComponent(zSigTs);
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${String(token).trim()}`,
     Accept: '*/*',
     'User-Agent': CHROME_UA,
-    'X-FE-Version': 'prod-fe-1.0.76',
+    'X-FE-Version': 'prod-fe-1.1.92',
+    'X-Signature': zSigX,
     Origin: ZAI,
     Referer: `${ZAI}/c/${chatId}`,
     'sec-ch-ua': CHROME_SEC_CH_UA,
@@ -1880,7 +1931,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
           ids[0] || 'GLM-4.6';
       } catch (_) { mdl = 'GLM-4.6'; }
     }
-    const r = await cloudFetch(`${ZAI}/api/chat/completions`, {
+    const r = await cloudFetch(`${ZAI}/api/v2/chat/completions?${zQs}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -1889,6 +1940,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
         id: crypto.randomUUID(),
         model: mdl,
         messages: messages.slice(-16),
+        signature_prompt: zSigPrompt,
         features: { enable_thinking: false },
       }),
       signal: AbortSignal.timeout(45000), /* v0.21: ۹۰→۴۵ ثانیه */
@@ -2782,9 +2834,11 @@ function Try-CallClick {
     try {
       Add-Type -AssemblyName UIAutomationClient | Out-Null
       Add-Type -AssemblyName UIAutomationTypes | Out-Null
-      $root = [System.Windows.Automation.AutomationElement]::RootElement
-      $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
-      $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+      # v0.29.3 — ریشهٔ «DBG:UIAERR ... .ctor با ۲ آرگومان» در لاگ کاربر (×۹):
+      # شرطProperty برای هندل پنجره فقط Int32 می‌پذیرد؛ MainWindowHandle در PS
+      # یک IntPtr است → سازنده Exception می‌داد → همهٔ اکشن‌ها EMPTY.
+      # FromHandle دقیقاً همان پنجره را می‌دهد و IntPtr می‌پذیرد.
+      $win = if ($hwnd -ne [IntPtr]::Zero) { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd) } else { $null }
       if ($win) {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
         $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
@@ -2844,9 +2898,11 @@ function Try-CallClick {
 function Get-DcWin {
   Add-Type -AssemblyName UIAutomationClient | Out-Null
   Add-Type -AssemblyName UIAutomationTypes | Out-Null
-  $root = [System.Windows.Automation.AutomationElement]::RootElement
-  $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
-  return $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+  # v0.29.3 — PropertyCondition با hwnd IntPtr در سازنده می‌ترکد (فقط Int32
+  # قبول می‌کند) → mute/deafen/answer/decline همه EMPTY و «اجرا نشد».
+  # FromHandle همان کار را با IntPtr انجام می‌دهد — بدون PropertyCondition.
+  if ($hwnd -eq [IntPtr]::Zero) { return $null }
+  return [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd)
 }
 function Press-Dc([string]$doRx, [string]$alrRx, [string]$label) {
   try {
@@ -2901,9 +2957,8 @@ switch ($Action) {
     try {
       Add-Type -AssemblyName UIAutomationClient | Out-Null
       Add-Type -AssemblyName UIAutomationTypes | Out-Null
-      $root = [System.Windows.Automation.AutomationElement]::RootElement
-      $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
-      $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+      # v0.29.3 — همان ترمیم FromHandle (IntPtr) به‌جای PropertyCondition(Int32)
+      $win = if ($hwnd -ne [IntPtr]::Zero) { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd) } else { $null }
       if ($win) {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
         $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
@@ -3006,7 +3061,7 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
       /* خطوط DBG: تشخیصی‌اند و نتیجه نیستند — فقط لاگ می‌شوند؛
          نتیجه = آخرین خط OK/ERR (اسکریپت ممکن است چند خط چاپ کند) */
       const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-      lines.filter((l) => /^DBG:/i.test(l)).forEach((l) => actLog(`discord ${l.slice(0, 140)}`, 'discord'));
+      lines.filter((l) => /^DBG:/i.test(l)).forEach((l) => actLog(`discord ${l.slice(0, 400)}`, 'discord'));
       const out = lines.filter((l) => !/^DBG:/i.test(l)).pop() || '';
       actLog(`discord ${psAction} mode=${mode} -> ${out || (killed ? 'TIMEOUT' : 'EMPTY')} (${Date.now() - t0}ms)`, 'discord');
       if (/^ERR:PS:/.test(out)) {

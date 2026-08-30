@@ -1152,7 +1152,7 @@ app.whenReady().then(async () => {
         honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
           && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,
         irCities: m292.includes("'بجنورد': [37.4747, 57.329]") && (m292.match(/IR_CITIES/g) || []).length >= 2,
-        ver292: a292.includes("let appVersion = '0.29.2';"),
+        ver292: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a292),
       };
       ok('v0.29.2 AI-referral: AI_FALLBACK sentinel defined', v292.sentinel);
       ok('v0.29.2 AI-referral: weather failure returns the sentinel (no dead-end)', v292.weatherRef);
@@ -1161,8 +1161,40 @@ app.whenReady().then(async () => {
       ok('v0.29.2 weather: edge-filler city extraction (بجنورد را بهم → بجنورد)', v292.edgeCity);
       ok('v0.29.2 weather: gr.ok/fr.ok checked, netFail honest (no more fake city-not-found)', v292.honestGeo);
       ok('v0.29.2 weather: 42 Iranian cities offline (بجنورد live-API coords)', v292.irCities);
-      ok('v0.29.2 version markers', v292.ver292);
+      ok('v0.29.2 version markers (0.29.x+)', v292.ver292);
     } catch (e) { console.log('SKIP | v0.29.2 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98956 v0.29.3 — (1) THE UIA .CTOR BOMB: Process.MainWindowHandle is an
+    // IntPtr in PS but PropertyCondition(NativeWindowHandleProperty, …) requires
+    // Int32 → ctor threw ×9 in the user's log → every Press-Dc action returned
+    // EMPTY → «PowerShell اجرا نشد». callswitch survived only via the coordinate
+    // fallback. FIX: FromHandle([IntPtr]$hwnd) at all 3 sites, zero-hwnd guard.
+    // (2) z.ai KILLED /api/chat/completions (404 live-verified) → «z.ai: Not
+    // Found» after 29s; /api/v2/chat/completions is alive (401=auth). Frontend
+    // bundle reverse-engineered: HMAC signature chain (js-sha256 hmac(key,msg),
+    // 5-min bucket over sortedPayload|base64(prompt)|ts) — both z.ai paths now
+    // POST v2 with X-Signature + signature_prompt + X-FE-Version prod-fe-1.1.92.
+    try {
+      const m293 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const body293 = (m293.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+      const v293 = {
+        noNativeCond: body293.length > 4000 && !body293.includes('NativeWindowHandleProperty'),
+        fromHandle: (body293.match(/FromHandle\(\[IntPtr\]\$hwnd\)/g) || []).length === 3,
+        v2Page: m293.includes("let r = await zfetch('/api/v2');") && m293.includes("if (r.status === 404) r = await zfetch('/api');"),
+        v2Direct: m293.includes('`${ZAI}/api/v2/chat/completions?${zQs}`') && !m293.includes('`${ZAI}/api/chat/completions`'),
+        sigChain: (m293.match(/key-@@@@\)\)\)\(\)\(\(9\)\)-xxxx&&&%%%%%/g) || []).length === 2
+          && (m293.match(/signature_prompt: (zSigPrompt|sigPrompt)/g) || []).length === 2,
+        feVer: !m293.includes('prod-fe-1.0.76') && (m293.match(/prod-fe-1\.1\.92/g) || []).length >= 2,
+        dbgWide: m293.includes('l.slice(0, 400)') && !m293.includes('l.slice(0, 140)'),
+      };
+      ok('v0.29.3 Discord: ZERO NativeWindowHandleProperty (Int32/IntPtr ctor bomb eliminated)', v293.noNativeCond);
+      ok('v0.29.3 Discord: FromHandle(IntPtr) at all 3 UIA sites', v293.fromHandle);
+      ok('v0.29.3 z.ai: in-page path posts /api/v2 (v1 404-fallback kept)', v293.v2Page);
+      ok('v0.29.3 z.ai: direct path posts v2, dead v1 call removed', v293.v2Direct);
+      ok('v0.29.3 z.ai: HMAC signature chain + signature_prompt on both paths', v293.sigChain);
+      ok('v0.29.3 z.ai: X-FE-Version prod-fe-1.1.92 (was stale 1.0.76)', v293.feVer);
+      ok('v0.29.3 Discord: DBG log slice 400 (UIAERR fully visible next round)', v293.dbgWide);
+    } catch (e) { console.log('SKIP | v0.29.3 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
