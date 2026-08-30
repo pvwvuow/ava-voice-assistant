@@ -688,7 +688,7 @@ app.whenReady().then(async () => {
         aiFast: mainjs.includes('thinkingBudget: 0') && mainjs.includes('SEARCH_INTENT_RE') && mainjs.includes('if (search && wantsSearch)'),
         dcWait: mainjs.includes('$waited -lt $WaitMs') && mainjs.includes('$tryN -le $Retries') && mainjs.includes("'-WaitMs', String(waitMs)"),
         minimalHtml: html.includes('np-area') && html.includes('np-cover') && html.includes('pl-area') && !html.includes('np-card'),
-        minimalCss: css.includes('.np-cover {\n  position: relative; width: 200px; height: 200px;') && css.includes('.np-area .np-head b { font-size: 21px'),
+        minimalCss: css.includes('.np-cover {\n  position: relative; width: 232px; height: 232px;') && css.includes('.np-area .np-head b { font-size: 21px'),
       };
       ok('v0.18 listening dispatch reaches gemini/whisper engines', v18.dispatchFix);
       ok('v0.18 settings file restore re-applies theme/perf', v18.settingsRestore);
@@ -709,7 +709,7 @@ app.whenReady().then(async () => {
         pl: !!document.querySelector('.pl-area'),
       }))()`);
       ok('v0.18 log bridge exposed', rt.logBridge);
-      ok('v0.21 big now-playing cover (200px)', rt.cover === '200px', rt.cover);
+      ok('v0.21 big now-playing cover (232px)', rt.cover === '232px', rt.cover);
       ok('v0.18 minimal layout in DOM', rt.area && rt.pl);
       await probe(`ava.log.act('smoke: runtime log test').then(() => 'logged')`);
     } catch (e) { console.log('SKIP | v0.18 runtime | ' + String(e && e.message).slice(0, 80)); }
@@ -783,14 +783,14 @@ app.whenReady().then(async () => {
         glmThink: mainjs.includes("body.thinking = { type: 'disabled' }"),
         ttsParallel: mainjs.includes('await Promise.all(chunks.map(') && mainjs.includes('parts.filter(Boolean)'),
         sttFuse: appjs.includes("STT_LAST_KEY = 'avaSttLast'") && appjs.includes('sttMarkFail(eng)') && appjs.includes('sttBenched'),
-        engGuard: appjs.includes('withEngTimeout') && appjs.includes("eng === 'google' ? 18000 : 22000"),
+        engGuard: appjs.includes('withEngTimeout') && appjs.includes('const RACE_MS = 20000'),
         aiStick: appjs.includes("AI_LAST_KEY = 'avaAiLast'") && appjs.includes('chainAi'),
         mediaSearchGuard: mainjs.includes('const mediaCmd ='),
         dcDiag: mainjs.includes('discord ps stderr') && mainjs.includes('/^DBG:/i') && mainjs.includes('ERR:PS:') && mainjs.includes('DBG:TRY=') && mainjs.includes("'ERR:NOBTN'"),
         musicFlat: !css.includes('.m-thumb') && !appjs.includes('m-thumb') && !appjs.includes('m-hovplay') && css.includes('background: transparent;\n  border: none;'),
         musicCtl: html.includes('mBack10') && html.includes('mFwd10') && html.includes('id="mStop"') && html.includes('mVolDown') && html.includes('mVolUp') && html.includes('i-back10') && html.includes('i-fwd10') && html.includes('i-volup'),
         musicWire: appjs.includes('seek10(-10)') && appjs.includes('seek10(10)') && appjs.includes('nudgeVol(-10)') && appjs.includes("t('music.stopped')"),
-        coverPro: css.includes('width: 200px; height: 200px;') && css.includes('.np-cover::before') && css.includes('.np-cover::after') && css.includes('.upd-actions'),
+        coverPro: css.includes('width: 232px; height: 232px;') && css.includes('.np-eq') && css.includes('.upd-actions') && !css.includes('.np-vinyl'),
       };
       ok('v0.21 update download is user-triggered (no background auto-download)', v21.updManual && v21.updDlIpc);
       ok('v0.21 pause/resume/cancel via CancellationToken (+ manual layer)', v21.updToken && v21.updBridge && v21.manualCancel);
@@ -828,7 +828,7 @@ app.whenReady().then(async () => {
         musicBridge: preload.includes("pickDirs: () => ipcRenderer.invoke('music:pickDirs')") && preload.includes('readHead'),
         musicPersist: appjs.includes('scanAndLoadDirs') && appjs.includes('restoreMusicLibrary') && appjs.includes("settings.musicDirs = merged") && appjs.includes('mediaUrl'),
         phonetic: appjs.includes("'اپرا': 'opera'") && appjs.includes("'براو': 'brave'") && appjs.includes("'تیم ویور': 'teamviewer'") && appjs.includes("'ماینکرفت': 'minecraft'"),
-        vinylUi: html.includes('np-vinyl') && html.includes('np-cover-wrap') && html.includes('mDirsClear') && css.includes('.np-vinyl') && css.includes('vinylSpin'),
+        vinylUi: !html.includes('np-vinyl') && !html.includes('np-cover-wrap') && html.includes('np-eq') && html.includes('mDirsClear') && css.includes('.np-eq') && !css.includes('.np-vinyl') && !css.includes('vinylSpin'),
         musicI18n: appjs.includes("'music.restored'") && appjs.includes("'music.cleared'") && appjs.includes("'music.clearDirs'"),
       };
       ok('v0.22 discord PS via temp .ps1 + spawn -File (no cmdline limit)', v22.dcFile && v22.dcNoEncoded && v22.dcBom);
@@ -838,29 +838,56 @@ app.whenReady().then(async () => {
       ok('v0.22 music folder scan IPCs + bridge (real Windows dialog)', v22.musicIpc && v22.musicBridge);
       ok('v0.22 persistent music library (musicDirs saved + boot restore + last track)', v22.musicPersist);
       ok('v0.22 phonetic dictionary expanded (opera/brave/teamviewer/minecraft…)', v22.phonetic);
-      ok('v0.22 vinyl-peek cover UI + clear-folders button + i18n', v22.vinylUi && v22.musicI18n);
+      ok('v0.23 single-panel cover (vinyl fully removed) + clear-folders button + i18n', v22.vinylUi && v22.musicI18n);
     } catch (e) { console.log('SKIP | v0.22 markers | ' + String(e && e.message).slice(0, 80)); }
 
-    // 8.96 v0.22 — runtime: vinyl + cover-wrap + clear button in DOM
+    // 8.96 v0.22 — runtime: single-panel cover + clear button in DOM
     try {
       const rt22 = await probe(`(() => ({
-        vinyl: !!document.querySelector('.np-vinyl') && !!document.querySelector('.np-cover-wrap'),
+        singlePanel: !document.querySelector('.np-vinyl') && !document.querySelector('.np-cover-wrap') && !!document.querySelector('.np-cover .np-eq'),
         clearBtn: !!document.querySelector('#mDirsClear'),
         multiHint: !!document.querySelector('[data-i18n="music.multiHint"]'),
       }))()`);
-      ok('v0.22 vinyl + cover-wrap render in DOM', rt22.vinyl);
+      ok('v0.23 single-panel cover + eq chip render in DOM (no vinyl layer)', rt22.singlePanel);
       ok('v0.22 clear-folders button + multi-folder hint in DOM', rt22.clearBtn && rt22.multiHint);
     } catch (e) { console.log('SKIP | v0.22 runtime | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.95 v0.23 — STT parallel race + single-panel cover round 4
+    try {
+      const v23 = {
+        race: appjs.includes('const RACE_MS = 20000') && appjs.includes('race winner=') && appjs.includes("t('stt.racing'") && appjs.includes('raceSettle'),
+        raceNoSeq: !appjs.includes('runChain('),
+        racingI18n: appjs.includes("'stt.racing': ["),
+        cover4Html: html.includes('np-eq') && !html.includes('np-vinyl') && !html.includes('np-cover-wrap'),
+        cover4Css: css.includes('.np-eq') && !css.includes('.np-vinyl') && !css.includes('vinylSpin') && css.includes('width: 232px; height: 232px;'),
+        prioEnrich: appjs.includes('readId3FromPath(tr.path).then((tag)') && appjs.includes('music.tracks[music.cur] === tr'),
+      };
+      ok('v0.23 STT parallel race (first engine answer wins, no sequential timeout sum)', v23.race && v23.raceNoSeq);
+      ok('v0.23 racing status i18n key', v23.racingI18n);
+      ok('v0.23 cover round 4: single panel, vinyl + halo removed (HTML/CSS)', v23.cover4Html && v23.cover4Css);
+      ok('v0.23 current-track ID3 priority enrichment (instant cover on play)', v23.prioEnrich);
+    } catch (e) { console.log('SKIP | v0.23 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.94 v0.23 — runtime: race marker in JS scope + cover single panel
+    try {
+      const rt23 = await probe(`(() => ({
+        eqChip: !!document.querySelector('.np-cover .np-eq'),
+        noVinyl: !document.querySelector('.np-vinyl') && !document.querySelector('.np-cover-wrap'),
+        coverRad: (() => { const c = document.querySelector('.np-cover'); return c ? getComputedStyle(c).borderRadius : 'none'; })(),
+      }))()`);
+      ok('v0.23 eq chip inside cover in DOM (single panel, no vinyl)', rt23.eqChip && rt23.noVinyl);
+      ok('v0.23 cover radius 26px round-4 design', rt23.coverRad === '26px', rt23.coverRad);
+    } catch (e) { console.log('SKIP | v0.23 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons
     try {
       const rt = await probe(`(() => ({
-        cover200: (() => { const c = document.querySelector('.np-cover'); return c ? getComputedStyle(c).width : 'none'; })(),
+        cover232: (() => { const c = document.querySelector('.np-cover'); return c ? getComputedStyle(c).width : 'none'; })(),
         ctl: !!document.querySelector('#mStop') && !!document.querySelector('#mBack10') && !!document.querySelector('#mFwd10') && !!document.querySelector('#mVolUp') && !!document.querySelector('#mVolDown'),
         flatRow: (() => { const r = document.querySelector('.m-row'); return r ? !r.querySelector('.m-thumb') : true; })(),
         updBtns: !!document.querySelector('#btnUpdDownload') && !!document.querySelector('#btnUpdPause') && !!document.querySelector('#btnUpdCancel'),
       }))()`);
-      ok('v0.21 pro cover renders at 200px', rt.cover200 === '200px', rt.cover200);
+      ok('v0.21 pro cover renders at 232px (v0.23 single panel)', rt.cover232 === '232px', rt.cover232);
       ok('v0.21 music controls in DOM (stop/±10s/vol±)', rt.ctl);
       ok('v0.21 playlist rows render flat (no thumb in DOM)', rt.flatRow);
       ok('v0.21 updater download/pause/cancel buttons in DOM', rt.updBtns);

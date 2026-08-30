@@ -309,7 +309,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۲ — گزارش کامل تو، اجرا شد: تماس دیسکورد دیگر ارور پاورشل نمی‌دهد (ریشهٔ «The command line is too long» پیدا و حذف شد — اسکریپت حالا فایلی اجرا می‌شود)، تشخیص گفتار سریع شد (موتورهای سریع اول: Whisper و گوگل، Gemini که تا ۷۵ ثانیه طول می‌کشید آخرِ صف)، DNS Changer دوباره فعال شد تا با شکن/الکترو اتصال گوگل پایدار بماند، پوشه‌های موزیک دیگر با بستن برنامه گم نمی‌شوند (بازسازی خودکار پلی‌لیست)، دیکشنری فونتیک سه برابر شد و کاور پلیر با دیسک وینیل حرفه‌ای‌تر شد.', 'v0.22 — your report, shipped: Discord calls no longer throw PowerShell errors (the "The command line is too long" root cause is gone — the script now runs from a file), speech recognition got fast (fast engines first: Whisper & Google; Gemini — which took up to 75s — is now last), DNS Changer is re-enabled so Shekan/Electro keep Google reachable, music folders survive app restarts (auto-rebuilt playlist), the phonetic dictionary tripled, and the player cover now has a professional vinyl-peek design.'],
+    'about.desc': ['نسخه ۰.۲۳ — سیستم جدید سرعت: تشخیص گفتار حالا «مسابقهٔ موازی» است — همهٔ موتورهای آماده (Whisper، گوگل، GLM، Gemini) هم‌زمان صدا زده می‌شوند و زودترین جواب برنده است؛ دیگر مجموع سقف‌های زمانیِ زنجیرهٔ ترتیبی روی شبکهٔ فیلترشده نمی‌آید (بدترین حالت از ~۶۰ ثانیه به ۲۰ ثانیه و معمولاً ۲-۵ ثانیه رسید). کاور موزیک هم از نو طراحی شد: یک کارت هنری تنها و تمیز — وینیل و هالهٔ پشت آن کامل حذف شد و کاور آهنگی که پخش می‌کنی فوراً می‌آید.', 'v0.23 — a genuinely new speed system: speech recognition is now a parallel race — every ready engine (Whisper, Google, GLM, Gemini) fires at once and the first answer wins; no more summed sequential timeouts on filtered networks (worst case drops from ~60s to 20s, usually 2-5s). The music cover was redesigned from scratch: one clean art panel — the vinyl and halo behind it are completely gone, and the playing track cover now loads instantly.'],
     'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
@@ -726,6 +726,7 @@
     'stt.demoListen': ['حالت دمو: در حال شنیدن…', 'Demo mode: listening…'],
     'stt.demoHint': ['حالت دمو روشن است — برای تشخیص واقعی، کلید GLM را در تنظیمات بگذار', 'Demo mode is on — set the GLM key in Settings for real recognition'],
     'stt.fallbackGlm': ['گوگل جواب نداد — همان صدا به GLM-ASR فرستاده شد…', 'Google had no answer — the same audio went to GLM-ASR…'],
+    'stt.racing': ['شنیدن با {x} — زودترین جواب برنده است…', 'Listening with {x} — first answer wins…'],
 
     /* ---------- v0.11 ---------- */
     'nav.music': ['پلیر موزیک — پلی‌لیست از پوشه خودت', 'Music player — playlist from your folder'],
@@ -2974,24 +2975,20 @@
     };
     const runEngine = async (eng) => {
       if (eng === 'gemini') {
-        statusText.textContent = t('stt.tryGemini');
         const b = await wavSend();
         if (!b) return { ok: false };
         return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR' });
       }
       if (eng === 'whisper') {
-        statusText.textContent = t('stt.tryWhisper');
         const b = await wavSend();
         if (!b) return { ok: false };
         return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
       }
       if (eng === 'glm') {
-        statusText.textContent = t('stt.fallbackGlm');
         const b = await wavSend();
         if (!b) return { ok: false };
         return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
       }
-      statusText.textContent = t('status.googleConv');
       return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang });
     };
     /* v0.21 — سگ‌بان هر موتور: اگر جواب موتور داخل سقف زمانی نرسید،
@@ -3000,28 +2997,45 @@
       Promise.resolve(pr),
       new Promise((res) => setTimeout(() => res({ ok: false, error: 'timeout' }), ms)),
     ]);
-    const runChain = async (i, why) => {
-      if (state === 'idle') return; /* کاربر لغو کرد */
-      const eng = chain[i];
-      if (!eng) { finishIdle(why || t('stt.convFail', { x: '—' })); return; }
-      let r = null;
-      const te0 = Date.now();
-      try { r = await withEngTimeout(runEngine(eng), eng === 'google' ? 18000 : 22000); } catch (_) { r = { ok: false, error: t('stt.connFail') }; }
-      actLog(`stt ${eng} ${r && r.ok ? 'ok' : 'fail'} (${Date.now() - te0}ms)${r && r.error ? ' err=' + String(r.error).slice(0, 80) : ''}`);
+    /* v0.23 — مسابقهٔ موازی موتورهای ابری (سیستم جدید سرعت):
+       زنجیرهٔ ترتیبی قبلی روی شبکهٔ فیلترشده ایران مجموعِ سقف‌های زمانی را
+       جمع می‌زد (۲۲+۱۸+۲۲ ثانیه پیش از رسیدن به موتور آخر) — همان «کندی
+       افتضاح». حالا همهٔ موتورهای آماده هم‌زمان صدا زده می‌شوند و اولین
+       جواب برنده است: بدترین حالت = سقفِ یک موتور (۲۰ ثانیه)، بهترین
+       حالت = سریع‌ترین موتور (همان ۲-۵ ثانیهٔ پروژهٔ قبلی).
+       فیوز v0.21 سر جایش است: موتورهای بازنشسته اصلاً وارد مسابقه نمی‌شوند. */
+    const RACE_MS = 20000;
+    if (!chain.length) { finishIdle(t('stt.noEngineApp')); return; }
+    statusText.textContent = t('stt.racing', { x: chain.map((e) => t('eng.' + e)).join(' + ') });
+    let raceWon = false, raceFailed = 0, lastErr = '';
+    const raceSettle = (eng, r, ms) => {
+      /* ⚠ در لحظهٔ مسابقه state == 'processing' است (نه 'listening') —
+         فقط «لغو کاربر» (idle) نتایج را باطل می‌کند */
+      if (raceWon || state === 'idle') { actLog(`stt ${eng} late (${ms}ms) — race already decided`); return; }
       if (r && r.ok && r.text) {
-        sttMarkOk(eng); /* v0.21 — دفعه بعد اول همین موتور */
+        raceWon = true;
+        sttMarkOk(eng);
+        actLog(`stt race winner=${eng} (${ms}ms)`);
         const tx = r.text.trim();
         if (dictation.active) dictateHandle(tx);
         else handleUtterance(tx);
         return;
       }
-      sttMarkFail(eng); /* v0.21 — فیوز: بعد از ۲ شکست، ۳ دقیقه کنار می‌ماند */
-      const isLast = (i + 1 >= chain.length);
-      if (r && r.error && isLast) toast(String(r.error).slice(0, 150), '#i-info');
-      runChain(i + 1, (r && r.error) ? t('stt.convFail', { x: r.error }) : why);
+      raceFailed += 1;
+      if (r && r.error) lastErr = String(r.error);
+      sttMarkFail(eng);
+      actLog(`stt ${eng} fail (${ms}ms)${r && r.error ? ' err=' + String(r.error).slice(0, 80) : ''}`);
+      if (raceFailed >= chain.length && !raceWon && state !== 'idle') {
+        if (lastErr) toast(lastErr.slice(0, 150), '#i-info');
+        finishIdle(t('stt.convFail', { x: lastErr || '—' }));
+      }
     };
-    if (!chain.length) { finishIdle(t('stt.noEngineApp')); return; }
-    runChain(0, '');
+    chain.forEach((eng) => {
+      const te0 = Date.now();
+      withEngTimeout(runEngine(eng), RACE_MS)
+        .then((r) => raceSettle(eng, r, Date.now() - te0))
+        .catch(() => raceSettle(eng, { ok: false, error: t('stt.connFail') }, Date.now() - te0));
+    });
   }
 
   /* نام مستعار — ضبط‌کنندهٔ تطبیقی مشترک همهٔ موتورهای ابری */
@@ -4270,7 +4284,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.22.0';
+  let appVersion = '0.23.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5814,6 +5828,8 @@
       if (tag.cover) tr.cover = tag.cover;
       since += 1;
       if (since % 4 === 0) renderMusicList();
+      /* v0.23 — اگر این آهنگ همان آهنگِ در حال پخش باشد، کاور بزرگ فوراً تازه شود */
+      if (music.tracks[music.cur] === tr && (tag.cover || tag.title)) updatePlayerUI();
     }
     renderMusicList();
   }
@@ -5866,6 +5882,19 @@
     if (tr.path) { settings.lastMusicPath = tr.path; store.set('lastMusicPath', tr.path); }
     try { mAudio.src = tr.url; mAudio.play(); } catch (_) { /* noop */ }
     mediaSessionMeta();
+    /* v0.23 — کاور/تگِ آهنگِ در حال پخش اولویت می‌گیرد: اگر هنوز enriched نشده
+       بود، همین حالا می‌خوانیم تا کاور فوراً روی کارت بزرگ بیاید، نه بعد از
+       رسیدن صف پس‌زمینه به این آهنگ */
+    if (tr.path && !tr.enriched) {
+      tr.enriched = true;
+      readId3FromPath(tr.path).then((tag) => {
+        if (tag.title) tr.title = tag.title;
+        if (tag.artist) tr.artist = tag.artist;
+        if (tag.cover) tr.cover = tag.cover;
+        updatePlayerUI();
+        renderMusicList();
+      }).catch(() => { /* noop */ });
+    }
   }
 
   function musicNext(auto = false) {
