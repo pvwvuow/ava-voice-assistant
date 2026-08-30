@@ -2226,6 +2226,8 @@ body.music-playing .np-disc {
 }
 .warn-note { color: #f59e0b; border-inline-start: 3px solid #f59e0b; }
 [data-theme="light"] .warn-note { color: #b45309; }
+/* v0.29 — نتیجهٔ سبز تست اتصال جمنای (رنگ ثابت — بدون SwiftShader ریسک) */
+.ok-note { color: #34d399; border-inline-start: 3px solid #34d399; }
 [data-theme="darklite"] .dc-contact { background: rgba(255, 255, 255, 0.03); }
 
 /* ============================================================

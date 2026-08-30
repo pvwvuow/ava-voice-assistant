@@ -1,0 +1,84 @@
+/* v0.29.0 — regression suite:
+   1) Discord actions are now UIA-first & state-aware (Press-Dc) with honest
+      results (UIA / UACLICK / ALREADY / KEYS) — no more silent "OK" with no
+      real action (PostMessage synthetic keys are ignored by Discord and
+      SetForegroundWindow from a spawned PS usually fails silently).
+   2) Gemini test-connection (ai:gemtest) + optional relay base URL honored in
+      ai:gemini, stt:gemini and the test itself (Iran location-block workaround).
+   3) Always-on offline wake word (VAD-gated local Whisper detection of «آوا»
+      even when listening is off) — inspired by the Python repos the user sent
+      (trigger_word_detection, hey-siri) but implemented natively in Electron.
+   4) Intent protocol extended: discord_unmute/deafen/answer/decline actions. */
+const fs = require('fs');
+const path = require('path');
+let pass = 0, fail = 0;
+function ok(name, cond, extra) {
+  if (cond) { pass++; console.log('PASS | ' + name); }
+  else { fail++; console.log('FAIL | ' + name + (extra ? ' | ' + String(extra).slice(0, 140) : '')); }
+}
+const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
+const mainSrc = read('main.js');
+const preSrc = read('preload.js');
+const appSrc = read('renderer/js/app.js');
+const htmlSrc = read('renderer/index.html');
+const cssSrc = read('renderer/css/styles.css');
+const body = (mainSrc.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+
+/* ---- 1) Discord PS body: UIA-first actions ---- */
+ok('PS body: Press-Dc helper present (UIA button click with state awareness)', body.includes('function Press-Dc([string]$doRx, [string]$alrRx, [string]$label)'));
+ok('PS body: Get-DcWin UIA window finder', body.includes('function Get-DcWin'));
+ok('PS body: Dc-KeysFallback is the LAST resort, not the primary', body.includes('function Dc-KeysFallback'));
+ok('PS body: mute clicks exactly the "Mute" button (state-aware, no blind toggle)', body.includes("'mute'     { $r = Press-Dc '^Mute$' '^Unmute$' 'MUTE'"));
+ok('PS body: unmute action exists', body.includes("'unmute'   { $r = Press-Dc '^Unmute$' '^Mute$' 'UNMUTE'"));
+ok('PS body: deafen + undeafen actions exist', body.includes("'deafen'   { $r = Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN'") && body.includes("'undeafen' { $r = Press-Dc '^Undeafen$' '^Deafen$' 'UNDEAFEN'"));
+ok('PS body: hangup matches Disconnect/Leave Call/End Call', body.includes("'hangup'   { $r = Press-Dc '^(Disconnect|Leave Call|Leave|End Call)$' '' 'HANGUP'"));
+ok('PS body: answer matches Join Call/Answer', body.includes("'answer'   { $r = Press-Dc '^(Join Call|Answer|Accept|Join)$' '' 'ANSWER'"));
+ok('PS body: decline matches Decline/Reject', body.includes("'decline'  { $r = Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE'"));
+ok('PS body: honest results UIA/UACLICK/ALREADY/KEYS', body.includes("':UIA')") && body.includes("':UACLICK')") && body.includes("-ALREADY')") && body.includes("-KEYS')"));
+ok('PS body: button-name dump for diagnosis (DBG:BTNAMES)', body.includes("Write-Output ('DBG:BTNAMES=' + $dump)"));
+ok('PS body: InvokePattern tried before coordinate click', body.indexOf('InvokePattern]::Pattern)).Invoke()') < body.indexOf('Click-At ([int]($r.X + $r.Width / 2))'));
+ok('PS body: STILL 100% curly-quote-free (v0.28.1 invariant)', !/[\u2018\u2019\u201C\u201D]/.test(body));
+ok('PS body: v0.28.1 callswitch fix intact', body.includes("$name = ($Name -replace '[''\"]', '')"));
+
+/* ---- 2) Gemini test + relay ---- */
+ok('main: ai:gemtest handler exists', mainSrc.includes("ipcMain.handle('ai:gemtest'"));
+ok('main: gemtest tries 3 models + marks bad keys (401/403/429)', mainSrc.includes("const models = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash'];") && mainSrc.includes('badKeys.add(k)'));
+ok('main: ai:gemini honors optional relay base', mainSrc.includes("const { key, model, messages, search, base } = p || {};") && mainSrc.includes("${gbase}/v1beta/models/"));
+ok('main: stt:gemini honors optional relay base', mainSrc.includes("const { buf, key, model, lang, base } = p || {};"));
+ok('preload: ai.gemTest bridge', preSrc.includes("gemTest: (payload) => ipcRenderer.invoke('ai:gemtest', payload)"));
+ok('app: test button handler + result rendering', appSrc.includes("$('#btnGemTest')") && appSrc.includes("'set.ai.gemTestOk'") && appSrc.includes("'set.ai.gemTestFail'"));
+ok('app: gemBase setting stored + saved + loaded', appSrc.includes("gemBase: store.get('gemBase', '')") && appSrc.includes("store.set('gemBase', settings.gemBase)"));
+ok('app: chat + STT race pass the relay base', appSrc.includes("base: settings.gemBase || '' }).catch(() => null)") || appSrc.includes("search: true, base: settings.gemBase || ''"));
+ok('html: gemTest button + output + relay field', htmlSrc.includes('id="btnGemTest"') && htmlSrc.includes('id="gemTestOut"') && htmlSrc.includes('id="optGemBase"'));
+ok('css: .ok-note success style (solid color, SwiftShader-safe)', cssSrc.includes('.ok-note { color: #34d399'));
+
+/* ---- 3) Always-on wake word ---- */
+ok('app: wakeAlways setting persisted', appSrc.includes("wakeAlways: store.get('wakeAlways', false)"));
+ok('app: wake loop lifecycle (start/stop/boot-retry)', appSrc.includes('async function wakeLoopStart()') && appSrc.includes('function wakeLoopStop()') && appSrc.includes('function wakeBootRetry()'));
+ok('app: energy VAD with adaptive floor (AVE3 math reused)', appSrc.includes('function wakeOnFrame(f)') && appSrc.includes('wakeLoop.floor * 2.2 + 0.0035'));
+ok('app: silence-gated wake check (650ms) + cooldowns', appSrc.includes('now - wakeLoop.lastVoice >= 650') && appSrc.includes('coolUntil'));
+ok('app: wake check runs local whisper (stt.local) and matches آوا/اوا/ava', appSrc.includes('bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000') && appSrc.includes('/(آوا|اوا|ava)/i.test(normFaFull(txt))'));
+ok('app: wake hit → chime + wake session + auto listening', appSrc.includes('playWakeChime();\n        wakeSessOpen();') && appSrc.includes('startListening();\n        L.coolUntil'));
+ok('app: loop idles during active listening/processing (zero CPU then)', appSrc.includes("if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"));
+ok('app: mic change restarts the wake loop with the new device', appSrc.includes('const wakeWas = !!wakeLoop;') && appSrc.includes('if (wakeWas) wakeLoopStart();'));
+ok('app: detachMic keeps the stream alive while the wake loop runs', appSrc.includes('if (isRecording || ave || wakeLoop) return;'));
+ok('app: pack-ready hook starts the loop automatically', appSrc.includes('if (localStat.ready && settings.wakeAlways && !wakeLoop) wakeLoopStart();'));
+ok('app: boot hook starts the loop after init', appSrc.includes('setTimeout(() => { wakeBootRetry(); }, 2600);'));
+ok('html: wakeAlways toggle exists', htmlSrc.includes('id="optWakeAlways"'));
+ok('i18n: wakeAlways + woke + needPack keys in both dictionaries', (appSrc.match(/'toast\.wakeAlwaysOn': \[/g) || []).length === 2 && (appSrc.match(/'wake\.woke': \[/g) || []).length === 2 && (appSrc.match(/'wake\.alwaysNeedPack': \[/g) || []).length === 2);
+
+/* ---- 4) Intent protocol: full Discord coverage ---- */
+ok('DO_ACTS include unmute/deafen/answer/decline', appSrc.includes("'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom'"));
+ok('executeDoActions handles the new acts', appSrc.includes("case 'discord_unmute':") && appSrc.includes("case 'discord_deafen':") && appSrc.includes("case 'discord_answer':") && appSrc.includes("case 'discord_decline':"));
+ok('AI prompts advertise the new acts (fa+en)', appSrc.includes('discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer') && appSrc.includes('discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.'));
+ok('voice: «ان میوت/وصل کن» maps to real unmute (not blind toggle)', appSrc.includes("const unmute = /(ان\\s?میوت|وصل|روشن)/.test(t0) && !/(بیصدا|بی\\s?صدا|قطع)/.test(t0);"));
+ok('voice: ALREADY results reported honestly', appSrc.includes("if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return unmute ? t('disc.alreadyOn') : t('disc.alreadyMuted');") && appSrc.includes("if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return t('disc.alreadyDeaf');"));
+
+/* ---- 5) versions ---- */
+const pkg = JSON.parse(read('package.json'));
+ok('package.json 0.29.0', pkg.version === '0.29.0', pkg.version);
+ok('index.html abVersion 0.29.0', htmlSrc.includes('v0.29.0'));
+ok('app.js appVersion 0.29.0', appSrc.includes("let appVersion = '0.29.0';"));
+
+console.log(`\nRESULT: ${pass}/${pass + fail}`);
+process.exit(fail ? 1 : 0);

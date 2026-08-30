@@ -963,7 +963,7 @@ app.whenReady().then(async () => {
         card: h27.includes('id="offCard"') && h27.includes('id="btnOfflineDl"') && a27.includes('function updateOfflineCard(') && a27.includes('refreshLocalStatus()'),
         deps: p27.dependencies['sherpa-onnx-node'] && p27.optionalDependencies['sherpa-onnx-win-x64'] && Array.isArray(p27.build.asarUnpack),
         tts: a27.includes('gTtsNext') && a27.includes('__avaB64'),
-        version: p27.version === '0.28.1',
+        version: p27.version === '0.29.0',
       };
       ok('v0.27 local offline engine (sherpa-onnx + whisper int8, on-device)', v27.localEngine);
       ok('v0.27 no external-buffer APIs (Electron-hardened PCM conversion)', v27.noExternalBuffer);
@@ -974,7 +974,7 @@ app.whenReady().then(async () => {
       ok('v0.27 offline pack card in settings (download/progress/status)', v27.card);
       ok('v0.27 packaging: native deps + asarUnpack for NAPI addon', v27.deps);
       ok('v0.27 TTS double-buffer prefetch (zero gap between chunks)', v27.tts);
-      ok('v0.27+ version 0.28.1', v27.version);
+      ok('v0.27+ version 0.29.0', v27.version);
     } catch (e) { console.log('SKIP | v0.27 markers | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.993 v0.27.1 — fix "it types my request, then goes back to listening,
@@ -1055,6 +1055,46 @@ app.whenReady().then(async () => {
       ok('v0.28.1 safeName entry-sanitizer also strips curly quotes (JS side)', v281.safeNameStrip);
       ok('v0.28.1 PS stderr surfaced with the real message line, not just "At ... char:N"', v281.errSurfaced);
     } catch (e) { console.log('SKIP | v0.28.1 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.9930 v0.29 — (1) Discord actions are UIA-first & state-aware: the old
+    // branches always printed OK after sending keys that Discord ignored
+    // (PostMessage synthetics + SetForegroundWindow from spawned PS silently
+    // fail) → now the real Mute/Unmute/Deafen/Disconnect/Join buttons are
+    // found by name and Invoked, honest results (UIA/UACLICK/ALREADY/KEYS);
+    // (2) Gemini test-connection button + optional personal relay base URL;
+    // (3) always-on offline wake word (VAD + local Whisper, works even when
+    // listening is off — the Siri behavior the user asked for);
+    // (4) AI intent protocol gained discord unmute/deafen/answer/decline.
+    try {
+      const m29 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a29 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h29 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const body29 = (m29.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+      const v29 = {
+        uia: body29.includes('function Press-Dc') && body29.includes("'^Mute$'") && body29.includes("'^Unmute$'") && body29.includes('Disconnect|Leave Call'),
+        honest: body29.includes('-ALREADY') && body29.includes(':UACLICK') && body29.includes('DBG:BTNAMES'),
+        keysLast: body29.indexOf('function Dc-KeysFallback') > body29.indexOf('function Press-Dc'),
+        curlyFree: body29.length > 4000 && !/[\u2018\u2019\u201C\u201D]/.test(body29),
+        gemTest: m29.includes("ipcMain.handle('ai:gemtest'") && m29.includes('badKeys.add(k)'),
+        gemBase: m29.includes('const gbase = String(base') && a29.includes("gemBase: store.get('gemBase', '')"),
+        wakeAlways: a29.includes('async function wakeLoopStart()') && a29.includes('function wakeBootRetry()') && a29.includes("bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000"),
+        wakeIdle: a29.includes("if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"),
+        doActs: a29.includes("'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline'") && a29.includes("case 'discord_answer':"),
+        unmute: a29.includes("action: unmute ? 'unmute' : 'mute'"),
+        ui: h29.includes('id="optWakeAlways"') && h29.includes('id="btnGemTest"') && h29.includes('id="optGemBase"'),
+      };
+      ok('v0.29 Discord: UIA-first state-aware button actions (Mute/Unmute/Deafen/Hangup/Answer/Decline)', v29.uia);
+      ok('v0.29 Discord: honest results (UIA/UACLICK/ALREADY/KEYS) + button-name dump for diagnosis', v29.honest);
+      ok('v0.29 Discord: keyboard fallback kept but demoted to last resort', v29.keysLast);
+      ok('v0.29 Discord: PS body still 100% curly-quote-free (v0.28.1 invariant)', v29.curlyFree);
+      ok('v0.29 Gemini: test-connection handler (3 models, bad-key rotation, Persian errors)', v29.gemTest);
+      ok('v0.29 Gemini: optional personal relay base honored in chat + STT + test', v29.gemBase);
+      ok('v0.29 Wake: always-on offline wake word (VAD gate + local Whisper detection of آوا)', v29.wakeAlways);
+      ok('v0.29 Wake: loop idles during active sessions (zero CPU while listening)', v29.wakeIdle);
+      ok('v0.29 AI: intent protocol covers discord unmute/deafen/answer/decline', v29.doActs);
+      ok('v0.29 voice: ان‌میوت/وصل کن maps to real unmute, ALREADY states reported honestly', v29.unmute);
+      ok('v0.29 UI: wakeAlways toggle + Gemini test button + relay field', v29.ui);
+    } catch (e) { console.log('SKIP | v0.29 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
@@ -1069,10 +1109,10 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.28') : false; })(),
+        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.29') : false; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.28 about page shows v0.28.1', rt24.aboutV26);
+      ok('v0.29 about page shows v0.29.0', rt24.aboutV26);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons

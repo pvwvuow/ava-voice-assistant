@@ -84,6 +84,8 @@ contextBridge.exposeInMainWorld('ava', {
     zaiChat: (payload) => ipcRenderer.invoke('ai:zaiChat', payload),
     /* پرووایدرهای دیگر (v0.11): Gemini (با سرچ گوگل) و OpenAI — v0.12: چرخش چندکلیدی */
     gemini: (payload) => ipcRenderer.invoke('ai:gemini', payload),
+    /* v0.29 — تست اتصال جمنای از تنظیمات (درخواست واقعی کوچک + خطای فارسی دقیق) */
+    gemTest: (payload) => ipcRenderer.invoke('ai:gemtest', payload),
     openai: (payload) => ipcRenderer.invoke('ai:openai', payload),
   },
 

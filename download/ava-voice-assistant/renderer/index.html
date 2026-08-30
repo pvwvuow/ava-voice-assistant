@@ -298,6 +298,10 @@
                   <span class="set-info"><b data-i18n="set.stt.wake">کلمه بیدارباش «آوا»</b><span data-i18n="set.stt.wakeHint">در حالت بی‌دست، فقط فرمان‌هایی که با «آوا» شروع شوند اجرا شوند (غیرفعال = هر حرفی که می‌گویی اجرا می‌شود)</span></span>
                   <span class="sw"><input type="checkbox" id="optWakeWord"/><i></i></span>
                 </label>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.wakeAlways">بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)</b><span data-i18n="set.stt.wakeAlwaysHint">میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود</span></span>
+                  <span class="sw"><input type="checkbox" id="optWakeAlways"/><i></i></span>
+                </label>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.stt.gkey">کلید اختصاصی گوگل (اختیاری)</b><span data-i18n="set.stt.gkeyHint">خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی</span></span>
                   <input type="password" id="optGoogleKey" class="set-input" data-i18n-ph="set.stt.gkeyPh" placeholder="خالی = رایگان و بدون کلید" autocomplete="off" dir="ltr" />
@@ -461,6 +465,15 @@
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.ai.geminiKey">کلید API گوگل جمنای (اختیاری)</b><span data-i18n="set.ai.geminiKeyHint">برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com</span></span>
                   <input type="password" id="optGeminiKey" class="set-input" data-i18n-ph="set.ai.geminiPh" placeholder="AIza…" autocomplete="off" dir="ltr" />
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ai.gemTest">تست اتصال جمنای</b><span data-i18n="set.ai.gemTestHint">کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی</span></span>
+                  <button class="chip" id="btnGemTest"><svg class="ic"><use href="#i-pulse"/></svg><span id="btnGemTestTxt" data-i18n="set.ai.gemTestBtn">تست اتصال</span></button>
+                </div>
+                <p class="set-note" id="gemTestOut" hidden></p>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.ai.gemBase">آدرس رلهٔ جمنای (پیشرفته — اختیاری)</b><span data-i18n="set.ai.gemBaseHint">اگر گوگل منطقهٔ تو را محدود کرده («location is not supported»)، آدرس پایهٔ یک پروکسی/ورکر شخصی را بگذار (مثل https://my-worker.workers.dev) تا درخواست‌های جمنای از سرور خودت رد شوند؛ خالی = مستقیم گوگل</span></span>
+                  <input type="text" id="optGemBase" class="set-input" dir="ltr" placeholder="خالی = مستقیم googleapis.com" autocomplete="off" />
                 </div>
                 <p class="set-note warn-note" id="geminiNoKeyWarn" hidden data-i18n="set.ai.noKeyWarn">مدل جمنای ذخیره شده ولی کلید نداری — بدون کلید، جمنای نه در چت جواب می‌دهد نه در تشخیص گفتار؛ موتور بعدی (GLM) جایگزین می‌شود.</p>
                 <div class="set-row col">
@@ -941,7 +954,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.28.1</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.29.0</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

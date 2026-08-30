@@ -165,6 +165,27 @@
     'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
+    /* v0.29 — نتایج صادقانهٔ UIA + ان‌میوت واقعی */
+    'disc.unmuted': ['میکروفون دیسکورد وصل شد ✓', 'Discord mic unmuted ✓'],
+    'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
+    'disc.alreadyOn': ['میکروفون دیسکورد از قبل وصل بود ✓', 'Discord mic was already on ✓'],
+    'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
+    'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
+    'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
+    'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
+    'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
+    'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
+    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود', 'Keeps the mic open and checks speech 100% on-device with the offline engine; saying "Ava" plays the chime and starts listening — light CPU only while someone speaks'],
+    'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
+    'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
+    'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
+    'set.ai.gemTesting': ['در حال تست…', 'Testing…'],
+    'set.ai.gemTestNoKey': ['اول کلید جمنای را در کادر بالا بگذار', 'Put your Gemini key in the field above first'],
+    'set.ai.gemTestOk': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه', 'Connected ✓ model {x} — {y} ms'],
+    'set.ai.gemTestToastOk': ['جمنای وصل است ✓', 'Gemini is connected ✓'],
+    'set.ai.gemTestFail': ['وصل نشد: {x}', 'Connection failed: {x}'],
+    'set.ai.gemBase': ['آدرس رلهٔ جمنای (پیشرفته — اختیاری)', 'Gemini relay URL (advanced — optional)'],
+    'set.ai.gemBaseHint': ['اگر گوگل منطقهٔ تو را محدود کرده («location is not supported»)، آدرس پایهٔ یک پروکسی/ورکر شخصی را بگذار (مثل https://my-worker.workers.dev) تا درخواست‌های جمنای از سرور خودت رد شوند؛ خالی = مستقیم گوگل', 'If Google blocks your region ("location is not supported"), put the base URL of your own proxy/worker (e.g. https://my-worker.workers.dev) — requests go through your server; empty = direct Google'],
     'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
     'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
     'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
@@ -382,6 +403,27 @@
     'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
+    /* v0.29 — نتایج صادقانهٔ UIA + ان‌میوت واقعی */
+    'disc.unmuted': ['میکروفون دیسکورد وصل شد ✓', 'Discord mic unmuted ✓'],
+    'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
+    'disc.alreadyOn': ['میکروفون دیسکورد از قبل وصل بود ✓', 'Discord mic was already on ✓'],
+    'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
+    'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
+    'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
+    'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
+    'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
+    'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
+    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود', 'Keeps the mic open and checks speech 100% on-device with the offline engine; saying "Ava" plays the chime and starts listening — light CPU only while someone speaks'],
+    'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
+    'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
+    'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
+    'set.ai.gemTesting': ['در حال تست…', 'Testing…'],
+    'set.ai.gemTestNoKey': ['اول کلید جمنای را در کادر بالا بگذار', 'Put your Gemini key in the field above first'],
+    'set.ai.gemTestOk': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه', 'Connected ✓ model {x} — {y} ms'],
+    'set.ai.gemTestToastOk': ['جمنای وصل است ✓', 'Gemini is connected ✓'],
+    'set.ai.gemTestFail': ['وصل نشد: {x}', 'Connection failed: {x}'],
+    'set.ai.gemBase': ['آدرس رلهٔ جمنای (پیشرفته — اختیاری)', 'Gemini relay URL (advanced — optional)'],
+    'set.ai.gemBaseHint': ['اگر گوگل منطقهٔ تو را محدود کرده («location is not supported»)، آدرس پایهٔ یک پروکسی/ورکر شخصی را بگذار (مثل https://my-worker.workers.dev) تا درخواست‌های جمنای از سرور خودت رد شوند؛ خالی = مستقیم گوگل', 'If Google blocks your region ("location is not supported"), put the base URL of your own proxy/worker (e.g. https://my-worker.workers.dev) — requests go through your server; empty = direct Google'],
     'disc.dmOnly': ['پیام‌رسان دیسکورد باز شد ولی دکمهٔ تماس پیدا نشد — مختصات دکمه را در تنظیمات دیسکورد آزمایش/تنظیم کن', 'Discord DM opened but the call button was not found — calibrate it in Discord settings'],
     'disc.assist': ['صفحهٔ مخاطب در دیسکورد باز شد — فقط دکمهٔ تماس را بزن ✓', 'Contact page is open in Discord — just press the call button ✓'],
     'set.dc.callMode': ['روش شروع تماس', 'How calls start'],
@@ -1145,6 +1187,10 @@
     openaiKey: store.get('openaiKey', ''),
     /* v0.13: انتخاب مدل — flash-latest همیشه جدیدترین فلاش جمنای است */
     geminiModel: store.get('geminiModel', 'gemini-flash-latest'),
+    /* v0.29 — رلهٔ اختیاری جمنای (پروکسی شخصی برای دور زدن محدودیت سرزمینی گوگل) */
+    gemBase: store.get('gemBase', ''),
+    /* v0.29 — بیدارباش همیشگی آفلاین: حتی وقتی گوش دادن خاموش است «آوا» شنیده می‌شود */
+    wakeAlways: store.get('wakeAlways', false),
     openaiModel: store.get('openaiModel', 'gpt-4o-mini'),
     /* v0.17 — موتورهای STT کلاس AI */
     whisperBase: store.get('whisperBase', 'https://api.groq.com/openai/v1'),
@@ -1572,8 +1618,12 @@
     /* ری‌استارت استریم با ورودی جدید */
     if (isRecording) await stopAudioRec();
     if (state === 'listening') stopListening(false); /* جلسه با میکروفون قدیمی می‌مرد */
+    /* v0.29 — حلقهٔ بیدارباش هم با میکروفون جدید از نو شروع شود */
+    const wakeWas = !!wakeLoop;
+    if (wakeWas) wakeLoopStop();
     detachMic();
     await attachMic();
+    if (wakeWas) wakeLoopStart();
     toast(t('toast.micChanged'), '#i-mic');
   });
 
@@ -1607,7 +1657,7 @@
   drawMeter();
 
   function detachMic() {
-    if (isRecording || ave) return; /* حین ضبط، استریم نباید بسته شود */
+    if (isRecording || ave || wakeLoop) return; /* حین ضبط/جلسه/بیدارباش، استریم نباید بسته شود */
     if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
     if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
     analyser = null; micData = null; micLive = false;
@@ -2219,14 +2269,19 @@
        «صدای دیسکورد رو قطع/کرافت کن» / «دیسکورد رو دیفن کن» / «deafen» */
     if (/(دیفن|دی\s?فن|کرافت|deafen)/i.test(t0) || (/صدای?[^.]{0,8}(دیسکورد|discord)/.test(t0) && /(قطع|بیصدا|بی صدا|وصل|روشن)/.test(t0))) {
       const r = await bridge.discord.cmd({ action: 'deafen', ...ctx }).catch(() => null);
+      if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return t('disc.alreadyDeaf');
       return r && r.ok ? t('disc.deafened') : ((r && r.error) || t('disc.fail'));
     }
     /* میوت میکروفون — «دیسکورد رو میوت کن» / «میکروفون دیسکورد قطع/وصل»
        v0.28: «ان‌میوت» هم همان کلیدِ تاگل است */
     if (fa || en) {
       if (/(میوت|مایوت|بیصدا|بی صدا|ان\s?میوت)/.test(t0) || (/میکروفون/.test(t0) && /(قطع|وصل)/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
-        const r = await bridge.discord.cmd({ action: 'mute', ...ctx }).catch(() => null);
-        return r && r.ok ? t('disc.muted') : ((r && r.error) || t('disc.fail'));
+        /* v0.29 — «ان‌میوت کن» / «میکروفون رو وصل کن» → unmute واقعی (نه تاگل کورکورانه)؛
+           نتیجهٔ UIA هم صادقانه: ALREADY = از قبل در همان وضعیت بود */
+        const unmute = /(ان\s?میوت|وصل|روشن)/.test(t0) && !/(بیصدا|بی\s?صدا|قطع)/.test(t0);
+        const r = await bridge.discord.cmd({ action: unmute ? 'unmute' : 'mute', ...ctx }).catch(() => null);
+        if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return unmute ? t('disc.alreadyOn') : t('disc.alreadyMuted');
+        return r && r.ok ? (unmute ? t('disc.unmuted') : t('disc.muted')) : ((r && r.error) || t('disc.fail'));
       }
     }
     /* تماس با نام: «به علی زنگ بزن» / «در دیسکورد به علی تماس بگیر» / «کال کن علی»
@@ -2830,6 +2885,8 @@
     } catch (_) { /* noop */ }
     updateOfflineCard();
     refreshEngineUI();
+    /* v0.29 — بستهٔ آفلاین تازه آماده شده و بیدارباش همیشگی روشن است؟ شروع کن */
+    if (localStat.ready && settings.wakeAlways && !wakeLoop) wakeLoopStart();
   }
 
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
@@ -3260,7 +3317,7 @@
         if (b.length < 900) return { ok: false, error: 'short-audio' };
         if (eng === 'whisper') return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
         if (eng === 'glm') return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
-        if (eng === 'gemini') return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR' });
+        if (eng === 'gemini') return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR', base: settings.gemBase || '' });
         return { ok: false, error: 'unknown-engine' };
       })();
       withEngTimeout(pr, RACE_MS)
@@ -3410,6 +3467,113 @@
     } catch (_) { /* noop — هیچ‌وقت بوت را نکشد */ }
   }
 
+  /* ============================================================
+     v0.29 — بیدارباش همیشگی آفلاین («حتی وقتی میکروفون/گوش دادن فعال نیست»)
+     ------------------------------------------------------------------
+     معماری همان ایدهٔ trigger_word_detection و hey-siri است که کاربر فرستاد
+     (هر دو پایتون‌اند و داخل الکترون اجرا نمی‌شوند؛ مدل آمادهٔ فارسی هم ندارند)
+     — ولی با ابزار خودِ برنامه و ۱۰۰٪ داخل ویندوز:
+       میکروفون با ScriptProcessor کم‌مصرف باز می‌ماند → VAD انرژی‌محور تطبیقی
+       (همان ریاضی AVE3) گفتار را پیدا می‌کند → برشِ ~۲.۵ ثانیه‌ای به موتور
+       محلی whisper (sherpa-onnx، همان بستهٔ آفلاین بدون دانلود جدید) می‌رود
+       → اگر «آوا/اوا/ava» بود: صدای بانمک + جلسهٔ گفتگو + شروع گوش دادن.
+     وقتی جلسهٔ گوش دادن فعال است حلقه خودش ساکت می‌شود (CPU صفر).
+     ============================================================ */
+  let wakeLoop = null;
+  function wakeLoopUsable() {
+    return !!settings.wakeAlways && localReady() && !!(navigator.mediaDevices && (window.AudioContext || window.webkitAudioContext));
+  }
+  async function wakeLoopStart() {
+    if (wakeLoop || !settings.wakeAlways) return;
+    if (!localReady()) {
+      toast(t('wake.alwaysNeedPack'), '#i-info');
+      settings.wakeAlways = false; store.set('wakeAlways', false);
+      if (optWakeAlways) optWakeAlways.checked = false;
+      return;
+    }
+    const ok = await attachMic();
+    if (!ok) { settings.wakeAlways = false; store.set('wakeAlways', false); if (optWakeAlways) optWakeAlways.checked = false; return; }
+    try {
+      const src = audioCtx.createMediaStreamSource(micStream);
+      const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+      const sink = audioCtx.createGain();
+      sink.gain.value = 0; /* بی‌صدا — فقط پردازش */
+      src.connect(proc); proc.connect(sink); sink.connect(audioCtx.destination);
+      wakeLoop = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, floor: 0.006, busy: false, coolUntil: 0, tVad: 0 };
+      proc.onaudioprocess = (e) => wakeOnFrame(e.inputBuffer.getChannelData(0));
+      wakeLoop.tVad = setInterval(wakeVadTick, 150);
+      actLog('wake-always loop started');
+      toast(t('toast.wakeAlwaysOn'), '#i-wave');
+    } catch (e) {
+      actLog('wake-always start failed: ' + String((e && e.message) || e).slice(0, 80));
+      wakeLoop = null;
+    }
+  }
+  function wakeOnFrame(f) {
+    if (!wakeLoop) return;
+    /* حین جلسهٔ فعال گوش دادن/پردازش، بیدارباش کاملاً ساکت است */
+    if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }
+    wakeLoop.chunks.push(new Float32Array(f));
+    if (wakeLoop.chunks.length > 30) wakeLoop.chunks.shift(); /* سقف ~۲.۶ ثانیه */
+    let sum = 0, n = 0;
+    for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
+    const rms = Math.sqrt(sum / Math.max(1, n));
+    const thr = Math.max(0.005, Math.min(0.04, wakeLoop.floor * 2.2 + 0.0035));
+    if (!wakeLoop.spoke) wakeLoop.floor = wakeLoop.floor * 0.92 + rms * 0.08;
+    if (rms > thr) { wakeLoop.spoke = true; wakeLoop.lastVoice = Date.now(); }
+  }
+  function wakeVadTick() {
+    if (!wakeLoop || wakeLoop.busy) return;
+    if (state === 'listening' || state === 'processing' || dictation.active) return;
+    const now = Date.now();
+    if (now < wakeLoop.coolUntil) return;
+    if (wakeLoop.spoke && wakeLoop.lastVoice && now - wakeLoop.lastVoice >= 650) wakeCheck();
+  }
+  async function wakeCheck() {
+    const L = wakeLoop;
+    if (!L || L.busy) return;
+    L.busy = true;
+    const buf = L.chunks; L.chunks = []; L.spoke = false;
+    L.coolUntil = Date.now() + 800;
+    try {
+      if (buf.length < 5) return; /* خیلی کوتاه */
+      const rate = (audioCtx && audioCtx.sampleRate) || 48000;
+      const merged = new Float32Array(buf.reduce((a, c) => a + c.length, 0));
+      let off = 0;
+      for (const c of buf) { merged.set(c, off); off += c.length; }
+      const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
+      if (pcm16.length < 4000) return;
+      const r = await bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' });
+      const txt = String((r && r.text) || '').trim();
+      actLog('wake-always heard: ' + txt.slice(0, 44));
+      if (txt && /(آوا|اوا|ava)/i.test(normFaFull(txt))) {
+        playWakeChime();
+        wakeSessOpen();
+        toast(t('wake.woke'), '#i-wave');
+        statusText.textContent = t('wake.sessOn');
+        startListening();
+        L.coolUntil = Date.now() + 5000;
+      }
+    } catch (e) {
+      actLog('wake-always check fail: ' + String((e && e.message) || e).slice(0, 80));
+    } finally {
+      L.busy = false;
+    }
+  }
+  function wakeLoopStop() {
+    if (!wakeLoop) return;
+    try { clearInterval(wakeLoop.tVad); } catch (_) { /* noop */ }
+    try { wakeLoop.proc.disconnect(); wakeLoop.src.disconnect(); wakeLoop.sink.disconnect(); } catch (_) { /* noop */ }
+    wakeLoop = null;
+    actLog('wake-always loop stopped');
+  }
+  /* بوت: بعد از دانلود بستهٔ آفلاین هم اگر روشن باشد، حلقه شروع شود */
+  function wakeBootRetry() {
+    if (!settings.wakeAlways || wakeLoop) return;
+    if (!localReady()) { setTimeout(wakeBootRetry, 5000); return; }
+    wakeLoopStart();
+  }
+
   async function handleUtterance(text, opts) {
     const h0 = Date.now(); /* v0.19 — لاگ تأخیر کل از شنیدن تا اجرا */
     let cmd = text;
@@ -3492,6 +3656,7 @@
     }
     if (optHandsFree) optHandsFree.checked = !!settings.handsFree;
     if (optWakeWord) optWakeWord.checked = !!settings.wakeWord;
+    const owa = $('#optWakeAlways'); if (owa) owa.checked = !!settings.wakeAlways;
   }
 
   /* ============================================================
@@ -4367,6 +4532,17 @@
     store.set('wakeWord', settings.wakeWord);
     toast(settings.wakeWord ? t('toast.wakeOn') : t('toast.wakeOff'), '#i-wave');
   });
+  /* v0.29 — بیدارباش همیشگی آفلاین */
+  const optWakeAlways = $('#optWakeAlways');
+  if (optWakeAlways) {
+    optWakeAlways.checked = !!settings.wakeAlways;
+    optWakeAlways.addEventListener('change', async () => {
+      settings.wakeAlways = optWakeAlways.checked;
+      store.set('wakeAlways', settings.wakeAlways);
+      if (settings.wakeAlways) await wakeLoopStart();
+      else { wakeLoopStop(); toast(t('toast.wakeAlwaysOff'), '#i-wave'); }
+    });
+  }
   if (bridge && bridge.voice && bridge.voice.onToggleHandsFree) {
     bridge.voice.onToggleHandsFree(() => setHandsFree(!settings.handsFree));
   }
@@ -4493,7 +4669,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.28.1';
+  let appVersion = '0.29.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4792,6 +4968,7 @@
     if (optAiModel) { settings.glmModel = optAiModel.value || 'glm-4.6'; store.set('glmModel', settings.glmModel); }
     if (optAiProvider) { settings.aiProvider = optAiProvider.value || 'auto'; store.set('aiProvider', settings.aiProvider); }
     if (optGeminiKey) { settings.geminiKey = optGeminiKey.value.trim(); store.set('geminiKey', settings.geminiKey); }
+    const ogb = $('#optGemBase'); if (ogb) { settings.gemBase = ogb.value.trim().replace(/\/+$/, ''); store.set('gemBase', settings.gemBase); }
     if (optOpenaiKey) { settings.openaiKey = optOpenaiKey.value.trim(); store.set('openaiKey', settings.openaiKey); }
     if (optGeminiModel) { settings.geminiModel = optGeminiModel.value.trim() || 'gemini-flash-latest'; optGeminiModel.value = settings.geminiModel; store.set('geminiModel', settings.geminiModel); }
     if (optOpenaiModel) { settings.openaiModel = optOpenaiModel.value.trim() || 'gpt-4o-mini'; optOpenaiModel.value = settings.openaiModel; store.set('openaiModel', settings.openaiModel); }
@@ -4837,6 +5014,7 @@
     if (optTtsEngine) optTtsEngine.value = settings.ttsEngine || 'google';
     if (optAiProvider) optAiProvider.value = settings.aiProvider || 'auto';
     if (optGeminiKey) optGeminiKey.value = settings.geminiKey || '';
+    const ogb2 = $('#optGemBase'); if (ogb2) ogb2.value = settings.gemBase || '';
     if (optOpenaiKey) optOpenaiKey.value = settings.openaiKey || '';
     if (optGeminiModel) optGeminiModel.value = settings.geminiModel || 'gemini-flash-latest';
     if (optOpenaiModel) optOpenaiModel.value = settings.openaiModel || 'gpt-4o-mini';
@@ -4903,6 +5081,37 @@
     optGeminiKey.addEventListener('input', () => {
       clearTimeout(gemSaveT);
       gemSaveT = setTimeout(saveGemKey, 500);
+    });
+  }
+  /* v0.29 — تست اتصال جمنای: یک درخواست واقعیِ کوچک؛ نتیجه یا خطای دقیق فارسی */
+  const btnGemTest = $('#btnGemTest'), gemTestOut = $('#gemTestOut');
+  if (btnGemTest && gemTestOut) {
+    btnGemTest.addEventListener('click', async () => {
+      const key = settings.geminiKey || (optGeminiKey ? optGeminiKey.value.trim() : '');
+      if (!key) {
+        gemTestOut.hidden = false;
+        gemTestOut.className = 'set-note warn-note';
+        gemTestOut.textContent = t('set.ai.gemTestNoKey');
+        return;
+      }
+      btnGemTest.disabled = true;
+      const tEl = $('#btnGemTestTxt');
+      if (tEl) tEl.textContent = t('set.ai.gemTesting');
+      gemTestOut.hidden = true;
+      const r = await (bridge && bridge.ai && bridge.ai.gemTest
+        ? bridge.ai.gemTest({ key, base: settings.gemBase || '' })
+        : Promise.resolve({ ok: false, error: t('toast.onlyApp') })).catch((e) => ({ ok: false, error: String(e) }));
+      btnGemTest.disabled = false;
+      if (tEl) tEl.textContent = t('set.ai.gemTestBtn');
+      gemTestOut.hidden = false;
+      if (r && r.ok) {
+        gemTestOut.className = 'set-note ok-note';
+        gemTestOut.textContent = t('set.ai.gemTestOk', { x: r.model, y: faNum(r.ms) });
+        toast(t('set.ai.gemTestToastOk'), '#i-check');
+      } else {
+        gemTestOut.className = 'set-note warn-note';
+        gemTestOut.textContent = t('set.ai.gemTestFail', { x: (r && r.error) || '?' });
+      }
     });
   }
   if (optOpenaiKey) optOpenaiKey.addEventListener('change', () => {
@@ -5471,7 +5680,7 @@
     '- screenshot / lock / monitor_off / minimize_all / recycle_empty؛ sys_sleep: فقط با درخواست صریح کاربر (برنامه تأیید می‌گیرد)\n' +
     '- dns_set: value=اسم پروفایل DNS؛ dns_reset (بدون value)\n' +
     '- reminder_add: value=متن کامل با زمان (مثل: ۲۰ دقیقه دیگه چایی درست کن)\n' +
-    '- discord_call: value=اسم مخاطب ذخیره‌شده؛ discord_mute؛ discord_hangup\n' +
+    '- discord_call: value=اسم مخاطب ذخیره‌شده؛ discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer (جواب تماس)؛ discord_decline (رد تماس)\n' +
     '- run_custom: value=عنوان فرمان سفارشی قبلی\n' +
     'اگر فقط سوال است، جواب متنی کوتاه بده و هیچ بلوکی ننویس؛ اگر هم کار و هم سوال است، بلوک DO با reply بده.';
   const AI_SYSTEM_EN =
@@ -5490,7 +5699,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, discord_call, discord_mute, discord_hangup, run_custom.\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -5533,7 +5742,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_hangup', 'run_custom'];
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom'];
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -5645,6 +5854,27 @@
             outs.push(t('disc.muted'));
             break;
           }
+          /* v0.29 — کامل‌ترین کنترل دیسکورد از طریق هوش مصنوعی */
+          case 'discord_unmute': {
+            await runDiscordCmd('unmute', '', t('disc.unmuted'));
+            outs.push(t('disc.unmuted'));
+            break;
+          }
+          case 'discord_deafen': {
+            await runDiscordCmd('deafen', '', t('disc.deafened'));
+            outs.push(t('disc.deafened'));
+            break;
+          }
+          case 'discord_answer': {
+            await runDiscordCmd('answer', '', t('disc.answer'));
+            outs.push(t('disc.answer'));
+            break;
+          }
+          case 'discord_decline': {
+            await runDiscordCmd('decline', '', t('disc.decline'));
+            outs.push(t('disc.decline'));
+            break;
+          }
           case 'discord_hangup': {
             await runDiscordCmd('hangup', '', t('disc.hangup'));
             outs.push(t('disc.hangup'));
@@ -5732,7 +5962,7 @@
       if (!settings.geminiKey || !bridge || !bridge.ai || !bridge.ai.gemini) return false;
       /* Gemini با ابزار جستجوی گوگل: سوال‌های «سرچ» جواب لحظه‌ای می‌گیرند
          مدل از تنظیمات (v0.13) — پیش‌فرض flash-latest (همیشه جدیدترین فلاش) */
-      return (await bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: true }).catch(() => null)) || false;
+      return (await bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: true, base: settings.gemBase || '' }).catch(() => null)) || false;
     };
     const tryOpenai = async () => {
       if (!settings.openaiKey || !bridge || !bridge.ai || !bridge.ai.openai) return false;
@@ -6700,6 +6930,8 @@
   startSuggestionLoop();
   /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
   setTimeout(() => { attachMic(); }, 1200);
+  /* v0.29 — اگر «بیدارباش همیشگی» روشن باشد، حلقهٔ آفلاین همین‌جا شروع می‌شود */
+  setTimeout(() => { wakeBootRetry(); }, 2600);
   /* فرم شیشه‌ای DNS جدید — درخواست از پروسه اصلی (اگر از بیرون آمده باشد) */
   if (bridge && bridge.dns && bridge.dns.onQuickRequest) {
     bridge.dns.onQuickRequest(() => openDnsQuickOverlay());

@@ -2178,7 +2178,9 @@ const gemErrHuman = (status, raw) => {
 };
 
 ipcMain.handle('stt:gemini', async (_e, p) => {
-  const { buf, key, model, lang } = p || {};
+  const { buf, key, model, lang, base } = p || {};
+  /* v0.29 — رلهٔ اختیاری: اگر گوگل منطقه را محدود کرده باشد، درخواست از پروکسی شخصی کاربر رد می‌شود */
+  const gbase = String(base || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده — از تنظیمات › هوش مصنوعی واردش کن' };
   if (!buf || !buf.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
@@ -2202,7 +2204,7 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
         /* thinkingConfig فقط برای نسل 2.5/3 معتبر است — بقیه بدونش */
         if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) } /* v0.21: ۴۵→۱۵ ثانیه */
         );
         const j = await r.json().catch(() => ({}));
@@ -2361,7 +2363,9 @@ const SEARCH_INTENT_RE = new RegExp(
 );
 
 ipcMain.handle('ai:gemini', async (_e, p) => {
-  const { key, model, messages, search } = p || {};
+  const { key, model, messages, search, base } = p || {};
+  /* v0.29 — رلهٔ اختیاری (سرور شخصی کاربر) برای دور زدن محدودیت سرزمینی گوگل */
+  const gbase = String(base || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
@@ -2408,7 +2412,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         const wantsSearch = !mediaCmd && lastUserText && SEARCH_INTENT_RE.test(ut);
         if (search && wantsSearch) body.tools = [{ google_search: {} }];
         const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2446,6 +2450,52 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ صریح بنویس (تشخیص آسان کاربر) */
   if (sawNetFail) actLog('gemini-chat: all attempts failed at NETWORK level (DNS/فیلترینگ) — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
   return { ok: false, error: (lastErr || 'هیچ کلید Gemini جواب نداد') + ` (مدل‌های امتحان‌شده: ${models.join('، ')})` };
+});
+
+/* v0.29 — تست اتصال جمنای از تنظیمات: یک درخواست واقعیِ کوچک با کلید ذخیره‌شده؛
+   نتیجهٔ دقیق (مدل، تأخیر) یا خطای فارسیِ قابل‌فهم برمی‌گرداند تا کاربر بداند
+   مشکل کلید است، سهمیه، سرزمین (ایران) یا شبکه — نه «ثبت نشده»‌های مبهم */
+ipcMain.handle('ai:gemtest', async (_e, p) => {
+  const { key, base } = p || {};
+  const gbase = String(base || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
+  const keys = splitKeys(key);
+  if (!keys.length) return { ok: false, error: 'اول کلید جمنای را در کادر بالا بگذار و صبر کن ذخیره شود' };
+  const models = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+  const badKeys = new Set();
+  let lastErr = null;
+  for (const mdl of models) {
+    for (const k of keys) {
+      if (badKeys.has(k)) continue;
+      const t0 = Date.now();
+      try {
+        const r = await fetch(
+          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Reply with exactly: pong' }] }], generationConfig: { maxOutputTokens: 8 } }),
+            signal: AbortSignal.timeout(15000),
+          }
+        );
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
+          lastErr = gemErrHuman(r.status, msg) || String(msg).slice(0, 160);
+          if ([401, 403, 429].includes(r.status)) { badKeys.add(k); continue; } /* این کلید خراب/محدود است */
+          continue; /* مدل ناموجود → مدل بعدی */
+        }
+        const cand = j && j.candidates && j.candidates[0];
+        const txt = cand && cand.content && cand.content.parts
+          ? cand.content.parts.map((x) => x.text || '').join('').trim()
+          : '';
+        if (!txt) { lastErr = 'اتصال برقرار شد ولی پاسخ خالی برگشت'; continue; }
+        return { ok: true, model: mdl, ms: Date.now() - t0, reply: txt.slice(0, 40) };
+      } catch (e) {
+        lastErr = netErr(e);
+      }
+    }
+  }
+  return { ok: false, error: lastErr || 'اتصال برقرار نشد' };
 });
 
 ipcMain.handle('ai:openai', async (_e, p) => {
@@ -2669,13 +2719,69 @@ function Try-CallClick {
   Restore-Focus
   return 'ERR:NOBTN'
 }
+/* v0.29 — اکشن‌های واقعی با UIA (بدون دزدیدن فوکوس، با تشخیص وضعیت):
+   چرا کلیدهای میان‌بر کافی نبودند؟ PostMessage به Chrome_RenderWidgetHostHWND
+   توسط دیسکورد نادیده گرفته می‌شود و SetForegroundWindow از پروسهٔ تازه‌ spawn
+   اغلب بی‌صدا شکست می‌خورد — کلید به پنجرهٔ اشتباه می‌رفت و اسکریپت همیشه
+   «OK» می‌گفت. حالا دکمهٔ واقعی میوت/دیفن/قطع در پنل حساب دیسکورد با نام دقیقش
+   پیدا و Invoke می‌شود (همان راه Try-CallClick که برای دکمهٔ تماس جواب داد)؛
+   کلیک مختصاتی و در آخر کلید، فالبک هستند. نتیجه صادقانه برمی‌گردد:
+   UIA=دکمه زده شد، ALREADY=از قبل در همان وضعیت بود، KEYS=فالبک کلید. */
+function Get-DcWin {
+  Add-Type -AssemblyName UIAutomationClient | Out-Null
+  Add-Type -AssemblyName UIAutomationTypes | Out-Null
+  $root = [System.Windows.Automation.AutomationElement]::RootElement
+  $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
+  return $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+}
+function Press-Dc([string]$doRx, [string]$alrRx, [string]$label) {
+  try {
+    $win = Get-DcWin
+    if ($win) {
+      $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+      $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
+      $names = New-Object System.Collections.Generic.List[string]
+      $hit = $null; $already = $false
+      foreach ($b in $btns) {
+        $bn = ''
+        try { $bn = $b.Current.Name } catch {}
+        if (-not $bn) { continue }
+        if ($names.Count -lt 48) { $names.Add($bn) }
+        if ($bn -match $doRx) { $hit = $b }
+        elseif ($alrRx -and ($bn -match $alrRx)) { $already = $true }
+      }
+      $dump = ($names -join '|')
+      if ($dump.Length -gt 240) { $dump = $dump.Substring(0, 240) }
+      Write-Output ('DBG:BTNAMES=' + $dump)
+      if ($hit) {
+        Write-Output ('DBG:UIAHIT=' + $hit.Current.Name)
+        try { ($hit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return ('OK:' + $label + ':UIA') } catch {}
+        try {
+          $r = $hit.Current.BoundingRectangle
+          Click-At ([int]($r.X + $r.Width / 2)) ([int]($r.Y + $r.Height / 2))
+          Restore-Focus
+          return ('OK:' + $label + ':UACLICK')
+        } catch {}
+      }
+      if ($already) { return ('OK:' + $label + '-ALREADY') }
+    }
+  } catch { Write-Output ('DBG:UIAERR=' + $_.Exception.Message) }
+  return ''
+}
+function Dc-KeysFallback([string]$combo, [string]$keys, [string]$label) {
+  if ($bg) { Send-BgCombo $combo }
+  else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys($keys); Start-Sleep -Milliseconds 250; Restore-Focus }
+  return ('OK:' + $label + '-KEYS')
+}
 switch ($Action) {
   'focus'    { if (-not $bg) { Focus-Discord }; Write-Output 'OK' }
-  'mute'     { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x4D) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+m'); Start-Sleep -Milliseconds 250 }; Write-Output 'OK:MUTE' }
-  'deafen'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x44) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+d'); Start-Sleep -Milliseconds 250 }; Write-Output 'OK:DEAFEN' }
-  'hangup'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x48) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+h'); Start-Sleep -Milliseconds 250 }; Restore-Focus; Write-Output 'OK:HANGUP' }
-  'answer'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x41) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+a'); Start-Sleep -Milliseconds 250 }; Restore-Focus; Write-Output 'OK:ANSWER' }
-  'decline'  { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x45) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+e'); Start-Sleep -Milliseconds 250 }; Restore-Focus; Write-Output 'OK:DECLINE' }
+  'mute'     { $r = Press-Dc '^Mute$' '^Unmute$' 'MUTE'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x4D) '^+m' 'MUTE' }; Write-Output $r }
+  'unmute'   { $r = Press-Dc '^Unmute$' '^Mute$' 'UNMUTE'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x4D) '^+m' 'UNMUTE' }; Write-Output $r }
+  'deafen'   { $r = Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x44) '^+d' 'DEAFEN' }; Write-Output $r }
+  'undeafen' { $r = Press-Dc '^Undeafen$' '^Deafen$' 'UNDEAFEN'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x44) '^+d' 'UNDEAFEN' }; Write-Output $r }
+  'hangup'   { $r = Press-Dc '^(Disconnect|Leave Call|Leave|End Call)$' '' 'HANGUP'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x48) '^+h' 'HANGUP' }; Write-Output $r }
+  'answer'   { $r = Press-Dc '^(Join Call|Answer|Accept|Join)$' '' 'ANSWER'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x41) '^+a' 'ANSWER' }; Write-Output $r }
+  'decline'  { $r = Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x45) '^+e' 'DECLINE' }; Write-Output $r }
   'probe' {
     # آزمایش مکان‌یابی دکمهٔ تماس — فقط نشانگر موس حرکت می‌کند، کلیکی در کار نیست
     try {
