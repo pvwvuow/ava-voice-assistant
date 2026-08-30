@@ -1073,7 +1073,7 @@ app.whenReady().then(async () => {
       const v29 = {
         uia: body29.includes('function Press-Dc') && body29.includes("'^Mute$'") && body29.includes("'^Unmute$'") && body29.includes('Disconnect|Leave Call'),
         honest: body29.includes('-ALREADY') && body29.includes(':UACLICK') && body29.includes('DBG:BTNAMES'),
-        keysLast: body29.indexOf('function Dc-KeysFallback') > body29.indexOf('function Press-Dc'),
+        keysGuard: body29.includes('function Try-Keys') && body29.includes('function Focus-DcHard') && body29.includes('return (Test-Fg)'),
         curlyFree: body29.length > 4000 && !/[\u2018\u2019\u201C\u201D]/.test(body29),
         gemTest: m29.includes("ipcMain.handle('ai:gemtest'") && m29.includes('badKeys.add(k)'),
         gemBase: m29.includes('const gbase = String(base') && a29.includes("gemBase: store.get('gemBase', '')"),
@@ -1085,7 +1085,7 @@ app.whenReady().then(async () => {
       };
       ok('v0.29 Discord: UIA-first state-aware button actions (Mute/Unmute/Deafen/Hangup/Answer/Decline)', v29.uia);
       ok('v0.29 Discord: honest results (UIA/UACLICK/ALREADY/KEYS) + button-name dump for diagnosis', v29.honest);
-      ok('v0.29 Discord: keyboard fallback kept but demoted to last resort', v29.keysLast);
+      ok('v0.29 Discord: keys engine fires only behind VERIFIED foreground (evolved v0.30)', v29.keysGuard);
       ok('v0.29 Discord: PS body still 100% curly-quote-free (v0.28.1 invariant)', v29.curlyFree);
       ok('v0.29 Gemini: test-connection handler (3 models, bad-key rotation, Persian errors)', v29.gemTest);
       ok('v0.29 Gemini: optional personal relay base honored in chat + STT + test', v29.gemBase);
@@ -1195,6 +1195,45 @@ app.whenReady().then(async () => {
       ok('v0.29.3 z.ai: X-FE-Version prod-fe-1.1.92 (was stale 1.0.76)', v293.feVer);
       ok('v0.29.3 Discord: DBG log slice 400 (UIAERR fully visible next round)', v293.dbgWide);
     } catch (e) { console.log('SKIP | v0.29.3 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98957 v0.30.0 — DC-NATIVE: Discord engine REBUILT from scratch (user:
+    // «هنوز هیچ عملی روی دیسکورد اعمال نمیشه» after three fix generations +
+    // «یک بار کامل از اول برنامه‌نویسی کن، با یک روش دیگ»). New cycle:
+    // real state (UIA 3-round) → verified-focus keys (AttachThreadInput +
+    // SwitchToThisWindow + SCANCODE injection, Persian-layout safe, NEVER
+    // sent without GetForegroundWindow==Discord) → UIA Invoke → rect click
+    // → flip verification → honest labels (KEYS-VERIFIED / UIA-VERIFIED /
+    // UACLICK / ALREADY / KEYS-UNVERIFIED / ERR:NOFOCUS / ERR:NOBTN:LABEL)
+    // + new state query action + «وضعیت میکروفون دیسکورد» voice command.
+    try {
+      const m30 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a30 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const body30 = (m30.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+      const v30 = {
+        hard: body30.includes('function Focus-DcHard') && body30.includes('AttachThreadInput') && body30.includes('SwitchToThisWindow') && body30.includes('BringWindowToTop'),
+        sc: body30.includes('0x8 -bor 0x2') && body30.includes('Send-Combo $combo') && body30.includes("'ctrl,shift,m'"),
+        guard: body30.includes('return (Test-Fg)') && body30.includes("'DBG:FG='") && body30.indexOf('Focus-DcHard') < body30.indexOf('Send-Combo $combo'),
+        flip: body30.includes('function Test-Flip') && body30.includes(':KEYS-VERIFIED') && body30.includes(':KEYS-UNVERIFIED') && body30.includes(':UIA-VERIFIED'),
+        rounds: body30.includes('DBG:ROUND=') && /for \(\$round = 1; \$round -le 3/.test(body30),
+        state: body30.includes("'state'") && body30.includes('OK:STATE:') && body30.includes('ERR:NOSTATE'),
+        honest: body30.includes('ERR:NOFOCUS') && body30.includes(':UACLICK') && body30.includes('-ALREADY') && body30.includes('ERR:NOBTN:'),
+        cur: body30.length > 6000 && !/[\u2018\u2019\u201C\u201D]/.test(body30) && !body30.includes('/*') && !body30.includes('NativeWindowHandleProperty'),
+        rmap: m30.includes("em.startsWith('ERR:NOBTN:')") && m30.includes("em.startsWith('ERR:NOFOCUS')") && m30.includes('ERR:NOSTATE'),
+        vstate: a30.includes("action: 'state'") && a30.includes('disc.stateMuted') && a30.includes('disc.stateFail') && (a30.match(/'disc\.stateOn': \[/g) || []).length === 2,
+        ver: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a30),
+      };
+      ok('v0.30 Discord: hard-focus chain (AttachThreadInput + SwitchToThisWindow + BringWindowToTop)', v30.hard);
+      ok('v0.30 Discord: scancode combos (Persian-layout safe) + real keybind sequences', v30.sc);
+      ok('v0.30 Discord: keys ONLY after verified foreground + FG probe logged (no blind keys)', v30.guard);
+      ok('v0.30 Discord: flip verification + honest KEYS-VERIFIED/UNVERIFIED/UIA-VERIFIED labels', v30.flip);
+      ok('v0.30 Discord: 3-round UIA scan (lazy a11y tree, no false BTNS=0)', v30.rounds);
+      ok('v0.30 Discord: state query action (OK:STATE:MUTED/ON:DEAF/SOUND)', v30.state);
+      ok('v0.30 Discord: honest failures (ERR:NOFOCUS / ERR:NOBTN:label / ALREADY)', v30.honest);
+      ok('v0.30 Discord: body still curly-free + zero C-comments + zero ctor-bomb', v30.cur);
+      ok('v0.30 main: prefixed ERR:NOBTN:/ERR:NOFOCUS mapped to Persian hints', v30.rmap);
+      ok('v0.30 voice: state query («وضعیت میکروفون دیسکورد») wired + i18n both dicts', v30.vstate);
+      ok('v0.30 version markers (0.29.x/0.3x)', v30.ver);
+    } catch (e) { console.log('SKIP | v0.30 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
@@ -1209,10 +1248,11 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.29') : false; })(),
+        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.(29|3\\d)\\./.test(el.textContent) : false; })(),
+        aboutRaw: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent : 'NULL'; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.29 about page shows v0.29.0', rt24.aboutV26);
+      ok('v0.29+ about page shows current version (0.29.x/0.3x)', rt24.aboutV26, rt24.aboutRaw);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons

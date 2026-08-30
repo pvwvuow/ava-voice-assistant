@@ -111,12 +111,12 @@ if (hasPwsh && body) {
      poisoned.includes('NativeWindowHandleProperty'));
 }
 
-/* ---- 4) versions ---- */
-console.log('\n[4] version 0.29.3 everywhere');
+/* ---- 4) versions (forward-compatible: 0.29.x / 0.3x) ---- */
+console.log('\n[4] version 0.29+ everywhere');
 const appSrc = read('renderer/js/app.js');
-ok('package.json 0.29.3', pkg.version === '0.29.3', pkg.version);
-ok('about box v0.29.3', htmlSrc.includes('>v0.29.3</span>'));
-ok('app.js appVersion 0.29.3', appSrc.includes("let appVersion = '0.29.3';"));
+ok('package.json 0.29+', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
+ok('about box v0.29+', />v0\.(29|3\d)\.\d+<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.29+', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

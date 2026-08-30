@@ -170,6 +170,12 @@
     'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
     'disc.alreadyOn': ['میکروفون دیسکورد از قبل وصل بود ✓', 'Discord mic was already on ✓'],
     'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
+    /* v0.30 — وضعیت واقعی دیسکورد (بدون هیچ کلیکی) */
+    'disc.stateMuted': ['میکروفون دیسکورد قطع است', 'Discord mic is muted'],
+    'disc.stateOn': ['میکروفون دیسکورد وصل است', 'Discord mic is on'],
+    'disc.stateDeaf': ['صدای دیسکورد قطع است', 'Discord sound is off'],
+    'disc.stateSound': ['صدای دیسکورد وصل است', 'Discord sound is on'],
+    'disc.stateFail': ['وضعیت دیسکورد خوانده نشد — دیسکورد باز است؟', 'Could not read Discord state — is Discord open?'],
     'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
     'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
     'wake.alwaysPreparing': ['در حال آماده‌سازی بیدارباش همیشگی… بستهٔ آفلاین دانلود می‌شود (فقط بار اول — بعدش ۱۰۰٪ آفلاین)', 'Preparing always-on wake word… downloading the offline pack (first time only — fully offline afterwards)'],
@@ -409,6 +415,12 @@
     'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
     'disc.alreadyOn': ['میکروفون دیسکورد از قبل وصل بود ✓', 'Discord mic was already on ✓'],
     'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
+    /* v0.30 — وضعیت واقعی دیسکورد (بدون هیچ کلیکی) */
+    'disc.stateMuted': ['میکروفون دیسکورد قطع است', 'Discord mic is muted'],
+    'disc.stateOn': ['میکروفون دیسکورد وصل است', 'Discord mic is on'],
+    'disc.stateDeaf': ['صدای دیسکورد قطع است', 'Discord sound is off'],
+    'disc.stateSound': ['صدای دیسکورد وصل است', 'Discord sound is on'],
+    'disc.stateFail': ['وضعیت دیسکورد خوانده نشد — دیسکورد باز است؟', 'Could not read Discord state — is Discord open?'],
     'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
     'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
     'wake.alwaysPreparing': ['در حال آماده‌سازی بیدارباش همیشگی… بستهٔ آفلاین دانلود می‌شود (فقط بار اول — بعدش ۱۰۰٪ آفلاین)', 'Preparing always-on wake word… downloading the offline pack (first time only — fully offline afterwards)'],
@@ -2277,6 +2289,16 @@
     const en = /\b(discord)\b/i.test(t0) || /\bcall\b/i.test(t0);
     const fa = /دیسکورد|دیسبورد|دیسکوردُ/.test(t0);
     const ctx = discordCtx();
+    /* v0.30 — وضعیت واقعی میکروفون/صدای دیسکورد — خواندن بدون هیچ کلیکی:
+       «وضعیت میکروفون دیسکورد چیه» / «صدای دیسکورد چطوره» / «میکروفون دیسکورد قطعه؟» */
+    if ((fa || en) && /((وضعیت|چه\s*وضعی|چطوره|چیه)\s*[^.]{0,10}(میکروفون|صدای?\s*دیسکورد|دی\s?فن|میوت))|((میکروفون|صدای?)\s*دیسکورد\s*[^.]{0,10}(وضعیت|چطوره|چیه|روشنه|قطعه|وصله|خاموشه))|((میکروفون|دیفن|دی\s?فن|میوت)\s*[^.]{0,14}وضعیت)|((state|status)\b[^.]{0,12}(mic\b|sound|deafen|discord))/i.test(t0)) {
+      const r = await bridge.discord.cmd({ action: 'state', ...ctx }).catch(() => null);
+      if (!(r && r.ok)) return (r && r.error) || t('disc.stateFail');
+      const s = String(r.result || '');
+      const mic = /:MUTED/.test(s) ? t('disc.stateMuted') : t('disc.stateOn');
+      const snd = /:DEAF/.test(s) ? t('disc.stateDeaf') : t('disc.stateSound');
+      return mic + ' — ' + snd;
+    }
     /* قطع تماس — «تماس/زنگ/کال» + قطع/ببند/کات */
     if (/(تماس|زنگ|کال|کال)[^.]{0,14}(قطع|ببند|کات|تموم)/.test(t0) || /(قطع|ببند)[^.]{0,8}(تماس|زنگ|کال)/.test(t0)) {
       if (!fa && !en) return null;
@@ -4744,7 +4766,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.29.3';
+  let appVersion = '0.30.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

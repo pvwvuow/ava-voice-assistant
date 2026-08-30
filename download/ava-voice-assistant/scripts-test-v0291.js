@@ -42,7 +42,7 @@ ok('body has NO C-style comment opener /*', !body.includes('/*'));
 ok('body has NO C-style comment closer */', !body.includes('*/'));
 ok('body stays curly-quote-free (v0.28.1 invariant)', !/[\u2018\u2019\u201C\u201D]/.test(body));
 ok('UTF8 console hardening present (readable PS errors)', body.includes('[Console]::OutputEncoding = [System.Text.Encoding]::UTF8'));
-ok('UIA comment block kept as # lines (v0.29 note)', body.includes('# v0.29.1') && body.includes('#   UIA='));
+ok('UIA/engine comment blocks kept as # lines (v0.29+v0.30 notes)', body.includes('# v0.29.1') && body.includes('# v0.30') && body.includes('UIA='));
 ok('switch dispatch intact (mute..decline)', body.includes("'mute'") && body.includes("'unmute'") && body.includes("'deafen'") && body.includes("'undeafen'") && body.includes("'hangup'") && body.includes("'answer'") && body.includes("'decline'"));
 
 /* ---- 2) REAL pwsh EXECUTION regression (the test that was missing) ---- */

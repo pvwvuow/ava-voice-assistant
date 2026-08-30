@@ -2728,8 +2728,14 @@ ipcMain.handle('custom:run', (_e, script) => {
    «-File» اجرا می‌شود — دیگر هیچ خط فرمان بلندی وجود ندارد. ریشهٔ ارور
    «The command line is too long» این بود که کل اسکریپت (بیش از حد مجاز
    cmd.exe / CreateProcess) به‌صورت -EncodedCommand در خط فرمان می‌رفت. */
-const DISCORD_PS_BODY = `
-param(
+/* v0.30.0 — DC-NATIVE: بدنهٔ دیسکورد از صفر بازنویسی شد (درخواست کاربر بعد از
+   سه نسل فیکس: «یک بار کامل از اول برنامه‌نویسی کن، با یک روش دیگ»). موتور جدید:
+   حالتِ واقعی (UIA سه‌دوره‌ای) → کلید با فوکوسِ تاییدشده (AttachThreadInput +
+   SwitchToThisWindow + اسکن‌کد مستقل از کیبورد فارسی) → UIA Invoke → کلیک مختصاتی
+   → تاییدِ فلِیپ — نتیجه‌ها صادقانه: KEYS-VERIFIED / UIA-VERIFIED / UACLICK /
+   ALREADY / KEYS-UNVERIFIED / ERR:NOFOCUS. کلیدِ بدون فوکوس (که به پنجرهٔ
+   اشتباه می‌رفت) و «OK دروغین» هر دو به‌کلی حذف شده‌اند. */
+const DISCORD_PS_BODY = `param(
   [string]$Action = 'focus',
   [string]$Mode = 'fg',
   [string]$Name = '',
@@ -2739,15 +2745,13 @@ param(
   [int]$Retries = 1
 )
 $ErrorActionPreference = 'Stop'
-# v0.29.1 — خطاهای ران‌تایم پاورشل (مثل CommandNotFound) به کدپیج کنسول ویندوز
-# می‌روند؛ متن فارسی/یونیکد داخلشان به «????» تبدیل و حروف مجاورشان خورده می‌شد.
-# با UTF-8 کردن خروجی، پیام خطا خوانا به activity.log می‌رسد.
+# v0.29.1 — خطاهای ران‌تایم پاورشل به کدپیج کنسول ویندوز می‌روند؛ متن فارسی به
+# «????» تبدیل می‌شد. با UTF-8 کردن خروجی، پیام خطا خوانا به activity.log می‌رسد.
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
-try {
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
-namespace AvaDc2 {
+namespace AvaDc3 {
   public struct RECT { public int Left, Top, Right, Bottom; }
   public struct POINT { public int X, Y; }
   public class W {
@@ -2761,9 +2765,33 @@ namespace AvaDc2 {
     [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern IntPtr FindWindowEx(IntPtr p, IntPtr c, string cls, string win);
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wp, IntPtr lp);
     [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT p);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+    [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+    [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
   }
 }
 '@
+# ─── v0.30.0 — DC-NATIVE: بازنویسی کامل موتور دیسکورد از صفر ───
+# کاربر بعد از سه نسل فیکس گفت: «هنوز هیچ عملی روی دیسکورد اعمال نمیشه».
+# سه نسخهٔ قبلی روی یک فرض بنا شده بودند: «UIA دکمهٔ واقعی را پیدا می‌کند».
+# اگر درخت دسترس‌پذیری دیسکورد کور باشد (BTNS=0) یا نام‌ها عوض شده باشند،
+# همهٔ مسیرها می‌میرند و فالبک کلید هم بدون فوکوس واقعی به پنجرهٔ اشتباه می‌رود.
+# موتور جدید روی یک چرخهٔ بسته بنا شده: «حالتِ واقعی → عمل لایه‌ای → تاییدِ
+# فلِیپ» و هیچ مسیری بدون تایید نمی‌گوید «انجام شد»:
+#   L1 کلید با فوکوسِ تاییدشده — زنجیرهٔ قطعی فوکوس (AttachThreadInput +
+#      SwitchToThisWindow + پوکِ Alt) و بعد keybd_event با پرچم SCANCODE؛
+#      اسکن‌کد مستقل از layout است (کیبورد فارسی فرقی نمی‌کند) و Chromium
+#      event.code درست می‌سازد — همان چیزی که دیسکورد برای keybind می‌خواهد.
+#      کلید هرگز بدون تاییدِ GetForegroundWindow فرستاده نمی‌شود (پروب DBG:FG).
+#   L2 UIA Invoke روی دکمهٔ واقعی (بدون نیاز به فوکوس)
+#   L3 کلیک مختصاتی روی مستطیل همان دکمه
+#   بعد از هر عمل: Test-Flip چک می‌کند لیبل دکمه واقعا چرخیده باشد؛
+#   نتیجه‌ها صادقانه‌اند: KEYS-VERIFIED / UIA-VERIFIED / UACLICK / ALREADY /
+#   KEYS-UNVERIFIED / ERR:NOFOCUS / ERR:NOBTN — هیچ «OK دروغین» وجود ندارد.
+$VKNAME = @{ 'ctrl' = 0x11; 'shift' = 0x10; 'm' = 0x4D; 'd' = 0x44; 'h' = 0x48; 'a' = 0x41; 'e' = 0x45; 'k' = 0x4B; 'v' = 0x56; 'enter' = 0x0D }
+$SCNAME = @{ 'ctrl' = 0x1D; 'shift' = 0x2A; 'm' = 0x32; 'd' = 0x20; 'h' = 0x23; 'a' = 0x1E; 'e' = 0x12; 'k' = 0x25; 'v' = 0x2F; 'enter' = 0x1C }
 $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
 if (-not $proc) {
   # اگر دیسکورد با دیپ‌لینک در حال بالا آمدن است، تا $WaitMs میلی‌ثانیه صبر کن
@@ -2777,67 +2805,218 @@ if (-not $proc) {
 }
 if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
 $hwnd = $proc.MainWindowHandle
-$child = [AvaDc2.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
+$child = [AvaDc3.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
 if ($child -eq [IntPtr]::Zero) { $child = $hwnd }
 Write-Output "DBG:PROC=$($proc.ProcessName) CHILD=$(if ($child -ne [IntPtr]::Zero) { 1 } else { 0 }) MODE=$Mode ACT=$Action"
 $bg = ($Mode -eq 'bg')
-$prevFg = [AvaDc2.W]::GetForegroundWindow()
-$sc = @{ 0x11 = 0x1D; 0x10 = 0x2A; 0x4D = 0x32; 0x44 = 0x20; 0x48 = 0x23; 0x41 = 0x1E; 0x45 = 0x12; 0x4B = 0x25; 0x56 = 0x2F; 0x0D = 0x1C }
+$prevFg = [AvaDc3.W]::GetForegroundWindow()
+function Test-Fg { return ([AvaDc3.W]::GetForegroundWindow() -eq $hwnd) }
+function Poke-Alt {
+  # یک ضربهٔ بی‌ضرر Alt — قفلِ foreground ویندوز را برای SetForegroundWindow باز می‌کند
+  [AvaDc3.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)
+  Start-Sleep -Milliseconds 40
+  [AvaDc3.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+}
+function Focus-DcHard {
+  # فقط وقتی TRUE می‌دهد که سیستم‌عامل واقعاً دیسکورد را foreground گزارش کند —
+  # همین «تایید» است که کلیدِ کورکورانه (ریشهٔ «هیچ عملی اعمال نمیشه») را می‌کشد
+  if (Test-Fg) { return $true }
+  [AvaDc3.W]::ShowWindow($hwnd, 9) | Out-Null
+  Start-Sleep -Milliseconds 80
+  Poke-Alt
+  Start-Sleep -Milliseconds 60
+  [AvaDc3.W]::SetForegroundWindow($hwnd) | Out-Null
+  Start-Sleep -Milliseconds 180
+  if (Test-Fg) { return $true }
+  # مسیر AttachThreadInput — کلاسیک‌ترین راه قطعیِ جابه‌جایی فوکوس از پروسهٔ دیگر
+  try {
+    [uint32]$fgPid = 0
+    $fg = [AvaDc3.W]::GetForegroundWindow()
+    $tidF = [AvaDc3.W]::GetWindowThreadProcessId($fg, [ref]$fgPid)
+    $tidC = [AvaDc3.W]::GetCurrentThreadId()
+    [AvaDc3.W]::AttachThreadInput($tidC, $tidF, $true) | Out-Null
+    [AvaDc3.W]::BringWindowToTop($hwnd) | Out-Null
+    [AvaDc3.W]::SetForegroundWindow($hwnd) | Out-Null
+    [AvaDc3.W]::AttachThreadInput($tidC, $tidF, $false) | Out-Null
+  } catch { Write-Output ('DBG:ATIERR=' + $_.Exception.Message) }
+  Start-Sleep -Milliseconds 200
+  if (Test-Fg) { return $true }
+  # SwitchToThisWindow — مستندنشده ولی از ویندوز ۹۵ تا ۱۱ همیشه کار می‌کند
+  try { [AvaDc3.W]::SwitchToThisWindow($hwnd, $true) } catch { }
+  Start-Sleep -Milliseconds 250
+  if (Test-Fg) { return $true }
+  Poke-Alt
+  [AvaDc3.W]::SetForegroundWindow($hwnd) | Out-Null
+  Start-Sleep -Milliseconds 180
+  return (Test-Fg)
+}
+function Send-Combo([string]$seq) {
+  # keybd_event با پرچم KEYEVENTF_SCANCODE (0x8) و KEYEVENTF_KEYUP (0x2):
+  # کلید با «شمارهٔ فیزیکی» تزریق می‌شود نه کاراکترِ layout — فارسی/انگلیسی یکی است
+  $names = @($seq.Split(',') | ForEach-Object { $_.Trim().ToLower() })
+  foreach ($n in $names) { [AvaDc3.W]::keybd_event([byte]$VKNAME[$n], [byte]$SCNAME[$n], 0x8, [UIntPtr]::Zero) }
+  Start-Sleep -Milliseconds 80
+  for ($i = $names.Count - 1; $i -ge 0; $i--) {
+    $n = $names[$i]
+    [AvaDc3.W]::keybd_event([byte]$VKNAME[$n], [byte]$SCNAME[$n], 0x8 -bor 0x2, [UIntPtr]::Zero)
+  }
+  Start-Sleep -Milliseconds 140
+}
 function Send-BgCombo([int[]]$vks) {
+  # مسیر PostMessage برای Quick Switcher در حالت bg (کلیک/کلید پنجرهٔ غیرفعال)
   foreach ($v in $vks) {
-    $s = $sc[$v]; if (-not $s) { $s = 0 }
+    $s = $SCNAME[[string]$v]; if (-not $s) { $s = 0 }
     $lp = [long]1 -bor ([long]$s -shl 16)
-    [AvaDc2.W]::PostMessage($child, 0x100, [IntPtr]$v, [IntPtr]$lp) | Out-Null
+    [AvaDc3.W]::PostMessage($child, 0x100, [IntPtr]$v, [IntPtr]$lp) | Out-Null
   }
   Start-Sleep -Milliseconds 60
   for ($i = $vks.Length - 1; $i -ge 0; $i--) {
-    $s = $sc[$vks[$i]]; if (-not $s) { $s = 0 }
+    $s = $SCNAME[[string]$vks[$i]]; if (-not $s) { $s = 0 }
     $lp = [long]0xC0000001 -bor ([long]$s -shl 16)
-    [AvaDc2.W]::PostMessage($child, 0x101, [IntPtr]$vks[$i], [IntPtr]$lp) | Out-Null
+    [AvaDc3.W]::PostMessage($child, 0x101, [IntPtr]$vks[$i], [IntPtr]$lp) | Out-Null
   }
 }
 function Send-BgClick([int]$sx, [int]$sy) {
-  $o = New-Object AvaDc2.POINT; $o.X = 0; $o.Y = 0
-  [AvaDc2.W]::ClientToScreen($child, [ref]$o) | Out-Null
+  $o = New-Object AvaDc3.POINT; $o.X = 0; $o.Y = 0
+  [AvaDc3.W]::ClientToScreen($child, [ref]$o) | Out-Null
   $lp = [long](($sy - $o.Y) -shl 16) -bor [long](($sx - $o.X) -band 0xFFFF)
-  [AvaDc2.W]::PostMessage($child, 0x201, [IntPtr]1, [IntPtr]$lp) | Out-Null
+  [AvaDc3.W]::PostMessage($child, 0x201, [IntPtr]1, [IntPtr]$lp) | Out-Null
   Start-Sleep -Milliseconds 90
-  [AvaDc2.W]::PostMessage($child, 0x202, [IntPtr]0, [IntPtr]$lp) | Out-Null
+  [AvaDc3.W]::PostMessage($child, 0x202, [IntPtr]0, [IntPtr]$lp) | Out-Null
 }
 function Send-FgClick([int]$sx, [int]$sy) {
-  [AvaDc2.W]::SetCursorPos($sx, $sy) | Out-Null
+  [AvaDc3.W]::SetCursorPos($sx, $sy) | Out-Null
   Start-Sleep -Milliseconds 70
-  [AvaDc2.W]::mouse_event(0x02, 0, 0, 0, [UIntPtr]::Zero)
+  [AvaDc3.W]::mouse_event(0x02, 0, 0, 0, [UIntPtr]::Zero)
   Start-Sleep -Milliseconds 60
-  [AvaDc2.W]::mouse_event(0x04, 0, 0, 0, [UIntPtr]::Zero)
+  [AvaDc3.W]::mouse_event(0x04, 0, 0, 0, [UIntPtr]::Zero)
 }
 function Click-At([int]$sx, [int]$sy) { if ($bg) { Send-BgClick $sx $sy } else { Send-FgClick $sx $sy } }
-function Focus-Discord {
-  [AvaDc2.W]::ShowWindow($hwnd, 9) | Out-Null
-  [AvaDc2.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [AvaDc2.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
-  Start-Sleep -Milliseconds 120
-  [AvaDc2.W]::SetForegroundWindow($hwnd) | Out-Null
-  Start-Sleep -Milliseconds 450
-}
 function Restore-Focus {
-  if ($bg) { return }
-  if ($prevFg -ne [IntPtr]::Zero -and $prevFg -ne $hwnd) {
-    [AvaDc2.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [AvaDc2.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
-    Start-Sleep -Milliseconds 100
-    [AvaDc2.W]::SetForegroundWindow($prevFg) | Out-Null
+  # فقط اگر فوکوس واقعاً به دیسکورد رفته باشد دست می‌زنیم — وگرنه پوکِ الکی Alt
+  # می‌تواند منوی برنامهٔ فعال را باز کند
+  if ($prevFg -eq [IntPtr]::Zero -or $prevFg -eq $hwnd) { return }
+  if (-not (Test-Fg)) { return }
+  Poke-Alt
+  Start-Sleep -Milliseconds 60
+  [AvaDc3.W]::SetForegroundWindow($prevFg) | Out-Null
+}
+function Get-DcWin {
+  Add-Type -AssemblyName UIAutomationClient | Out-Null
+  Add-Type -AssemblyName UIAutomationTypes | Out-Null
+  # v0.29.3 — PropertyCondition با hwnd IntPtr در سازنده می‌ترکد (فقط Int32
+  # قبول می‌کند) → همهٔ اکشن‌ها EMPTY. FromHandle همان کار را با IntPtr می‌کند.
+  if ($hwnd -eq [IntPtr]::Zero) { return $null }
+  return [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd)
+}
+function Get-DcBtns {
+  # درخت دسترس‌پذیری کرومیوم تنبل ساخته می‌شود؛ اولین FindAll بعد از پیدا شدن
+  # پروسه ممکن است خالی باشد — سه دور با مکث تا BTNS=0ِ کاذب نداشته باشیم
+  $win = Get-DcWin
+  if (-not $win) { return $null }
+  $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+  for ($round = 1; $round -le 3; $round++) {
+    $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
+    $cnt = 0; if ($btns) { $cnt = $btns.Count }
+    Write-Output ('DBG:ROUND=' + $round + ' BTNS=' + $cnt)
+    if ($cnt -gt 0) { return $btns }
+    Start-Sleep -Milliseconds 450
   }
+  return $null
+}
+function Scan-DcBtns([string]$doRx, [string]$alrRx, [bool]$quiet) {
+  $res = @{ alive = $false; names = @(); hit = $null; already = $false }
+  try {
+    $btns = Get-DcBtns
+    if (-not $btns) { return $res }
+    $res.alive = $true
+    $nl = New-Object System.Collections.Generic.List[string]
+    foreach ($b in $btns) {
+      $bn = ''
+      try { $bn = $b.Current.Name } catch { }
+      if (-not $bn) { continue }
+      if ($nl.Count -lt 64) { $nl.Add($bn) }
+      if ($doRx -and ($bn -match $doRx)) { $res.hit = $b }
+      elseif ($alrRx -and ($bn -match $alrRx)) { $res.already = $true }
+    }
+    $res.names = @($nl)
+    if (-not $quiet) {
+      $dump = ($nl -join '|')
+      if ($dump.Length -gt 400) { $dump = $dump.Substring(0, 400) }
+      Write-Output ('DBG:BTNAMES=' + $dump)
+    }
+  } catch { Write-Output ('DBG:UIAERR=' + $_.Exception.Message) }
+  return $res
+}
+function Test-Flip([string]$doRx, [string]$alrRx) {
+  # بعد از عمل: اگر لیبل دکمهٔ مقابل ظاهر شود، تغییر وضعیت تایید است
+  if (-not $alrRx) { return $false }
+  $s = Scan-DcBtns $alrRx $doRx $true
+  if ($s.alive -and ($null -ne $s.hit)) { return $true }
+  Start-Sleep -Milliseconds 400
+  $s = Scan-DcBtns $alrRx $doRx $true
+  return ($s.alive -and ($null -ne $s.hit))
+}
+function Try-Keys($st, [string]$doRx, [string]$alrRx, [string]$label, [string]$combo) {
+  # کلید فقط بعد از فوکوسِ تاییدشده فرستاده می‌شود — اگر فوکوس نگرفت،
+  # هیچ کلیدی جایی فرستاده نمی‌شود (پنجرهٔ اشتباه آلوده نمی‌شود)
+  $fg = Focus-DcHard
+  Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
+  if (-not $fg) { return '' }
+  Send-Combo $combo
+  if ($st.alive) {
+    if (-not $alrRx) { Restore-Focus; return ('OK:' + $label + ':KEYS-UNVERIFIED') }
+    Start-Sleep -Milliseconds 350
+    if (Test-Flip $doRx $alrRx) { Restore-Focus; return ('OK:' + $label + ':KEYS-VERIFIED') }
+    Write-Output 'DBG:FLIP=0'
+    return ''
+  }
+  Restore-Focus
+  return ('OK:' + $label + ':KEYS-UNVERIFIED')
+}
+function Press-Dc([string]$doRx, [string]$alrRx, [string]$label, [string]$combo = '', [bool]$keysFirst = $true) {
+  # چرخهٔ کامل v0.30: حالت واقعی → عمل لایه‌ای → تایید فلِیپ — هرگز کورکورانه OK نمی‌گوید
+  $st = Scan-DcBtns $doRx $alrRx $false
+  if ($st.alive -and $st.already -and (-not $st.hit)) { return ('OK:' + $label + '-ALREADY') }
+  if ($keysFirst -and $combo) {
+    $r = Try-Keys $st $doRx $alrRx $label $combo
+    if ($r) { return $r }
+  }
+  if ($st.hit) {
+    try { Write-Output ('DBG:UIAHIT=' + $st.hit.Current.Name) } catch { }
+    try {
+      ($st.hit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke()
+      if ($st.alive) {
+        Start-Sleep -Milliseconds 300
+        if (Test-Flip $doRx $alrRx) { Restore-Focus; return ('OK:' + $label + ':UIA-VERIFIED') }
+      }
+      Restore-Focus
+      return ('OK:' + $label + ':UIA')
+    } catch { Write-Output ('DBG:INVERR=' + $_.Exception.Message) }
+    try {
+      $r = $st.hit.Current.BoundingRectangle
+      Click-At ([int]($r.X + $r.Width / 2)) ([int]($r.Y + $r.Height / 2))
+      if ($st.alive) {
+        Start-Sleep -Milliseconds 300
+        if (Test-Flip $doRx $alrRx) { Restore-Focus; return ('OK:' + $label + ':UACLICK-VERIFIED') }
+      }
+      Restore-Focus
+      return ('OK:' + $label + ':UACLICK')
+    } catch { Write-Output ('DBG:CLERR=' + $_.Exception.Message) }
+  }
+  if (-not $keysFirst -and $combo) {
+    $r = Try-Keys $st $doRx $alrRx $label $combo
+    if ($r) { return $r }
+  }
+  if ($st.alive) { return ('ERR:NOBTN:' + $label) }
+  # UIA کور + فوکوس هم نگرفتیم — هیچ عملی انجام نشد، صادقانه می‌گوییم
+  return 'ERR:NOFOCUS'
 }
 function Try-CallClick {
   # دکمهٔ تماس: اول UIA (بدون فوکوس هم کار می‌کند)، بعد مختصات دستی
   # چند بار تلاش می‌شود (بارگذاری DM ممکن است چند ثانیه طول بکشد)
   for ($tryN = 1; $tryN -le $Retries; $tryN++) {
     try {
-      Add-Type -AssemblyName UIAutomationClient | Out-Null
-      Add-Type -AssemblyName UIAutomationTypes | Out-Null
-      # v0.29.3 — ریشهٔ «DBG:UIAERR ... .ctor با ۲ آرگومان» در لاگ کاربر (×۹):
-      # شرطProperty برای هندل پنجره فقط Int32 می‌پذیرد؛ MainWindowHandle در PS
-      # یک IntPtr است → سازنده Exception می‌داد → همهٔ اکشن‌ها EMPTY.
-      # FromHandle دقیقاً همان پنجره را می‌دهد و IntPtr می‌پذیرد.
       $win = if ($hwnd -ne [IntPtr]::Zero) { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd) } else { $null }
       if ($win) {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
@@ -2846,7 +3025,7 @@ function Try-CallClick {
         foreach ($pass in 1, 2) {
           foreach ($b in $btns) {
             $bn = ''
-            try { $bn = $b.Current.Name } catch {}
+            try { $bn = $b.Current.Name } catch { }
             if (-not $bn) { continue }
             if ($bn -match 'Video|ویدیو|دوربین|End|قطع|Screen|اشتراک') { continue }
             $ok = $false
@@ -2854,24 +3033,24 @@ function Try-CallClick {
             else { $ok = ($bn -match 'Call|تماس') }
             if (-not $ok) { continue }
             Write-Output "DBG:HIT=$bn PASS=$pass"
-            try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch {}
+            try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch { }
             try {
               $r = $b.Current.BoundingRectangle
               $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
               Click-At $cx $cy
               Restore-Focus
               return 'OK:CALLING'
-            } catch {}
+            } catch { }
           }
         }
       }
-    } catch {}
+    } catch { }
     Start-Sleep -Milliseconds 1100
   }
   # فالبک مختصات دستی: گوشهٔ بالا-راست پنجره (سرستون DM)
   Write-Output 'DBG:UIA_MISS'
-  $r2 = New-Object AvaDc2.RECT
-  [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
+  $r2 = New-Object AvaDc3.RECT
+  [AvaDc3.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
   $tx = $r2.Right - $Dx
   $ty = $r2.Top + $Dy
   if ($tx -gt $r2.Left -and $ty -gt $r2.Top) {
@@ -2883,103 +3062,60 @@ function Try-CallClick {
   return 'ERR:NOBTN'
 }
 # v0.29.1 — ریشهٔ ارور «The term '????' is not recognized»: کامنت C-سبک (اسلش-ستاره)
-# در پاورشل کامنت نیست! پارسر PS بخشی از متن کامنت (کلمهٔ فارسی) را به‌عنوان
-# دستور اجرا کرد → CommandNotFound → همهٔ اکشن‌ها می‌مردند (اسکریپت پارس می‌شود
-# ولی در اجرا می‌میرد — برای همین تست «پارس» آن را نمی‌گرفت). قانون: در
-# ava-dc.ps1 فقط کامنت # (تک‌خطی) مجاز است — هیچ‌وقت کامنت C-سبک ننویس.
-# v0.29 — اکشن‌های واقعی با UIA (بدون دزدیدن فوکوس، با تشخیص وضعیت):
-#   چرا کلیدهای میان‌بر کافی نبودند؟ PostMessage به Chrome_RenderWidgetHostHWND
-#   توسط دیسکورد نادیده گرفته می‌شود و SetForegroundWindow از پروسهٔ تازه‌ spawn
-#   اغلب بی‌صدا شکست می‌خورد — کلید به پنجرهٔ اشتباه می‌رفت و اسکریپت همیشه
-#   OK می‌گفت. حالا دکمهٔ واقعی میوت/دیفن/قطع در پنل حساب دیسکورد با نام دقیقش
-#   پیدا و Invoke می‌شود (همان راه Try-CallClick که برای دکمهٔ تماس جواب داد)؛
-#   کلیک مختصاتی و در آخر کلید، فالبک هستند. نتیجه صادقانه برمی‌گردد:
-#   UIA=دکمه زده شد، ALREADY=از قبل در همان وضعیت بود، KEYS=فالبک کلید.
-function Get-DcWin {
-  Add-Type -AssemblyName UIAutomationClient | Out-Null
-  Add-Type -AssemblyName UIAutomationTypes | Out-Null
-  # v0.29.3 — PropertyCondition با hwnd IntPtr در سازنده می‌ترکد (فقط Int32
-  # قبول می‌کند) → mute/deafen/answer/decline همه EMPTY و «اجرا نشد».
-  # FromHandle همان کار را با IntPtr انجام می‌دهد — بدون PropertyCondition.
-  if ($hwnd -eq [IntPtr]::Zero) { return $null }
-  return [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd)
-}
-function Press-Dc([string]$doRx, [string]$alrRx, [string]$label) {
-  try {
-    $win = Get-DcWin
-    if ($win) {
-      $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
-      $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
-      $names = New-Object System.Collections.Generic.List[string]
-      $hit = $null; $already = $false
-      foreach ($b in $btns) {
-        $bn = ''
-        try { $bn = $b.Current.Name } catch {}
-        if (-not $bn) { continue }
-        if ($names.Count -lt 48) { $names.Add($bn) }
-        if ($bn -match $doRx) { $hit = $b }
-        elseif ($alrRx -and ($bn -match $alrRx)) { $already = $true }
-      }
-      $dump = ($names -join '|')
-      if ($dump.Length -gt 240) { $dump = $dump.Substring(0, 240) }
-      Write-Output ('DBG:BTNAMES=' + $dump)
-      if ($hit) {
-        Write-Output ('DBG:UIAHIT=' + $hit.Current.Name)
-        try { ($hit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return ('OK:' + $label + ':UIA') } catch {}
-        try {
-          $r = $hit.Current.BoundingRectangle
-          Click-At ([int]($r.X + $r.Width / 2)) ([int]($r.Y + $r.Height / 2))
-          Restore-Focus
-          return ('OK:' + $label + ':UACLICK')
-        } catch {}
-      }
-      if ($already) { return ('OK:' + $label + '-ALREADY') }
-    }
-  } catch { Write-Output ('DBG:UIAERR=' + $_.Exception.Message) }
-  return ''
-}
-function Dc-KeysFallback([string]$combo, [string]$keys, [string]$label) {
-  if ($bg) { Send-BgCombo $combo }
-  else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys($keys); Start-Sleep -Milliseconds 250; Restore-Focus }
-  return ('OK:' + $label + '-KEYS')
-}
+# در پاورشل کامنت نیست! قانون بدنه: فقط کامنت # تک‌خطی — هیچ‌وقت اسلش-ستاره ننویس.
+# v0.30 — نتیجهٔ صادقانه: UIA=دکمه واقعی زده شد، ALREADY=از قبل در همان وضعیت،
+#   KEYS-VERIFIED=کلید با فوکوس تاییدشده و فلِیپ تاییدشده، KEYS-UNVERIFIED=کلید
+#   رفت ولی UIA کور بود و نتوانستیم تایید کنیم، ERR:NOFOCUS=نه UIA نه فوکوس.
 switch ($Action) {
-  'focus'    { if (-not $bg) { Focus-Discord }; Write-Output 'OK' }
-  'mute'     { $r = Press-Dc '^Mute$' '^Unmute$' 'MUTE'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x4D) '^+m' 'MUTE' }; Write-Output $r }
-  'unmute'   { $r = Press-Dc '^Unmute$' '^Mute$' 'UNMUTE'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x4D) '^+m' 'UNMUTE' }; Write-Output $r }
-  'deafen'   { $r = Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x44) '^+d' 'DEAFEN' }; Write-Output $r }
-  'undeafen' { $r = Press-Dc '^Undeafen$' '^Deafen$' 'UNDEAFEN'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x44) '^+d' 'UNDEAFEN' }; Write-Output $r }
-  'hangup'   { $r = Press-Dc '^(Disconnect|Leave Call|Leave|End Call)$' '' 'HANGUP'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x48) '^+h' 'HANGUP' }; Write-Output $r }
-  'answer'   { $r = Press-Dc '^(Join Call|Answer|Accept|Join)$' '' 'ANSWER'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x41) '^+a' 'ANSWER' }; Write-Output $r }
-  'decline'  { $r = Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE'; if (-not $r) { $r = Dc-KeysFallback @(0x11, 0x10, 0x45) '^+e' 'DECLINE' }; Write-Output $r }
+  'focus'    { if ($bg) { Write-Output 'OK' } elseif (Focus-DcHard) { Write-Output 'OK' } else { Write-Output 'ERR:NOFOCUS' } }
+  'mute'     { Write-Output (Press-Dc '^Mute$' '^Unmute$' 'MUTE' 'ctrl,shift,m') }
+  'unmute'   { Write-Output (Press-Dc '^Unmute$' '^Mute$' 'UNMUTE' 'ctrl,shift,m') }
+  'deafen'   { Write-Output (Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN' 'ctrl,shift,d') }
+  'undeafen' { Write-Output (Press-Dc '^Undeafen$' '^Deafen$' 'UNDEAFEN' 'ctrl,shift,d') }
+  'hangup'   { Write-Output (Press-Dc '^(Disconnect|Leave Call|Leave|End Call)$' '' 'HANGUP' 'ctrl,shift,h' $false) }
+  'answer'   { Write-Output (Press-Dc '^(Join Call|Answer|Accept|Join)$' '' 'ANSWER' 'ctrl,shift,a' $false) }
+  'decline'  { Write-Output (Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE' 'ctrl,shift,e' $false) }
+  'state' {
+    # خواندن وضعیت واقعی میکروفون/صدا بدون هیچ کلیکی — برای «وضعیت میکروفون دیسکورد»
+    $st = Scan-DcBtns '' '' $false
+    if (-not $st.alive) { Write-Output 'ERR:NOSTATE'; exit }
+    $muted = $false; $deaf = $false; $known = $false
+    foreach ($n in $st.names) {
+      if ($n -match '^Unmute$') { $muted = $true; $known = $true }
+      elseif ($n -match '^Mute$') { $known = $true }
+      if ($n -match '^Undeafen$') { $deaf = $true; $known = $true }
+      elseif ($n -match '^Deafen$') { $known = $true }
+    }
+    if (-not $known) { Write-Output 'ERR:NOSTATE'; exit }
+    $ms = 'ON'; if ($muted) { $ms = 'MUTED' }
+    $ds = 'SOUND'; if ($deaf) { $ds = 'DEAF' }
+    Write-Output ('OK:STATE:' + $ms + ':' + $ds)
+  }
   'probe' {
     # آزمایش مکان‌یابی دکمهٔ تماس — فقط نشانگر موس حرکت می‌کند، کلیکی در کار نیست
     try {
-      Add-Type -AssemblyName UIAutomationClient | Out-Null
-      Add-Type -AssemblyName UIAutomationTypes | Out-Null
-      # v0.29.3 — همان ترمیم FromHandle (IntPtr) به‌جای PropertyCondition(Int32)
       $win = if ($hwnd -ne [IntPtr]::Zero) { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd) } else { $null }
       if ($win) {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
         $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
         foreach ($b in $btns) {
           $bn = ''
-          try { $bn = $b.Current.Name } catch {}
+          try { $bn = $b.Current.Name } catch { }
           if ($bn -match 'Video|ویدیو|End|قطع') { continue }
           if ($bn -match 'Start Voice Call|Voice Call|تماس صوتی|شروع تماس|Call|تماس') {
             $r = $b.Current.BoundingRectangle
             $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
-            [AvaDc2.W]::SetCursorPos($cx, $cy) | Out-Null
+            [AvaDc3.W]::SetCursorPos($cx, $cy) | Out-Null
             Write-Output "OK:PROBE:$cx,$cy"
             exit
           }
         }
       }
-    } catch {}
-    $r2 = New-Object AvaDc2.RECT
-    [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
+    } catch { }
+    $r2 = New-Object AvaDc3.RECT
+    [AvaDc3.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
     $tx = $r2.Right - $Dx; $ty = $r2.Top + $Dy
-    [AvaDc2.W]::SetCursorPos($tx, $ty) | Out-Null
+    [AvaDc3.W]::SetCursorPos($tx, $ty) | Out-Null
     Write-Output "OK:PROBE-FB:$tx,$ty"
   }
   'clickcall' {
@@ -2988,10 +3124,7 @@ switch ($Action) {
     Write-Output (Try-CallClick)
   }
   'callswitch' {
-    # v0.28.1 فیکس خطای پاورشل (ava-dc.ps1:193 char:34): کاراکتر گیومهٔ کج
-    # درون regex باعث خطای پارسر پاورشل می‌شد — پاورشل U+2019 را
-    # جداکنندهٔ رشته می‌داند! پس در فایل فقط گیومهٔ ASCII و حذف کاراکترهای
-    # کج در زمانِ اجرا با [char] — هیچ‌وقت کاراکتر کج در این فایل ننویس
+    # v0.28.1 — در این فایل فقط گیومهٔ ASCII مجاز است؛ کاراکتر کج در زمان اجرا با [char] حذف می‌شود
     $name = ($Name -replace '[''"]', '')
     foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $name = $name.Replace([string]$cq, '') }
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
@@ -3004,22 +3137,18 @@ switch ($Action) {
       Send-BgCombo @(0x0D)
       Start-Sleep -Milliseconds 1700
     } else {
-      Focus-Discord
-      $ws = New-Object -ComObject WScript.Shell
-      $ws.SendKeys('^k'); Start-Sleep -Milliseconds 1000
-      $ws.SendKeys('^v'); Start-Sleep -Milliseconds 900
-      $ws.SendKeys('{ENTER}'); Start-Sleep -Milliseconds 1700
+      Focus-DcHard | Out-Null
+      Send-Combo 'ctrl,k'
+      Start-Sleep -Milliseconds 1000
+      Send-Combo 'ctrl,v'
+      Start-Sleep -Milliseconds 900
+      Send-Combo 'enter'
+      Start-Sleep -Milliseconds 1700
     }
     Write-Output (Try-CallClick)
   }
   default { Write-Output 'ERR:UNKNOWN' }
-}
-} catch {
-  # v0.21 — هر خطای پاورشل (حتی Add-Type/UIA) به‌عنوان نتیجهٔ قابل‌فهم برمی‌گردد
-  # و در لاگ عملکرد ثبت می‌شود — دیگر «ارور پاورشل» گم نمی‌شود
-  Write-Output ('ERR:PS:' + ($_.Exception.Message -replace '\s+', ' '))
-}
-`;
+}`;
 
 /* v0.22 — نوشتن اسکریپت در پوشهٔ برنامه (ACL کاربر جاری) و اجرای spawn -File:
    خط فرمان فقط چند ده کاراکتر است — محدودیت ۸۱۹۱ کاراکتری cmd.exe و
@@ -3089,9 +3218,15 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
           'ERR:NO_DISCORD': 'دیسکورد باز نیست — اول دیسکورد را باز کن',
           'ERR:UNKNOWN': 'فرمان دیسکورد شناخته نشد',
           'ERR:NONAME': 'نام مخاطب پیدا نشد — در تنظیمات دیسکورد مخاطب بساز یا نام را کامل بگو',
+          'ERR:NOSTATE': 'وضعیت دیسکورد خوانده نشد — دیسکورد را باز کن و دوباره امتحان کن',
           'ERR:NOBTN': 'دکمهٔ تماس پیدا نشد — صفحهٔ مخاطب باز شد ولی تماس نگرفت؛ مختصات دستی را با «آزمایش مکان» تنظیم کن یا حالت کمکی را امتحان کن',
         };
-        return resolve({ ok: false, error: msgs[out.trim()] || out.trim() });
+        /* v0.30 — خطاهای پسونددار (ERR:NOBTN:LABEL / ERR:NOFOCUS) با پیشوند تطبیق می‌شوند */
+        const em = out.trim();
+        let msg = msgs[em] || '';
+        if (!msg && em.startsWith('ERR:NOBTN:')) msg = 'دکمهٔ دیسکورد پیدا نشد — نام دکمه‌ها در activity.log ثبت شد؛ دیسکورد را یک‌بار ماکسیمم کن و دوباره بگو';
+        if (!msg && em.startsWith('ERR:NOFOCUS')) msg = 'فوکوس به پنجرهٔ دیسکورد منتقل نشد — پنجرهٔ دیسکورد را یک‌بار دستی فعال کن و دوباره امتحان کن';
+        return resolve({ ok: false, error: (msg || em.replace(/^ERR:/, 'خطا: ')).slice(0, 200) });
       }
       resolve({ ok: true, result: out || 'OK' });
     });

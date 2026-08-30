@@ -24,17 +24,17 @@ const htmlSrc = read('renderer/index.html');
 const cssSrc = read('renderer/css/styles.css');
 const body = (mainSrc.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
 
-/* ---- 1) Discord PS body: UIA-first actions ---- */
-ok('PS body: Press-Dc helper present (UIA button click with state awareness)', body.includes('function Press-Dc([string]$doRx, [string]$alrRx, [string]$label)'));
+/* ---- 1) Discord PS body: layered engine (v0.30 evolved) ---- */
+ok('PS body: Press-Dc layered engine (state, verified-focus keys, UIA, click, flip-verify)', body.includes("function Press-Dc([string]$doRx, [string]$alrRx, [string]$label, [string]$combo = '', [bool]$keysFirst = $true)"));
 ok('PS body: Get-DcWin UIA window finder', body.includes('function Get-DcWin'));
-ok('PS body: Dc-KeysFallback is the LAST resort, not the primary', body.includes('function Dc-KeysFallback'));
-ok('PS body: mute clicks exactly the "Mute" button (state-aware, no blind toggle)', body.includes("'mute'     { $r = Press-Dc '^Mute$' '^Unmute$' 'MUTE'"));
-ok('PS body: unmute action exists', body.includes("'unmute'   { $r = Press-Dc '^Unmute$' '^Mute$' 'UNMUTE'"));
-ok('PS body: deafen + undeafen actions exist', body.includes("'deafen'   { $r = Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN'") && body.includes("'undeafen' { $r = Press-Dc '^Undeafen$' '^Deafen$' 'UNDEAFEN'"));
-ok('PS body: hangup matches Disconnect/Leave Call/End Call', body.includes("'hangup'   { $r = Press-Dc '^(Disconnect|Leave Call|Leave|End Call)$' '' 'HANGUP'"));
-ok('PS body: answer matches Join Call/Answer', body.includes("'answer'   { $r = Press-Dc '^(Join Call|Answer|Accept|Join)$' '' 'ANSWER'"));
-ok('PS body: decline matches Decline/Reject', body.includes("'decline'  { $r = Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE'"));
-ok('PS body: honest results UIA/UACLICK/ALREADY/KEYS', body.includes("':UIA')") && body.includes("':UACLICK')") && body.includes("-ALREADY')") && body.includes("-KEYS')"));
+ok('PS body: keys engine fires ONLY after verified foreground (v0.30 Focus-DcHard + Test-Fg)', body.includes('function Try-Keys') && body.includes('function Focus-DcHard') && body.includes('return (Test-Fg)'));
+ok('PS body: mute toggles exactly the "Mute" button (state-aware, no blind toggle)', body.includes("'mute'     { Write-Output (Press-Dc '^Mute$' '^Unmute$' 'MUTE' 'ctrl,shift,m') }"));
+ok('PS body: unmute action exists', body.includes("'unmute'   { Write-Output (Press-Dc '^Unmute$' '^Mute$' 'UNMUTE' 'ctrl,shift,m') }"));
+ok('PS body: deafen + undeafen actions exist', body.includes("'deafen'   { Write-Output (Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN' 'ctrl,shift,d') }") && body.includes("'undeafen' { Write-Output (Press-Dc '^Undeafen$' '^Deafen$' 'UNDEAFEN' 'ctrl,shift,d') }"));
+ok('PS body: hangup UIA-first + keys, matches Disconnect/Leave Call/End Call', body.includes("'hangup'   { Write-Output (Press-Dc '^(Disconnect|Leave Call|Leave|End Call)$' '' 'HANGUP' 'ctrl,shift,h' $false) }"));
+ok('PS body: answer matches Join Call/Answer (UIA-first)', body.includes("'answer'   { Write-Output (Press-Dc '^(Join Call|Answer|Accept|Join)$' '' 'ANSWER' 'ctrl,shift,a' $false) }"));
+ok('PS body: decline matches Decline/Reject (UIA-first)', body.includes("'decline'  { Write-Output (Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE' 'ctrl,shift,e' $false) }"));
+ok('PS body: honest results UIA/UACLICK/ALREADY/KEYS (VERIFIED + UNVERIFIED)', body.includes(':KEYS-VERIFIED') && body.includes(":UIA')") && body.includes(":UACLICK')") && body.includes("-ALREADY')"));
 ok('PS body: button-name dump for diagnosis (DBG:BTNAMES)', body.includes("Write-Output ('DBG:BTNAMES=' + $dump)"));
 ok('PS body: InvokePattern tried before coordinate click', body.indexOf('InvokePattern]::Pattern)).Invoke()') < body.indexOf('Click-At ([int]($r.X + $r.Width / 2))'));
 ok('PS body: STILL 100% curly-quote-free (v0.28.1 invariant)', !/[\u2018\u2019\u201C\u201D]/.test(body));
