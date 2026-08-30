@@ -246,11 +246,11 @@
               <!-- تشخیص گفتار -->
               <div class="set-pane" data-pane="stt">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب (زنده)؛ بعد موتورهای AI کلاس حرفه‌ای: جمنای، Whisper، GLM و گوگل رایگان</span></span>
+                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper، گوگل رایگان، GLM و آخر Gemini</span></span>
                   <select id="optSttEngine" class="set-select">
                     <option value="auto" data-i18n="set.stt.auto">خودکار (پیشنهادی)</option>
                     <option value="web" data-i18n="set.stt.web">فقط موتور وب گوگل</option>
-                    <option value="gemini" data-i18n="set.stt.gemini">فقط Gemini Audio — دقیق‌ترین (کلید جمنای)</option>
+                    <option value="gemini" data-i18n="set.stt.gemini">فقط Gemini Audio — دقیق ولی گاهی کند (کلید جمنای)</option>
                     <option value="whisper" data-i18n="set.stt.whisper">فقط Whisper — سریع (Groq/OpenAI)</option>
                     <option value="google" data-i18n="set.stt.google">فقط گوگل رایگان HTTP (نیاز به فیلترشکن)</option>
                     <option value="glm" data-i18n="set.stt.glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
@@ -643,17 +643,23 @@
             <h2><svg class="ic"><use href="#i-music"/></svg> <span data-i18n="music.title">پلیر موزیک</span></h2>
             <div class="music-top-actions">
               <button class="chip" id="btnMusicFolder"><svg class="ic"><use href="#i-folder"/></svg><span data-i18n="music.pick">انتخاب پوشه موزیک</span></button>
+              <button class="chip sm" id="mDirsClear" hidden title="حذف پوشه‌های ذخیره‌شدهٔ پلی‌لیست"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="music.clearDirs">حذف پوشه‌ها</span></button>
               <button class="chip" id="btnMusicBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
             </div>
           </header>
+          <p class="m-hint" data-i18n="music.multiHint" style="margin-top:-6px;text-align:center;">چند پوشه هم می‌توانی انتخاب کنی — پوشه‌ها بعد از بستن برنامه هم می‌مانند</p>
           <input type="file" id="mFolder" webkitdirectory multiple hidden />
 
           <div class="music-deck">
 
-            <!-- آهنگ در حال پخش — بزرگ و بدون جعبه -->
+            <!-- آهنگ در حال پخش — بزرگ و بدون جعبه
+                 v0.22 — دیسک وینیل پشت کاور (حس جلد آلبوم حرفه‌ای) -->
             <div class="np-area">
-              <div class="np-cover" id="mCover">
-                <svg class="ic"><use href="#i-disc"/></svg>
+              <div class="np-cover-wrap">
+                <div class="np-vinyl" aria-hidden="true"></div>
+                <div class="np-cover" id="mCover">
+                  <svg class="ic"><use href="#i-disc"/></svg>
+                </div>
               </div>
               <div class="np-head">
                 <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>

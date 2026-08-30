@@ -571,7 +571,7 @@ app.whenReady().then(async () => {
         sttBridge: preload.includes("'stt:gemini'") && preload.includes("'stt:whisper'"),
         sttChain: /function buildCloudChain\(/.test(appjs) && appjs.includes("if (geminiSttReady()) c.push('gemini')") && appjs.includes("if (whisperSttReady()) c.push('whisper')"),
         sttUi: html.includes('optWhisperBase') && html.includes('optWhisperKey') && html.includes('optWhisperModel') && appjs.includes('whisperBase'),
-        dcDeepLink: mainjs.includes('discord://discord.com/channels/@me/') && mainjs.includes('function discordPsScript('),
+        dcDeepLink: mainjs.includes('discord://discord.com/channels/@me/') && mainjs.includes('const DISCORD_PS_BODY'),
         dcBg: mainjs.includes("PostMessage($child, 0x100") && mainjs.includes('Chrome_RenderWidgetHostHWND'),
         dcRestore: mainjs.includes('function Restore-Focus') && mainjs.includes('GetForegroundWindow()'),
         dcContacts: html.includes('id="dcAddForm"') && html.includes('dcContactsList') && appjs.includes('function resolveDiscordContact('),
@@ -686,7 +686,7 @@ app.whenReady().then(async () => {
         reportCmd: appjs.includes('function sendActivityReport(') && appjs.includes('گزارش\\s*(بفرست') && appjs.includes('issues/new?title='),
         deltaOn: mainjs.includes('disableDifferentialDownload = false'),
         aiFast: mainjs.includes('thinkingBudget: 0') && mainjs.includes('SEARCH_INTENT_RE') && mainjs.includes('if (search && wantsSearch)'),
-        dcWait: mainjs.includes('function discordPsScript(action, mode, name, dx, dy, waitMs, clickRetries)') && mainjs.includes('$waited -lt ${waitMs}') && mainjs.includes('$tryN -le ${clickRetries}'),
+        dcWait: mainjs.includes('$waited -lt $WaitMs') && mainjs.includes('$tryN -le $Retries') && mainjs.includes("'-WaitMs', String(waitMs)"),
         minimalHtml: html.includes('np-area') && html.includes('np-cover') && html.includes('pl-area') && !html.includes('np-card'),
         minimalCss: css.includes('.np-cover {\n  position: relative; width: 200px; height: 200px;') && css.includes('.np-area .np-head b { font-size: 21px'),
       };
@@ -806,6 +806,51 @@ app.whenReady().then(async () => {
       ok('v0.21 player controls: stop / ±10s seek / volume± wired', v21.musicCtl && v21.musicWire);
       ok('v0.21 professional cover (200px, highlight+ring) + upd actions css', v21.coverPro);
     } catch (e) { console.log('SKIP | v0.21 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.95 v0.22 — discord -File exec (command-line-too-long fix), fast STT chain,
+    // extDns migration, persistent music library, phonetic dictionary expansion
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v22 = {
+        dcFile: mainjs.includes("'-File', psFile") && mainjs.includes("spawn('powershell.exe'") && mainjs.includes('param(') && mainjs.includes('-Action\', psAction'),
+        dcNoEncoded: !/exec[\s\S]{0,200}-EncodedCommand/.test(mainjs.slice(mainjs.indexOf('function runDiscordPs'), mainjs.indexOf('function runDiscordPs') + 2500)),
+        dcBom: mainjs.includes("'\\ufeff' + DISCORD_PS_BODY"),
+        sttFast: appjs.indexOf("if (whisperSttReady()) c.push('whisper')") < appjs.indexOf("if (geminiSttReady()) c.push('gemini')"),
+        sttMig: appjs.includes("migV22") && appjs.includes("settings.sttEngine === 'gemini'"),
+        dnsMig: appjs.includes("settings.extDns = true; store.set('extDns', true)"),
+        mediaProto: mainjs.includes("scheme: 'ava-media'") && mainjs.includes("protocol.handle('ava-media'") && mainjs.includes('Content-Range'),
+        musicIpc: mainjs.includes("ipcMain.handle('music:pickDirs'") && mainjs.includes("ipcMain.handle('music:scan'") && mainjs.includes("ipcMain.handle('music:readHead'") && mainjs.includes('showOpenDialog'),
+        musicBridge: preload.includes("pickDirs: () => ipcRenderer.invoke('music:pickDirs')") && preload.includes('readHead'),
+        musicPersist: appjs.includes('scanAndLoadDirs') && appjs.includes('restoreMusicLibrary') && appjs.includes("settings.musicDirs = merged") && appjs.includes('mediaUrl'),
+        phonetic: appjs.includes("'اپرا': 'opera'") && appjs.includes("'براو': 'brave'") && appjs.includes("'تیم ویور': 'teamviewer'") && appjs.includes("'ماینکرفت': 'minecraft'"),
+        vinylUi: html.includes('np-vinyl') && html.includes('np-cover-wrap') && html.includes('mDirsClear') && css.includes('.np-vinyl') && css.includes('vinylSpin'),
+        musicI18n: appjs.includes("'music.restored'") && appjs.includes("'music.cleared'") && appjs.includes("'music.clearDirs'"),
+      };
+      ok('v0.22 discord PS via temp .ps1 + spawn -File (no cmdline limit)', v22.dcFile && v22.dcNoEncoded && v22.dcBom);
+      ok('v0.22 auto STT chain: whisper/google before gemini + gemini-default migration', v22.sttFast && v22.sttMig);
+      ok('v0.22 extDns one-time re-enable (Shekan/Electro access)', v22.dnsMig);
+      ok('v0.22 ava-media streaming protocol with Range support', v22.mediaProto);
+      ok('v0.22 music folder scan IPCs + bridge (real Windows dialog)', v22.musicIpc && v22.musicBridge);
+      ok('v0.22 persistent music library (musicDirs saved + boot restore + last track)', v22.musicPersist);
+      ok('v0.22 phonetic dictionary expanded (opera/brave/teamviewer/minecraft…)', v22.phonetic);
+      ok('v0.22 vinyl-peek cover UI + clear-folders button + i18n', v22.vinylUi && v22.musicI18n);
+    } catch (e) { console.log('SKIP | v0.22 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.96 v0.22 — runtime: vinyl + cover-wrap + clear button in DOM
+    try {
+      const rt22 = await probe(`(() => ({
+        vinyl: !!document.querySelector('.np-vinyl') && !!document.querySelector('.np-cover-wrap'),
+        clearBtn: !!document.querySelector('#mDirsClear'),
+        multiHint: !!document.querySelector('[data-i18n="music.multiHint"]'),
+      }))()`);
+      ok('v0.22 vinyl + cover-wrap render in DOM', rt22.vinyl);
+      ok('v0.22 clear-folders button + multi-folder hint in DOM', rt22.clearBtn && rt22.multiHint);
+    } catch (e) { console.log('SKIP | v0.22 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons
     try {

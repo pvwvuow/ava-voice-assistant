@@ -4,11 +4,12 @@
  * فعال می‌شود، فرمان‌های پاور (خواب/خاموش/مانیتور)، فرم «DNS جدید» داخل صفحه
  * اصلی با انیمیشن، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard } = require('electron');
-const { exec } = require('child_process');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard, dialog } = require('electron');
+const { exec, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { Readable } = require('stream');
 
 /* ---------- پروتکل امن ava:// ----------
    رابط کاربری از ava://app بارگذاری می‌شود تا فایل‌های برنامه
@@ -16,6 +17,8 @@ const os = require('os');
    باید «قبل از» آماده شدن اپ ثبت شود. */
 protocol.registerSchemesAsPrivileged([
   { scheme: 'ava', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+  /* v0.22 — استریم فایل‌های موزیک کاربر برای پلیر (با پشتیبانی Range برای سیک) */
+  { scheme: 'ava-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
 ]);
 
 const MIME = {
@@ -52,6 +55,55 @@ function serveAvaFile(reqUrl) {
     });
   } catch (_) {
     return new Response('not found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+}
+
+/* ---------- v0.22 — استریم فایل‌های موزیک کاربر (ava-media://m/<مسیر>) ----------
+   آدرس کامل فایل به‌صورت encodeURIComponent در pathname می‌آید؛
+   پشتیبانی Range (۲۰۶) برای سیک/جلو-عقب پلیر و MIME درست برای هر فرمت. */
+const MEDIA_MIME = {
+  '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.wav': 'audio/wav',
+  '.flac': 'audio/flac', '.ogg': 'audio/ogg', '.oga': 'audio/ogg', '.opus': 'audio/ogg',
+  '.weba': 'audio/webm', '.webm': 'audio/webm', '.wma': 'audio/x-ms-wma',
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif',
+};
+function serveMediaFile(reqUrl, req) {
+  try {
+    const u = new URL(reqUrl);
+    if (u.host !== 'm') return new Response('not found', { status: 404 });
+    const p = decodeURIComponent(u.pathname).replace(/^\/+/, '');
+    if (!path.isAbsolute(p)) return new Response('forbidden', { status: 403 });
+    let st;
+    try { st = fs.statSync(p); } catch (_) { return new Response('not found', { status: 404 }); }
+    if (!st.isFile()) return new Response('not found', { status: 404 });
+    const type = MEDIA_MIME[path.extname(p).toLowerCase()] || 'application/octet-stream';
+    const range = (req && req.headers && req.headers.get && req.headers.get('range')) || '';
+    if (range) {
+      const m = /bytes=(\d*)-(\d*)/.exec(range);
+      let start = m && m[1] ? parseInt(m[1], 10) : 0;
+      let end = m && m[2] ? parseInt(m[2], 10) : st.size - 1;
+      if (!Number.isFinite(start) || start < 0) start = 0;
+      if (!Number.isFinite(end) || end >= st.size) end = st.size - 1;
+      if (start > end) {
+        return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${st.size}` } });
+      }
+      return new Response(Readable.toWeb(fs.createReadStream(p, { start, end })), {
+        status: 206,
+        headers: {
+          'Content-Type': type,
+          'Content-Length': String(end - start + 1),
+          'Content-Range': `bytes ${start}-${end}/${st.size}`,
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'no-cache',
+        },
+      });
+    }
+    return new Response(Readable.toWeb(fs.createReadStream(p)), {
+      status: 200,
+      headers: { 'Content-Type': type, 'Content-Length': String(st.size), 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache' },
+    });
+  } catch (_) {
+    return new Response('error', { status: 500 });
   }
 }
 
@@ -2022,9 +2074,20 @@ ipcMain.handle('custom:run', (_e, script) => {
      کلیک روی مرکز مستطیل دکمه، بعد فالبک مختصات دستی dx/dy).
    • بدون آی‌دی: Quick Switcher (Ctrl+K) با نام.
    دکمهٔ تماس هم با نام انگلیسی و هم فارسی («تماس صوتی/شروع تماس») پیدا می‌شود. */
-function discordPsScript(action, mode, name, dx, dy, waitMs, clickRetries) {
-  const nm = String(name || '').replace(/['’`]/g, '');
-  return `
+/* v0.22 — اسکریپت کاملاً ایستا با param(): یک‌بار در userData نوشته و با
+   «-File» اجرا می‌شود — دیگر هیچ خط فرمان بلندی وجود ندارد. ریشهٔ ارور
+   «The command line is too long» این بود که کل اسکریپت (بیش از حد مجاز
+   cmd.exe / CreateProcess) به‌صورت -EncodedCommand در خط فرمان می‌رفت. */
+const DISCORD_PS_BODY = `
+param(
+  [string]$Action = 'focus',
+  [string]$Mode = 'fg',
+  [string]$Name = '',
+  [int]$Dx = 46,
+  [int]$Dy = 52,
+  [int]$WaitMs = 6000,
+  [int]$Retries = 1
+)
 $ErrorActionPreference = 'Stop'
 try {
 Add-Type -TypeDefinition @'
@@ -2049,9 +2112,9 @@ namespace AvaDc2 {
 '@
 $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
 if (-not $proc) {
-  # v0.18 — اگر دیسکورد با دیپ‌لینک در حال بالا آمدن است، تا ${waitMs}ms صبر کن
+  # اگر دیسکورد با دیپ‌لینک در حال بالا آمدن است، تا $WaitMs میلی‌ثانیه صبر کن
   $waited = 0
-  while ($waited -lt ${waitMs}) {
+  while ($waited -lt $WaitMs) {
     Start-Sleep -Milliseconds 600
     $waited += 600
     $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
@@ -2062,9 +2125,8 @@ if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
 $hwnd = $proc.MainWindowHandle
 $child = [AvaDc2.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
 if ($child -eq [IntPtr]::Zero) { $child = $hwnd }
-Write-Output "DBG:PROC=$($proc.ProcessName) CHILD=$(if ($child -ne [IntPtr]::Zero) { 1 } else { 0 }) MODE=${mode} ACT=${action}"
-$mode = '${mode}'
-$bg = ($mode -eq 'bg')
+Write-Output "DBG:PROC=$($proc.ProcessName) CHILD=$(if ($child -ne [IntPtr]::Zero) { 1 } else { 0 }) MODE=$Mode ACT=$Action"
+$bg = ($Mode -eq 'bg')
 $prevFg = [AvaDc2.W]::GetForegroundWindow()
 $sc = @{ 0x11 = 0x1D; 0x10 = 0x2A; 0x4D = 0x32; 0x44 = 0x20; 0x48 = 0x23; 0x41 = 0x1E; 0x45 = 0x12; 0x4B = 0x25; 0x56 = 0x2F; 0x0D = 0x1C }
 function Send-BgCombo([int[]]$vks) {
@@ -2113,8 +2175,8 @@ function Restore-Focus {
 }
 function Try-CallClick {
   # دکمهٔ تماس: اول UIA (بدون فوکوس هم کار می‌کند)، بعد مختصات دستی
-  # v0.18 — چند بار تلاش می‌شود (بارگذاری DM ممکن است چند ثانیه طول بکشد)
-  for ($tryN = 1; $tryN -le ${clickRetries}; $tryN++) {
+  # چند بار تلاش می‌شود (بارگذاری DM ممکن است چند ثانیه طول بکشد)
+  for ($tryN = 1; $tryN -le $Retries; $tryN++) {
     try {
       Add-Type -AssemblyName UIAutomationClient | Out-Null
       Add-Type -AssemblyName UIAutomationTypes | Out-Null
@@ -2154,8 +2216,8 @@ function Try-CallClick {
   Write-Output 'DBG:UIA_MISS'
   $r2 = New-Object AvaDc2.RECT
   [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
-  $tx = $r2.Right - ${dx}
-  $ty = $r2.Top + ${dy}
+  $tx = $r2.Right - $Dx
+  $ty = $r2.Top + $Dy
   if ($tx -gt $r2.Left -and $ty -gt $r2.Top) {
     Click-At $tx $ty
     Restore-Focus
@@ -2164,8 +2226,7 @@ function Try-CallClick {
   Restore-Focus
   return 'ERR:NOBTN'
 }
-$action = '${action}'
-switch ($action) {
+switch ($Action) {
   'focus'    { if (-not $bg) { Focus-Discord }; Write-Output 'OK' }
   'mute'     { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x4D) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+m'); Start-Sleep -Milliseconds 250 }; Write-Output 'OK:MUTE' }
   'deafen'   { if ($bg) { Send-BgCombo @(0x11, 0x10, 0x44) } else { Focus-Discord; $ws = New-Object -ComObject WScript.Shell; $ws.SendKeys('^+d'); Start-Sleep -Milliseconds 250 }; Write-Output 'OK:DEAFEN' }
@@ -2199,7 +2260,7 @@ switch ($action) {
     } catch {}
     $r2 = New-Object AvaDc2.RECT
     [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
-    $tx = $r2.Right - ${dx}; $ty = $r2.Top + ${dy}
+    $tx = $r2.Right - $Dx; $ty = $r2.Top + $Dy
     [AvaDc2.W]::SetCursorPos($tx, $ty) | Out-Null
     Write-Output "OK:PROBE-FB:$tx,$ty"
   }
@@ -2209,7 +2270,7 @@ switch ($action) {
     Write-Output (Try-CallClick)
   }
   'callswitch' {
-    $name = '${nm.replace(/'/g, "")}'
+    $name = ($Name -replace '[''’"]', '')
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
     try { Set-Clipboard -Value $name -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
     if ($bg) {
@@ -2234,7 +2295,78 @@ switch ($action) {
   # v0.21 — هر خطای پاورشل (حتی Add-Type/UIA) به‌عنوان نتیجهٔ قابل‌فهم برمی‌گردد
   # و در لاگ عملکرد ثبت می‌شود — دیگر «ارور پاورشل» گم نمی‌شود
   Write-Output ('ERR:PS:' + ($_.Exception.Message -replace '\s+', ' '))
-}`.trim();
+}
+`;
+
+/* v0.22 — نوشتن اسکریپت در پوشهٔ برنامه (ACL کاربر جاری) و اجرای spawn -File:
+   خط فرمان فقط چند ده کاراکتر است — محدودیت ۸۱۹۱ کاراکتری cmd.exe و
+   ۳۲۷۶۷ کاراکتری CreateProcess هر دو دیگر اصلاً درگیر نمی‌شوند. */
+function runDiscordPs(psAction, mode, nm, dxN, dyN) {
+  const longRun = psAction === 'clickcall' || psAction === 'callswitch';
+  const waitMs = longRun ? 25000 : 6000;
+  const retries = longRun ? 12 : 1;
+  const safeName = String(nm || '').replace(/['’`"…]/g, '');
+  let psFile = '';
+  try {
+    psFile = path.join(app.getPath('userData'), 'ava-dc.ps1');
+    /* BOM: پاورشل ۵.۱ بدون BOM متن فارسیِ نام دکمه‌ها را خراب می‌خواند */
+    fs.writeFileSync(psFile, '\ufeff' + DISCORD_PS_BODY, 'utf8');
+  } catch (e) {
+    actLog(`discord ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'discord');
+    return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت دیسکورد ممکن نشد' });
+  }
+  const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
+    '-Action', psAction, '-Mode', mode, '-Name', safeName,
+    '-Dx', String(dxN), '-Dy', String(dyN), '-WaitMs', String(waitMs), '-Retries', String(retries)];
+  const t0 = Date.now();
+  return new Promise((resolve) => {
+    let stdout = '', stderr = '', killed = false;
+    let child = null;
+    try { child = spawn('powershell.exe', args, { windowsHide: true }); }
+    catch (e) { return resolve({ ok: false, error: String((e && e.message) || e).slice(0, 160) }); }
+    const killer = setTimeout(() => { killed = true; try { child.kill(); } catch (_) { /* noop */ } }, 62000);
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr += d; });
+    child.on('error', (e) => {
+      clearTimeout(killer);
+      resolve({ ok: false, error: String((e && e.message) || e).slice(0, 160) });
+    });
+    child.on('close', () => {
+      clearTimeout(killer);
+      const errTxt = String(stderr || '').trim();
+      if (errTxt) actLog(`discord ps stderr: ${errTxt.slice(0, 260)}`, 'discord');
+      /* خطوط DBG: تشخیصی‌اند و نتیجه نیستند — فقط لاگ می‌شوند؛
+         نتیجه = آخرین خط OK/ERR (اسکریپت ممکن است چند خط چاپ کند) */
+      const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      lines.filter((l) => /^DBG:/i.test(l)).forEach((l) => actLog(`discord ${l.slice(0, 140)}`, 'discord'));
+      const out = lines.filter((l) => !/^DBG:/i.test(l)).pop() || '';
+      actLog(`discord ${psAction} mode=${mode} -> ${out || (killed ? 'TIMEOUT' : 'EMPTY')} (${Date.now() - t0}ms)`, 'discord');
+      if (/^ERR:PS:/.test(out)) {
+        return resolve({ ok: false, error: ('خطای اسکریپت: ' + out.replace(/^ERR:PS:/, '')).slice(0, 160) });
+      }
+      if (!out && errTxt && /FullyQualifiedErrorId|ParameterBinding|is not recognized|Cannot find path/i.test(errTxt)) {
+        return resolve({ ok: false, error: ('خطای پاورشل: ' + errTxt.split(/\r?\n/)[0]).slice(0, 160) });
+      }
+      if (!out) {
+        return resolve({
+          ok: false,
+          error: killed
+            ? 'اسکریپت دیسکورد بیش از حد طول کشید — دیسکورد را یک‌بار باز/بسته کن و دوباره امتحان کن'
+            : ('PowerShell اجرا نشد' + (errTxt ? `: ${errTxt.split(/\r?\n/)[0]}` : '')).slice(0, 160),
+        });
+      }
+      if (/^ERR:/.test(out)) {
+        const msgs = {
+          'ERR:NO_DISCORD': 'دیسکورد باز نیست — اول دیسکورد را باز کن',
+          'ERR:UNKNOWN': 'فرمان دیسکورد شناخته نشد',
+          'ERR:NONAME': 'نام مخاطب پیدا نشد — در تنظیمات دیسکورد مخاطب بساز یا نام را کامل بگو',
+          'ERR:NOBTN': 'دکمهٔ تماس پیدا نشد — صفحهٔ مخاطب باز شد ولی تماس نگرفت؛ مختصات دستی را با «آزمایش مکان» تنظیم کن یا حالت کمکی را امتحان کن',
+        };
+        return resolve({ ok: false, error: msgs[out.trim()] || out.trim() });
+      }
+      resolve({ ok: true, result: out || 'OK' });
+    });
+  });
 }
 
 ipcMain.handle('discord:cmd', async (_e, p) => {
@@ -2267,49 +2399,6 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
   return runDiscordPs(psAction, mode, String(name || ''), dxN, dyN);
 });
 
-function runDiscordPs(psAction, mode, nm, dxN, dyN) {
-  const ps = discordPsScript(psAction, mode, nm, dxN, dyN,
-    (psAction === 'clickcall' || psAction === 'callswitch') ? 25000 : 6000,
-    (psAction === 'clickcall' || psAction === 'callswitch') ? 12 : 1); /* v0.21: ۸→۱۲ تلاش */
-  const encoded = Buffer.from(ps, 'utf16le').toString('base64');
-  const t0 = Date.now();
-  return new Promise((resolve) => {
-    exec(`powershell -NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
-      { windowsHide: true, timeout: 60000, maxBuffer: 1024 * 512 },
-      (err, stdout, stderr) => {
-        /* v0.21 — خطای پاورشل دیگر گم نمی‌شود: stderr در لاگ عملکرد می‌رود
-           (با «آوا گزارش بفرست» قابل ارسال است — گلهٔ کاربر: «ارور پاورشل میده») */
-        const errTxt = String(stderr || '').trim();
-        if (errTxt) actLog(`discord ps stderr: ${errTxt.slice(0, 260)}`, 'discord');
-        /* خطوط DBG: تشخیصی‌اند و نتیجه نیستند — فقط لاگ می‌شوند؛
-           نتیجه = آخرین خط OK/ERR (اسکریپت ممکن است چند خط چاپ کند) */
-        const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-        lines.filter((l) => /^DBG:/i.test(l)).forEach((l) => actLog(`discord ${l.slice(0, 140)}`, 'discord'));
-        const out = lines.filter((l) => !/^DBG:/i.test(l)).pop() || '';
-        actLog(`discord ${psAction} mode=${mode} -> ${out || (err ? 'PS-FAIL' : 'EMPTY')} (${Date.now() - t0}ms)`, 'discord');
-        if (/^ERR:PS:/.test(out)) {
-          return resolve({ ok: false, error: ('خطای اسکریپت: ' + out.replace(/^ERR:PS:/, '')).slice(0, 160) });
-        }
-        if (err && !out) {
-          const t = err.killed || /timeout/i.test(String(err.message || ''))
-            ? 'اسکریپت دیسکورد بیش از حد طول کشید — دیسکورد را یک‌بار باز/بسته کن و دوباره امتحان کن'
-            : String(err.message || 'PowerShell اجرا نشد');
-          return resolve({ ok: false, error: String(t).slice(0, 160) });
-        }
-        if (/^ERR:/.test(out)) {
-          const msgs = {
-            'ERR:NO_DISCORD': 'دیسکورد باز نیست — اول دیسکورد را باز کن',
-            'ERR:UNKNOWN': 'فرمان دیسکورد شناخته نشد',
-            'ERR:NONAME': 'نام مخاطب پیدا نشد — در تنظیمات دیسکورد مخاطب بساز یا نام را کامل بگو',
-            'ERR:NOBTN': 'دکمهٔ تماس پیدا نشد — صفحهٔ مخاطب باز شد ولی تماس نگرفت؛ مختصات دستی را با «آزمایش مکان» تنظیم کن یا حالت کمکی را امتحان کن',
-          };
-          return resolve({ ok: false, error: msgs[out.trim()] || out.trim() });
-        }
-        resolve({ ok: true, result: out || 'OK' });
-      });
-  });
-}
-
 /* ---------- لاگ عملکرد (v0.18) — برای عیب‌یابی از راه دور ----------
    واکنش‌های برنامه (فرمان‌ها، موتورها، دیسکورد، به‌روزرسان، خطاها) در
    userData/logs/activity.log ثبت می‌شود؛ کاربر نیازی به دیدنش ندارد.
@@ -2338,11 +2427,74 @@ ipcMain.handle('log:get', () => {
   } catch (e) { return { ok: false, lines: [], error: netErr(e) }; }
 });
 
+/* ============================================================
+   v0.22 — پلیر موزیک ماندگار: پوشه‌ها دیگر بعد از ری‌استارت گم نمی‌شوند
+   ریشهٔ باگ: قبلاً پوشه با <input webkitdirectory> انتخاب می‌شد و File های
+   آن فقط تا پایان نشست زنده بودند — با بستن برنامه همه‌چیز از دست می‌رفت.
+   حالا: انتخاب پوشه با dialog واقعی ویندوز → اسکن روی فایل‌سیستم در پروسهٔ
+   اصلی → مسیرها در ava-settings.json ذخیره → بعد از ری‌استارت دوباره اسکن
+   و بازسازی خودکار پلی‌لیست (بدون نیاز به انتخاب دوباره).
+   ============================================================ */
+const MUSIC_EXT_RE = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|webm|wma)$/i;
+
+ipcMain.handle('music:pickDirs', async () => {
+  try {
+    const r = await dialog.showOpenDialog({
+      title: 'انتخاب پوشه موزیک — چند پوشه هم می‌توانی انتخاب کنی',
+      properties: ['openDirectory', 'multiSelections'],
+    });
+    if (r.canceled || !r.filePaths || !r.filePaths.length) return { ok: false, canceled: true };
+    actLog(`music pickDirs: ${r.filePaths.length} folder(s)`);
+    return { ok: true, dirs: r.filePaths };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+});
+
+ipcMain.handle('music:scan', async (_e, dirs) => {
+  const list = (Array.isArray(dirs) ? dirs : []).map((d) => String(d || '').trim()).filter((d) => path.isAbsolute(d));
+  const out = [];
+  const scanDir = async (dir, depth) => {
+    if (depth > 4 || out.length >= 3000) return; /* عمق حداکثر ۴، سقف ۳۰۰۰ فایل */
+    let entries = [];
+    try { entries = await fs.promises.readdir(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const ent of entries) {
+      if (out.length >= 3000) return;
+      if (ent.name.startsWith('.') || ent.name.startsWith('$')) continue;
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) { await scanDir(full, depth + 1); continue; }
+      if (ent.isFile() && MUSIC_EXT_RE.test(ent.name)) {
+        try {
+          const st = await fs.promises.stat(full);
+          out.push({ path: full, name: ent.name, size: st.size, mtime: st.mtimeMs });
+        } catch (_) { /* فایل شاید همزمان حذف شده باشد */ }
+      }
+    }
+  };
+  for (const d of list) await scanDir(d, 0);
+  out.sort((a, b) => a.path.localeCompare(b.path, 'en'));
+  return { ok: true, tracks: out, dirs: list };
+});
+
+ipcMain.handle('music:readHead', (_e, p, max) => {
+  try {
+    const f = String(p || '');
+    if (!path.isAbsolute(f)) return { ok: false };
+    const st = fs.statSync(f);
+    const n = Math.min(st.size, Math.max(64, Number(max) || 3 * 1024 * 1024 + 10));
+    const fd = fs.openSync(f, 'r');
+    try {
+      const buf = Buffer.alloc(n);
+      fs.readSync(fd, buf, 0, n, 0);
+      return { ok: true, head: new Uint8Array(buf), size: st.size };
+    } finally { fs.closeSync(fd); }
+  } catch (_) { return { ok: false }; }
+});
+
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
-  /* سرو کردن رابط کاربری و مدل‌ها از ava://app */
+  /* سرو کردن رابط کاربری و مدل‌ها از ava://app + فایل‌های موزیک از ava-media:// */
   try { protocol.handle('ava', (req) => { try { console.log('AVA_REQ:' + req.url); } catch (_) {} return serveAvaFile(req.url); }); } catch (e) { console.error('ava protocol:', e); }
+  try { protocol.handle('ava-media', (req) => serveMediaFile(req.url, req)); } catch (e) { console.error('ava-media protocol:', e); }
 
   setupMicPermission();
   createWindow();

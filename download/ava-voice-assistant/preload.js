@@ -100,6 +100,14 @@ contextBridge.exposeInMainWorld('ava', {
     cmd: (p) => ipcRenderer.invoke('discord:cmd', p),
   },
 
+  /* پلیر موزیک ماندگار (v0.22) — انتخاب پوشه با دیالوگ ویندوز، اسکن فایل‌سیستم
+     در پروسهٔ اصلی، خواندن هدر فایل برای تگ‌های ID3 (عنوان/خواننده/کاور) */
+  music: {
+    pickDirs: () => ipcRenderer.invoke('music:pickDirs'),
+    scan: (dirs) => ipcRenderer.invoke('music:scan', dirs),
+    readHead: (path, max) => ipcRenderer.invoke('music:readHead', path, max),
+  },
+
   /* یادآوری‌ها (v0.12) — تیک پس‌زمینه در پروسه اصلی؛ رویداد due به رندرر می‌آید */
   reminders: {
     add: (p) => ipcRenderer.invoke('reminders:add', p),

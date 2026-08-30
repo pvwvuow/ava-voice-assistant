@@ -207,7 +207,7 @@
     'set.mic.testHint': ['حرف بزن — میله‌ها باید با صدای تو بالا و پایین شوند', 'Speak — the bars should move with your voice'],
     'set.mic.note': ['برای دقت بیشتر در تشخیص گفتار، میکروفون نزدیک‌تر باشد و با آهنگ یکنواخت حرف بزن.', 'For better recognition accuracy, stay close to the microphone and speak at an even pace.'],
     'set.stt.engine': ['موتور تشخیص گفتار', 'Speech recognition engine'],
-    'set.stt.engineHint': ['«خودکار»: اول موتور وب گوگل (دقیق‌ترین)؛ اگر در دسترس نبود گوگل رایگان و بعد GLM ابری', '"Auto": Google web engine first (most accurate); then free Google, then cloud GLM'],
+    'set.stt.engineHint': ['«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper (۲-۳ ثانیه)، گوگل رایگان، GLM و آخر Gemini (دقیق ولی گاهی کند)', '"Auto": live web engine first; then fastest cloud engines — Whisper (2-3s), free Google, GLM, Gemini last (accurate but sometimes slow)'],
     'set.stt.auto': ['خودکار (پیشنهادی)', 'Auto (recommended)'], 'set.stt.web': ['فقط موتور وب گوگل', 'Google web engine only'],
     'set.stt.google': ['فقط گوگل رایگان HTTP (نیاز به فیلترشکن)', 'Free Google HTTP only (needs VPN in some regions)'],
     'set.stt.glm': ['فقط GLM-ASR ابری (نیاز به کلید)', 'Cloud GLM-ASR only (needs key)'],
@@ -309,7 +309,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۱ — سریع‌تر از همیشه: دیگر هیچ موتوری «گیر» نمی‌کند — هر موتور تشخیص گفتار و هوش مصنوعی سقف زمانی دارد، موتور/مدلی که آخرین بار جواب داد اول امتحان می‌شود و موتور خراب سه دقیقه کنار گذاشته می‌شود؛ دانلود آپدیت هم دیگر خودکار نیست که اینترنت را اشغال کند — هر وقت خواستی دانلود کن، هر وقت خواستی توقف یا لغو کن؛ کاور پلیر حرفه‌ای‌تر شد (۲۰۰px با سایهٔ چندلایه)، کنترل‌های مینیمال دایره‌ای با توقف/جلو-عقب ۱۰ ثانیه‌ای/کم-زیاد صدا، و پلی‌لیست تخت بدون جعبه؛ خطاهای پاورشل دیسکورد هم حالا کامل لاگ می‌شوند.', 'v0.21 — faster than ever: no engine can hang anymore (every STT/AI call has a deadline), the engine/model that worked last time is tried first and dead engines are benched for 3 minutes; update downloads are never automatic — download whenever you like, pause or cancel anytime; a pro 200px player cover, minimal round controls with stop / ±10s seek / volume±, a flat box-free playlist, and Discord PowerShell errors are now fully logged for the report.'],
+    'about.desc': ['نسخه ۰.۲۲ — گزارش کامل تو، اجرا شد: تماس دیسکورد دیگر ارور پاورشل نمی‌دهد (ریشهٔ «The command line is too long» پیدا و حذف شد — اسکریپت حالا فایلی اجرا می‌شود)، تشخیص گفتار سریع شد (موتورهای سریع اول: Whisper و گوگل، Gemini که تا ۷۵ ثانیه طول می‌کشید آخرِ صف)، DNS Changer دوباره فعال شد تا با شکن/الکترو اتصال گوگل پایدار بماند، پوشه‌های موزیک دیگر با بستن برنامه گم نمی‌شوند (بازسازی خودکار پلی‌لیست)، دیکشنری فونتیک سه برابر شد و کاور پلیر با دیسک وینیل حرفه‌ای‌تر شد.', 'v0.22 — your report, shipped: Discord calls no longer throw PowerShell errors (the "The command line is too long" root cause is gone — the script now runs from a file), speech recognition got fast (fast engines first: Whisper & Google; Gemini — which took up to 75s — is now last), DNS Changer is re-enabled so Shekan/Electro keep Google reachable, music folders survive app restarts (auto-rebuilt playlist), the phonetic dictionary tripled, and the player cover now has a professional vinyl-peek design.'],
     'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
@@ -430,7 +430,7 @@
     'set.mic.testHint': ['حرف بزن — میله‌ها باید با صدای تو بالا و پایین شوند', 'Speak — the bars should move with your voice'],
     'set.mic.note': ['برای دقت بیشتر در تشخیص گفتار، میکروفون نزدیک‌تر باشد و با آهنگ یکنواخت حرف بزن.', 'For better recognition accuracy, stay close to the microphone and speak at an even pace.'],
     'set.stt.engine': ['موتور تشخیص گفتار', 'Speech recognition engine'],
-    'set.stt.engineHint': ['«خودکار»: اول موتور وب گوگل (دقیق‌ترین)؛ اگر در دسترس نبود گوگل رایگان و بعد GLM ابری', '"Auto": Google web engine first (most accurate); then free Google, then cloud GLM'],
+    'set.stt.engineHint': ['«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper (۲-۳ ثانیه)، گوگل رایگان، GLM و آخر Gemini (دقیق ولی گاهی کند)', '"Auto": live web engine first; then fastest cloud engines — Whisper (2-3s), free Google, GLM, Gemini last (accurate but sometimes slow)'],
     'set.stt.auto': ['خودکار (پیشنهادی)', 'Auto (recommended)'], 'set.stt.web': ['فقط موتور وب گوگل', 'Google web engine only'],
     'set.stt.google': ['فقط گوگل رایگان HTTP (نیاز به فیلترشکن)', 'Free Google HTTP only (needs VPN in some regions)'],
     'set.stt.glm': ['فقط GLM-ASR ابری (نیاز به کلید)', 'Cloud GLM-ASR only (needs key)'],
@@ -555,7 +555,7 @@
     'eng.gemini': ['موتور: Gemini Audio (دقت AI)', 'Engine: Gemini Audio (AI-grade)'], 'eng.whisper': ['موتور: Whisper (سریع)', 'Engine: Whisper (fast)'],
     'stt.tryGemini': ['تبدیل صدا با جمنای…', 'Transcribing with Gemini…'],
     'stt.tryWhisper': ['تبدیل صدا با Whisper…', 'Transcribing with Whisper…'],
-    'set.stt.gemini': ['فقط Gemini Audio — دقیق‌ترین (کلید جمنای)', 'Gemini Audio only — most accurate (Gemini key)'],
+    'set.stt.gemini': ['فقط Gemini Audio — دقیق ولی روی بعضی شبکه‌ها کند (کلید جمنای)', 'Gemini Audio only — accurate but can be slow on some networks (Gemini key)'],
     'set.stt.whisper': ['فقط Whisper — سریع (Groq/OpenAI)', 'Whisper only — fastest (Groq/OpenAI)'],
     'set.stt.wbase': ['آدرس سرور Whisper (سازگار با OpenAI)', 'Whisper server base URL (OpenAI-compatible)'],
     'set.stt.wbaseHint': ['پیش‌فرض: Groq — whisper-large-v3-turbo رایگان و بسیار سریع است؛ آدرس OpenAI یا سرور محلی whisper.cpp هم می‌گذاری', 'Default Groq — free whisper-large-v3-turbo; OpenAI or a local whisper.cpp server URL also works'],
@@ -751,6 +751,10 @@
     'music.muted': ['صدای پلیر قطع شد', 'Player muted'],
     'music.unmuted': ['صدای پلیر وصل شد', 'Player unmuted'],
     'music.widgetOff': ['ویجت موزیک بسته شد — با آهنگ بعدی برمی‌گردد', 'Music widget dismissed — returns with the next track'],
+    'music.restored': ['پلی‌لیست از پوشه‌های ذخیره‌شده بازسازی شد: {x} آهنگ', 'Playlist rebuilt from saved folders: {x} songs'],
+    'music.cleared': ['پوشه‌های ذخیره‌شدهٔ پلی‌لیست پاک شد', 'Saved playlist folders cleared'],
+    'music.clearDirs': ['حذف پوشه‌ها', 'Clear folders'],
+    'music.multiHint': ['چند پوشه هم می‌توانی انتخاب کنی — پوشه‌ها بعد از بستن برنامه هم می‌مانند', 'You can add several folders — they survive app restarts'],
 
     /* --- v0.12: باز کردن برنامه‌های سیستم --- */
     'app.open': ['{x} را باز کردم — خوش بگذره!', 'Opened {x} — enjoy!'],
@@ -988,6 +992,7 @@
   const btnMusicBack = $('#btnMusicBack');
   const btnMusicFolder = $('#btnMusicFolder');
   const mFolder = $('#mFolder');
+  const mDirsClear = $('#mDirsClear');
   const mCover = $('#mCover');
   const mTitle = $('#mTitle');
   const mArtist = $('#mArtist');
@@ -1117,6 +1122,9 @@
     musicShuffle: store.get('musicShuffle', false),
     musicRepeat: store.get('musicRepeat', 'off'),
     lastMusicFolder: store.get('lastMusicFolder', ''),
+    /* v0.22 — پلیر ماندگار: پوشه‌های موزیک + آخرین آهنگ بعد از ری‌استارت برمی‌گردند */
+    musicDirs: store.get('musicDirs', []),
+    lastMusicPath: store.get('lastMusicPath', ''),
     /* v0.15 — افزونه‌ها و بهینه‌سازی */
     extDns: store.get('extDns', true),      /* DNS Changer پیش‌فرض روشن */
     extMusic: store.get('extMusic', false), /* موزیک تا کاربر فعالش نکند در ستون نمی‌آید */
@@ -1156,11 +1164,24 @@
         });
         if (Array.isArray(f.customCmds) && f.customCmds.length) { customCmds = f.customCmds; store.set('customCmds', customCmds); }
         if (Array.isArray(f.history)) { history = f.history; store.set('history', history); }
+        /* v0.22 — مهاجرت یک‌باره (به درخواست گزارش کاربر):
+           ۱) extDns دوباره روشن می‌شود (در نسخه‌های قدیمی false ذخیره شده بود و
+              کاربر به DNS شکن/الکترو دسترسی نداشت → خطای «اتصال به سرور برقرار نشد»)
+           ۲) اگر موتور STT روی Gemini قفل بود، به «خودکار» برمی‌گردد —
+              در لاگ کاربر Gemini تا ۷۵ ثانیه طول می‌کشید، Whisper/گوگل ۲-۵ ثانیه */
+        if (store.get('migV22') !== true) {
+          if (settings.extDns === false) { settings.extDns = true; store.set('extDns', true); }
+          if (settings.sttEngine === 'gemini') { settings.sttEngine = 'auto'; store.set('sttEngine', 'auto'); }
+          store.set('migV22', true);
+          actLog('migration v0.22 applied: extDns=' + settings.extDns + ' sttEngine=' + settings.sttEngine);
+        }
         applyTheme();
         applyPerf();
         syncPerfUI();
         if (typeof applyExtensions === 'function') applyExtensions();
         if (typeof renderDiscordContacts === 'function') renderDiscordContacts();
+        /* v0.22 — اگر پوشه‌های موزیک از فایل آمد، پلی‌لیست دوباره ساخته می‌شود */
+        try { if (typeof restoreMusicLibrary === 'function') restoreMusicLibrary(); } catch (_) { /* noop */ }
         if (optTheme) optTheme.value = settings.theme || 'dark';
         refreshEngineUI();
         renderCustomChips();
@@ -1885,6 +1906,28 @@
     'گیت هاب': 'github', 'پست من': 'postman', 'پایچرم': 'pycharm',
     'نت پد پلاس پلاس': 'notepad++',
     'وای فای': 'settings', 'وایبر': 'viber', 'لینکدین': 'linkedin',
+    /* v0.22 — گسترش دیکشنری فونتیک (به درخواست گزارش کاربر: فهم نام‌های
+       انگلیسی با تلفظ فارسی، مثل پروژهٔ قبلی phonetic_dictionary.json) */
+    'کرومیوم': 'chromium', 'گوگل کروم': 'google chrome', 'فایر فاکس': 'firefox',
+    'اپرا': 'opera', 'براو': 'brave', 'بریو': 'brave', 'وولفیک': 'vivaldi', 'ویوالدی': 'vivaldi',
+    'تلگرام دسکتاپ': 'telegram desktop', 'واتس اپ دسکتاپ': 'whatsapp desktop',
+    'اینستاگرام': 'instagram', 'فیسبوک': 'facebook', 'فیس بوک': 'facebook',
+    'توییتر': 'twitter', 'اکس': 'x', 'اسنپ چت': 'snapchat', 'تیک تاک': 'tiktok',
+    'نتفلیکس': 'netflix', 'یوتیوب': 'youtube', 'یوتیوب موزیک': 'yt music',
+    'وان درایو': 'onedrive', 'دراپ باکس': 'dropbox', 'گوگل درایو': 'google drive',
+    'ای دی ام': 'idm', 'اینترنت دانلود منیجر': 'internet download manager',
+    'وی ال سی': 'vlc', 'مدیا پلیر کلاسیک': 'media player classic', 'پات پلیر': 'potplayer',
+    'نت پد': 'notepad', 'ماشین حساب': 'calculator', 'تسک منیجر': 'task manager', 'تسک منجر': 'task manager',
+    'کامند پرامپت': 'cmd', 'سی ام دی': 'cmd', 'پاور شل': 'powershell',
+    'تیم ویور': 'teamviewer', 'انی دسک': 'anydesk', 'راست ویو': 'rustdesk',
+    'بلی استکس': 'bluestacks', 'گیم لوپ': 'gameloop', 'امولاتور': 'emulator',
+    'ادوبی': 'adobe', 'لایت روم': 'lightroom', 'ادوبی پریمیر': 'premiere pro',
+    'اندروید استودیو': 'android studio', 'اینتلیجی': 'intellij', 'اینتلی جی': 'intellij',
+    'کد بلاکس': 'codeblocks', 'گیت': 'git', 'داکر': 'docker', 'وی ام ویر': 'vmware',
+    'ویرچوال باکس': 'virtualbox', 'فایل زیلا': 'filezilla', 'وی بی نت': 'vb.net',
+    'استارول': 'stardew valley', 'ماینکرفت': 'minecraft', 'جی تی ای': 'gta', 'جی تی ای فایو': 'gta v',
+    'پابجی': 'pubg', 'فورتنایت': 'fortnite', 'سی اس گو': 'counter strike', 'کالاف دیوتی': 'call of duty',
+    'ایکس': 'x', 'دیسکورد کاناری': 'discord canary', 'اورجین': 'origin', 'ایا گیم': 'ea games',
   };
 
   /* نرمال‌سازی نام برای مچ (ی/ک عربی → فارسی، فاصله و نیم‌فاصله یکدست) */
@@ -2592,12 +2635,15 @@
     if (eng === 'whisper') return whisperSttReady() ? ['whisper'] : [];
     if (eng === 'glm') return glmReady() ? ['glm'] : [];
     if (eng === 'google') return googleReady() ? ['google'] : [];
-    /* خودکار: دقیق‌ترین موتور در دسترس جلوتر */
+    /* خودکار: سریع‌ترین‌ها جلو — v0.22 به درخواست گزارش کاربر تغییر کرد:
+       در لاگ کاربر Gemini STT بین ۲۴ تا ۷۵ ثانیه طول می‌کشید در حالی که
+       Whisper (Groq) و گوگل رایگان ۲-۵ ثانیه‌ای جواب می‌دادند. ترتیب جدید:
+       Whisper → گوگل رایگان → GLM → Gemini (دقیق‌ترین ولی کندترین، آخر) */
     let c = [];
-    if (geminiSttReady()) c.push('gemini');
     if (whisperSttReady()) c.push('whisper');
-    if (glmReady()) c.push('glm');
     if (googleReady()) c.push('google');
+    if (glmReady()) c.push('glm');
+    if (geminiSttReady()) c.push('gemini');
     /* v0.21 — اگر فیوز همه را زده بود، همان ترتیب اصلی بماند */
     const live = c.filter((e) => !sttBenched(e));
     if (live.length) c = live;
@@ -4224,7 +4270,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.21.0';
+  let appVersion = '0.22.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5592,7 +5638,9 @@
   const AUDIO_EXT = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|webm|wma)$/i;
   const music = { tracks: [], view: [], cur: -1, playing: false, shuffle: false, repeat: 'off', folderName: '', widgetDismissedFor: null };
 
-  /* --- پارسر ID3v2 (mp3) — عنوان، خواننده و کاور --- */
+  /* --- پارسر ID3v2 (mp3) — عنوان، خواننده و کاور ---
+     v0.22 — حالا از هدر خوانده‌شده (Uint8Array) کار می‌کند؛
+     هم برای مسیر فایل واقعی (پلیر ماندگار) و هم برای File مرورگر */
   function decodeId3Text(bytes, enc) {
     try {
       let s = '';
@@ -5606,16 +5654,17 @@
     } catch (_) { return ''; }
   }
 
-  async function readId3(file) {
+  /* هستهٔ پارس ID3 از هدر خوانده‌شده (Uint8Array) */
+  function parseId3Buf(head) {
     const out = { title: '', artist: '', album: '', cover: null };
     try {
-      const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+      if (!head || head.length < 10) return out;
       if (head[0] !== 0x49 || head[1] !== 0x44 || head[2] !== 0x33) return out; /* «ID3» */
       const ver = head[3];
       const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
       if (size < 10 || size > 3 * 1024 * 1024) return out;
-      const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 3 * 1024 * 1024)).arrayBuffer());
-      const dv = new DataView(buf.buffer);
+      const buf = head.slice(10, 10 + Math.min(size, 3 * 1024 * 1024));
+      const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
       let pos = 0;
       /* پدینگ اکسپریمنتال (footer) نادیده گرفته می‌شود */
       const frameHdr = ver >= 3 ? 10 : 6;
@@ -5659,6 +5708,21 @@
     return out;
   }
 
+  /* فالبک مرورگر (پیش‌نمایش وب): File مستقیم */
+  async function readId3(file) {
+    try { return parseId3Buf(new Uint8Array(await file.slice(0, 3 * 1024 * 1024 + 10).arrayBuffer())); }
+    catch (_) { return { title: '', artist: '', album: '', cover: null }; }
+  }
+  /* v0.22 — خواندن تگ‌ها از مسیر واقعی فایل (پلیر ماندگار؛ هدر از پروسهٔ اصلی) */
+  async function readId3FromPath(p) {
+    if (!bridge || !bridge.music || !p) return { title: '', artist: '', album: '', cover: null };
+    try {
+      const r = await bridge.music.readHead(p, 3 * 1024 * 1024 + 10);
+      if (!r || !r.ok || !r.head) return { title: '', artist: '', album: '', cover: null };
+      return parseId3Buf(r.head);
+    } catch (_) { return { title: '', artist: '', album: '', cover: null }; }
+  }
+
   /* --- ساخت ردیف آهنگ --- */
   function fmtDur(s) {
     if (!isFinite(s) || s < 0) return '--:--';
@@ -5678,7 +5742,7 @@
   function renderMusicList() {
     if (!mList) return;
     const q = (mSearch && mSearch.value || '').trim().toLowerCase();
-    music.view = music.tracks.filter((tr) => !q || (tr.title + ' ' + tr.artist + ' ' + tr.file.name).toLowerCase().includes(q));
+    music.view = music.tracks.filter((tr) => !q || (tr.title + ' ' + tr.artist + ' ' + (tr.name || (tr.file && tr.file.name) || '')).toLowerCase().includes(q));
     const sc = mList.scrollTop; /* اسکرول کاربر با هر رندر حفظ شود */
     mList.innerHTML = '';
     if (mEmpty) mEmpty.hidden = music.tracks.length > 0;
@@ -5703,7 +5767,7 @@
         `<span class="m-tt"><b></b><span class="m-ar"></span></span>` +
         `<span class="m-dur num">--:--</span>`;
       row.querySelector('.m-tt b').textContent = tr.title;
-      row.querySelector('.m-ar').textContent = tr.artist || tr.file.name.replace(/\.[^.]+$/, '');
+      row.querySelector('.m-ar').textContent = tr.artist || String(tr.name || (tr.file && tr.file.name) || '').replace(/\.[^.]+$/, '');
       row.querySelector('.m-dur').textContent = tr.dur ? fmtDur(tr.dur) : '--:--';
       row.addEventListener('click', () => playTrack(tIdx));
       frag.appendChild(row);
@@ -5743,7 +5807,8 @@
     for (const tr of music.tracks) {
       if (tr.enriched) continue;
       tr.enriched = true;
-      const tag = await readId3(tr.file);
+      /* v0.22 — مسیرمحور (پلیر ماندگار) یا File (فالبک مرورگر) */
+      const tag = tr.path ? await readId3FromPath(tr.path) : await readId3(tr.file);
       if (tag.title) tr.title = tag.title;
       if (tag.artist) tr.artist = tag.artist;
       if (tag.cover) tr.cover = tag.cover;
@@ -5764,7 +5829,7 @@
     if (mwEq) mwEq.classList.toggle('live', playing);
     if (tr) {
       if (mTitle) mTitle.textContent = tr.title;
-      if (mArtist) mArtist.textContent = tr.artist || tr.file.name.replace(/\.[^.]+$/, '');
+      if (mArtist) mArtist.textContent = tr.artist || String(tr.name || (tr.file && tr.file.name) || '').replace(/\.[^.]+$/, '');
       if (mwTitle) mwTitle.textContent = tr.title;
       if (mwArtist) mwArtist.textContent = tr.artist || '';
       /* کاور */
@@ -5797,6 +5862,8 @@
     music.cur = ((i % music.tracks.length) + music.tracks.length) % music.tracks.length;
     music.widgetDismissedFor = null; /* آهنگ جدید → ویجت دوباره می‌آید */
     const tr = music.tracks[music.cur];
+    /* v0.22 — آخرین آهنگ برای بازسازی بعد از ری‌استارت یاد می‌ماند */
+    if (tr.path) { settings.lastMusicPath = tr.path; store.set('lastMusicPath', tr.path); }
     try { mAudio.src = tr.url; mAudio.play(); } catch (_) { /* noop */ }
     mediaSessionMeta();
   }
@@ -5965,16 +6032,114 @@
   }
   window.addEventListener('resize', () => { if (vizRaf) vizResize(); });
 
+  /* ============================================================
+     v0.22 — پلیر موزیک ماندگار (فیکس «پوشه‌ها بعد از ری‌استارت گم می‌شوند»)
+     قبلاً پوشه با <input webkitdirectory> انتخاب می‌شد و File های آن فقط
+     تا پایان نشست زنده بودند. حالا: دیالوگ واقعی ویندوز → اسکن در پروسهٔ
+     اصلی → مسیرها در ava-settings.json → بعد از ری‌استارت بازسازی خودکار.
+     ============================================================ */
+  const mediaUrl = (p) => `ava-media://m/${encodeURIComponent(p)}`;
+  const baseName = (d) => String(d || '').replace(/[\\/]+$/, '').split(/[\\/]/).pop() || '';
+  function dirsLabel(dirs) {
+    const names = (dirs || []).map(baseName).filter(Boolean);
+    if (!names.length) return '';
+    return names.slice(0, 2).join(' + ') + (names.length > 2 ? ` +${faNum(names.length - 2)}` : '');
+  }
+
+  async function scanAndLoadDirs(dirs, opts = {}) {
+    const silent = !!opts.silent;
+    if (!bridge || !bridge.music || !Array.isArray(dirs) || !dirs.length) return false;
+    const r = await bridge.music.scan(dirs).catch(() => null);
+    if (!r || !r.ok || !Array.isArray(r.tracks)) return false;
+    const tracks = r.tracks.map((t2) => ({
+      path: t2.path,
+      name: t2.name,
+      url: mediaUrl(t2.path),
+      title: String(t2.name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(),
+      artist: '',
+      cover: null,
+      dur: 0,
+      enriched: false,
+    }));
+    if (!tracks.length) { if (!silent) toast(t('music.none'), '#i-music'); return false; }
+    const wasEmpty = !music.tracks.length;
+    try { mAudio.pause(); } catch (_) { /* noop */ }
+    try { mAudio.removeAttribute('src'); } catch (_) { /* noop */ }
+    music.tracks = tracks;
+    music.view = tracks;
+    music.folderName = dirsLabel(dirs);
+    music.cur = -1;
+    renderMusicList();
+    if (!silent) toast(t('music.loaded', { x: faNum(tracks.length), y: music.folderName }), '#i-music');
+    else if (wasEmpty && !music.restoredToast) { music.restoredToast = true; toast(t('music.restored', { x: faNum(tracks.length) }), '#i-music'); }
+    enrichTracks();
+    loadDurations();
+    /* بازیابی آخرین آهنگ انتخابی کاربر — بدون پخش خودکار */
+    let idx = settings.lastMusicPath ? tracks.findIndex((tr) => tr.path === settings.lastMusicPath) : -1;
+    if (idx < 0) idx = 0;
+    music.cur = idx;
+    try { mAudio.src = tracks[idx].url; } catch (_) { /* noop */ }
+    updatePlayerUI();
+    mediaSessionMeta();
+    return true;
+  }
+
+  /* بازسازی خودکار بعد از ری‌استارت — فقط یک‌بار */
+  async function restoreMusicLibrary() {
+    if (music.restored) return;
+    const dirs = Array.isArray(settings.musicDirs) ? settings.musicDirs.filter(Boolean) : [];
+    if (!bridge || !bridge.music || !dirs.length) { music.restored = true; return; }
+    music.restored = true;
+    const ok = await scanAndLoadDirs(dirs, { silent: true });
+    if (mDirsClear) mDirsClear.hidden = false;
+    actLog(`music library restored from ${dirs.length} folder(s) ok=${!!ok}`);
+  }
+
+  /* دکمهٔ «انتخاب پوشه موزیک»: دیالوگ ویندوز (چند پوشه، تجمعی) یا فالبک مرورگر */
+  async function handleMusicPick() {
+    if (bridge && bridge.music) {
+      const r = await bridge.music.pickDirs().catch(() => null);
+      if (r && r.ok && Array.isArray(r.dirs) && r.dirs.length) {
+        const merged = [...new Set([...(Array.isArray(settings.musicDirs) ? settings.musicDirs : []), ...r.dirs])];
+        settings.musicDirs = merged;
+        store.set('musicDirs', merged);
+        await scanAndLoadDirs(merged);
+        if (mDirsClear) mDirsClear.hidden = false;
+      }
+      return;
+    }
+    /* فالبک مرورگر (پیش‌نمایش وب): ورودی webkitdirectory */
+    if (mFolder) mFolder.click();
+  }
+
+  async function clearMusicDirs() {
+    settings.musicDirs = [];
+    store.set('musicDirs', []);
+    settings.lastMusicPath = '';
+    store.set('lastMusicPath', '');
+    try { mAudio.pause(); } catch (_) { /* noop */ }
+    try { mAudio.removeAttribute('src'); } catch (_) { /* noop */ }
+    music.tracks = [];
+    music.view = [];
+    music.cur = -1;
+    music.folderName = '';
+    music.restored = true;
+    renderMusicList();
+    updatePlayerUI();
+    if (mDirsClear) mDirsClear.hidden = true;
+    toast(t('music.cleared'), '#i-folder');
+  }
+
+  /* فالبک مرورگر — فایل‌های webkitdirectory (بدون ماندگاری؛ فقط پیش‌نمایش وب) */
   async function handleMusicFolder(ev) {
     const files = Array.from((ev.target && ev.target.files) || []).filter((f) => AUDIO_EXT.test(f.name));
     ev.target.value = '';
     if (!files.length) { toast(t('music.none'), '#i-music'); return; }
-    /* آزادسازی حافظه آهنگ‌های قبلی */
-    music.tracks.forEach((tr) => { try { if (tr.url) URL.revokeObjectURL(tr.url); } catch (_) { /* noop */ } });
     mAudio.pause();
     mAudio.removeAttribute('src');
     music.tracks = files.map((f) => ({
       file: f,
+      name: f.name,
       url: URL.createObjectURL(f),
       title: f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(),
       artist: '',
@@ -5994,6 +6159,11 @@
     loadDurations();
     /* اگر پلیر خالی بود، اولین آهنگ را آماده پخش کن (بدون پخش خودکار) */
     if (music.cur < 0) { music.cur = 0; mAudio.src = music.tracks[0].url; updatePlayerUI(); mediaSessionMeta(); }
+  }
+  /* v0.22 — بازسازی خودکار پلی‌لیست بعد از ری‌استارت (با درنگ کوتاه تا
+     تنظیمات فایل هم لود شود؛ اگر زودتر آماده شد فلگ restored جلوی دوباره‌کاری را می‌گیرد) */
+  if (Array.isArray(settings.musicDirs) && settings.musicDirs.length) {
+    setTimeout(() => { try { restoreMusicLibrary(); } catch (_) { /* noop */ } }, 1500);
   }
 
   /* --- کمک‌کننده‌های فرمان صوتی موزیک --- */
@@ -6021,8 +6191,10 @@
 
   if (btnMusic) btnMusic.addEventListener('click', () => showView(musicPage.hidden ? 'music' : 'home'));
   if (btnMusicBack) btnMusicBack.addEventListener('click', () => showView('home'));
-  if (btnMusicFolder) btnMusicFolder.addEventListener('click', () => { if (mFolder) mFolder.click(); });
+  if (btnMusicFolder) btnMusicFolder.addEventListener('click', () => { try { handleMusicPick(); } catch (_) { /* noop */ } });
   if (mFolder) mFolder.addEventListener('change', handleMusicFolder);
+  if (mDirsClear) mDirsClear.addEventListener('click', () => { try { clearMusicDirs(); } catch (_) { /* noop */ } });
+  if (mDirsClear && !(Array.isArray(settings.musicDirs) && settings.musicDirs.length)) mDirsClear.hidden = true;
   if (mPlayBtn) mPlayBtn.addEventListener('click', () => (music.tracks.length ? musicToggle() : (mFolder && mFolder.click())));
   if (mNextBtn) mNextBtn.addEventListener('click', () => musicNext());
   if (mPrevBtn) mPrevBtn.addEventListener('click', () => musicPrev());
