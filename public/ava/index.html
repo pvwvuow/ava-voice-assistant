@@ -14,6 +14,11 @@
     <defs>
       <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></symbol>
       <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></symbol>
+      <!-- v0.21 — کنترل‌های مینیمال پلیر: جلو/عقب ۱۰ ثانیه‌ای و کم/زیاد صدا -->
+      <symbol id="i-back10" viewBox="0 0 24 24"><polyline points="8.5 3.5 4 8 8.5 12.5"/><path d="M4 8h9.5a6 6 0 0 1 0 12H10"/></symbol>
+      <symbol id="i-fwd10" viewBox="0 0 24 24"><polyline points="15.5 3.5 20 8 15.5 12.5"/><path d="M20 8h-9.5a6 6 0 0 0 0 12H14"/></symbol>
+      <symbol id="i-volup" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="15" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="15" y2="15"/><line x1="15" y1="12" x2="21.5" y2="12"/></symbol>
+      <symbol id="i-voldown" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="15" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="15" y2="15"/></symbol>
       <symbol id="i-wave" viewBox="0 0 24 24"><line x1="3" y1="10" x2="3" y2="14"/><line x1="7.5" y1="7" x2="7.5" y2="17"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="16.5" y1="7" x2="16.5" y2="17"/><line x1="21" y1="10" x2="21" y2="14"/></symbol>
       <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
       <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
@@ -25,8 +30,11 @@
       <symbol id="i-restore" viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"/></symbol>
       <symbol id="i-close" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
       <symbol id="i-send" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
       <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
       <symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
       <symbol id="i-play" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></symbol>
       <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="4.5" width="4" height="15" rx="1.4" fill="currentColor" stroke="none"/></symbol>
       <symbol id="i-next" viewBox="0 0 24 24"><polygon points="5 5 15 12 5 19 5 5" fill="currentColor" stroke="none"/><line x1="19" y1="5" x2="19" y2="19"/></symbol>
@@ -88,7 +96,7 @@
         <div class="tb-brand">
           <div class="tb-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
           <span class="tb-name">آوا</span>
-          <span class="tb-badge">v0.11</span>
+          <span class="tb-badge num" id="tbVersion">v—</span>
         </div>
         <button class="tb-btn tb-theme" id="btnTheme" aria-label="تم روشن/تیره" data-i18n-tip="tb.theme"><svg class="ic"><use id="themeIcon" href="#i-sun"/></svg></button>
       </div>
@@ -112,7 +120,9 @@
           <button class="rail-item active" id="btnHome" data-i18n-tip="nav.home"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnDict" data-i18n-tip="nav.dict"><svg class="ic"><use href="#i-type"/></svg></button>
           <button class="rail-item" id="btnChat" data-i18n-tip="nav.chat"><svg class="ic"><use href="#i-chat"/></svg></button>
-          <button class="rail-item" id="btnMusic" data-i18n-tip="nav.music"><svg class="ic"><use href="#i-music"/></svg><i class="rail-ind"></i></button>
+          <button class="rail-item" id="btnExt" data-i18n-tip="nav.ext"><svg class="ic"><use href="#i-grid"/></svg><i class="rail-ind"></i></button>
+          <button class="rail-item" id="btnDnsExt" data-i18n-tip="nav.dnsExt" hidden><svg class="ic"><use href="#i-shield"/></svg></button>
+          <button class="rail-item" id="btnMusic" data-i18n-tip="nav.music" hidden><svg class="ic"><use href="#i-music"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnHistory" data-i18n-tip="nav.history"><svg class="ic"><use href="#i-history"/></svg></button>
         </nav>
         <div class="rail-bottom">
@@ -236,13 +246,27 @@
               <!-- تشخیص گفتار -->
               <div class="set-pane" data-pane="stt">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب گوگل (دقیق‌ترین)؛ اگر در دسترس نبود گوگل رایگان و بعد GLM ابری</span></span>
+                  <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper، گوگل رایگان، GLM و آخر Gemini</span></span>
                   <select id="optSttEngine" class="set-select">
                     <option value="auto" data-i18n="set.stt.auto">خودکار (پیشنهادی)</option>
                     <option value="web" data-i18n="set.stt.web">فقط موتور وب گوگل</option>
+                    <option value="gemini" data-i18n="set.stt.gemini">فقط Gemini Audio — دقیق ولی گاهی کند (کلید جمنای)</option>
+                    <option value="whisper" data-i18n="set.stt.whisper">فقط Whisper — سریع (Groq/OpenAI)</option>
                     <option value="google" data-i18n="set.stt.google">فقط گوگل رایگان HTTP (نیاز به فیلترشکن)</option>
                     <option value="glm" data-i18n="set.stt.glm">فقط GLM-ASR ابری (نیاز به کلید)</option>
                   </select>
+                </div>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.stt.wbase">آدرس سرور Whisper (سازگار با OpenAI)</b><span data-i18n="set.stt.wbaseHint">پیش‌فرض: Groq — whisper-large-v3-turbo رایگان و بسیار سریع است؛ آدرس OpenAI یا سرور محلی whisper.cpp هم می‌گذاری</span></span>
+                  <input type="text" id="optWhisperBase" class="set-input" dir="ltr" value="https://api.groq.com/openai/v1" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.stt.wkey">کلید Whisper</b><span data-i18n="set.stt.wkeyHint">کلید رایگان از console.groq.com بگیر — سریع‌ترین ترنسکریپتی که تا حالا تجربه می‌کنی</span></span>
+                  <input type="password" id="optWhisperKey" class="set-input" data-i18n-ph="set.stt.wkeyPh" placeholder="gsk_…" autocomplete="off" dir="ltr" />
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.wmodel">مدل Whisper</b><span data-i18n="set.stt.wmodelHint">whisper-large-v3-turbo (پیش‌فرض)، whisper-large-v3 یا هر مدلی که سرورت پشتیبانی کند</span></span>
+                  <input type="text" id="optWhisperModel" class="set-input" dir="ltr" value="whisper-large-v3-turbo" autocomplete="off" spellcheck="false" />
                 </div>
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.stt.lang">زبان گفتار</b><span data-i18n="set.stt.langHint">زبانی که با آن فرمان می‌گویی — تشخیص با همین زبان انجام می‌شود</span></span>
@@ -295,38 +319,78 @@
                 <p class="set-note" data-i18n="set.dict.note">علائم داخلی: بگو «نقطه»، «کاما»، «علامت سوال»، «علامت تعجب»، «دو نقطه»، «خط تیره»، «پرانتز باز/بسته»، «خط جدید»، «پاک کن».</p>
               </div>
 
-              <!-- DNS و شبکه (مدیر کامل — فقط از همین‌جا) -->
-              <div class="set-pane" data-pane="dns">
+              <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
+              <div class="set-pane" data-pane="ext">
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dns.state">وضعیت فعلی</b><span data-i18n="set.dns.stateHint">«دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار (DHCP) برمی‌گرداند</span></span>
-                  <button class="chip sm" id="btnDnsReset"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.dns.reset">بازگردانی خودکار</span></button>
+                  <span class="set-info"><b data-i18n="set.ext.dns">افزونهٔ DNS Changer</b><span data-i18n="set.ext.dnsHint">با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند</span></span>
+                  <span class="sw"><input type="checkbox" id="extDnsOpt"/><i></i></span>
                 </div>
-                <div class="dns-current" id="dnsCurrentBox">در حال خواندن…</div>
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dns.quick">افزودن سریع DNS</b><span data-i18n="set.dns.quickHint">فرم شیشه‌ای کوچک داخل صفحه اصلی: اسم + دو آی‌پی + فعال‌سازی فوری — با فرمان صوتی «تنظیم دی ان اس جدید» هم باز می‌شود</span></span>
-                  <button class="chip" id="btnQuickDns"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.quickBtn">فرم DNS جدید</span></button>
+                  <span class="set-info"><b data-i18n="set.ext.music">افزونهٔ پلیر موزیک</b><span data-i18n="set.ext.musicHint">تا وقتی فعالش نکنی در ستون نمی‌آید و برنامه سبک‌تر می‌ماند</span></span>
+                  <span class="sw"><input type="checkbox" id="extMusicOpt"/><i></i></span>
                 </div>
-                <form id="dnsAddForm" class="dns-form" autocomplete="off">
-                  <input type="hidden" id="dnsEditId" value="" />
-                  <div class="dns-fields">
-                    <input type="text" id="dnsName" class="set-input" data-i18n-ph="set.dns.namePh" placeholder="اسم DNS (مثلاً: الکترو، کاری‌ام، …)" />
-                    <input type="text" id="dnsPrimary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p1Ph" placeholder="DNS اول (Preferred) — 78.157.42.100" />
-                    <input type="text" id="dnsSecondary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p2Ph" placeholder="DNS دوم (Alternate) — اختیاری" />
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="ext.discord">کنترل دیسکورد با صدا</b><span data-i18n="ext.discordHint">زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد</span></span>
+                  <div class="ext-actions">
+                    <button class="chip sm" id="btnDcSettings" type="button"><svg class="ic"><use href="#i-gear"/></svg><span data-i18n="set.dc.open">تنظیمات</span></button>
+                    <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
                   </div>
-                  <div class="set-links">
-                    <button type="submit" class="chip" id="dnsSaveBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.save">ذخیره DNS</span></button>
-                    <button type="button" class="chip" id="dnsCancelEdit" hidden><svg class="ic"><use href="#i-close"/></svg><span data-i18n="set.dns.cancelEdit">لغو ویرایش</span></button>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.open">مدیریت افزونه‌ها</b><span data-i18n="set.ext.openHint">صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی</span></span>
+                  <button class="chip" id="btnOpenExtPage"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ext.openBtn">باز کردن افزونه‌ها</span></button>
+                </div>
+                <p class="set-note" data-i18n="set.ext.note2">به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.</p>
+              </div>
+
+              <!-- دیسکورد (v0.17) — مخاطبین و اجرای بک‌گراند -->
+              <div class="set-pane" data-pane="discord">
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.dc.contacts">مخاطبین دیسکورد</b><span data-i18n="set.dc.contactsHint">برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID</span></span>
+                  <form id="dcAddForm" class="tc-add" autocomplete="off">
+                    <input type="text" id="dcName" class="set-input" data-i18n-ph="set.dc.namePh" placeholder="اسم ساده (مثلاً: علی)" maxlength="40" />
+                    <input type="text" id="dcUserId" class="set-input" dir="ltr" data-i18n-ph="set.dc.idPh" placeholder="Discord User ID — ۱۷/۱۸ رقم" inputmode="numeric" />
+                    <button type="submit" class="chip sm" id="dcAddBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dc.add">افزودن</span></button>
+                  </form>
+                  <div id="dcContactsList" class="dc-list"></div>
+                </div>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.bg">اجرای بک‌گراند (وسط بازی)</b><span data-i18n="set.dc.bgHint">کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود</span></span>
+                  <span class="sw"><input type="checkbox" id="optDiscordBg"/><i></i></span>
+                </label>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.callMode">روش شروع تماس</b><span data-i18n="set.dc.callModeHint">«کمکی»: فقط صفحهٔ مخاطب باز می‌شود و خودت دکمهٔ تماس را می‌زنی — کاملاً مطابق قوانین دیسکورد. «خودکار (آزمایشی)»: آوا کلید/کلیک شبیه‌سازی‌شده به پنجرهٔ دیسکورد خودت می‌فرستد (مثل ماکروهای دسترسی‌پذیری) — هیچ توکن یا API دیسکورد استفاده نمی‌شود، ولی ممکن است روی بعضی نسخه‌ها کار نکند</span></span>
+                  <select id="optDiscordCallMode" class="set-select">
+                    <option value="auto" data-i18n="set.dc.modeAuto">خودکار (آزمایشی)</option>
+                    <option value="assist" data-i18n="set.dc.modeAssist">کمکی — امن</option>
+                  </select>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.cal">مکان دکمهٔ تماس (فالبک)</b><span data-i18n="set.dc.calHint">وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند</span></span>
+                  <div class="dc-cal">
+                    <input type="number" id="optDiscordCallDx" class="set-input num" min="10" max="320" value="46" aria-label="X" />
+                    <input type="number" id="optDiscordCallDy" class="set-input num" min="10" max="220" value="52" aria-label="Y" />
+                    <button class="chip sm" id="btnDcProbe" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.dc.probe">آزمایش</span></button>
                   </div>
-                </form>
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dns.builtin">DNSهای معروف (یک‌کلیکی)</b><span data-i18n="set.dns.builtinHint">برای افزودن به فهرست‌ت کلیک کن — فعال‌سازی با دکمه «فعال‌سازی»</span></span>
-                  <div class="set-links" id="dnsBuiltins"></div>
                 </div>
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dns.mine">فهرست DNSهای من</b><span data-i18n="set.dns.mineHint">بدون محدودیت — فعال‌سازی، ویرایش و حذف</span></span>
-                  <div id="dnsProfilesList" class="dns-list"></div>
+                <p class="set-note" data-i18n="set.dc.note">فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.</p>
+              </div>
+
+              <!-- بهینه‌سازی (v0.15) -->
+              <div class="set-pane" data-pane="perf">
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.anim">انیمیشن‌ها</b><span data-i18n="set.perf.animHint">همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر</span></span>
+                  <span class="sw"><input type="checkbox" id="optNoAnim"/><i></i></span>
                 </div>
-                <p class="set-note" data-i18n="set.dns.note">فرمان صوتی: «دی ان اس الکترو» یا «دی اناس شکن» → مستقیم اعمال می‌شود؛ «دی ان اس شماره ۱» → پروفایل اول تو؛ «تنظیم دی ان اس جدید» → فرم شیشه‌ای. اعمال DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند.</p>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.fx">افکت‌های پس‌زمینه</b><span data-i18n="set.perf.fxHint">ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند</span></span>
+                  <span class="sw"><input type="checkbox" id="optNoFx"/><i></i></span>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.theme">تم‌های سبک (سیستم ضعیف)</b><span data-i18n="set.perf.themeHint">هر بار کلیک، یک قدم جلو: سبک روشن → سبک تیره → بازگشت — ظاهر ساده و صاف بدون شیشه و گرادیان سنگین</span></span>
+                  <button class="chip" id="btnLiteTheme"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.perf.themeBtn">تغییر تم سبک</span></button>
+                </div>
+                <p class="set-note" data-i18n="set.perf.note">تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.</p>
               </div>
 
               <!-- صدا و پاسخ گفتاری -->
@@ -370,7 +434,7 @@
                   </select>
                 </div>
                 <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ai.provider">موتور هوش مصنوعی</b><span data-i18n="set.ai.providerHint">«خودکار»: به ترتیب حساب GLM، کلید GLM، کلید Gemini و بعد OpenAI امتحان می‌شود — یا یکی را ثابت انتخاب کن</span></span>
+                  <span class="set-info"><b data-i18n="set.ai.provider">موتور هوش مصنوعی</b><span data-i18n="set.ai.providerHint">«خودکار»: اول جمنای (کلید داشته باشی)، بعد حساب GLM، بعد کلید GLM و در آخر OpenAI — پاسخ‌ها نشان می‌دهند کدام موتور جواب داده</span></span>
                   <select id="optAiProvider" class="set-select">
                     <option value="auto" data-i18n="set.ai.pAuto">خودکار (پیشنهادی)</option>
                     <option value="zai" data-i18n="set.ai.pZai">حساب GLM (z.ai)</option>
@@ -383,9 +447,35 @@
                   <span class="set-info"><b data-i18n="set.ai.geminiKey">کلید API گوگل جمنای (اختیاری)</b><span data-i18n="set.ai.geminiKeyHint">برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com</span></span>
                   <input type="password" id="optGeminiKey" class="set-input" data-i18n-ph="set.ai.geminiPh" placeholder="AIza…" autocomplete="off" dir="ltr" />
                 </div>
+                <p class="set-note warn-note" id="geminiNoKeyWarn" hidden data-i18n="set.ai.noKeyWarn">مدل جمنای ذخیره شده ولی کلید نداری — بدون کلید، جمنای نه در چت جواب می‌دهد نه در تشخیص گفتار؛ موتور بعدی (GLM) جایگزین می‌شود.</p>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.ai.openaiKey">کلید API اوپن‌ای‌آی (اختیاری)</b><span data-i18n="set.ai.openaiKeyHint">از platform.openai.com — با GPT جواب می‌دهد</span></span>
                   <input type="password" id="optOpenaiKey" class="set-input" data-i18n-ph="set.ai.openaiPh" placeholder="sk-…" autocomplete="off" dir="ltr" />
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ai.geminiModel">مدل جمنای</b><span data-i18n="set.ai.geminiModelHint">مدل پیش‌فرض: flash-latest (همیشه جدیدترین فلاش) — اگر منسوخ شد از همین‌جا عوضش کن</span></span>
+                  <input type="text" id="optGeminiModel" class="set-input" list="geminiModelList" dir="ltr" data-i18n-ph="set.ai.geminiModelPh" placeholder="gemini-flash-latest" autocomplete="off" />
+                  <datalist id="geminiModelList">
+                    <option value="gemini-flash-latest"></option>
+                    <option value="gemini-3.5-flash-lite"></option>
+                    <option value="gemini-2.5-flash"></option>
+                    <option value="gemini-2.5-flash-lite"></option>
+                    <option value="gemini-2.0-flash"></option>
+                    <option value="gemini-2.0-flash-lite"></option>
+                  </datalist>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ai.openaiModel">مدل OpenAI</b><span data-i18n="set.ai.openaiModelHint">می‌توانی هر مدلی بنویسی؛ پیشنهادها از منوی پایین ورودی هم می‌آید</span></span>
+                  <input type="text" id="optOpenaiModel" class="set-input" list="openaiModelList" dir="ltr" data-i18n-ph="set.ai.openaiModelPh" placeholder="gpt-4o-mini" autocomplete="off" />
+                  <datalist id="openaiModelList">
+                    <option value="gpt-4o-mini"></option>
+                    <option value="gpt-4o"></option>
+                    <option value="gpt-4.1-mini"></option>
+                    <option value="gpt-4.1"></option>
+                  </datalist>
+                </div>
+                <div class="set-links">
+                  <button class="chip" id="btnSaveAi"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="set.ai.save">ذخیره تنظیمات هوش مصنوعی</span></button>
                 </div>
                 <p class="set-note" data-i18n="set.ai.note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به هوش مصنوعی می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
               </div>
@@ -404,6 +494,8 @@
                   <select id="optTheme" class="set-select">
                     <option value="dark" data-i18n="set.app.dark">تیره (زمردی)</option>
                     <option value="light" data-i18n="set.app.light">روشن (بنفش و کهربایی)</option>
+                    <option value="lite" data-i18n="set.app.lite">سبک روشن (سیستم ضعیف)</option>
+                    <option value="darklite" data-i18n="set.app.darklite">سبک تیره (سیستم ضعیف)</option>
                   </select>
                 </div>
                 <label class="set-row">
@@ -414,6 +506,14 @@
                   <span class="set-info"><b data-i18n="set.app.login">اجرای خودکار با ویندوز</b><span data-i18n="set.app.loginHint">آوا هنگام روشن شدن سیستم بالا بیاید</span></span>
                   <span class="sw"><input type="checkbox" id="optLogin"/><i></i></span>
                 </label>
+<label class="set-row">
+                  <span class="set-info"><b data-i18n="set.app.safe">حالت امن (اگر برنامه درست کار نمی‌کند)</b><span data-i18n="set.app.safeHint">افکت‌های سنگین (شیشه، گرادیان، انیمیشن) خاموش می‌شوند تا روی هر سیستمی برنامه سالم کار کند</span></span>
+                  <span class="sw"><input type="checkbox" id="optSafeMode"/><i></i></span>
+                </label>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.app.errCopy">گزارش خطاها</b><span data-i18n="set.app.errCopyHint">اگر چیزی کار نمی‌کند، این دکمه گزارش کامل خطاها را کپی می‌کند تا بفرستی</span></span>
+                  <button class="chip" id="btnCopyErrors"><svg class="ic"><use href="#i-copy"/></svg><span data-i18n="set.app.errCopyBtn">کپی گزارش</span></button>
+                </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.app.links">پیوندها</b><span data-i18n="set.app.linksHint">ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود</span></span>
                   <div class="set-links">
@@ -435,9 +535,16 @@
                     <button class="chip" id="btnCheckUpdate"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.upd.check">بررسی نسخه جدید</span></button>
                   </div>
                   <div class="upd-progress" id="updProgress" hidden><i id="updBar"></i></div>
+                  <!-- v0.21 — دانلود به اختیار کاربر: شروع/توقف/ادامه/لغو -->
+                  <div class="upd-actions">
+                    <button class="chip" id="btnUpdDownload" hidden><svg class="ic"><use href="#i-download"/></svg><span data-i18n="set.upd.download">دانلود نسخه جدید</span></button>
+                    <button class="chip" id="btnUpdPause" hidden><svg class="ic"><use href="#i-pause"/></svg><span data-i18n="set.upd.pause">توقف</span></button>
+                    <button class="chip" id="btnUpdCancel" hidden><svg class="ic"><use href="#i-close"/></svg><span data-i18n="set.upd.cancel">لغو</span></button>
+                  </div>
                   <button class="chip upd-install" id="btnInstallUpdate" hidden><svg class="ic"><use href="#i-download"/></svg><span data-i18n="set.upd.install">نصب و راه‌اندازی مجدد</span></button>
+                  <button class="chip" id="btnManualDl" hidden><svg class="ic"><use href="#i-download"/></svg><span data-i18n="set.upd.manualDl">دانلود مستقیم نصّاب</span></button>
                 </div>
-                <p class="set-note" data-i18n="set.upd.note">آپدیت کامل داخل خود برنامه: بررسی و دانلود خودکار انجام می‌شود و نصب هم با یک کلیک — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا)، نه کل برنامه.</p>
+                <p class="set-note" data-i18n="set.upd.note">بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.</p>
               </div>
 
             </div>
@@ -447,7 +554,9 @@
               <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
               <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
               <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
-              <button class="set-nav-item" data-pane="dns" type="button"><svg class="ic"><use href="#i-shield"/></svg><span data-i18n="set.nav.dns">DNS و شبکه</span></button>
+              <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
+              <button class="set-nav-item" data-pane="discord" type="button"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.nav.discord">دیسکورد</span></button>
+              <button class="set-nav-item" data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
               <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
               <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
               <button class="set-nav-item" data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
@@ -526,51 +635,192 @@
           <p class="set-note chat-note" data-i18n="chat.note">آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.</p>
         </section>
 
-        <!-- ============ صفحه پلیر موزیک (v0.11) ============ -->
+        <!-- ============ صفحه پلیر موزیک (مینیمال v0.18) ============
+             بدون کارت/جعبهٔ مستطیلی — فقط «آهنگ در حال پخش» بزرگ و واضح
+             بالای صفحه + پلی‌لیست ساده زیرش. اکولایزر/ویژوالایزر حذف شد. -->
         <section id="musicPage" class="musicpage" hidden>
           <header class="set-top">
             <h2><svg class="ic"><use href="#i-music"/></svg> <span data-i18n="music.title">پلیر موزیک</span></h2>
             <div class="music-top-actions">
               <button class="chip" id="btnMusicFolder"><svg class="ic"><use href="#i-folder"/></svg><span data-i18n="music.pick">انتخاب پوشه موزیک</span></button>
+              <button class="chip sm" id="mDirsClear" hidden title="حذف پوشه‌های ذخیره‌شدهٔ پلی‌لیست"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="music.clearDirs">حذف پوشه‌ها</span></button>
               <button class="chip" id="btnMusicBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
             </div>
           </header>
+          <p class="m-hint" data-i18n="music.multiHint" style="margin-top:-6px;text-align:center;">چند پوشه هم می‌توانی انتخاب کنی — پوشه‌ها بعد از بستن برنامه هم می‌مانند</p>
           <input type="file" id="mFolder" webkitdirectory multiple hidden />
 
-          <div class="music-hero glass">
-            <div class="m-now">
-              <div class="m-cover" id="mCover"><svg class="ic"><use href="#i-disc"/></svg><span class="m-cover-shine"></span></div>
-              <div class="m-meta">
+          <div class="music-deck">
+
+            <!-- آهنگ در حال پخش — بزرگ و بدون جعبه
+                 v0.23 — کاور تک‌پنل تمیز: بدون وینیل پشت، بدون هاله؛
+                 فقط یک کارت هنری درشت با نشانگر اکولایزر ظریف -->
+            <div class="np-area">
+              <div class="np-cover" id="mCover">
+                <svg class="ic"><use href="#i-music"/></svg>
+                <span class="np-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="np-head">
                 <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>
                 <span id="mArtist" data-i18n="music.pickHint">یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود</span>
-                <div class="m-eq" id="mEq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="np-chips">
+                  <span class="m-count" id="mCount" hidden></span>
+                </div>
               </div>
-              <div class="m-count glass" id="mCount" hidden></div>
+              <div class="m-seek-row">
+                <span class="m-time num" id="mCur">0:00</span>
+                <input type="range" id="mSeek" min="0" max="1000" value="0" />
+                <span class="m-time num" id="mDur">0:00</span>
+              </div>
+              <div class="m-controls">
+                <button class="m-ctl sm" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
+                <button class="m-ctl" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
+                <button class="m-ctl" id="mBack10" aria-label="۱۰ ثانیه عقب"><svg class="ic"><use href="#i-back10"/></svg></button>
+                <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
+                <button class="m-ctl" id="mFwd10" aria-label="۱۰ ثانیه جلو"><svg class="ic"><use href="#i-fwd10"/></svg></button>
+                <button class="m-ctl" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
+                <button class="m-ctl sm" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
+              </div>
+              <div class="np-sub">
+                <button type="button" class="m-ctl sm" id="mStop" aria-label="توقف کامل"><svg class="ic"><use href="#i-stop"/></svg></button>
+                <span class="m-vol-wrap">
+                  <button type="button" class="m-ctl sm" id="mMute" aria-label="قطع/وصل صدا" data-i18n-tip="music.mute"><svg class="ic"><use id="mMuteIcon" href="#i-volume"/></svg></button>
+                  <button type="button" class="m-ctl sm" id="mVolDown" aria-label="کم کردن صدا"><svg class="ic"><use href="#i-voldown"/></svg></button>
+                  <input type="range" id="mVol" min="0" max="100" value="80" />
+                  <button type="button" class="m-ctl sm" id="mVolUp" aria-label="بلند کردن صدا"><svg class="ic"><use href="#i-volup"/></svg></button>
+                </span>
+              </div>
             </div>
-            <div class="m-seek-row">
-              <span class="m-time num" id="mCur">0:00</span>
-              <input type="range" id="mSeek" min="0" max="1000" value="0" />
-              <span class="m-time num" id="mDur">0:00</span>
-            </div>
-            <div class="m-controls">
-              <button class="m-ctl" id="mShuffle" aria-label="پخش تصادفی" data-i18n-tip="music.shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
-              <button class="m-ctl big" id="mPrev" aria-label="آهنگ قبلی"><svg class="ic"><use href="#i-prev"/></svg></button>
-              <button class="m-play" id="mPlay" aria-label="پخش/توقف"><svg class="ic"><use id="mPlayIcon" href="#i-play"/></svg></button>
-              <button class="m-ctl big" id="mNext" aria-label="آهنگ بعدی"><svg class="ic"><use href="#i-next"/></svg></button>
-              <button class="m-ctl" id="mRepeat" aria-label="تکرار" data-i18n-tip="music.repeat"><svg class="ic"><use href="#i-repeat"/></svg></button>
-              <span class="m-vol-wrap"><svg class="ic"><use href="#i-volume"/></svg><input type="range" id="mVol" min="0" max="100" value="80" /></span>
-            </div>
-          </div>
 
-          <div class="m-list-head">
-            <div class="m-search">
-              <svg class="ic"><use href="#i-search"/></svg>
-              <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
+            <!-- پلی‌لیست — ساده، بدون جعبه -->
+            <div class="pl-area">
+              <div class="m-search">
+                <svg class="ic"><use href="#i-search"/></svg>
+                <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
+              </div>
+              <div class="m-list" id="mList"></div>
+              <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
             </div>
-            <span class="m-hint" data-i18n="music.hint">با صدا هم می‌گویی: «موزیک پخش کن»، «آهنگ بعدی»، «آهنگ قبلی»، «موزیک پاز»</span>
+
           </div>
-          <div class="m-list" id="mList"></div>
-          <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
+          <p class="m-hint" data-i18n="music.hint">با صدا هم می‌گویی: «موزیک پخش کن»، «آهنگ بعدی»، «آهنگ قبلی»، «موزیک پاز»</p>
+        </section>
+
+        <!-- ============ صفحهٔ افزونه‌ها (v0.15) ============ -->
+        <section id="extPage" class="musicpage" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-grid"/></svg> <span data-i18n="ext.title">افزونه‌ها</span></h2>
+            <div class="music-top-actions">
+              <button class="chip" id="btnExtBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
+            </div>
+          </header>
+          <p class="set-note" data-i18n="ext.hint">افزونه‌ها بخش‌های اضافهٔ آوا هستند؛ هر کدام را فعال کنی دکمه‌اش به ستون کنار می‌آید و وقتی لازمشان نداری برنامه سبک و جمع‌وجور می‌ماند.</p>
+          <div class="ext-grid">
+            <div class="ext-card glass" id="extCardDns">
+              <div class="ext-ico"><svg class="ic"><use href="#i-shield"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.dns">DNS Changer</b>
+                <span data-i18n="ext.dnsDesc">تغییر سریع DNS با کلیک یا صدا، پروفایل نام‌دار بی‌نهایت، پینگ سرعت و وضعیت لحظه‌ای اتصال</span>
+              </div>
+              <div class="ext-actions">
+                <span class="sw"><input type="checkbox" id="extDnsToggle" aria-label="فعال‌سازی DNS Changer"/><i></i></span>
+                <button class="chip sm" id="btnOpenDnsExt"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="ext.open">باز کردن</span></button>
+              </div>
+            </div>
+            <div class="ext-card glass" id="extCardMusic">
+              <div class="ext-ico"><svg class="ic"><use href="#i-music"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.music">پلیر موزیک</b>
+                <span data-i18n="ext.musicDesc">پلی‌لیست از پوشهٔ خودت با کاور، ویژوالایزر زنده، ویجت صفحه اصلی و کنترل صوتی</span>
+              </div>
+              <div class="ext-actions">
+                <span class="sw"><input type="checkbox" id="extMusicToggle" aria-label="فعال‌سازی پلیر موزیک"/><i></i></span>
+                <button class="chip sm" id="btnOpenMusicExt"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="ext.open">باز کردن</span></button>
+              </div>
+            </div>
+            <div class="ext-card glass dc-card" id="extCardDiscord">
+              <div class="ext-body dc-full">
+                <div class="dc-title-row">
+                  <div class="ext-ico"><svg class="ic"><use href="#i-smile"/></svg></div>
+                  <div class="dc-title-txt">
+                    <b data-i18n="ext.discord">کنترل دیسکورد با صدا</b>
+                    <span data-i18n="ext.discordDesc">«به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»</span>
+                  </div>
+                  <span class="sw"><input type="checkbox" id="extDiscordToggle" aria-label="فعال‌سازی کنترل دیسکورد"/><i></i></span>
+                </div>
+                <div class="dc-actions" id="dcActions">
+                  <button class="chip sm" id="btnDcMute"><svg class="ic"><use href="#i-mute"/></svg><span data-i18n="disc.muteBtn">میوت</span></button>
+                  <button class="chip sm" id="btnDcDeafen"><svg class="ic"><use href="#i-volume"/></svg><span data-i18n="disc.deafenBtn">بی‌صدا کردن کل</span></button>
+                  <button class="chip sm" id="btnDcAnswer"><svg class="ic"><use href="#i-phone"/></svg><span data-i18n="disc.answerBtn">جواب تماس</span></button>
+                  <button class="chip sm" id="btnDcDecline"><svg class="ic"><use href="#i-close"/></svg><span data-i18n="disc.declineBtn">رد تماس</span></button>
+                  <button class="chip sm" id="btnDcHangup"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="disc.hangupBtn">قطع تماس</span></button>
+                  <button class="chip sm" id="btnDcFocus"><svg class="ic"><use href="#i-window"/></svg><span data-i18n="disc.focusBtn">فوکوس دیسکورد</span></button>
+                </div>
+                <div class="dc-call-row">
+                  <input type="text" id="dcCallName" class="set-input" data-i18n-ph="disc.namePh" placeholder="اسم دوستت در دیسکورد…" autocomplete="off" />
+                  <button class="chip" id="btnDcCall"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="disc.callBtn">زنگ بزن</span></button>
+                </div>
+                <p class="set-note" data-i18n="disc.hint">برای «قطع/جواب/رد تماس» یک‌بار در دیسکورد: Settings › Keybinds — اکشن Disconnect از Voice Channel را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار. میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) پیش‌فرض دیسکورد کار می‌کنند.</p>
+              </div>
+            </div>
+            <div class="ext-card glass soon">
+              <div class="ext-ico"><svg class="ic"><use href="#i-cloud"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.soonWeather">آب‌وهوا</b>
+                <span data-i18n="ext.soonDesc">وضعیت هوا و پیش‌بینی چند روز آینده — با فرمان صوتی</span>
+              </div>
+              <div class="ext-actions"><span class="soon-chip" data-i18n="ext.soon">به‌زودی</span></div>
+            </div>
+            <div class="ext-card glass soon">
+              <div class="ext-ico"><svg class="ic"><use href="#i-timer"/></svg></div>
+              <div class="ext-body">
+                <b data-i18n="ext.soonTimer">تایمر و پومودورو</b>
+                <span data-i18n="ext.soonDesc2">تایمر صوتی، شمارش معکوس و حالت تمرکز</span>
+              </div>
+              <div class="ext-actions"><span class="soon-chip" data-i18n="ext.soon">به‌زودی</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ صفحهٔ DNS Changer (v0.15) — مدیریت کامل ============ -->
+        <section id="dnsPage" class="musicpage" hidden>
+          <header class="set-top">
+            <h2><svg class="ic"><use href="#i-shield"/></svg> <span data-i18n="dnsp.title">DNS Changer</span></h2>
+            <div class="music-top-actions">
+              <button class="chip" id="btnDnsPing"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.ext.pingBtn">پینگ بگیر</span></button>
+              <button class="chip" id="btnDnsPageBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
+            </div>
+          </header>
+          <div class="set-row">
+            <span class="set-info"><b data-i18n="set.dns.state">وضعیت فعلی</b><span data-i18n="set.dns.stateHint">«دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار (DHCP) برمی‌گرداند</span></span>
+            <button class="chip sm" id="btnDnsReset"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.dns.reset">بازگردانی خودکار</span></button>
+          </div>
+          <div class="dns-current" id="dnsCurrentBox">در حال خواندن…</div>
+          <div class="set-row">
+            <span class="set-info"><b data-i18n="set.dns.quick">افزودن سریع DNS</b><span data-i18n="set.dns.quickHint">فرم شیشه‌ای کوچک داخل صفحه اصلی: اسم + دو آی‌پی + فعال‌سازی فوری — با فرمان صوتی «تنظیم دی ان اس جدید» هم باز می‌شود</span></span>
+            <button class="chip" id="btnQuickDns"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.quickBtn">فرم DNS جدید</span></button>
+          </div>
+          <form id="dnsAddForm" class="dns-form" autocomplete="off">
+            <input type="hidden" id="dnsEditId" value="" />
+            <div class="dns-fields">
+              <input type="text" id="dnsName" class="set-input" data-i18n-ph="set.dns.namePh" placeholder="اسم DNS (مثلاً: الکترو، کاری‌ام، …)" />
+              <input type="text" id="dnsPrimary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p1Ph" placeholder="DNS اول (Preferred) — 78.157.42.100" />
+              <input type="text" id="dnsSecondary" class="set-input" dir="ltr" data-i18n-ph="set.dns.p2Ph" placeholder="DNS دوم (Alternate) — اختیاری" />
+            </div>
+            <div class="set-links">
+              <button type="submit" class="chip" id="dnsSaveBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dns.save">ذخیره DNS</span></button>
+              <button type="button" class="chip" id="dnsCancelEdit" hidden><svg class="ic"><use href="#i-close"/></svg><span data-i18n="set.dns.cancelEdit">لغو ویرایش</span></button>
+            </div>
+          </form>
+          <div class="set-row col">
+            <span class="set-info"><b data-i18n="set.dns.builtin">DNSهای معروف (یک‌کلیکی)</b><span data-i18n="set.dns.builtinHint">برای افزودن به فهرست‌ت کلیک کن — فعال‌سازی با دکمه «فعال‌سازی»</span></span>
+            <div class="set-links" id="dnsBuiltins"></div>
+          </div>
+          <div class="set-row col">
+            <span class="set-info"><b data-i18n="set.dns.mine">فهرست DNSهای من</b><span data-i18n="set.dns.mineHint">بدون محدودیت — فعال‌سازی، ویرایش و حذف</span></span>
+            <div id="dnsProfilesList" class="dns-list"></div>
+          </div>
+          <p class="set-note" data-i18n="set.dns.note">فرمان صوتی: «دی ان اس الکترو» یا «دی اناس شکن» → مستقیم اعمال می‌شود؛ «دی ان اس شماره ۱» → پروفایل اول تو؛ «تنظیم دی ان اس جدید» → فرم شیشه‌ای. اعمال DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند.</p>
         </section>
       </main>
     </div>
@@ -588,7 +838,7 @@
         <i class="sb-sep"></i>
         <span class="sb-item num" id="sbClock">--:--</span>
         <i class="sb-sep"></i>
-        <span class="sb-item">AVA v0.11.0</span>
+        <span class="sb-item num" id="sbVersion">AVA v—</span>
       </div>
     </footer>
   </div>
@@ -645,19 +895,38 @@
     </form>
   </div>
 
+  <!-- ============ پاپ‌آپ پینگ DNSها (v0.13) — «پینگ دی ان اس هامو» ============ -->
+  <div id="dnsPing" class="dnsq" hidden>
+    <div class="dnsq-backdrop" id="dnspBackdrop"></div>
+    <div class="dnsq-card glass dnsp-card">
+      <div class="dnsq-glow" aria-hidden="true"></div>
+      <header class="dnsq-head">
+        <span class="dnsq-ico"><svg class="ic"><use href="#i-pulse"/></svg></span>
+        <div class="dnsq-tt">
+          <b data-i18n="dnsp.title">پینگ DNSها</b>
+          <span data-i18n="dnsp.sub">سریع‌ترین‌ها بالا — هر کدام را خواستی فعال کن</span>
+        </div>
+        <button type="button" class="dnsq-x" id="dnspRefresh" aria-label="پینگ دوباره" data-i18n-tip="dnsp.refresh"><svg class="ic"><use href="#i-refresh"/></svg></button>
+        <button type="button" class="dnsq-x" id="dnspClose" aria-label="بستن"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="dnsp-list" id="dnsPingList"></div>
+      <p class="set-note" data-i18n="dnsp.note">فعال‌سازی هر DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند. «کنسل» بزنی صفحه می‌بندد.</p>
+    </div>
+  </div>
+
   <!-- پاپ‌آپ درباره -->
   <div id="about" class="about glass" hidden>
     <div class="about-head">
       <div class="about-logo"><svg class="ic"><use href="#i-wave"/></svg></div>
       <div class="about-title"><b>آوا</b><span data-i18n="tb.title">دستیار صوتی ویندوز</span></div>
     </div>
-    <p class="about-desc" data-i18n="about.desc">نسخه ۰.۱۱ — صدای زن حرفه‌ای گوگل برای پاسخ‌ها، پلیر موزیک با کاور و اکولایزر و ویجت روی صفحه اصلی، متن زنده زیر دکمه ضبط، هوش مصنوعی چندموتوره (GLM/Gemini با سرچ گوگل/OpenAI)، اکولایزر دقیق که فقط با میکروفون حرکت می‌کند، ادغام نوار بالا با پس‌زمینه، اسکرول‌بار تم‌دار و همه امکانات نسخه‌های قبل.</p>
+    <p class="about-desc" data-i18n="about.desc">نسخه ۰.۲۵ — بازسازی کامل مکالمهٔ صوتی (AVE3): هر جلسهٔ گوش‌دادن دو مسیر موازی دارد — شنوندهٔ زندهٔ وب (همان که در کروم عالی بود) + ضبط PCM از لحظهٔ صفر با VAD تطبیقی؛ اگر موتور وب بمیرد دیگر «دوباره گوش نمی‌دهیم» و همان صدای ضبط‌شده بی‌درنگ به مسابقهٔ موازی ابری (گوگل/Whisper/GLM/Gemini با سقف ۱۲ ثانیه) می‌رود — کاربر هرگز چیزی را تکرار نمی‌کند؛ پایان جمله با سکوت واقعی (VAD) و teardown تمیز جلسه با شمارش نسل.</p>
     <div class="about-keys">
       <div><span data-i18n="about.listen">گوش دادن</span><span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></span></div>
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span>v0.11.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.25.0</span></div>
   </div>
 
   <script src="js/app.js"></script>

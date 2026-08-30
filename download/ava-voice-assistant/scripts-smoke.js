@@ -679,7 +679,7 @@ app.whenReady().then(async () => {
       const css = read('renderer/css/styles.css');
       const html = read('renderer/index.html');
       const v18 = {
-        dispatchFix: appjs.includes("if (eng === 'gemini' || eng === 'whisper' || eng === 'google' || eng === 'glm') {\n      startCloudListen();"),
+        dispatchFix: appjs.includes('function aveStart(') && appjs.includes('aveTrackA(myEpoch)') && appjs.includes('aveTrackB(myEpoch)') && appjs.includes("bridge.stt.google({ pcm: pcmBytes"),
         settingsRestore: appjs.includes('settings restored from file') && appjs.includes('applyPerf();\n        syncPerfUI();'),
         actLogIpc: mainjs.includes("ipcMain.handle('log:act'") && mainjs.includes("ipcMain.handle('log:get'") && mainjs.includes('function actLog('),
         logBridge: preload.includes('log: {') && preload.includes("'log:act'") && appjs.includes('const actLog ='),
@@ -690,7 +690,7 @@ app.whenReady().then(async () => {
         minimalHtml: html.includes('np-area') && html.includes('np-cover') && html.includes('pl-area') && !html.includes('np-card'),
         minimalCss: css.includes('.np-cover {\n  position: relative; width: 232px; height: 232px;') && css.includes('.np-area .np-head b { font-size: 21px'),
       };
-      ok('v0.18 listening dispatch reaches gemini/whisper engines', v18.dispatchFix);
+      ok('v0.25 listening dispatch: dual-track AVE3 reaches web + cloud engines', v18.dispatchFix);
       ok('v0.18 settings file restore re-applies theme/perf', v18.settingsRestore);
       ok('v0.18 activity log IPC + rotation', v18.actLogIpc && v18.logBridge);
       ok('v0.18 voice report send (GitHub issue)', v18.reportCmd);
@@ -721,17 +721,17 @@ app.whenReady().then(async () => {
       const appjs = read('renderer/js/app.js');
       const mainjs = read('main.js');
       const v19 = {
-        earlyFinal: appjs.includes('webStableTimer') && appjs.includes('cutListening(') && appjs.includes('webEarlyFinal && webGotAny && state'),
+        earlyFinal: appjs.includes('aveDeliver(') && appjs.includes('ave.tStable') && appjs.includes("'web-stable'"),
         quickCmd: appjs.includes('const QUICK_CMD_RE =') && appjs.includes("isQuick ? 750 : 1100"),
-        shortWatchdog: appjs.includes("}, 3500);") && !appjs.includes("}, 7500);"),
-        shortSilence: appjs.includes('G_SIL_MS = 1500') && appjs.includes('GLM_SIL_MS = 1500'),
+        shortWatchdog: appjs.includes('AVE_SIL_MS = 1200') && appjs.includes('AVE_IDLE_MS = 8000') && !appjs.includes('}, 7500);'),
+        shortSilence: appjs.includes('AVE_SIL_MS = 1200') && appjs.includes('RACE_MS = 12000'),
         heardCard: appjs.includes("rcTag.textContent = t('tag.heard')") && appjs.includes('utterance total'),
         fastType: appjs.includes('i += 2;') && appjs.includes("}, 8);"),
         aiFast: mainjs.includes('maxOutputTokens: 700') && mainjs.includes('max_tokens: 700'),
         updaterLog: mainjs.includes('autoUpdater.logger = {') && mainjs.includes('(DELTA)') && mainjs.includes('transferred=${mb(p.transferred)}'),
       };
-      ok('v0.19 early-finalize (stable interim) for web engine', v19.earlyFinal && v19.quickCmd);
-      ok('v0.19 watchdog 3.5s + silence 1.5s', v19.shortWatchdog && v19.shortSilence);
+      ok('v0.19→v0.25 early-finalize (stable interim cut) preserved in AVE3', v19.earlyFinal && v19.quickCmd);
+      ok('v0.25 VAD silence 1.2s + idle 8s (faster than old watchdogs)', v19.shortWatchdog && v19.shortSilence);
       ok('v0.19 instant heard-card + total latency log', v19.heardCard);
       ok('v0.19 faster reply typing (8ms×2ch)', v19.fastType);
       ok('v0.19 AI short replies (700 tokens)', v19.aiFast);
@@ -783,7 +783,7 @@ app.whenReady().then(async () => {
         glmThink: mainjs.includes("body.thinking = { type: 'disabled' }"),
         ttsParallel: mainjs.includes('await Promise.all(chunks.map(') && mainjs.includes('parts.filter(Boolean)'),
         sttFuse: appjs.includes("STT_LAST_KEY = 'avaSttLast'") && appjs.includes('sttMarkFail(eng)') && appjs.includes('sttBenched'),
-        engGuard: appjs.includes('withEngTimeout') && appjs.includes('const RACE_MS = 20000'),
+        engGuard: appjs.includes('withEngTimeout') && appjs.includes('const RACE_MS = 12000'),
         aiStick: appjs.includes("AI_LAST_KEY = 'avaAiLast'") && appjs.includes('chainAi'),
         mediaSearchGuard: mainjs.includes('const mediaCmd ='),
         dcDiag: mainjs.includes('discord ps stderr') && mainjs.includes('/^DBG:/i') && mainjs.includes('ERR:PS:') && mainjs.includes('DBG:TRY=') && mainjs.includes("'ERR:NOBTN'"),
@@ -855,7 +855,7 @@ app.whenReady().then(async () => {
     // 8.95 v0.23 — STT parallel race + single-panel cover round 4
     try {
       const v23 = {
-        race: appjs.includes('const RACE_MS = 20000') && appjs.includes('race winner=') && appjs.includes("t('stt.racing'") && appjs.includes('raceSettle'),
+        race: appjs.includes('const RACE_MS = 12000') && appjs.includes('race winner=') && appjs.includes("t('stt.racing'") && appjs.includes('raceSettle'),
         raceNoSeq: !appjs.includes('runChain('),
         racingI18n: appjs.includes("'stt.racing': ["),
         cover4Html: html.includes('np-eq') && !html.includes('np-vinyl') && !html.includes('np-cover-wrap'),
@@ -896,6 +896,27 @@ app.whenReady().then(async () => {
       ok('v0.24 preload net-status bridge + lib packaged in build.files', v24.preloadBridge && v24.pkgLib);
     } catch (e) { console.log('SKIP | v0.24 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.99 v0.25 — AVE3: voice conversation rebuilt from scratch
+    // (dual-track session, no re-listen fallback, VAD end-of-utterance,
+    // parallel cloud race on the SAME captured audio, epoch-guarded teardown)
+    try {
+      const app25 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const v25 = {
+        dualTrack: app25.includes('function aveStart(') && app25.includes('function aveTrackA(') && app25.includes('function aveTrackB('),
+        noReListen: !app25.includes('fallbackFromWeb') && !app25.includes('startCloudListen') && !app25.includes('makeRec('),
+        vad: app25.includes('AVE_SIL_MS = 1200') && app25.includes('function aveVadTick(') && app25.includes('function aveOnFrame('),
+        deliver: app25.includes('function aveDeliver(') && app25.includes('stt final(') && app25.includes('function aveFinalize('),
+        raceOnBuffer: app25.includes('const RACE_MS = 12000') && app25.includes('raceSettle') && app25.includes("bridge.stt.google({ pcm: pcmBytes"),
+        teardown: app25.includes('function aveStopSession(') && app25.includes('aveEpoch += 1') && app25.includes('function aveKillAudio('),
+        i18n: app25.includes("'stt.heardLive'") && app25.includes("'stt.failAll'"),
+      };
+      ok('v0.25 AVE3 dual-track session (live web engine + always-on PCM buffer)', v25.dualTrack);
+      ok('v0.25 no re-listen fallback — user never repeats a command', v25.noReListen);
+      ok('v0.25 VAD end-of-utterance (adaptive threshold + silence tick)', v25.vad);
+      ok('v0.25 single deliver path + cloud race on the same captured audio', v25.deliver && v25.raceOnBuffer);
+      ok('v0.25 epoch-guarded teardown + new status lines (heardLive/failAll)', v25.teardown && v25.i18n);
+    } catch (e) { console.log('SKIP | v0.25 markers | ' + String(e && e.message).slice(0, 80)); }
+
     // 8.94 v0.23 — runtime: race marker in JS scope + cover single panel
     try {
       const rt23 = await probe(`(() => ({
@@ -911,10 +932,10 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV24: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.24/.test(el.textContent) : false; })(),
+        aboutV25: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.25/.test(el.textContent) : false; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.24 about page shows v0.24.0', rt24.aboutV24);
+      ok('v0.25 about page shows v0.25.0', rt24.aboutV25);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons

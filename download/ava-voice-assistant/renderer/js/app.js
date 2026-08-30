@@ -309,7 +309,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۴ — «شنیدن مثل کروم»: ریشهٔ تفاوت شنیدن برنامه با کروم پیدا و رفع شد — برنامه از DNS سیستم استفاده می‌کرد که روی شبکهٔ ایران گوگل را فیلتر می‌کند، در حالی که کروم با DNS امنِ خودش راحت می‌شنید. حالا آوا در شروع، میزبان‌های مهم (گوگل، جمنای، Whisper، GLM) را از DNS شکن/الکترو می‌پرسد و فقط داخل خود برنامه پین می‌کند — بدون تغییر تنظیمات ویندوز و بدون UAC؛ موتور وب کرومیوم (همان شنوندهٔ زندهٔ کروم که در پیش‌نمایش دیدی) داخل برنامه زنده می‌شود و همهٔ موتورهای ابری هم از فیلتر رد می‌شوند. موتور وب بعد از خطا ۹۰ ثانیه بعد خودش را دوباره امتحان می‌کند و وضعیت واقعی اتصال در activity.log و توست هشدار دیده می‌شود.', 'v0.24 — "hear like Chrome": we found and fixed why the app hears differently from Chrome — it used the system DNS, which is filtered for Google on Iranian networks, while Chrome has its own secure DNS. AVA now resolves the important hosts (Google, Gemini, Whisper, GLM) via Shekan/Electro DNS at boot and pins them inside the app only — no Windows settings change, no UAC; the Chromium web engine (the same live listener you saw in the preview) now works inside the app, and every cloud engine gets through the filter. The web engine re-probes 90s after a failure, and the real network state lands in activity.log plus a warning toast.'],
+    'about.desc': ['نسخه ۰.۲۵ — «بازسازی کامل مکالمهٔ صوتی (AVE3)»: هر جلسهٔ گوش‌دادن حالا دو مسیر موازی دارد — شنوندهٔ زندهٔ وب (همان که در کروم عالی بود) + ضبط PCM از لحظهٔ صفر با VAD تطبیقی. اگر موتور وب بمیرد، دیگر «دوباره گوش نمی‌دهیم» — همان صدای ضبط‌شده بی‌درنگ به مسابقهٔ موازی موتورهای ابری (گوگل/Whisper/GLM/Gemini، سقف ۱۲ ثانیه برای هر موتور) می‌رود؛ کاربر هرگز چیزی را تکرار نمی‌کند. پایان جمله با سکوت واقعی (VAD ۱.۲ ثانیه‌ای) تصمیم گرفته می‌شود و teardown تمیز جلسه با شمارش نسل، رفتارهای عجیب استارت/استارت را ریشه‌کن می‌کند.', 'v0.25 — "voice conversation rebuilt from scratch (AVE3)": every listening session now runs two parallel tracks — the live web listener (the one that was great in Chrome) plus a from-zero PCM buffer with adaptive VAD. If the web engine dies, we never re-listen — the already-captured audio instantly enters the parallel cloud race (Google/Whisper/GLM/Gemini, 12s cap each); the user never repeats a command. End-of-utterance is decided by real silence (1.2s VAD) and clean epoch-guarded teardown kills weird start/start behavior.'],
     'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
     'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
     'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
@@ -532,7 +532,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۴ — «شنیدن مثل کروم»: ریشهٔ تفاوت شنیدن برنامه با کروم پیدا و رفع شد — برنامه از DNS سیستم استفاده می‌کرد که روی شبکهٔ ایران گوگل را فیلتر می‌کند، در حالی که کروم با DNS امنِ خودش راحت می‌شنید. حالا آوا در شروع، میزبان‌های مهم (گوگل، جمنای، Whisper، GLM) را از DNS شکن/الکترو می‌پرسد و فقط داخل خود برنامه پین می‌کند — بدون تغییر تنظیمات ویندوز و بدون UAC؛ موتور وب کرومیوم (همان شنوندهٔ زندهٔ کروم که در پیش‌نمایش دیدی) داخل برنامه زنده می‌شود و همهٔ موتورهای ابری هم از فیلتر رد می‌شوند. موتور وب بعد از خطا ۹۰ ثانیه بعد خودش را دوباره امتحان می‌کند و وضعیت واقعی اتصال در activity.log و توست هشدار دیده می‌شود.', 'v0.24 — "hear like Chrome": we found and fixed why the app hears differently from Chrome — it used the system DNS, which is filtered for Google on Iranian networks, while Chrome has its own secure DNS. AVA now resolves the important hosts (Google, Gemini, Whisper, GLM) via Shekan/Electro DNS at boot and pins them inside the app only — no Windows settings change, no UAC; the Chromium web engine (the same live listener you saw in the preview) now works inside the app, and every cloud engine gets through the filter. The web engine re-probes 90s after a failure, and the real network state lands in activity.log plus a warning toast.'],
+    'about.desc': ['نسخه ۰.۲۵ — «بازسازی کامل مکالمهٔ صوتی (AVE3)»: هر جلسهٔ گوش‌دادن حالا دو مسیر موازی دارد — شنوندهٔ زندهٔ وب (همان که در کروم عالی بود) + ضبط PCM از لحظهٔ صفر با VAD تطبیقی. اگر موتور وب بمیرد، دیگر «دوباره گوش نمی‌دهیم» — همان صدای ضبط‌شده بی‌درنگ به مسابقهٔ موازی موتورهای ابری (گوگل/Whisper/GLM/Gemini، سقف ۱۲ ثانیه برای هر موتور) می‌رود؛ کاربر هرگز چیزی را تکرار نمی‌کند. پایان جمله با سکوت واقعی (VAD ۱.۲ ثانیه‌ای) تصمیم گرفته می‌شود و teardown تمیز جلسه با شمارش نسل، رفتارهای عجیب استارت/استارت را ریشه‌کن می‌کند.', 'v0.25 — "voice conversation rebuilt from scratch (AVE3)": every listening session now runs two parallel tracks — the live web listener (the one that was great in Chrome) plus a from-zero PCM buffer with adaptive VAD. If the web engine dies, we never re-listen — the already-captured audio instantly enters the parallel cloud race (Google/Whisper/GLM/Gemini, 12s cap each); the user never repeats a command. End-of-utterance is decided by real silence (1.2s VAD) and clean epoch-guarded teardown kills weird start/start behavior.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -727,6 +727,8 @@
     'stt.demoHint': ['حالت دمو روشن است — برای تشخیص واقعی، کلید GLM را در تنظیمات بگذار', 'Demo mode is on — set the GLM key in Settings for real recognition'],
     'stt.fallbackGlm': ['گوگل جواب نداد — همان صدا به GLM-ASR فرستاده شد…', 'Google had no answer — the same audio went to GLM-ASR…'],
     'stt.racing': ['شنیدن با {x} — زودترین جواب برنده است…', 'Listening with {x} — first answer wins…'],
+    'stt.heardLive': ['شنیدم… بعد از سکوتت پردازش می‌کنم', 'I hear you… transcribing after your pause'],
+    'stt.failAll': ['هیچ موتوری نتوانست صدایت را تبدیل کند: {x}', 'No engine could transcribe your voice: {x}'],
 
     /* ---------- v0.11 ---------- */
     'nav.music': ['پلیر موزیک — پلی‌لیست از پوشه خودت', 'Music player — playlist from your folder'],
@@ -1516,6 +1518,7 @@
     store.set('micId', settings.micId);
     /* ری‌استارت استریم با ورودی جدید */
     if (isRecording) await stopAudioRec();
+    if (state === 'listening') stopListening(false); /* جلسه با میکروفون قدیمی می‌مرد */
     detachMic();
     await attachMic();
     toast(t('toast.micChanged'), '#i-mic');
@@ -1551,7 +1554,7 @@
   drawMeter();
 
   function detachMic() {
-    if (isRecording || gRec) return; /* حین ضبط، استریم نباید بسته شود */
+    if (isRecording || ave) return; /* حین ضبط، استریم نباید بسته شود */
     if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
     if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
     analyser = null; micData = null; micLive = false;
@@ -2592,22 +2595,40 @@
   }
 
   /* ============================================================
-     تشخیص گفتار واقعی — زنجیره: موتور وب → گوگل رایگان (HTTP) → GLM-ASR
-     بدون هیچ کلیدی؛ دمو فقط با تنظیم صریح کاربر.
+     AVE3 — موتور مکالمهٔ صوتی آوا، نسل سوم (بازسازی کامل — v0.25)
+     ------------------------------------------------------------
+     درخواست کاربر: «مکالمه و گرفتن صدا هنوز مشکل دارد — از نو
+     کامل بساز». این یک بازنویسی تمام‌عیار است، نه وصله:
+
+     ۱) هر جلسهٔ گوش‌دادن دو مسیرِ موازی دارد:
+        • مسیر زندهٔ وب: همان شنوندهٔ کرومیوم که در پیش‌نمایش کروم
+          کاربر «خیلی خوب» جواب داد — متن لحظه‌ای
+        • مسیر بافر: ضبط واقعی PCM از «لحظهٔ صفر» + VAD تطبیقی
+     ۲) ⭐ «گوش دادن دوباره» وجود ندارد — ریشهٔ اصلی «گرفتن صدا»:
+        قبلاً اگر موتور وب می‌مرد، گوش‌دادن از صفر شروع می‌شد و
+        کاربر باید حرفش را دوباره می‌گفت. حالا همان صدایی که از
+        اول ضبط شده، بی‌درنگ به موتورهای ابری می‌رود.
+     ۳) پایان جمله را VAD (سکوت واقعی پس از گفتار) تصمیم می‌گیرد،
+        نه انتظار برای «final» گوگل؛ متن میانی که ۷۵۰/۱۱۰۰ms ثابت
+        بماند همان لحظه تحویل گرفته می‌شود (ارث v0.19).
+     ۴) موتورهای ابری روی همان یک صدا مسابقهٔ موازی می‌دهند
+        (سقف ۱۲ ثانیه برای هر موتور) — فیوز/چسبندگی سر جایش است.
      ============================================================ */
-  let rec = null, recActive = false, gotFinal = false, srBroken = 0, demoNoticeShown = false;
-  /* v0.24 — srBroken اکنون «مهر زمانی بنچ» است نه پرچم همیشگی:
-     خطای اولیهٔ شبکه (مثلاً قبل از فعال شدن DNS) موتور وب را برای همیشه
-     نمی‌کشد — بعد از ۹۰ ثانیه دوباره شانس می‌گیرد (مثل کروم) */
+  const AVE_SIL_MS = 1200;   /* سکوتِ پایان جمله پس از گفتار (VAD) */
+  const AVE_IDLE_MS = 8000;  /* اگر هیچ گفتاری نشنید */
+  const AVE_MAX_MS = 22000;  /* سقف کل جلسهٔ گوش دادن */
+  const RACE_MS = 12000;     /* سقف هر موتور ابری در مسابقه */
+  let ave = null;            /* جلسهٔ جاری AVE3 */
+  let aveEpoch = 0;          /* نسل جلسه — رویدادهای جلسهٔ قدیمی را می‌کشد */
+  let rec = null, recActive = false; /* موتور وب جلسهٔ جاری */
+  let webFailStreak = 0, demoNoticeShown = false;
+  /* v0.24 — srBroken «مهر زمانی بنچ» است نه پرچم همیشگی: خطای اولیهٔ
+     شبکه (مثلاً قبل از فعال شدن DNS) موتور وب را برای همیشه نمی‌کشد —
+     بعد از ۹۰ ثانیه دوباره شانس می‌گیرد (مثل کروم) */
+  let srBroken = 0;
   const SR_BENCH_MS = 90000;
   const srUsable = () => !!SRC && (!srBroken || Date.now() > srBroken);
-  let webGotAny = false, webWatchdog = null, webFailStreak = 0;
-  let recEpoch = 0; /* نسل‌شمار موتور وب — ریس onend/onresult جلسه قدیمی را می‌کشد (فیکس v0.13) */
-  let glmRec = null, glmTimer = null, glmMaxTimer = null, glmSpoke = false, glmListening = false, glmSilentMs = 0;
   const ASR_MODEL = 'glm-asr-2512';
-  const GLM_MAX_MS = 12000;   // بیشینه ضبط هر فرمان صوتی
-  const GLM_SIL_MS = 1500;    // سکوت لازم برای پایان فرمان (v0.19: ۲.۳→۱.۵)
-  const GLM_ON_LVL = 16;      // آستانه تشخیص شروع حرف (میانگین طیف)
 
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
   /* v0.17 — موتورهای کلاس AI (الگوی typeo/iotype): ترنسکریپت با مدل هوش مصنوعی */
@@ -2689,166 +2710,128 @@
     return buildCloudChain()[0] || null;
   }
 
-  /* بعد از موتور وب، نوبت کدام موتور برسد (فالبک زنجیره‌ای) */
-  function nextEngineAfterWeb() {
-    return buildCloudChain()[0] || null;
+  /* ============================ AVE3 هسته ============================ */
+
+  /* شروع جلسه: دو مسیر موازی (وب زنده + بافر PCM) */
+  function aveStart() {
+    aveEpoch += 1;
+    const myEpoch = aveEpoch;
+    setState('listening');
+    body.classList.remove('has-card');
+    respCard.classList.remove('show');
+    sbMic.innerHTML = `<i class="dot rec"></i>${t('mic.rec')}`;
+    setLiveText(t('live.on'));
+    stopGoogleSpeak(); /* اگر آوا مشغول حرف زدن بود ساکت شود تا گوش دهد */
+    if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
+    const eng = settings.sttEngine || 'auto';
+    const chain = buildCloudChain();
+    const webOn = (eng === 'auto' || eng === 'web') && srUsable();
+    ave = {
+      myEpoch, chain, webOn,
+      delivered: false, srLive: false, srGotText: '', srFinal: '',
+      lastTxt: '', lastAt: 0, graceN: 0,
+      chunks: [], spoke: false, lastVoice: 0, started: 0, maxRms: 0, floor: 0.006,
+      proc: null, srcNode: null, sink: null,
+      tVad: null, tStable: null, tGrace: null,
+    };
+    attachMic().then((ok) => {
+      if (myEpoch !== aveEpoch) return; /* جلسه عوض شد */
+      if (!ok) { ave = null; rec = null; recActive = false; noEngine(t('stt.micMissing')); return; }
+      if (webOn) aveTrackA(myEpoch);
+      else if (chain.length) statusText.textContent = t('status.googleListen');
+      aveTrackB(myEpoch);
+      /* کمربند امنیتی: اگر همه‌چیز گم شد، ۳۵ ثانیه بعد حالت اول */
+      listenTimer = setTimeout(() => {
+        if (state === 'listening') { aveStopSession(); setLiveText(''); statusText.innerHTML = IDLE_HINT; }
+      }, 35000);
+    });
   }
 
-  /* فالبک هوشمند: اگر موتور وب از دسترس خارج شد، بدون دخالت کاربر
-     با موتور بعدی گوش می‌دهیم (در همان وضعیت گوش دادن) */
-  function fallbackFromWeb() {
-    webFailStreak += 1;
-    if (webFailStreak >= 2) {
-      /* v0.24 — بنچ زمانی ۹۰ ثانیه‌ای به‌جای مرگ همیشگی (سر جایش ۲ تلاش پیاپی) */
-      srBroken = Date.now() + SR_BENCH_MS;
-      webFailStreak = 0;
-      actLog('stt web benched for 90s (2 fails) — will re-probe automatically');
-    }
-    refreshEngineUI();
-    if (state !== 'listening') return;
-    const nxt = nextEngineAfterWeb();
-    /* همهٔ موتورهای ابری از همان ضبط‌کنندهٔ تطبیقی مشترک استفاده می‌کنند */
-    if (nxt) { statusText.textContent = t('stt.webFail'); startCloudListen(); }
-    else { setState('idle'); statusText.innerHTML = IDLE_HINT; }
+  /* برش سریع فقط برای فرمان‌های کامل‌نما (ارث v0.19) */
+  const QUICK_CMD_RE = /^(باز\s?کن|اجرا\s?کن|روشن\s?کن|خاموش\s?کن|ریستارت|کامپیوتر\s?(رو\s?)?(بخوابون|خاموش)|پخش|پاز|آهنگ\s?(بعدی|قبلی)|موزیک|مدیای|بلند\s?تر|کم\s?تر|میوت|بی\s?صدا|تنظیم\s?دی\s?ان\s?اس|دی\s?ان\s?اس|زنگ\s?بزن|تماس\s?بگیر|قطع\s?کن|یادم\s?بنداز|ساعت\s?چند|چند\s?ساعت|تاریخ|باتری|اسکرین\s?شات|قفل\s?کن|مانیتور\s?رو|پینگ)/i;
+
+  /* بازخورد زنده: متن شنیده‌شده همان لحظه در کارت پاسخ + زیر دکمه */
+  function aveLiveHeard(txt) {
+    if (dictation.active) { dictInterim.textContent = txt; return; }
+    statusText.textContent = t('status.heard', { x: txt });
+    setLiveText(txt);
+    rcTag.textContent = t('tag.heard');
+    rcHeard.textContent = `«${txt}»`;
+    if (!respCard.classList.contains('show')) { body.classList.add('has-card'); respCard.classList.add('show'); }
   }
 
-  function makeRec() {
-    /* نسل‌شمار: اگر جلسه جدیدی شروع شده بود، رویدادهای این جلسه قدیمی
-       کاملاً نادیده گرفته می‌شوند — فیکس «رفتار عجیب» استارت/استارت سریع
-       (قبلاً onend جلسه قبلی، موتور جلسه جدید را هم از کار می‌انداخت) */
-    const myEpoch = recEpoch;
-    const ut0 = Date.now(); /* شروع جلسه گوش دادن — برای لاگ تأخیر */
+  /* مسیر زندهٔ وب — همان شنوندهٔ کروم؛ ⚠ اگر مرد، هیچ‌کس «دوباره گوش
+     نمی‌دهد»: بافرِ مسیر B خودش فالبک است و کاربر چیزی را تکرار نمی‌کند */
+  function aveTrackA(myEpoch) {
+    const ut0 = Date.now();
     const r = new SRC();
     r.lang = settings.sttLang || 'fa-IR';
     r.interimResults = true;
     r.continuous = false;
-    webGotAny = false;
-    /* v0.19 — فاینال‌سازی زودهنگام: اگر متن میانی ۱.۱ ثانیه ثابت ماند
-       (یا فرمان کوتاه ۰.۶۵ ثانیه)، دیگر منتظر «final» گوگل نمی‌مانیم —
-       قبلاً منتظر سکوتِ خودِ گوگل بودیم که گاهی ۲-۳ ثانیه طول می‌کشید */
-    let webLastInterim = '';
-    let webInterimAt = 0;
-    let webStableTimer = null;
-    let webEarlyFinal = '';
-    const QUICK_CMD_RE = /^(باز\s?کن|اجرا\s?کن|روشن\s?کن|خاموش\s?کن|ریستارت|کامپیوتر\s?(رو\s?)?(بخوابون|خاموش)|پخش|پاز|آهنگ\s?(بعدی|قبلی)|موزیک|مدیای|بلند\s?تر|کم\s?تر|میوت|بی\s?صدا|تنظیم\s?دی\s?ان\s?اس|دی\s?ان\s?اس|زنگ\s?بزن|تماس\s?بگیر|قطع\s?کن|یادم\s?بنداز|ساعت\s?چند|چند\s?ساعت|تاریخ|باتری|اسکرین\s?شات|قفل\s?کن|مانیتور\s?رو|پینگ)/i;
-    const cutListening = (why) => {
-      if (myEpoch !== recEpoch || gotFinal || !srUsable() || state !== 'listening' || !webEarlyFinal) return;
-      gotFinal = true;
-      clearTimeout(webWatchdog);
-      actLog(`stt web early-final(${why}) ${Date.now() - ut0}ms: ${webEarlyFinal.slice(0, 50)}`);
-      try { recActive = false; if (rec) { try { rec.stop(); } catch (_) { /* noop */ } } } catch (_) { /* noop */ }
-      setLiveText('');
-      stopListening(false);
-      if (dictation.active) dictateHandle(webEarlyFinal, { interimEl: true });
-      else handleUtterance(webEarlyFinal);
-    };
-    /* سگ‌بان: اگر موتور وب بعد از ۳.۵ ثانیه هیچ نتیجه/خطایی نداد (معمولاً
-       به‌خاطر کندی/فیلتر گوگل)، خودکار به موتور بعدی سوییچ می‌کنیم
-       (۷.۵ ثانیه قبلی خیلی طولانی بود — کاربر «کندی» را همین‌جا حس می‌کرد) */
-    clearTimeout(webWatchdog);
-    webWatchdog = setTimeout(() => {
-      if (myEpoch !== recEpoch || state !== 'listening' || gotFinal || webGotAny) return;
-      try { recActive = false; if (rec) { try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ } } } catch (_) { /* noop */ }
-      fallbackFromWeb();
-    }, 3500);
+    rec = r; recActive = true;
     r.onresult = (e) => {
-      if (myEpoch !== recEpoch) return; /* جلسه قدیمی — نادیده */
+      if (!ave || ave.myEpoch !== myEpoch || ave.delivered) return;
       let interim = '', final = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const tr = e.results[i][0].transcript;
         if (e.results[i].isFinal) final += tr; else interim += tr;
       }
-      if ((interim || final) && !webGotAny) {
-        webGotAny = true;
+      const txt = (final || interim).trim();
+      if (txt && !ave.srGotText) {
+        ave.srGotText = txt;
         webFailStreak = 0; /* موتور وب زنده است */
         actLog('stt web first-result ' + (Date.now() - ut0) + 'ms');
       }
-      if (interim && state === 'listening') {
-        if (dictation.active) { dictInterim.textContent = interim; }
-        else {
-          statusText.textContent = t('status.heard', { x: interim });
-          setLiveText(interim);
-          /* بازخورد لحظه‌ای در کارت پاسخ — کاربر همان لحظه ببیند چه شنیده */
-          rcTag.textContent = t('tag.heard');
-          rcHeard.textContent = `«${interim}»`;
-          if (!respCard.classList.contains('show')) { body.classList.add('has-card'); respCard.classList.add('show'); }
-        }
+      if (txt) aveLiveHeard(txt);
+      if (final) { ave.srFinal = final.trim(); aveDeliver(ave.srFinal, 'web-final', myEpoch); return; }
+      if (interim) {
+        const tr2 = interim.trim();
         const nowT = Date.now();
-        if (interim !== webLastInterim) {
-          webLastInterim = interim;
-          webInterimAt = nowT;
-          clearTimeout(webStableTimer);
-          /* برش سریع فقط برای فرمان‌های کامل‌نما: با فعل فرمانی شروع شود
-             و حداقل هدف/مفعول داشته باشد (≥۹ نویسه) تا جملهٔ نیمه‌کاره قطع نشود */
-          const tr = interim.trim();
-          const isQuick = QUICK_CMD_RE.test(tr) && tr.length >= 9 && tr.length <= 60;
-          const stable = isQuick ? 750 : 1100;
-          webEarlyFinal = tr;
-          webStableTimer = setTimeout(() => cutListening('stable'), stable);
+        if (tr2 !== ave.lastTxt) {
+          ave.lastTxt = tr2; ave.lastAt = nowT;
+          clearTimeout(ave.tStable);
+          const isQuick = QUICK_CMD_RE.test(tr2) && tr2.length >= 9 && tr2.length <= 60;
+          ave.tStable = setTimeout(() => {
+            /* برش زودهنگام: متن ثابت مانده + VAD گفتار دیده (یا جملهٔ بلندتر از روای خیالی) */
+            if (ave && ave.myEpoch === myEpoch && !ave.delivered && tr2 && (ave.spoke || tr2.length >= 12)) aveDeliver(tr2, 'web-stable', myEpoch);
+          }, isQuick ? 750 : 1100);
         }
-      }
-      if (final) {
-        gotFinal = true;
-        clearTimeout(webWatchdog);
-        clearTimeout(webStableTimer);
-        actLog(`stt web final ${Date.now() - ut0}ms`);
-        setLiveText('');
-        stopListening(false);
-        if (dictation.active) dictateHandle(final.trim(), { interimEl: true });
-        else handleUtterance(final.trim());
       }
     };
     r.onerror = (e) => {
-      if (myEpoch !== recEpoch) return; /* جلسه قدیمی — نادیده */
+      if (!ave || ave.myEpoch !== myEpoch) return;
+      actLog('stt web error: ' + e.error);
+      ave.srLive = false;
+      recActive = false;
       if (['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) {
-        clearTimeout(webWatchdog);
-        clearTimeout(webStableTimer);
-        recActive = false;
-        /* v0.24 — هر خطای موتور وب در لاگ عملکرد بنویسد تا عیب‌یابی کاربر ممکن باشد */
-        actLog('stt web error: ' + e.error);
-        /* فالبک خودکار: گوگل رایگان (HTTP) → GLM ابری */
-        if (state === 'listening' && (settings.sttEngine === 'auto')) {
-          fallbackFromWeb();
-        } else if (['network', 'service-not-allowed'].includes(e.error)) {
-          srBroken = Date.now() + SR_BENCH_MS;
+        webFailStreak += 1;
+        if (webFailStreak >= 2) {
+          srBroken = Date.now() + SR_BENCH_MS; /* بنچ ۹۰ ثانیه‌ای (v0.24) */
+          webFailStreak = 0;
           refreshEngineUI();
+          actLog('stt web benched 90s (2 fails) — will re-probe automatically');
         }
+        if (state === 'listening') statusText.textContent = t('stt.webFail');
       }
     };
     r.onend = () => {
-      if (myEpoch !== recEpoch) return; /* جلسه قدیمی — وضعیت جلسه جدید را خراب نکن */
+      if (!ave || ave.myEpoch !== myEpoch) return;
       recActive = false;
-      clearTimeout(webWatchdog);
-      clearTimeout(webStableTimer);
-      if (gotFinal || !srUsable()) return;
-      /* v0.19 — if استاپ زودهنگام زدیم و گوگل دیگر final نفرستاد، همین متن میانی را اجرا کن */
-      if (webEarlyFinal && webGotAny && state === 'listening') { cutListening('onend'); return; }
-      if (state === 'listening') {
-        /* بدون هیچ نتیجه بسته شد → احتمالاً گوگل در دسترس نیست → فالبک */
-        if (!webGotAny && (settings.sttEngine === 'auto')) { fallbackFromWeb(); return; }
-        if (dictation.active) { rearmDictation(); return; }
-        setState('idle');
-        statusText.innerHTML = IDLE_HINT;
-        sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
-      }
+      /* گوگل جلسه را بست: متن مستابل موجود؟ همین حالا تحویل — وگرنه
+         VAD/بافر ادامه می‌دهد (بدون شروع دوبارهٔ گوش دادن) */
+      if (!ave.delivered && ave.lastTxt && (ave.spoke || ave.lastTxt.length >= 12)) aveDeliver(ave.lastTxt, 'web-onend', myEpoch);
     };
-    return r;
+    try { r.start(); ave.srLive = true; statusText.textContent = t('status.listening'); }
+    catch (_) {
+      actLog('stt web start failed — buffer path stays armed (no re-listen)');
+      ave.srLive = false; recActive = false;
+      webFailStreak += 1;
+      if (webFailStreak >= 2) { srBroken = Date.now() + SR_BENCH_MS; webFailStreak = 0; refreshEngineUI(); }
+      if (ave.chain.length) statusText.textContent = t('stt.webFail');
+    }
   }
 
-  /* --- موتور رایگان گوگل: ضبط PCM + آستانه تطبیقی + ارسال به سرور گوگل ---
-     نسخه ۰.۱۰ — فیکس کامل «صدا دریافت نشد»:
-     ۱) آستانه شروع حرف برای هر میکروفون «تطبیقی» محاسبه می‌شود
-        (اول کف نویز محیط اندازه می‌شود؛ دیگر آستانه ثابت باعث
-        «صدایی نشنیدم» روی میکروفون‌های آروم نمی‌شود)
-     ۲) اگر صدایی کمتر از آستانه بود ولی کاملاً ساکت هم نبود،
-        به‌هرحال برای تشخیص ارسال می‌شود
-     ۳) صدا اول بریده می‌شود (سکوت‌ها) بعد تقویت — دقت بالاتر
-     ۴) اگر گوگل جواب نداد، همان صدا به‌صورت WAV به GLM-ASR هم می‌رود */
-  const G_MAX_MS = 12000;    // بیشینه ضبط
-  const G_SIL_MS = 1500;     // سکوت پایان فرمان (v0.19: ۲.۲→۱.۵ ثانیه — فرمان‌ها ۰.۷s سریع‌تر)
-  const G_IDLE_MS = 6500;    // اگر هیچ حرفی نشنید
-  let gRec = null, gMaxT = null;
-
+  /* --- ابزار صوتی خالص (ارث نسخه‌های قبل — بدون وابستگی) --- */
   function downsampleF32(f32, from, to) {
     if (from === to) return f32;
     const ratio = from / to;
@@ -2874,8 +2857,7 @@
     return out;
   }
 
-  /* ساخت فایل WAV استاندارد از PCM خام — برای فالبک GLM-ASR
-     (GLM-ASR فایل wav قبول می‌کند؛ این‌جا بدون هیچ وابستگی هدر می‌سازیم) */
+  /* ساخت فایل WAV استاندارد از PCM خام */
   function pcmToWavBlob(pcm16, sampleRate) {
     const bytesPerSample = 2, numCh = 1;
     const dataSize = pcm16.length * bytesPerSample;
@@ -2891,8 +2873,7 @@
     return new Blob([buf], { type: 'audio/wav' });
   }
 
-  /* نرمال‌سازی بلندی صدا: میکروفون‌های کم‌صدا/دور را تقویت می‌کند تا
-     موتور تشخیص کلمه‌ها را نصفه‌کاره نشنود (علت اصلی «کج می‌شنود») */
+  /* نرمال‌سازی بلندی صدا: میکروفون‌های کم‌صدا/دور را تقویت می‌کند */
   function normalizeLoudness(f32) {
     let sum = 0, n = 0;
     for (let i = 0; i < f32.length; i += 2) { sum += f32[i] * f32[i]; n++; }
@@ -2908,250 +2889,195 @@
     return out;
   }
 
-  function startGoogleListen() {
-    /* ضبط‌کنندهٔ تطبیقی مشترک همهٔ موتورهای ابری (گوگل/جمنای/Whisper/GLM) */
-    if (!buildCloudChain().length) { noEngine(t('stt.noEngineApp')); return; }
-    attachMic().then((ok) => {
-      /* اگر کاربر وسط کار دکمه را زده و گوش‌دادن تمام شده، ضبط نساز */
-      if (!ok) { noEngine(t('stt.micMissing')); return; }
-      if (state !== 'listening') return;
-      try {
-        const src = audioCtx.createMediaStreamSource(micStream);
-        const proc = audioCtx.createScriptProcessor(4096, 1, 1);
-        const sink = audioCtx.createGain();
-        sink.gain.value = 0; // بی‌صدا — فقط برای پردازش
-        src.connect(proc);
-        proc.connect(sink);
-        sink.connect(audioCtx.destination);
-        /* floor: کف نویز محیط — تا اولین حرف، مدام به‌روز می‌شود تا
-           آستانه شروع حرف برای «هر میکروفونی» تطبیقی باشد */
-        gRec = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, started: Date.now(), busy: false, floor: 0.006, floorN: 0, maxRms: 0 };
-        proc.onaudioprocess = (e) => {
-          if (!gRec || gRec.busy) return;
-          const f = e.inputBuffer.getChannelData(0);
-          gRec.chunks.push(new Float32Array(f));
-          let sum = 0, n = 0;
-          for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
-          const rms = Math.sqrt(sum / Math.max(1, n));
-          const now = Date.now();
-          if (rms > gRec.maxRms) gRec.maxRms = rms;
-          /* آستانه تطبیقی: کمی بالاتر از نویز محیط؛ بین ۰٫۰۰۵ و ۰٫۰۴ محدود می‌شود */
-          const thr = Math.max(0.005, Math.min(0.04, gRec.floor * 2.2 + 0.0035));
-          if (!gRec.spoke) {
-            /* هنوز حرفی نشنیده‌ایم: کف نویز را نرم به‌روزرسانی کن */
-            gRec.floor = gRec.floor * 0.92 + rms * 0.08;
-            gRec.floorN++;
-          }
-          if (rms > thr) {
-            gRec.spoke = true;
-            gRec.lastVoice = now;
-            if (state === 'listening') statusText.textContent = t('status.googleHeard');
-          } else if (gRec.spoke && now - gRec.lastVoice > G_SIL_MS) {
-            stopGoogleRec();
-          } else if (!gRec.spoke && now - gRec.started > G_IDLE_MS) {
-            stopGoogleRec();
-          }
-        };
-        statusText.textContent = t('status.googleListen');
-        gMaxT = setTimeout(() => stopGoogleRec(), G_MAX_MS);
-      } catch (_) {
-        gRec = null;
-        noEngine(t('stt.googleFail'));
-      }
-    });
+  /* مسیر بافر: ضبط PCM از لحظهٔ صفر + VAD تطبیقی — فالبکی که همیشه هست */
+  function aveTrackB(myEpoch) {
+    try {
+      const src = audioCtx.createMediaStreamSource(micStream);
+      const proc = audioCtx.createScriptProcessor(4096, 1, 1);
+      const sink = audioCtx.createGain();
+      sink.gain.value = 0; /* بی‌صدا — فقط برای پردازش */
+      src.connect(proc); proc.connect(sink); sink.connect(audioCtx.destination);
+      ave.srcNode = src; ave.proc = proc; ave.sink = sink;
+      proc.onaudioprocess = (e) => aveOnFrame(myEpoch, e.inputBuffer.getChannelData(0));
+      ave.started = Date.now();
+      ave.tVad = setInterval(() => aveVadTick(myEpoch), 120);
+    } catch (_) {
+      actLog('stt buffer recorder failed');
+      if (!ave || !ave.srLive) { ave = null; recActive = false; setState('idle'); noEngine(t('stt.startFail')); }
+    }
   }
 
-  function stopGoogleRec() {
-    clearTimeout(gMaxT); gMaxT = null;
-    if (!gRec) return;
-    const g = gRec;
-    gRec = null;
-    try { g.proc.disconnect(); } catch (_) { /* noop */ }
-    try { g.src.disconnect(); } catch (_) { /* noop */ }
-    try { g.sink.disconnect(); } catch (_) { /* noop */ }
-    if (g.busy) return;
-    g.busy = true;
-    const totalMs = (g.chunks.length * 4096 * 1000) / (audioCtx ? audioCtx.sampleRate : 48000);
-    /* فقط وقتی «واقعاً» هیچ صدایی نبود خطا بده — اگر کمی صدا بود
-       به‌هرحال برای تشخیص بفرست (فیکس «صدا دریافت نشد» روی میکروفون‌های آروم) */
-    if (g.maxRms < 0.0045 || totalMs < 350) {
-      statusText.textContent = t('status.silence');
-      setTimeout(() => { if (state === 'listening' || state === 'processing') { setState('idle'); statusText.innerHTML = IDLE_HINT; sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`; } }, 1500);
+  function aveOnFrame(myEpoch, f) {
+    if (!ave || ave.myEpoch !== myEpoch || ave.delivered) return;
+    ave.chunks.push(new Float32Array(f));
+    let sum = 0, n = 0;
+    for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
+    const rms = Math.sqrt(sum / Math.max(1, n));
+    if (rms > ave.maxRms) ave.maxRms = rms;
+    /* آستانهٔ تطبیقی (ارث از نسخهٔ ۰.۱۰ که «صدا دریافت نشد» را فیکس کرد) */
+    const thr = Math.max(0.005, Math.min(0.04, ave.floor * 2.2 + 0.0035));
+    if (!ave.spoke) ave.floor = ave.floor * 0.92 + rms * 0.08;
+    if (rms > thr) {
+      if (!ave.spoke) {
+        ave.spoke = true;
+        if (state === 'listening' && !ave.srGotText) statusText.textContent = t('stt.heardLive');
+      }
+      ave.lastVoice = Date.now();
+    }
+  }
+
+  /* تیک VAD: پایان جمله = سکوت واقعی پس از گفتار */
+  function aveVadTick(myEpoch) {
+    if (!ave || ave.myEpoch !== myEpoch || ave.delivered) return;
+    const now = Date.now();
+    const dur = now - (ave.started || now);
+    if (ave.spoke && ave.lastVoice && now - ave.lastVoice >= AVE_SIL_MS) { aveFinalize(myEpoch, 'vad-silence'); return; }
+    if (!ave.spoke && dur >= AVE_IDLE_MS) { aveFinalize(myEpoch, 'no-speech'); return; }
+    if (dur >= AVE_MAX_MS) { aveFinalize(myEpoch, 'session-max'); return; }
+  }
+
+  /* تحویل نهایی متن — تک‌نقطهٔ خروج همهٔ مسیرها */
+  function aveDeliver(txt, src, myEpoch) {
+    if (!ave || ave.myEpoch !== myEpoch || ave.delivered) return;
+    const s = String(txt || '').trim();
+    if (!s) return;
+    ave.delivered = true;
+    clearTimeout(listenTimer);
+    aveKillAudio();
+    if (rec) { try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ } }
+    rec = null; recActive = false;
+    actLog('stt final(' + src + '): ' + s.slice(0, 60));
+    ave = null;
+    setLiveText('');
+    setState('idle');
+    sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
+    if (dictation.active) dictateHandle(s);
+    else handleUtterance(s);
+  }
+
+  /* پایان جلسه بدون متن تحویل‌شده — تصمیم: متن وب آماده؟ بافر به ابر برود؟ */
+  function aveFinalize(myEpoch, reason) {
+    if (!ave || ave.myEpoch !== myEpoch || ave.delivered) return;
+    const now = Date.now();
+    if (ave.srFinal) { aveDeliver(ave.srFinal, 'web-final', myEpoch); return; }
+    /* متن میانی خیلی تازه است؟ ۷۰۰ms مهلت برای final وب (فقط یک‌بار) */
+    if (ave.lastTxt && now - ave.lastAt < 600 && !ave.graceN) {
+      ave.graceN = 1;
+      clearTimeout(ave.tGrace);
+      ave.tGrace = setTimeout(() => { if (ave && ave.myEpoch === myEpoch && !ave.delivered) aveFinalize(myEpoch, reason + '+grace'); }, 700);
       return;
     }
-    setState('processing');
-    statusText.textContent = t('status.googleConv');
-    const merged = new Float32Array(g.chunks.reduce((a, c) => a + c.length, 0));
-    let off = 0;
-    for (const c of g.chunks) { merged.set(c, off); off += c.length; }
+    if (ave.lastTxt && ave.lastTxt.length >= 2 && (ave.spoke || ave.lastTxt.length >= 12)) { aveDeliver(ave.lastTxt, 'web-stable@' + reason, myEpoch); return; }
+    /* وب زنده بود ولی از کل جمله هیچ نداد → موتور وب ناشنواست */
+    if (ave.webOn && ave.srLive && !ave.srGotText) {
+      webFailStreak += 1;
+      if (webFailStreak >= 2) { srBroken = Date.now() + SR_BENCH_MS; webFailStreak = 0; refreshEngineUI(); actLog('stt web benched 90s (deaf, 2 fails)'); }
+    }
+    aveKillAudio();
+    if (rec) { try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ } }
+    rec = null; recActive = false;
     const rate = (audioCtx && audioCtx.sampleRate) || 48000;
-    /* اول سکوت ابتدا/انتها را ببر، بعد بلندی را نرمال کن — تشخیص دقیق‌تر */
-    const trimmed = trimSilenceEdges(downsampleF32(merged, rate, 16000), 16000);
-    const normed = normalizeLoudness(trimmed);
-    const pcm16 = f32ToI16(normed);
-    const lang = settings.sttLang || 'fa-IR';
-    const finishIdle = (msg) => {
+    const totalMs = (ave.chunks.length * 4096 * 1000) / rate;
+    if (!ave.spoke || ave.maxRms < 0.0045 || totalMs < 350) {
+      actLog('stt session end(' + reason + ') — no usable audio (maxRms=' + ave.maxRms.toFixed(4) + ', ' + Math.round(totalMs) + 'ms)');
+      ave = null;
+      statusText.textContent = t('status.silence');
+      setTimeout(() => { if (state === 'listening' || state === 'processing') { setState('idle'); statusText.innerHTML = IDLE_HINT; sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`; } }, 1500);
+      if (dictation.active) setTimeout(rearmDictation, 1500);
+      return;
+    }
+    /* ⭐ ساخت WAV از همان صدای همیشه-ضبط‌شده + مسابقهٔ ابری — بدون گوش دادن دوباره */
+    const merged = new Float32Array(ave.chunks.reduce((a, c) => a + c.length, 0));
+    let off = 0;
+    for (const c of ave.chunks) { merged.set(c, off); off += c.length; }
+    const pcm16 = f32ToI16(normalizeLoudness(trimSilenceEdges(downsampleF32(merged, rate, 16000), 16000)));
+    const wavBlob = pcmToWavBlob(pcm16, 16000);
+    const sessChain = ave.chain;
+    ave = null;
+    setState('processing');
+    aveCloudRace(myEpoch, wavBlob, pcm16, sessChain);
+  }
+
+  /* هیچ موتوری حق گیر کردن ندارد — سقف زمانی سخت هر موتور */
+  const withEngTimeout = (pr, ms) => Promise.race([
+    Promise.resolve(pr),
+    new Promise((res) => setTimeout(() => res({ ok: false, error: 'timeout' }), ms)),
+  ]);
+
+  /* مسابقهٔ موازی موتورهای ابری روی همان یک صدا (ارث v0.23، سقف ۱۲s) */
+  function aveCloudRace(myEpoch, wavBlob, pcm16, chain) {
+    if (!chain.length) {
       setState('idle');
-      statusText.textContent = msg;
+      statusText.innerHTML = t('stt.noEngine', { x: t('stt.noEngineApp') });
       sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
       if (dictation.active) setTimeout(rearmDictation, 1500);
-    };
-    /* v0.17 — پیمایش زنجیرهٔ ابری: جمنای → Whisper → GLM → گوگل رایگان
-       همان صدا (WAV/PCM) به تک‌تک موتورهای زنجیره می‌رود تا جواب بگیرد؛
-       دقیق‌ترین‌ها (کلاس AI — الگوی typeo/iotype) جلوتر هستند */
-    const chain = buildCloudChain();
-    const pcmBytes = new Uint8Array(pcm16.buffer);
-    const wavBlob = pcmToWavBlob(pcm16, 16000);
-    const wavSend = async () => {
-      const b = new Uint8Array(await wavBlob.arrayBuffer());
-      return b.length < 900 ? null : b;
-    };
-    const runEngine = async (eng) => {
-      if (eng === 'gemini') {
-        const b = await wavSend();
-        if (!b) return { ok: false };
-        return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR' });
-      }
-      if (eng === 'whisper') {
-        const b = await wavSend();
-        if (!b) return { ok: false };
-        return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
-      }
-      if (eng === 'glm') {
-        const b = await wavSend();
-        if (!b) return { ok: false };
-        return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
-      }
-      return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang });
-    };
-    /* v0.21 — سگ‌بان هر موتور: اگر جواب موتور داخل سقف زمانی نرسید،
-       بدون انتظار به موتور بعدی می‌رویم (هیچ موتوری حق «گیر کردن» ندارد) */
-    const withEngTimeout = (pr, ms) => Promise.race([
-      Promise.resolve(pr),
-      new Promise((res) => setTimeout(() => res({ ok: false, error: 'timeout' }), ms)),
-    ]);
-    /* v0.23 — مسابقهٔ موازی موتورهای ابری (سیستم جدید سرعت):
-       زنجیرهٔ ترتیبی قبلی روی شبکهٔ فیلترشده ایران مجموعِ سقف‌های زمانی را
-       جمع می‌زد (۲۲+۱۸+۲۲ ثانیه پیش از رسیدن به موتور آخر) — همان «کندی
-       افتضاح». حالا همهٔ موتورهای آماده هم‌زمان صدا زده می‌شوند و اولین
-       جواب برنده است: بدترین حالت = سقفِ یک موتور (۲۰ ثانیه)، بهترین
-       حالت = سریع‌ترین موتور (همان ۲-۵ ثانیهٔ پروژهٔ قبلی).
-       فیوز v0.21 سر جایش است: موتورهای بازنشسته اصلاً وارد مسابقه نمی‌شوند. */
-    const RACE_MS = 20000;
-    if (!chain.length) { finishIdle(t('stt.noEngineApp')); return; }
+      return;
+    }
     statusText.textContent = t('stt.racing', { x: chain.map((e) => t('eng.' + e)).join(' + ') });
-    let raceWon = false, raceFailed = 0, lastErr = '';
+    const pcmBytes = new Uint8Array(pcm16.buffer);
+    let won = false, fails = 0, lastErr = '';
+    const isDead = () => aveEpoch !== myEpoch; /* لغو کاربر/جلسهٔ جدید → همهٔ نتایج باطل */
     const raceSettle = (eng, r, ms) => {
-      /* ⚠ در لحظهٔ مسابقه state == 'processing' است (نه 'listening') —
-         فقط «لغو کاربر» (idle) نتایج را باطل می‌کند */
-      if (raceWon || state === 'idle') { actLog(`stt ${eng} late (${ms}ms) — race already decided`); return; }
+      if (won || isDead()) { actLog('stt ' + eng + ' late (' + ms + 'ms) — race already decided'); return; }
       if (r && r.ok && r.text) {
-        raceWon = true;
+        won = true;
         sttMarkOk(eng);
-        actLog(`stt race winner=${eng} (${ms}ms)`);
-        const tx = r.text.trim();
+        actLog('stt race winner=' + eng + ' (' + ms + 'ms)');
+        const tx = String(r.text).trim();
+        setState('idle');
         if (dictation.active) dictateHandle(tx);
         else handleUtterance(tx);
         return;
       }
-      raceFailed += 1;
+      fails += 1;
       if (r && r.error) lastErr = String(r.error);
       sttMarkFail(eng);
-      actLog(`stt ${eng} fail (${ms}ms)${r && r.error ? ' err=' + String(r.error).slice(0, 80) : ''}`);
-      if (raceFailed >= chain.length && !raceWon && state !== 'idle') {
+      actLog('stt ' + eng + ' fail (' + ms + 'ms)' + (r && r.error ? ' err=' + String(r.error).slice(0, 80) : ''));
+      if (fails >= chain.length && !won && !isDead()) {
+        setState('idle');
+        statusText.textContent = t('stt.failAll', { x: (lastErr || '—').slice(0, 120) });
+        sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
         if (lastErr) toast(lastErr.slice(0, 150), '#i-info');
-        finishIdle(t('stt.convFail', { x: lastErr || '—' }));
+        if (dictation.active) setTimeout(rearmDictation, 1500);
       }
     };
     chain.forEach((eng) => {
       const te0 = Date.now();
-      withEngTimeout(runEngine(eng), RACE_MS)
+      const pr = (async () => {
+        if (eng === 'google') return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang: settings.sttLang || 'fa-IR' });
+        const b = new Uint8Array(await wavBlob.arrayBuffer());
+        if (b.length < 900) return { ok: false, error: 'short-audio' };
+        if (eng === 'whisper') return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
+        if (eng === 'glm') return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
+        if (eng === 'gemini') return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR' });
+        return { ok: false, error: 'unknown-engine' };
+      })();
+      withEngTimeout(pr, RACE_MS)
         .then((r) => raceSettle(eng, r, Date.now() - te0))
         .catch(() => raceSettle(eng, { ok: false, error: t('stt.connFail') }, Date.now() - te0));
     });
   }
 
-  /* نام مستعار — ضبط‌کنندهٔ تطبیقی مشترک همهٔ موتورهای ابری */
-  const startCloudListen = startGoogleListen;
-
-  /* --- موتور GLM-ASR: ضبط واقعی + ارسال به سرور + تبدیل به فرمان --- */
-  function startGlmListen() {
-    if (!glmReady()) { noEngine(t('stt.glmNeedKey')); return; }
-    attachMic().then((ok) => {
-      if (!ok) { noEngine(t('stt.micMissing')); return; }
-      if (state !== 'listening') return;
-      try {
-        recChunks = [];
-        glmSpoke = false;
-        glmListening = true;
-        glmRec = new MediaRecorder(micStream);
-        glmRec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
-        glmRec.onstop = finishGlmTranscribe;
-        glmRec.start();
-        statusText.textContent = t('stt.glmListen');
-        /* تشخیص سکوت برای توقف هوشمند ضبط (با کمی تحمل تا بین کلمات قطع نشود) */
-        glmSilentMs = 0;
-        glmTimer = setInterval(() => {
-          if (!glmListening || !micData) return;
-          let sum = 0;
-          for (let i = 0; i < micData.length; i++) sum += micData[i];
-          const avg = sum / micData.length;
-          if (avg > GLM_ON_LVL) {
-            glmSpoke = true;
-            glmSilentMs = 0;
-            statusText.textContent = t('stt.glmHeard');
-          } else if (glmSpoke) {
-            glmSilentMs += 300;
-            if (glmSilentMs >= 1300) stopGlmRec();
-          }
-        }, 300);
-        glmMaxTimer = setTimeout(() => stopGlmRec(), GLM_MAX_MS);
-      } catch (_) {
-        noEngine(t('stt.startFail'));
-      }
-    });
+  /* قطع لایهٔ صدا/VAD (جلسه ممکن است ادامه یابد یا تمام شود) */
+  function aveKillAudio() {
+    if (!ave) return;
+    clearInterval(ave.tVad); ave.tVad = null;
+    clearTimeout(ave.tStable); ave.tStable = null;
+    clearTimeout(ave.tGrace); ave.tGrace = null;
+    try { if (ave.proc) ave.proc.disconnect(); } catch (_) { /* noop */ }
+    try { if (ave.srcNode) ave.srcNode.disconnect(); } catch (_) { /* noop */ }
+    try { if (ave.sink) ave.sink.disconnect(); } catch (_) { /* noop */ }
+    ave.proc = ave.srcNode = ave.sink = null;
   }
 
-  function stopGlmRec() {
-    clearInterval(glmTimer); clearTimeout(glmMaxTimer);
-    glmTimer = null; glmMaxTimer = null;
-    if (glmListening && glmRec && glmRec.state !== 'inactive') {
-      try { glmRec.stop(); } catch (_) { finishGlmTranscribe(); }
-    } else {
-      glmListening = false;
-    }
-  }
-
-  async function finishGlmTranscribe() {
-    glmListening = false;
-    glmRec = null;
-    const blob = new Blob(recChunks, { type: (micRecMime() || 'audio/webm') });
-    recChunks = [];
-    if (!blob.size || blob.size < 900) {
-      statusText.textContent = t('status.silence');
-      setTimeout(() => { if (state === 'listening') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 1600);
-      return;
-    }
-    setState('processing');
-    statusText.textContent = t('stt.glmConv');
-    try {
-      const buf = new Uint8Array(await blob.arrayBuffer());
-      const r = await bridge.stt.transcribe({ buf, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
-      if (r && r.ok && r.text) {
-        const tx = r.text.trim();
-        if (dictation.active) dictateHandle(tx);
-        else handleUtterance(tx);
-      } else {
-        setState('idle');
-        statusText.textContent = t('stt.glmFail', { x: (r && r.error) || '—' });
-        toast('GLM-ASR: ' + ((r && r.error) || '—'), '#i-info');
-        if (dictation.active) setTimeout(rearmDictation, 1500);
-      }
-    } catch (_) {
-      setState('idle');
-      statusText.textContent = t('stt.glmConn');
-      if (dictation.active) setTimeout(rearmDictation, 1500);
-    }
+  /* توقف کامل جلسه (دکمهٔ کاربر / سیستم) — هر رویداد در پرواز باطل می‌شود */
+  function aveStopSession() {
+    aveEpoch += 1;
+    if (ave) { aveKillAudio(); ave = null; }
+    if (rec) { try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ } }
+    rec = null; recActive = false;
+    webFailStreak = 0;
+    setState('idle');
   }
 
   function micRecMime() {
@@ -3162,8 +3088,7 @@
     return '';
   }
 
-  /* بریدن سکوت ابتدا/انتهای صدا → تشخیص سریع‌تر و دقیق‌تر
-     (حالا برای موتور گوگل HTTP هم استفاده می‌شود) */
+  /* بریدن سکوت ابتدا/انتهای صدا → تشخیص سریع‌تر و دقیق‌تر */
   function trimSilenceEdges(f32, rate) {
     const win = Math.max(1, Math.floor(rate * 0.02));
     const loud = (i) => {
@@ -3846,59 +3771,15 @@
     statusText.innerHTML = t('stt.noEngine', { x: reason });
   }
 
-  /* ---------- گوش دادن ---------- */
+  /* ---------- گوش دادن (AVE3) ---------- */
   let listenTimer = null;
   function startListening() {
     if (state === 'processing') return;
     if (state === 'listening') return; /* از بی‌دست دوباره فراخوانی شده */
     clearTimeout(listenTimer);
-    setState('listening');
-    body.classList.remove('has-card');
-    respCard.classList.remove('show');
-    sbMic.innerHTML = `<i class="dot rec"></i>${t('mic.rec')}`;
-    gotFinal = false;
-    setLiveText(t('live.on')); /* زیر دکمه ضبط: «در حال شنیدن…» تا اولین کلمه */
-    stopGoogleSpeak(); /* اگر آوا مشغول حرف زدن بود، ساکت شود تا گوش دهد */
-    attachMic();
-    /* اگر کانتکست صوتی معلق بود، اینجا بیدارش می‌کنیم تا ضبط شروع شود */
-    if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
-
-    /* سگ‌بان امنیتی: اگر ۳۵ ثانیه گوش دادیم و هیچ موتوری هیچ کاری نکرد،
-       آیکون و وضعیت را خودمان به حالت اولیه برمی‌گردانیم (فیکس «گیر می‌کند») */
-    listenTimer = setTimeout(() => {
-      if (state !== 'listening') return;
-      setState('idle');
-      setLiveText('');
-      statusText.innerHTML = IDLE_HINT;
-      sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
-    }, 35000);
-
-    const eng = resolveEngine();
-    if (eng === 'web') {
-      try {
-        recEpoch += 1; /* جلسه جدید — رویدادهای جلسه قبلی باطل می‌شوند */
-        rec = makeRec();
-        statusText.textContent = t('status.listening');
-        recActive = true;
-        rec.start();
-        return;
-      } catch (_) {
-        /* استارت موتور وب شکست خورد → زنجیره ادامه پیدا کند (بنچ ۹۰ ثانیه‌ای) */
-        srBroken = Date.now() + SR_BENCH_MS;
-        refreshEngineUI();
-        if (buildCloudChain()[0]) { startCloudListen(); return; }
-        noEngine(t('stt.noEngineApp'));
-        return;
-      }
-    }
-    /* v0.18 — فیکس باگ اصلی «دستیار کار نمی‌کند»: انتخاب موتور gemini/whisper
-       (و google/glm) باید به ضبط‌کنندهٔ ابری مشترک می‌رفت — قبلاً به هیچ‌کدام
-       از شاخه‌ها نمی‌خورد و پیام «موتور در دسترس نیست» می‌آمد! */
-    if (eng === 'gemini' || eng === 'whisper' || eng === 'google' || eng === 'glm') {
-      startCloudListen();
-      return;
-    }
-    noEngine(t('stt.noEngineApp'));
+    /* نه وب داریم نه موتور ابری → پیام صادقانه (+ دمو فقط اگر کاربر روشن کرده) */
+    if (!srUsable() && !buildCloudChain().length) { noEngine(t('stt.noEngineApp')); return; }
+    aveStart();
   }
 
   function startDemoListen() {
@@ -3916,28 +3797,8 @@
 
   function stopListening(reset = true) {
     clearTimeout(listenTimer);
-    clearInterval(glmTimer); clearTimeout(glmMaxTimer);
-    glmTimer = null; glmMaxTimer = null;
-    glmListening = false;
+    aveStopSession(); /* جلسهٔ AVE3 + همهٔ رویدادهای در پرواز باطل */
     setLiveText('');
-    if (rec && recActive) { try { rec.stop(); } catch (_) { /* noop */ } }
-    recActive = false;
-    if (glmRec && glmRec.state !== 'inactive') {
-      /* جلوی ادامه فرایند تبدیل را می‌گیریم */
-      glmRec.onstop = null;
-      try { glmRec.stop(); } catch (_) { /* noop */ }
-    }
-    glmRec = null;
-    if (gRec) {
-      const g = gRec;
-      gRec = null;
-      try { g.proc.disconnect(); } catch (_) { /* noop */ }
-      try { g.src.disconnect(); } catch (_) { /* noop */ }
-      try { g.sink.disconnect(); } catch (_) { /* noop */ }
-    }
-    clearTimeout(gMaxT); gMaxT = null;
-    /* میکروفون روشن می‌ماند تا اکولایزر همیشه به صدای واقعی واکنش نشان دهد */
-    setState('idle');
     sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
     if (reset) {
       statusText.innerHTML = IDLE_HINT;
@@ -4317,7 +4178,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.24.0';
+  let appVersion = '0.25.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
