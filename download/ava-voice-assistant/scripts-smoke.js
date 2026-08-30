@@ -963,7 +963,7 @@ app.whenReady().then(async () => {
         card: h27.includes('id="offCard"') && h27.includes('id="btnOfflineDl"') && a27.includes('function updateOfflineCard(') && a27.includes('refreshLocalStatus()'),
         deps: p27.dependencies['sherpa-onnx-node'] && p27.optionalDependencies['sherpa-onnx-win-x64'] && Array.isArray(p27.build.asarUnpack),
         tts: a27.includes('gTtsNext') && a27.includes('__avaB64'),
-        version: p27.version === '0.29.0',
+        version: p27.version >= '0.29.0',
       };
       ok('v0.27 local offline engine (sherpa-onnx + whisper int8, on-device)', v27.localEngine);
       ok('v0.27 no external-buffer APIs (Electron-hardened PCM conversion)', v27.noExternalBuffer);
@@ -1095,6 +1095,39 @@ app.whenReady().then(async () => {
       ok('v0.29 voice: ان‌میوت/وصل کن maps to real unmute, ALREADY states reported honestly', v29.unmute);
       ok('v0.29 UI: wakeAlways toggle + Gemini test button + relay field', v29.ui);
     } catch (e) { console.log('SKIP | v0.29 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.9895 v0.29.1 — (1) THE DISCORD BOMB: a C-style comment (slash-star)
+    // inside ava-dc.ps1 is NOT a PS comment — the parser accepted it and at
+    // runtime executed a Persian word from it as a command → 'The term '????'
+    // is not recognized' → every action died after DBG:PROC. A parse-only
+    // test cannot catch runtime bombs, so scripts-test-v0291.js now EXECUTES
+    // the real body with real pwsh. Invariant: ZERO slash-star in the body.
+    // (2) wake-always silent uncheck removed → auto pack download;
+    // (3) cloudFetch dual path (chromium net.fetch honors system proxy →
+    // node pinned-DNS fallback); (4) AI provider chain {ok:false} truthy bug
+    // fixed (GLM tried when Gemini down); (5) «آن میوت» alef unmute.
+    try {
+      const m291 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a291 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const body291 = (m291.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+      const v291 = {
+        noCsComment: body291.length > 4000 && !body291.includes('/*') && !body291.includes('*/'),
+        utf8Console: body291.includes('[Console]::OutputEncoding = [System.Text.Encoding]::UTF8'),
+        wakeNoSilentOff: !a291.includes("settings.wakeAlways = false; store.set('wakeAlways', false);"),
+        wakeAutoDl: a291.includes('bridge.stt.localDownload()') && a291.includes('wakeDlLastTry') && a291.includes("s.stage === 'done' && settings.wakeAlways && !wakeLoop"),
+        cloudFetch: m291.includes('async function cloudFetch(url, opts)') && m291.includes('const r = await net.fetch(url, o);') && (m291.match(/await cloudFetch\(/g) || []).length >= 14,
+        deepDiag: m291.includes('net system proxy for googleapis') && m291.includes('setTimeout(netDeepDiag, 5000)'),
+        aiChain: (a291.match(/if \(r && r\.ok && r\.text\) return r;/g) || []).length >= 3 && !a291.includes('.catch(() => null)) || false;'),
+        unmuteAlef: a291.includes('(ا|آ)ن\\s?میوت'),
+      };
+      ok('v0.29.1 Discord: PS body has ZERO C-style comments (runtime CommandNotFound bomb class eliminated)', v291.noCsComment);
+      ok('v0.29.1 Discord: UTF8 console encoding set at script start (PS errors readable, no ???? mangling)', v291.utf8Console);
+      ok('v0.29.1 Wake: silent toggle-off removed, pack auto-downloads with cooldown + done-hook', v291.wakeNoSilentOff && v291.wakeAutoDl);
+      ok('v0.29.1 Net: cloudFetch dual path — chromium net.fetch (system proxy) → node (pinned DNS)', v291.cloudFetch);
+      ok('v0.29.1 Net: system-proxy probe + real https-check of generativelanguage at boot', v291.deepDiag);
+      ok('v0.29.1 AI: provider chain only accepts ok results ({ok:false} can no longer short-circuit to fake "Gemini ok")', v291.aiChain);
+      ok('v0.29.1 Discord: «آن میوت» (alef) maps to unmute', v291.unmuteAlef);
+    } catch (e) { console.log('SKIP | v0.29.1 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),

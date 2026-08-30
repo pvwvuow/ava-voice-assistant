@@ -172,10 +172,11 @@
     'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
     'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
     'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
+    'wake.alwaysPreparing': ['در حال آماده‌سازی بیدارباش همیشگی… بستهٔ آفلاین دانلود می‌شود (فقط بار اول — بعدش ۱۰۰٪ آفلاین)', 'Preparing always-on wake word… downloading the offline pack (first time only — fully offline afterwards)'],
     'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
     'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
     'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
-    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود', 'Keeps the mic open and checks speech 100% on-device with the offline engine; saying "Ava" plays the chime and starts listening — light CPU only while someone speaks'],
+    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود؛ بار اول بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود، بعدش با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود — حتی وقتی گوش دادن خاموش است', 'Keeps the mic open and checks speech 100% on-device; the offline pack (~80MB) auto-downloads the first time, then saying "Ava" plays the chime and starts listening — even when listening is off'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
     'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
@@ -410,10 +411,11 @@
     'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
     'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
     'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
+    'wake.alwaysPreparing': ['در حال آماده‌سازی بیدارباش همیشگی… بستهٔ آفلاین دانلود می‌شود (فقط بار اول — بعدش ۱۰۰٪ آفلاین)', 'Preparing always-on wake word… downloading the offline pack (first time only — fully offline afterwards)'],
     'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
     'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
     'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
-    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود', 'Keeps the mic open and checks speech 100% on-device with the offline engine; saying "Ava" plays the chime and starts listening — light CPU only while someone speaks'],
+    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود؛ بار اول بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود، بعدش با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود — حتی وقتی گوش دادن خاموش است', 'Keeps the mic open and checks speech 100% on-device; the offline pack (~80MB) auto-downloads the first time, then saying "Ava" plays the chime and starts listening — even when listening is off'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
     'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
@@ -2275,10 +2277,12 @@
     /* میوت میکروفون — «دیسکورد رو میوت کن» / «میکروفون دیسکورد قطع/وصل»
        v0.28: «ان‌میوت» هم همان کلیدِ تاگل است */
     if (fa || en) {
-      if (/(میوت|مایوت|بیصدا|بی صدا|ان\s?میوت)/.test(t0) || (/میکروفون/.test(t0) && /(قطع|وصل)/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
+      if (/(میوت|مایوت|بیصدا|بی صدا|(ا|آ)ن\s?میوت)/.test(t0) || (/میکروفون/.test(t0) && /(قطع|وصل)/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
         /* v0.29 — «ان‌میوت کن» / «میکروفون رو وصل کن» → unmute واقعی (نه تاگل کورکورانه)؛
            نتیجهٔ UIA هم صادقانه: ALREADY = از قبل در همان وضعیت بود */
-        const unmute = /(ان\s?میوت|وصل|روشن)/.test(t0) && !/(بیصدا|بی\s?صدا|قطع)/.test(t0);
+        /* v0.29.1 — «آن میوت» با «آ» (مجهری) هم قبول شود — کاربر می‌گوید «آن میوت کن»
+           و قبلاً به mute (عکسِ خواسته) نقشه‌برداری می‌شد */
+        const unmute = /(ا|آ)ن\s?میوت|وصل|روشن/.test(t0) && !/(بیصدا|بی\s?صدا|قطع)/.test(t0);
         const r = await bridge.discord.cmd({ action: unmute ? 'unmute' : 'mute', ...ctx }).catch(() => null);
         if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return unmute ? t('disc.alreadyOn') : t('disc.alreadyMuted');
         return r && r.ok ? (unmute ? t('disc.unmuted') : t('disc.muted')) : ((r && r.error) || t('disc.fail'));
@@ -2885,8 +2889,10 @@
     } catch (_) { /* noop */ }
     updateOfflineCard();
     refreshEngineUI();
-    /* v0.29 — بستهٔ آفلاین تازه آماده شده و بیدارباش همیشگی روشن است؟ شروع کن */
-    if (localStat.ready && settings.wakeAlways && !wakeLoop) wakeLoopStart();
+    /* v0.29 — بستهٔ آفلاین تازه آماده شده و بیدارباش همیشگی روشن است؟ شروع کن
+       v0.29.1 — wakeLoopStart خودش بستهٔ گمشده را دانلود می‌کند، پس فقط
+       سوییچ را چک می‌کنیم (دیگر خاموشی بی‌صدا در نبود بسته رخ نمی‌دهد) */
+    if (settings.wakeAlways && !wakeLoop) wakeLoopStart();
   }
 
   const googleReady = () => !!(bridge && bridge.stt && bridge.stt.google);
@@ -3480,19 +3486,48 @@
      وقتی جلسهٔ گوش دادن فعال است حلقه خودش ساکت می‌شود (CPU صفر).
      ============================================================ */
   let wakeLoop = null;
+  let wakeDlKicked = false; /* v0.29.1 — فقط یک بار دانلود خودکار بگیرد */
+  let wakeDlLastTry = 0; /* v0.29.1 — cooldown دانلود خودکار */
+  let wakeMicRetryT = 0;
   function wakeLoopUsable() {
     return !!settings.wakeAlways && localReady() && !!(navigator.mediaDevices && (window.AudioContext || window.webkitAudioContext));
   }
   async function wakeLoopStart() {
     if (wakeLoop || !settings.wakeAlways) return;
+    /* v0.29.1 — ریشهٔ «اپشن صدا زدن آوا رو روشن کردم ولی کار نمی‌کنه»:
+       بستهٔ آفلاین نبود → سوییچ بی‌صدا خاموش می‌شد و هیچ توضیحی نمی‌داد!
+       حالا: بسته نبود = خودکار دانلود می‌شود (همان بستهٔ آفلاین STT)،
+       سوییچ روشن می‌ماند و وقتی بسته آماده شد حلقه خودش شروع می‌شود. */
     if (!localReady()) {
-      toast(t('wake.alwaysNeedPack'), '#i-info');
-      settings.wakeAlways = false; store.set('wakeAlways', false);
-      if (optWakeAlways) optWakeAlways.checked = false;
+      actLog('wake-always: local pack missing → auto-download' + (wakeDlKicked ? ' (already running)' : ''));
+      /* cooldown ۹۰ ثانیه‌ای — دانلودِ خراب باعث چرخهٔ بی‌پایان نشود */
+      if (!wakeDlKicked && !localStat.downloading && Date.now() - (wakeDlLastTry || 0) > 90000
+        && bridge && bridge.stt && bridge.stt.localDownload) {
+        wakeDlLastTry = Date.now();
+        wakeDlKicked = true;
+        try { toast(t('wake.alwaysPreparing'), '#i-wave'); } catch (_) { /* noop */ }
+        try {
+          const r = await bridge.stt.localDownload().catch(() => ({ ok: false }));
+          wakeDlKicked = false;
+          localStat.downloading = false;
+          localStat.installed = !!(r && (r.ok || r.already));
+          localStat.ready = !!(r && r.ready);
+          actLog('wake-always: auto-download finished ok=' + !!(r && r.ok) + ' ready=' + !!(r && r.ready));
+          try { updateOfflineCard(); refreshEngineUI(); } catch (_) { /* noop */ }
+          if (settings.wakeAlways && localReady()) { wakeLoopStart(); return; }
+          if (!r || !r.ok) try { toast(t('set.off.fail'), '#i-info'); } catch (_) { /* noop */ }
+        } catch (_) { wakeDlKicked = false; }
+      }
       return;
     }
     const ok = await attachMic();
-    if (!ok) { settings.wakeAlways = false; store.set('wakeAlways', false); if (optWakeAlways) optWakeAlways.checked = false; return; }
+    if (!ok) {
+      /* v0.29.1 — میکروفون در دسترس نیست (اشغال/قطع) → سوییچ روشن می‌ماند،
+         ۳۰ ثانیه بعد خودش دوباره تلاش می‌کند؛ دیگر خاموشی بی‌صدا نداریم */
+      actLog('wake-always: mic unavailable — retry in 30s (toggle stays ON)');
+      if (!wakeMicRetryT) wakeMicRetryT = setTimeout(() => { wakeMicRetryT = 0; if (settings.wakeAlways && !wakeLoop) wakeLoopStart(); }, 30000);
+      return;
+    }
     try {
       const src = audioCtx.createMediaStreamSource(micStream);
       const proc = audioCtx.createScriptProcessor(4096, 1, 1);
@@ -3561,13 +3596,16 @@
     }
   }
   function wakeLoopStop() {
+    if (wakeMicRetryT) { try { clearTimeout(wakeMicRetryT); } catch (_) { /* noop */ } wakeMicRetryT = 0; }
     if (!wakeLoop) return;
     try { clearInterval(wakeLoop.tVad); } catch (_) { /* noop */ }
     try { wakeLoop.proc.disconnect(); wakeLoop.src.disconnect(); wakeLoop.sink.disconnect(); } catch (_) { /* noop */ }
     wakeLoop = null;
     actLog('wake-always loop stopped');
   }
-  /* بوت: بعد از دانلود بستهٔ آفلاین هم اگر روشن باشد، حلقه شروع شود */
+  /* بوت: بعد از دانلود بستهٔ آفلاین هم اگر روشن باشد، حلقه شروع شود
+     v0.29.1 — دیگر منتظر «بستهٔ موجود» نمی‌مانیم؛ wakeLoopStart خودش
+     بسته را دانلود می‌کند — فقط یک نگاه ملایم در ۵ ثانیه برای اطمینان */
   function wakeBootRetry() {
     if (!settings.wakeAlways || wakeLoop) return;
     if (!localReady()) { setTimeout(wakeBootRetry, 5000); return; }
@@ -4669,7 +4707,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.29.0';
+  let appVersion = '0.29.1';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5956,17 +5994,30 @@
     };
     const tryGlm = async () => {
       if (!settings.glmKey || !bridge || !bridge.ai || !bridge.ai.chat) return false;
-      return (await bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs }).catch(() => null)) || false;
+      /* v0.29.1 — ریشهٔ «جمینی که بریزد همه چیز می‌میرد»: نتیجهٔ {ok:false} truthy بود
+         و زنجیرهٔ خودکار همان‌جا برمی‌گشت — GLM/سایر پرووایدرها هرگز امتحان نمی‌شدند
+         و لاگ هم دروغ «ai Gemini ok» می‌نوشت! حالا فقط نتیجهٔ واقعاً ok جواب است */
+      const r = await bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs }).catch(() => null);
+      if (r && r.ok && r.text) return r;
+      if (r && r.error) lastErr = r;
+      return false;
     };
     const tryGemini = async () => {
       if (!settings.geminiKey || !bridge || !bridge.ai || !bridge.ai.gemini) return false;
       /* Gemini با ابزار جستجوی گوگل: سوال‌های «سرچ» جواب لحظه‌ای می‌گیرند
-         مدل از تنظیمات (v0.13) — پیش‌فرض flash-latest (همیشه جدیدترین فلاش) */
-      return (await bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: true, base: settings.gemBase || '' }).catch(() => null)) || false;
+         مدل از تنظیمات (v0.13) — پیش‌فرض flash-latest (همیشه جدیدترین فلاش)
+         v0.29.1 — فقط نتیجهٔ ok؛ شکستِ {ok:false} دیگر زنجیره را نمی‌بُرد */
+      const r = await bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: true, base: settings.gemBase || '' }).catch(() => null);
+      if (r && r.ok && r.text) return r;
+      if (r && r.error) lastErr = r;
+      return false;
     };
     const tryOpenai = async () => {
       if (!settings.openaiKey || !bridge || !bridge.ai || !bridge.ai.openai) return false;
-      return (await bridge.ai.openai({ key: settings.openaiKey, model: settings.openaiModel || 'gpt-4o-mini', messages: msgs }).catch(() => null)) || false;
+      const r = await bridge.ai.openai({ key: settings.openaiKey, model: settings.openaiModel || 'gpt-4o-mini', messages: msgs }).catch(() => null);
+      if (r && r.ok && r.text) return r; /* v0.29.1 — فقط نتیجهٔ ok */
+      if (r && r.error) lastErr = r;
+      return false;
     };
 
     /* v0.17 — اولویت اول با جمنای (خواست کاربر) + برچسب موتور پاسخ‌دهنده */
@@ -6917,7 +6968,14 @@
   refreshLocalStatus(); /* v0.27 — وضعیت بستهٔ آفلاین */
   /* پیشرفت دانلود بستهٔ آفلاین از پروسهٔ اصلی */
   if (bridge && bridge.stt && bridge.stt.onLocalProgress) {
-    bridge.stt.onLocalProgress((s) => setOffProgress((s && s.pct) || 0, s && s.stage));
+    bridge.stt.onLocalProgress((s) => {
+      setOffProgress((s && s.pct) || 0, s && s.stage);
+      /* v0.29.1 — بستهٔ آفلاین آماده شد و بیدارباش همیشگی روشن است → حلقه برود */
+      if (s && s.stage === 'done' && settings.wakeAlways && !wakeLoop) {
+        actLog('wake-always: pack done event → starting loop');
+        wakeLoopStart();
+      }
+    });
   }
   renderCustomChips();
   renderTypingCmds();

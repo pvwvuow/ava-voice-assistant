@@ -175,6 +175,39 @@ function applyNodeDnsMap(map) {
   } catch (_) { /* noop */ }
 })();
 
+/* v0.29.1 — cloudFetch: مسیر دوگانهٔ ترافیک ابری
+   ریشهٔ «اتصال به جمینی حتی تو تنظیمات هم امکان‌پذیر نیست» این بود:
+   • selfcheck فقط TCP:443 را می‌سنجید و «ok» می‌گفت، ولی TLS/HTTP واقعی
+     روی همان مسیر ریست می‌شد (فیلترینگ SNI ایران) → «fetch failed» فوری؛
+   • فیلترشکن‌های پراکسی‌ساز (v2ray/هیدیفای/وارپ) پراکسیِ سیستم ویندوز
+     می‌سازند که کرومیوم (موتور وب/وب‌اسپیچ) رعایت می‌کند ولی fetch نود
+     هیچ‌وقت — برای همین وب کار می‌کرد و جمینی در پروسهٔ اصلی نه.
+   راه‌حل: اول net.fetch (استک شبکهٔ کرومیوم → پراکسی سیستم + پین DNS
+   host-resolver-rules هر دو رعایت می‌شود)، اگر مسیر شبکه‌ای مرد فالبک به
+   fetch نود (dns.lookup پچ‌شده). خطای HTTP (۴xx/۵xx) استثنا نیست — پاسخ
+   همان‌طور برمی‌گردد تا منطق کلید/کوتا بالادستی درست کار کند. */
+let __cloudVia = '';
+let __cloudViaLogged = false;
+function __logCloudVia() {
+  if (__cloudViaLogged) return;
+  __cloudViaLogged = true;
+  try { actLog('cloud fetch path: ' + (__cloudVia === 'chromium' ? 'chromium stack (system proxy + pinned DNS honored)' : 'node fetch (pinned DNS)')); } catch (_) { /* noop */ }
+}
+async function cloudFetch(url, opts) {
+  const o = opts || {};
+  try {
+    const r = await net.fetch(url, o);
+    __cloudVia = 'chromium';
+    __logCloudVia();
+    return r;
+  } catch (eCh) {
+    const r = await fetch(url, o); /* فالبک: مسیر نود با DNS پین‌شده */
+    __cloudVia = 'node';
+    __logCloudVia();
+    return r;
+  }
+}
+
 (function bootDnsBypass() {
   try {
     const ud = app.getPath('userData');
@@ -300,6 +333,34 @@ function netSelfCheck() {
       s.on('error', () => fin(false));
     }
   } catch (_) { /* noop */ }
+}
+
+/* v0.29.1 — تشخیص‌های سطح واقعی شبکه (به‌جای TCP خام):
+   ۱) پراکسی سیستم ویندوز (فیلترشکن‌های پراکسی‌ساز) — اگر باشد، مسیر
+      chromiumِ cloudFetch همان‌جا می‌رود و «اتصال ممکن نیست» بی‌معناست؛
+   ۲) https-check واقعی به generativelanguage (TLS + HTTP کامل) — selfcheck
+      قدیمی فقط TCP بود و «ok» می‌گفت حتی وقتی TLS ریست می‌شد. */
+function netDeepDiag() {
+  try {
+    session.defaultSession.resolveProxy('https://generativelanguage.googleapis.com/')
+      .then((p) => {
+        try {
+          const s = String(p || 'DIRECT').trim();
+          actLog('net system proxy for googleapis: ' + s.slice(0, 100) + (s === 'DIRECT' ? ' — no VPN proxy detected' : ' — system proxy active (chromium path will use it)'));
+        } catch (_) { /* noop */ }
+      })
+      .catch(() => { /* noop */ });
+  } catch (_) { /* noop */ }
+  (async () => {
+    const t0 = Date.now();
+    try {
+      const r = await cloudFetch('https://generativelanguage.googleapis.com/', { method: 'GET', signal: AbortSignal.timeout(7000) });
+      /* هر وضعیت HTTP (حتی 404) یعنی TLS+HTTP سالم است؛ مهم فقط «پاسخ رسید» */
+      actLog('net https-check generativelanguage: HTTP ' + r.status + ' (' + (Date.now() - t0) + 'ms) via=' + (__cloudVia || '?') + ' → TLS path ' + (r.status ? 'WORKS' : '?'));
+    } catch (e) {
+      actLog('net https-check generativelanguage: FAIL (' + (Date.now() - t0) + 'ms) ' + String((e && e.message) || e).slice(0, 80) + ' → Gemini/Google APIs unreachable from main process (وب کار می‌کند ولی ابر نه) — فیلترشکن روشن یا رله');
+    }
+  })();
 }
 
 /* electron-updater (فقط وقتی پکیج نصب باشد — خطا را ساکت رد می‌کنیم) */
@@ -1507,14 +1568,14 @@ const WMO_EN = {
 ipcMain.handle('sys:weather', async (_e, city) => {
   const c = String(city || 'تهران').trim().slice(0, 60) || 'تهران';
   try {
-    const gr = await fetch(
+    const gr = await cloudFetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(c)}&count=1&language=fa&format=json`,
       { signal: AbortSignal.timeout(10000) }
     );
     const gj = await gr.json().catch(() => ({}));
     const g = gj && gj.results && gj.results[0];
     if (!g) return { ok: false, error: `شهری به نام «${c}» پیدا نشد — نام شهر را واضح‌تر بگو` };
-    const fr = await fetch(
+    const fr = await cloudFetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}` +
       `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`,
       { signal: AbortSignal.timeout(10000) }
@@ -1574,7 +1635,7 @@ ipcMain.handle('ai:chat', async (_e, p) => {
   /* چرخش چندکلیدی: اگر کلیدی محدود شد، بلافاصله سراغ بعدی */
   for (const k of keys) {
     try {
-      const r = await fetch(trimBase(base) + '/chat/completions', {
+      const r = await cloudFetch(trimBase(base) + '/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
         body: JSON.stringify(body),
@@ -1771,7 +1832,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
     let mdl = String(model || '').trim();
     if (!mdl) {
       try {
-        const mr = await fetch(`${ZAI}/api/models`, { headers, signal: AbortSignal.timeout(15000) });
+        const mr = await cloudFetch(`${ZAI}/api/models`, { headers, signal: AbortSignal.timeout(15000) });
         const mj = await mr.json().catch(() => ({}));
         const ids = ((mj && mj.data) || [])
           .filter((m) => !m || !m.info || m.info.is_active !== false)
@@ -1784,7 +1845,7 @@ ipcMain.handle('ai:zaiChat', async (_e, p) => {
           ids[0] || 'GLM-4.6';
       } catch (_) { mdl = 'GLM-4.6'; }
     }
-    const r = await fetch(`${ZAI}/api/chat/completions`, {
+    const r = await cloudFetch(`${ZAI}/api/chat/completions`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -1857,7 +1918,7 @@ ipcMain.handle('stt:google', async (_e, p) => {
     `&lang=${encodeURIComponent(lang || 'fa-IR')}` +
     `&key=${encodeURIComponent(k)}&client=chromium&maxalternatives=1`;
   try {
-    const r = await fetch(url, {
+    const r = await cloudFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': `audio/l16; rate=${Number(rate) || 16000}` },
       body: Buffer.from(pcm),
@@ -2027,7 +2088,7 @@ function offlineProgress(win, pct, stage) {
 }
 
 async function offlineDownloadFile(url, dest, onPct, absFrom, absTo) {
-  const r = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(1800000) });
+  const r = await cloudFetch(url, { redirect: 'follow', signal: AbortSignal.timeout(1800000) });
   if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + url.slice(0, 80));
   const total = Number(r.headers.get('content-length')) || 0;
   const tmp = dest + '.part';
@@ -2100,7 +2161,7 @@ ipcMain.handle('stt:transcribe', async (_e, p) => {
     const form = new FormData();
     form.append('file', new Blob([Buffer.from(buf)], { type: 'audio/webm' }), 'ava-audio.webm');
     form.append('model', model || 'glm-asr-2512');
-    const r = await fetch(trimBase(base) + '/audio/transcriptions', {
+    const r = await cloudFetch(trimBase(base) + '/audio/transcriptions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${String(key).trim()}` },
       body: form,
@@ -2203,7 +2264,7 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
         };
         /* thinkingConfig فقط برای نسل 2.5/3 معتبر است — بقیه بدونش */
         if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
-        const r = await fetch(
+        const r = await cloudFetch(
           `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) } /* v0.21: ۴۵→۱۵ ثانیه */
         );
@@ -2245,7 +2306,7 @@ ipcMain.handle('stt:whisper', async (_e, p) => {
     form.append('model', String(model || 'whisper-large-v3-turbo').trim());
     form.append('response_format', 'json');
     if (lang) form.append('language', String(lang).split('-')[0]);
-    const r = await fetch(url, {
+    const r = await cloudFetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${String(key).trim()}` },
       body: form,
@@ -2317,7 +2378,7 @@ ipcMain.handle('tts:google', async (_e, p) => {
         `&tl=${encodeURIComponent(tl)}&q=${q}&total=${chunks.length}&idx=${i}` +
         `&textlen=${chunk.length}&ttsspeed=1`;
       try {
-        const r = await fetch(url, {
+        const r = await cloudFetch(url, {
           headers: {
             'User-Agent': TTS_UA,
             'Referer': 'https://translate.google.com/',
@@ -2411,7 +2472,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         const mediaCmd = /(پخش|آهنگ|موزیک|ترانه|آلبوم|بعدی|قبلی|پاز|توقف آهنگ)/.test(ut);
         const wantsSearch = !mediaCmd && lastUserText && SEARCH_INTENT_RE.test(ut);
         if (search && wantsSearch) body.tools = [{ google_search: {} }];
-        const r = await fetch(
+        const r = await cloudFetch(
           `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           {
             method: 'POST',
@@ -2468,7 +2529,7 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
       if (badKeys.has(k)) continue;
       const t0 = Date.now();
       try {
-        const r = await fetch(
+        const r = await cloudFetch(
           `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           {
             method: 'POST',
@@ -2489,13 +2550,22 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
           ? cand.content.parts.map((x) => x.text || '').join('').trim()
           : '';
         if (!txt) { lastErr = 'اتصال برقرار شد ولی پاسخ خالی برگشت'; continue; }
-        return { ok: true, model: mdl, ms: Date.now() - t0, reply: txt.slice(0, 40) };
+        return { ok: true, model: mdl, ms: Date.now() - t0, reply: txt.slice(0, 40), via: __cloudVia || '?' };
       } catch (e) {
         lastErr = netErr(e);
       }
     }
   }
-  return { ok: false, error: lastErr || 'اتصال برقرار نشد' };
+  /* v0.29.1 — شکست + مسیر تشخیصی: کاربر باید بداند مشکل کجاست (کلید؟ سرزمین؟
+     شبکه؟ پراکسی؟) — پیام فارسیِ معنی‌دار + مسیر واقعی تلاش‌ها */
+  let hint = '';
+  try {
+    const pr = await session.defaultSession.resolveProxy('https://generativelanguage.googleapis.com/');
+    hint = String(pr || '').trim() === 'DIRECT'
+      ? 'هیچ پراکسی فعالی دیده نمی‌شود — اگر فیلترشکن داری روشنش کن، یا در کادر «آدرس رله» یک آدرس بگذار'
+      : 'پراکسی سیستم فعاله — مسیر کرومیوم امتحان شد؛ اگر باز هم خطا آمد کلید/رله را چک کن';
+  } catch (_) { /* noop */ }
+  return { ok: false, error: ((lastErr || 'اتصال برقرار نشد') + (hint ? ' — ' + hint : '')).slice(0, 300), via: __cloudVia || '?' };
 });
 
 ipcMain.handle('ai:openai', async (_e, p) => {
@@ -2506,7 +2576,7 @@ ipcMain.handle('ai:openai', async (_e, p) => {
   let lastErr = null;
   for (const k of keys) {
     try {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      const r = await cloudFetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
         body: JSON.stringify({
@@ -2582,6 +2652,10 @@ param(
   [int]$Retries = 1
 )
 $ErrorActionPreference = 'Stop'
+# v0.29.1 — خطاهای ران‌تایم پاورشل (مثل CommandNotFound) به کدپیج کنسول ویندوز
+# می‌روند؛ متن فارسی/یونیکد داخلشان به «????» تبدیل و حروف مجاورشان خورده می‌شد.
+# با UTF-8 کردن خروجی، پیام خطا خوانا به activity.log می‌رسد.
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 try {
 Add-Type -TypeDefinition @'
 using System;
@@ -2719,14 +2793,19 @@ function Try-CallClick {
   Restore-Focus
   return 'ERR:NOBTN'
 }
-/* v0.29 — اکشن‌های واقعی با UIA (بدون دزدیدن فوکوس، با تشخیص وضعیت):
-   چرا کلیدهای میان‌بر کافی نبودند؟ PostMessage به Chrome_RenderWidgetHostHWND
-   توسط دیسکورد نادیده گرفته می‌شود و SetForegroundWindow از پروسهٔ تازه‌ spawn
-   اغلب بی‌صدا شکست می‌خورد — کلید به پنجرهٔ اشتباه می‌رفت و اسکریپت همیشه
-   «OK» می‌گفت. حالا دکمهٔ واقعی میوت/دیفن/قطع در پنل حساب دیسکورد با نام دقیقش
-   پیدا و Invoke می‌شود (همان راه Try-CallClick که برای دکمهٔ تماس جواب داد)؛
-   کلیک مختصاتی و در آخر کلید، فالبک هستند. نتیجه صادقانه برمی‌گردد:
-   UIA=دکمه زده شد، ALREADY=از قبل در همان وضعیت بود، KEYS=فالبک کلید. */
+# v0.29.1 — ریشهٔ ارور «The term '????' is not recognized»: کامنت C-سبک (اسلش-ستاره)
+# در پاورشل کامنت نیست! پارسر PS بخشی از متن کامنت (کلمهٔ فارسی) را به‌عنوان
+# دستور اجرا کرد → CommandNotFound → همهٔ اکشن‌ها می‌مردند (اسکریپت پارس می‌شود
+# ولی در اجرا می‌میرد — برای همین تست «پارس» آن را نمی‌گرفت). قانون: در
+# ava-dc.ps1 فقط کامنت # (تک‌خطی) مجاز است — هیچ‌وقت کامنت C-سبک ننویس.
+# v0.29 — اکشن‌های واقعی با UIA (بدون دزدیدن فوکوس، با تشخیص وضعیت):
+#   چرا کلیدهای میان‌بر کافی نبودند؟ PostMessage به Chrome_RenderWidgetHostHWND
+#   توسط دیسکورد نادیده گرفته می‌شود و SetForegroundWindow از پروسهٔ تازه‌ spawn
+#   اغلب بی‌صدا شکست می‌خورد — کلید به پنجرهٔ اشتباه می‌رفت و اسکریپت همیشه
+#   OK می‌گفت. حالا دکمهٔ واقعی میوت/دیفن/قطع در پنل حساب دیسکورد با نام دقیقش
+#   پیدا و Invoke می‌شود (همان راه Try-CallClick که برای دکمهٔ تماس جواب داد)؛
+#   کلیک مختصاتی و در آخر کلید، فالبک هستند. نتیجه صادقانه برمی‌گردد:
+#   UIA=دکمه زده شد، ALREADY=از قبل در همان وضعیت بود، KEYS=فالبک کلید.
 function Get-DcWin {
   Add-Type -AssemblyName UIAutomationClient | Out-Null
   Add-Type -AssemblyName UIAutomationTypes | Out-Null
@@ -3066,8 +3145,10 @@ app.whenReady().then(() => {
   createWindow();
   setupAutoUpdater();
 
-  /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود) */
+  /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود)
+     v0.29.1 — + تشخیص عمیق: پراکسی سیستم + https واقعی به generativelanguage */
   try { setTimeout(netSelfCheck, 2500); } catch (_) { /* noop */ }
+  try { setTimeout(netDeepDiag, 5000); } catch (_) { /* noop */ }
 
   // میانبر سراسری گوش دادن (Push-to-talk)
   try {

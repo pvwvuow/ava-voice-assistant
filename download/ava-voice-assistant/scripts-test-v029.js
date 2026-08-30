@@ -62,7 +62,7 @@ ok('app: wake hit → chime + wake session + auto listening', appSrc.includes('p
 ok('app: loop idles during active listening/processing (zero CPU then)', appSrc.includes("if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"));
 ok('app: mic change restarts the wake loop with the new device', appSrc.includes('const wakeWas = !!wakeLoop;') && appSrc.includes('if (wakeWas) wakeLoopStart();'));
 ok('app: detachMic keeps the stream alive while the wake loop runs', appSrc.includes('if (isRecording || ave || wakeLoop) return;'));
-ok('app: pack-ready hook starts the loop automatically', appSrc.includes('if (localStat.ready && settings.wakeAlways && !wakeLoop) wakeLoopStart();'));
+ok('app: pack-ready hook starts the loop automatically', appSrc.includes("if (settings.wakeAlways && !wakeLoop) wakeLoopStart();"));
 ok('app: boot hook starts the loop after init', appSrc.includes('setTimeout(() => { wakeBootRetry(); }, 2600);'));
 ok('html: wakeAlways toggle exists', htmlSrc.includes('id="optWakeAlways"'));
 ok('i18n: wakeAlways + woke + needPack keys in both dictionaries', (appSrc.match(/'toast\.wakeAlwaysOn': \[/g) || []).length === 2 && (appSrc.match(/'wake\.woke': \[/g) || []).length === 2 && (appSrc.match(/'wake\.alwaysNeedPack': \[/g) || []).length === 2);
@@ -71,14 +71,14 @@ ok('i18n: wakeAlways + woke + needPack keys in both dictionaries', (appSrc.match
 ok('DO_ACTS include unmute/deafen/answer/decline', appSrc.includes("'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom'"));
 ok('executeDoActions handles the new acts', appSrc.includes("case 'discord_unmute':") && appSrc.includes("case 'discord_deafen':") && appSrc.includes("case 'discord_answer':") && appSrc.includes("case 'discord_decline':"));
 ok('AI prompts advertise the new acts (fa+en)', appSrc.includes('discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer') && appSrc.includes('discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.'));
-ok('voice: «ان میوت/وصل کن» maps to real unmute (not blind toggle)', appSrc.includes("const unmute = /(ان\\s?میوت|وصل|روشن)/.test(t0) && !/(بیصدا|بی\\s?صدا|قطع)/.test(t0);"));
+ok('voice: «ان/آن میوت/وصل کن» maps to real unmute (not blind toggle)', appSrc.includes("const unmute = /(ا|آ)ن\\s?میوت|وصل|روشن/.test(t0) && !/(بیصدا|بی\\s?صدا|قطع)/.test(t0);"));
 ok('voice: ALREADY results reported honestly', appSrc.includes("if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return unmute ? t('disc.alreadyOn') : t('disc.alreadyMuted');") && appSrc.includes("if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return t('disc.alreadyDeaf');"));
 
 /* ---- 5) versions ---- */
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.29.0', pkg.version === '0.29.0', pkg.version);
-ok('index.html abVersion 0.29.0', htmlSrc.includes('v0.29.0'));
-ok('app.js appVersion 0.29.0', appSrc.includes("let appVersion = '0.29.0';"));
+ok('package.json >= 0.29.0', pkg.version >= '0.29.0', pkg.version);
+ok('index.html abVersion >= 0.29.0', /v0\.(29|30)\./.test(htmlSrc));
+ok('app.js appVersion >= 0.29.0', /let appVersion = '0\.(29|30)/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);
