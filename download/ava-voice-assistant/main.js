@@ -749,12 +749,16 @@ function setupAutoUpdater() {
     /* v0.16.1 — آپدیت دلتا غیرفعال شد: آپدیت‌های پلکانی از نسخه‌های خیلی عقب
        (مثل 0.13 → 0.16) می‌توانستند فایل ناقص/خراب نصب کنند و برنامه «هیچ‌کاره» شود.
        از این به بعد همیشه نصّاب کامل دانلود می‌شود — مطمئن‌تر. */
-    try { autoUpdater.disableDifferentialDownload = true; } catch (_) { /* noop */ }
+    /* v0.18 — آپدیت دلتا دوباره فعال شد (خواست کاربر): فقط بخش‌های تغییر
+       کردهٔ نصّاب دانلود می‌شود (blockmap-based) — بعد از سرهم، SHA512 فایل
+       توسط electron-updater تأیید می‌شود و اگر خراب بود خودکار دانلود کامل
+       انجام می‌گیرد؛ لایه‌های ۲ و ۳ به‌روزرسان هم همچنان پشتیبان هستند. */
+    try { autoUpdater.disableDifferentialDownload = false; } catch (_) { /* noop */ }
     autoUpdater.on('checking-for-update', () => sendUI('updater:status', { state: 'checking' }));
-    autoUpdater.on('update-available', (i) => sendUI('updater:status', { state: 'available', version: i && i.version }));
-    autoUpdater.on('update-not-available', () => sendUI('updater:status', { state: 'none' }));
+    autoUpdater.on('update-available', (i) => { actLog(`updater available v${i && i.version}`, 'update'); sendUI('updater:status', { state: 'available', version: i && i.version }); });
+    autoUpdater.on('update-not-available', () => { actLog('updater: already latest', 'update'); sendUI('updater:status', { state: 'none' }); });
     autoUpdater.on('download-progress', (p) => sendUI('updater:status', { state: 'downloading', percent: Math.round(p.percent || 0) }));
-    autoUpdater.on('update-downloaded', (i) => sendUI('updater:status', { state: 'ready', version: i && i.version }));
+    autoUpdater.on('update-downloaded', (i) => { actLog(`updater downloaded v${i && i.version}`, 'update'); sendUI('updater:status', { state: 'ready', version: i && i.version }); });
     autoUpdater.on('error', (e) => {
       const msg = String((e && e.message) || e);
       updLog(`updater event error: ${msg}`);
@@ -1729,6 +1733,12 @@ ipcMain.handle('tts:google', async (_e, p) => {
 const splitKeys = (k) =>
   String(k || '').split(/[\s,;،\n]+/).map((s) => s.trim()).filter((s) => s.length > 8);
 
+/* v0.18 — سوال‌هایی که واقعاً به جستجوی زنده نیاز دارند (گران‌ترین و کندترین مسیر) */
+const SEARCH_INTENT_RE = new RegExp(
+  '(سرچ|جستجو|جستجو کن|گوگل کن|اخبار|خبر|قیمت|نرخ|دلار|تومان|ارز|بورس|ارز دیجیتال|بیت کوین|تتر|آب و هوا|هواشناسی|دموا|برفی|بارون|امروز|فردا|الان|چه خبر|جدیدترین|آخرین|نتایج|نتیجه|مسابقه|امتیاز|لیگ|هفته|[؛؟?]\\s*(کی|کجاست|چند|چقدر)|who won|latest news|price of|weather|today|current|score)',
+  'i'
+);
+
 ipcMain.handle('ai:gemini', async (_e, p) => {
   const { key, model, messages, search } = p || {};
   const keys = splitKeys(key);
@@ -1759,8 +1769,15 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
           contents,
           generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
         };
+        /* v0.18 — سرعت: مدل‌های نسل 2.5/3 بدون «فکر کردن» جواب می‌دهند
+           (thinkingBudget=0 — تا ۵۰-۷۰٪ سریع‌تر) */
+        if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         if (sys) body.systemInstruction = { parts: [{ text: sys }] };
-        if (search) body.tools = [{ google_search: {} }];
+        /* v0.18 — جستجوی گوگل فقط وقتی سوال واقعاً «سرچی» است وصل می‌شود؛
+           ابزار سرچ ۲ تا ۶ ثانیه تأخیر اضافه دارد — سوال‌های معمولی را سریع جواب بده */
+        const lastUserText = [...messages].reverse().find((m) => m.role === 'user');
+        const wantsSearch = lastUserText && SEARCH_INTENT_RE.test(String(lastUserText.content || ''));
+        if (search && wantsSearch) body.tools = [{ google_search: {} }];
         const r = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           {
@@ -1860,7 +1877,7 @@ ipcMain.handle('custom:run', (_e, script) => {
      کلیک روی مرکز مستطیل دکمه، بعد فالبک مختصات دستی dx/dy).
    • بدون آی‌دی: Quick Switcher (Ctrl+K) با نام.
    دکمهٔ تماس هم با نام انگلیسی و هم فارسی («تماس صوتی/شروع تماس») پیدا می‌شود. */
-function discordPsScript(action, mode, name, dx, dy) {
+function discordPsScript(action, mode, name, dx, dy, waitMs, clickRetries) {
   const nm = String(name || '').replace(/['’`]/g, '');
   return `
 $ErrorActionPreference = 'SilentlyContinue'
@@ -1885,6 +1902,16 @@ namespace AvaDc2 {
 }
 '@
 $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+if (-not $proc) {
+  # v0.18 — اگر دیسکورد با دیپ‌لینک در حال بالا آمدن است، تا ${waitMs}ms صبر کن
+  $waited = 0
+  while ($waited -lt ${waitMs}) {
+    Start-Sleep -Milliseconds 600
+    $waited += 600
+    $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+    if ($proc) { break }
+  }
+}
 if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
 $hwnd = $proc.MainWindowHandle
 $child = [AvaDc2.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
@@ -1939,37 +1966,41 @@ function Restore-Focus {
 }
 function Try-CallClick {
   # دکمهٔ تماس: اول UIA (بدون فوکوس هم کار می‌کند)، بعد مختصات دستی
-  try {
-    Add-Type -AssemblyName UIAutomationClient | Out-Null
-    Add-Type -AssemblyName UIAutomationTypes | Out-Null
-    $root = [System.Windows.Automation.AutomationElement]::RootElement
-    $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
-    $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
-    if ($win) {
-      $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
-      $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
-      foreach ($pass in 1, 2) {
-        foreach ($b in $btns) {
-          $bn = ''
-          try { $bn = $b.Current.Name } catch {}
-          if (-not $bn) { continue }
-          if ($bn -match 'Video|ویدیو|دوربین|End|قطع|Screen|اشتراک') { continue }
-          $ok = $false
-          if ($pass -eq 1) { $ok = ($bn -match 'Start Voice Call|Voice Call|تماس صوتی|شروع تماس|صوتی') }
-          else { $ok = ($bn -match 'Call|تماس') }
-          if (-not $ok) { continue }
-          try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch {}
-          try {
-            $r = $b.Current.BoundingRectangle
-            $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
-            Click-At $cx $cy
-            Restore-Focus
-            return 'OK:CALLING'
-          } catch {}
+  # v0.18 — چند بار تلاش می‌شود (بارگذاری DM ممکن است چند ثانیه طول بکشد)
+  for ($tryN = 1; $tryN -le ${clickRetries}; $tryN++) {
+    try {
+      Add-Type -AssemblyName UIAutomationClient | Out-Null
+      Add-Type -AssemblyName UIAutomationTypes | Out-Null
+      $root = [System.Windows.Automation.AutomationElement]::RootElement
+      $hwndCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NativeWindowHandleProperty, $hwnd)
+      $win = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $hwndCond)
+      if ($win) {
+        $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+        $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
+        foreach ($pass in 1, 2) {
+          foreach ($b in $btns) {
+            $bn = ''
+            try { $bn = $b.Current.Name } catch {}
+            if (-not $bn) { continue }
+            if ($bn -match 'Video|ویدیو|دوربین|End|قطع|Screen|اشتراک') { continue }
+            $ok = $false
+            if ($pass -eq 1) { $ok = ($bn -match 'Start Voice Call|Voice Call|تماس صوتی|شروع تماس|صوتی') }
+            else { $ok = ($bn -match 'Call|تماس') }
+            if (-not $ok) { continue }
+            try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch {}
+            try {
+              $r = $b.Current.BoundingRectangle
+              $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
+              Click-At $cx $cy
+              Restore-Focus
+              return 'OK:CALLING'
+            } catch {}
+          }
         }
       }
-    }
-  } catch {}
+    } catch {}
+    Start-Sleep -Milliseconds 1100
+  }
   # فالبک مختصات دستی: گوشهٔ بالا-راست پنجره (سرستون DM)
   $r2 = New-Object AvaDc2.RECT
   [AvaDc2.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
@@ -2060,6 +2091,7 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
   /* تماس با مخاطب ثبت‌شده: دیپ‌لینک مستقیم DM را باز می‌کند (بدون Ctrl+K)،
      بعد دکمهٔ «شروع تماس» کلیک می‌شود — فیکس «به صفحه می‌رود ولی زنگ نمی‌زند» */
   if (A === 'call' && userId && /^\d{5,25}$/.test(String(userId).trim())) {
+    actLog(`discord call userId=${String(userId).trim().slice(0, 4)}… mode=${mode}`, 'discord');
     try { await shell.openExternal(`discord://discord.com/channels/@me/${String(userId).trim()}`); } catch (_) { /* noop */ }
     await new Promise((r) => setTimeout(r, 2600));
     return runDiscordPs('clickcall', mode, '', dxN, dyN);
@@ -2069,13 +2101,17 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
 });
 
 function runDiscordPs(psAction, mode, nm, dxN, dyN) {
-  const ps = discordPsScript(psAction, mode, nm, dxN, dyN);
+  const ps = discordPsScript(psAction, mode, nm, dxN, dyN,
+    (psAction === 'clickcall' || psAction === 'callswitch') ? 25000 : 6000,
+    (psAction === 'clickcall' || psAction === 'callswitch') ? 8 : 1);
   const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+  const t0 = Date.now();
   return new Promise((resolve) => {
     exec(`powershell -NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
       { windowsHide: true, timeout: 60000, maxBuffer: 1024 * 512 },
       (err, stdout) => {
         const out = String(stdout || '').trim();
+        actLog(`discord ${psAction} mode=${mode} -> ${out || (err ? 'PS-FAIL' : 'EMPTY')} (${Date.now() - t0}ms)`, 'discord');
         if (err && !out) return resolve({ ok: false, error: String(err.message || 'PowerShell اجرا نشد').slice(0, 160) });
         if (/^ERR:/.test(out)) {
           const msgs = {
@@ -2090,8 +2126,37 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
   });
 }
 
+/* ---------- لاگ عملکرد (v0.18) — برای عیب‌یابی از راه دور ----------
+   واکنش‌های برنامه (فرمان‌ها، موتورها، دیسکورد، به‌روزرسان، خطاها) در
+   userData/logs/activity.log ثبت می‌شود؛ کاربر نیازی به دیدنش ندارد.
+   فایل خودکار روتِیت می‌شود (بیشینه ~۴۰۰KB → activity.old.log).
+   ارسال به گیت‌هاب: فرمان صوتی «آوا گزارش بفرست» → صفحهٔ GitHub Issues
+   با خلاصهٔ لاگ پیش‌پرشده باز می‌شود (بدون توکن داخل برنامه — امن). */
+const ACT_MAX = 400 * 1024;
+function actLog(line, tag = 'app') {
+  try {
+    const dir = path.join(app.getPath('userData'), 'logs');
+    fs.mkdirSync(dir, { recursive: true });
+    const f = path.join(dir, 'activity.log');
+    try {
+      const st = fs.statSync(f);
+      if (st.size > ACT_MAX) fs.renameSync(f, path.join(dir, 'activity.old.log'));
+    } catch (_) { /* هنوز فایلی نیست */ }
+    fs.appendFileSync(f, `[${new Date().toISOString()}] [${tag}] ${String(line).replace(/\s+/g, ' ').slice(0, 400)}\n`);
+  } catch (_) { /* لاگ هرگز نباید برنامه را بکشد */ }
+}
+ipcMain.handle('log:act', (_e, msg) => { actLog(String(msg || ''), 'ui'); return true; });
+ipcMain.handle('log:get', () => {
+  try {
+    const f = path.join(app.getPath('userData'), 'logs', 'activity.log');
+    const lines = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean);
+    return { ok: true, lines: lines.slice(-80) };
+  } catch (e) { return { ok: false, lines: [], error: netErr(e) }; }
+});
+
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
+  actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
   /* سرو کردن رابط کاربری و مدل‌ها از ava://app */
   try { protocol.handle('ava', (req) => { try { console.log('AVA_REQ:' + req.url); } catch (_) {} return serveAvaFile(req.url); }); } catch (e) { console.error('ava protocol:', e); }
 

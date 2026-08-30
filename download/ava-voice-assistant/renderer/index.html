@@ -617,9 +617,9 @@
           <p class="set-note chat-note" data-i18n="chat.note">آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.</p>
         </section>
 
-        <!-- ============ صفحه پلیر موزیک (بازطراحی v0.16) ============
-             چیدمان دوکارتِ عرض‌ثابت: کنسول پخش + پلی‌لیست ستونی —
-             هیچ المانی تا انتهای صفحه کشیده نمی‌شود. -->
+        <!-- ============ صفحه پلیر موزیک (مینیمال v0.18) ============
+             بدون کارت/جعبهٔ مستطیلی — فقط «آهنگ در حال پخش» بزرگ و واضح
+             بالای صفحه + پلی‌لیست ساده زیرش. اکولایزر/ویژوالایزر حذف شد. -->
         <section id="musicPage" class="musicpage" hidden>
           <header class="set-top">
             <h2><svg class="ic"><use href="#i-music"/></svg> <span data-i18n="music.title">پلیر موزیک</span></h2>
@@ -632,23 +632,18 @@
 
           <div class="music-deck">
 
-            <!-- کنسول پخش — کارت راست -->
-            <div class="np-card glass">
-              <div class="np-disc-wrap">
-                <div class="np-disc" id="mCover">
-                  <svg class="ic"><use href="#i-disc"/></svg>
-                  <i class="np-hole"></i>
-                </div>
-                <div class="np-head">
-                  <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>
-                  <span id="mArtist" data-i18n="music.pickHint">یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود</span>
-                  <div class="np-chips">
-                    <span class="m-count" id="mCount" hidden></span>
-                    <div class="m-eq" id="mEq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-                  </div>
+            <!-- آهنگ در حال پخش — بزرگ و بدون جعبه -->
+            <div class="np-area">
+              <div class="np-cover" id="mCover">
+                <svg class="ic"><use href="#i-disc"/></svg>
+              </div>
+              <div class="np-head">
+                <b id="mTitle" data-i18n="music.noTrack">هنوز آهنگی انتخاب نشده</b>
+                <span id="mArtist" data-i18n="music.pickHint">یک پوشه پر از آهنگ انتخاب کن تا پلی‌لیست ساخته شود</span>
+                <div class="np-chips">
+                  <span class="m-count" id="mCount" hidden></span>
                 </div>
               </div>
-              <canvas id="mViz" height="56" aria-hidden="true"></canvas>
               <div class="m-seek-row">
                 <span class="m-time num" id="mCur">0:00</span>
                 <input type="range" id="mSeek" min="0" max="1000" value="0" />
@@ -666,13 +661,11 @@
               </div>
             </div>
 
-            <!-- پلی‌لیست — کارت چپ با اسکرول داخلی -->
-            <div class="pl-card glass">
-              <div class="pl-head">
-                <div class="m-search">
-                  <svg class="ic"><use href="#i-search"/></svg>
-                  <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
-                </div>
+            <!-- پلی‌لیست — ساده، بدون جعبه -->
+            <div class="pl-area">
+              <div class="m-search">
+                <svg class="ic"><use href="#i-search"/></svg>
+                <input type="text" id="mSearch" data-i18n-ph="music.search" placeholder="جستجو در آهنگ‌ها…" />
               </div>
               <div class="m-list" id="mList"></div>
               <p class="set-note" id="mEmpty" data-i18n="music.empty">هنوز پوشه‌ای انتخاب نکردی — «انتخاب پوشه موزیک» را بزن و پوشه‌ای که آهنگ‌هایت آنجاست را نشان بده؛ آوا عنوان، خواننده و کاور آهنگ‌ها را خودش می‌خواند.</p>
@@ -902,7 +895,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.17.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.18.0</span></div>
   </div>
 
   <script src="js/app.js"></script>

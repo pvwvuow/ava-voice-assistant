@@ -121,6 +121,13 @@ contextBridge.exposeInMainWorld('ava', {
     whisper: (payload) => ipcRenderer.invoke('stt:whisper', payload),
   },
 
+  /* لاگ عملکرد (v0.18) — ثبت واکنش‌های برنامه در userData/logs/activity.log
+     log.get برای ارسال گزارش به گیت‌هاب (فرمان صوتی «گزارش بفرست») */
+  log: {
+    act: (msg) => ipcRenderer.invoke('log:act', msg),
+    get: () => ipcRenderer.invoke('log:get'),
+  },
+
   /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */
   custom: {
     run: (script) => ipcRenderer.invoke('custom:run', script),

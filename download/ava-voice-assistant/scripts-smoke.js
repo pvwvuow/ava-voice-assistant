@@ -332,7 +332,7 @@ app.whenReady().then(async () => {
         perfToggles: html.includes('id="optNoAnim"') && html.includes('id="optNoFx"') && html.includes('id="btnLiteTheme"'),
         perfCss: css.includes('body.perf-noanim') && css.includes('body.perf-nofx'),
         liteTheme: css.includes('[data-theme="lite"]') && appjs.includes("settings.theme === 'lite'") && html.includes('value="lite"'),
-        vizCanvas: html.includes('id="mViz"') && appjs.includes('createMediaElementSource') && appjs.includes('function vizStart()') && appjs.includes('function vizStop()'),
+        vizRemoved: !html.includes('id="mViz"') && !html.includes('id="mEq"') && appjs.includes('function vizStart()') && appjs.includes('function vizStop()') && appjs.includes('if (!mViz) return false;'),
         eqbars: appjs.includes('class="eqbars"') && css.includes('.eqbars i'),
         flingPause: appjs.includes('music.pausedFling'),
         aiSaveBtn: html.includes('id="btnSaveAi"') && appjs.includes("toast(t('toast.savedAll')"),
@@ -348,7 +348,7 @@ app.whenReady().then(async () => {
       ok('extensions logic (default dns on / music off)', v15.extLogic);
       ok('optimization toggles in settings', v15.perfToggles && v15.perfCss);
       ok('lite theme for weak PCs', v15.liteTheme);
-      ok('music visualizer (canvas+analyser)', v15.vizCanvas);
+      ok('music equalizer removed, viz safely no-op', v15.vizRemoved);
       ok('playlist playing-bars', v15.eqbars);
       ok('widget fling pauses music', v15.flingPause);
       ok('AI settings save button', v15.aiSaveBtn);
@@ -364,12 +364,12 @@ app.whenReady().then(async () => {
         dnsPage: !!document.querySelector('#dnsPage') && document.querySelector('#dnsPage').hidden,
         dnsRailVisible: !document.querySelector('#btnDnsExt').hidden,
         musicRailHidden: document.querySelector('#btnMusic').hidden,
-        viz: !!document.querySelector('#mViz'),
+        viz: true, /* v0.18 — اکولایزر حذف شد */
         perfPane: !!document.querySelector('.set-nav-item[data-pane="perf"]'),
         liteOpt: !!document.querySelector('#optTheme option[value="lite"]'),
       }))()`);
       ok('extensions UI in DOM (dns on / music off)', ext.extBtn && ext.extPage && ext.dnsPage && ext.dnsRailVisible && ext.musicRailHidden, JSON.stringify(ext));
-      ok('viz canvas + perf pane + lite option in DOM', ext.viz && ext.perfPane && ext.liteOpt);
+      ok('perf pane + lite option in DOM (viz removed by design)', ext.perfPane && ext.liteOpt);
     } catch (e) { console.log('SKIP | v0.15 dom | ' + String(e && e.message).slice(0, 50)); }
 
     // 5.59 v0.16 — music player rebuild, gemini chain fix, discord extension
@@ -387,15 +387,15 @@ app.whenReady().then(async () => {
         discordUI: html.includes('id="extDiscordToggle"') && html.includes('id="btnDcMute"') && html.includes('id="btnDcCall"') && html.includes('id="dcCallName"'),
         discordVoice: appjs.includes('function tryDiscordCmd(') && appjs.includes("rcTag.textContent = 'DISCORD'"),
         discordLogic: appjs.includes("settings.extDiscord") && appjs.includes("action: 'call'"),
-        musicDeck: html.includes('music-deck') && html.includes('np-card') && html.includes('pl-card') && html.includes('np-disc'),
-        musicDeckCss: css.includes('.music-deck') && css.includes('.np-disc') && css.includes('.pl-card'),
-        musicIdsKept: ['mCover', 'mTitle', 'mArtist', 'mEq', 'mCount', 'mSeek', 'mViz', 'mList', 'mSearch', 'mEmpty'].every((id) => html.includes(`id="${id}"`)),
+        musicDeck: html.includes('music-deck') && html.includes('np-area') && html.includes('pl-area') && html.includes('np-cover'),
+        musicDeckCss: css.includes('.music-deck') && css.includes('.np-cover') && css.includes('.pl-area'),
+        musicIdsKept: ['mCover', 'mTitle', 'mArtist', 'mCount', 'mSeek', 'mList', 'mSearch', 'mEmpty'].every((id) => html.includes(`id="${id}"`)),
       };
       ok('gemini model chain (user model → flash-latest → older)', v16.geminiChain && v16.geminiDatalist);
       ok('discord control IPC (UIAutomation call)', v16.discordIpc);
       ok('discord card + manual controls in DOM', v16.discordUI);
       ok('discord voice commands', v16.discordVoice && v16.discordLogic);
-      ok('music player rebuilt as two-card deck', v16.musicDeck && v16.musicDeckCss);
+      ok('music player minimal (np-area + pl-area, no boxes)', v16.musicDeck && v16.musicDeckCss);
       ok('music player keeps all functional IDs', v16.musicIdsKept);
     } catch (e) { console.log('SKIP | v0.16 markers | ' + String(e && e.message).slice(0, 80)); }
 
@@ -406,11 +406,12 @@ app.whenReady().then(async () => {
         toggle: !!document.querySelector('#extDiscordToggle'),
         callName: !!document.querySelector('#dcCallName'),
         deck: !!document.querySelector('.music-deck'),
-        disc: !!document.querySelector('.np-disc'),
-        pl: !!document.querySelector('.pl-card'),
-        hole: !!document.querySelector('.np-hole'),
+        disc: !!document.querySelector('.np-cover'),
+        pl: !!document.querySelector('.pl-area'),
+        hole: !document.querySelector('.np-hole'),
+        vizGone: !document.querySelector('#mViz'),
       }))()`);
-      ok('discord controls + music deck in DOM', dc.card && dc.toggle && dc.callName && dc.deck && dc.disc && dc.pl && dc.hole, JSON.stringify(dc));
+      ok('discord controls + minimal music layout in DOM', dc.card && dc.toggle && dc.callName && dc.deck && dc.disc && dc.pl && dc.hole && dc.vizGone, JSON.stringify(dc));
     } catch (e) { console.log('SKIP | v0.16 dom | ' + String(e && e.message).slice(0, 50)); }
 
     // 5.61 v0.16.1 — stability shield: error ring, crash panel, safe mode,
@@ -426,14 +427,14 @@ app.whenReady().then(async () => {
         errRing: appjs.includes("window.__avaErr") && appjs.includes("localStorage.setItem(K, JSON.stringify(ring))"),
         crashPanel: appjs.includes('avaCrashPanel') && appjs.includes('avaCrashSafe'),
         bootedFlag: appjs.includes('window.__avaErr.booted = true'),
-        noDelta: mainjs.includes('disableDifferentialDownload = true'),
+        noDelta: mainjs.includes('disableDifferentialDownload'), /* v0.18: دلتا برگشت — مارکر فقط وجود کلید را چک می‌کند */
         safeMode: appjs.includes("safeMode: store.get('safeMode', false)") && appjs.includes("body.classList.toggle('safe-orb'"),
         safeCss: css.includes('body.safe-orb .orb-glass'),
         safeToggle: html.includes('id="optSafeMode"') && appjs.includes("$('#optSafeMode')"),
         copyReport: html.includes('id="btnCopyErrors"') && preload.includes("'sys:copy-text'") && mainjs.includes("ipcMain.handle('sys:copy-text'"),
       };
       ok('renderer error ring + crash panel', v161.errRing && v161.crashPanel && v161.bootedFlag);
-      ok('delta updates disabled (full installs)', v161.noDelta);
+      ok('delta toggle present in updater', v161.noDelta);
       ok('safe mode (toggle + css + perf)', v161.safeMode && v161.safeCss && v161.safeToggle);
       ok('error report copy bridge', v161.copyReport);
     } catch (e) { console.log('SKIP | v0.16.1 markers | ' + String(e && e.message).slice(0, 80)); }
@@ -577,7 +578,7 @@ app.whenReady().then(async () => {
         dcPane: html.includes('data-pane="discord"') && html.includes('optDiscordBg') && html.includes('btnDcProbe'),
         darklite: css.includes('[data-theme="darklite"]') && html.includes('value="darklite"') && /'darklite'\]\.includes\(th\)|\['light', 'lite', 'darklite'\]/.test(appjs),
         flatOrb: css.includes('body.perf-nofx .orb {\n  background: #0ea572;') && css.includes('body.perf-nofx .orb-glass,'),
-        minimalPlayer: css.includes('.np-hole { display: none; }') && css.includes('.np-disc {\n  width: 84px; height: 84px; border-radius: 16px;'),
+        minimalPlayer: css.includes('.np-hole { display: none; }') && css.includes('.np-cover {'),
         engineBadge: appjs.includes('msg-engine') && appjs.includes("return tag(r, 'Gemini')"),
         noKeyWarn: html.includes('geminiNoKeyWarn') && appjs.includes('geminiNoKeyWarn'),
       };
@@ -667,6 +668,51 @@ app.whenReady().then(async () => {
         return 'restored';
       })()`);
     } catch (e) { console.log('SKIP | v0.17 runtime | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.97 v0.18 — hotfix round: dispatch fix, settings restore, activity log,
+    // delta re-enabled, faster AI, discord wait/retry, minimal player markers
+    try {
+      const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+      const appjs = read('renderer/js/app.js');
+      const mainjs = read('main.js');
+      const preload = read('preload.js');
+      const css = read('renderer/css/styles.css');
+      const html = read('renderer/index.html');
+      const v18 = {
+        dispatchFix: appjs.includes("if (eng === 'gemini' || eng === 'whisper' || eng === 'google' || eng === 'glm') {\n      startCloudListen();"),
+        settingsRestore: appjs.includes('settings restored from file') && appjs.includes('applyPerf();\n        syncPerfUI();'),
+        actLogIpc: mainjs.includes("ipcMain.handle('log:act'") && mainjs.includes("ipcMain.handle('log:get'") && mainjs.includes('function actLog('),
+        logBridge: preload.includes('log: {') && preload.includes("'log:act'") && appjs.includes('const actLog ='),
+        reportCmd: appjs.includes('function sendActivityReport(') && appjs.includes('گزارش\\s*(بفرست') && appjs.includes('issues/new?title='),
+        deltaOn: mainjs.includes('disableDifferentialDownload = false'),
+        aiFast: mainjs.includes('thinkingBudget: 0') && mainjs.includes('SEARCH_INTENT_RE') && mainjs.includes('if (search && wantsSearch)'),
+        dcWait: mainjs.includes('function discordPsScript(action, mode, name, dx, dy, waitMs, clickRetries)') && mainjs.includes('$waited -lt ${waitMs}') && mainjs.includes('$tryN -le ${clickRetries}'),
+        minimalHtml: html.includes('np-area') && html.includes('np-cover') && html.includes('pl-area') && !html.includes('np-card'),
+        minimalCss: css.includes('.np-cover {\n  position: relative; width: 168px; height: 168px;') && css.includes('.np-area .np-head b { font-size: 21px'),
+      };
+      ok('v0.18 listening dispatch reaches gemini/whisper engines', v18.dispatchFix);
+      ok('v0.18 settings file restore re-applies theme/perf', v18.settingsRestore);
+      ok('v0.18 activity log IPC + rotation', v18.actLogIpc && v18.logBridge);
+      ok('v0.18 voice report send (GitHub issue)', v18.reportCmd);
+      ok('v0.18 delta updates re-enabled (sha512-verified differential)', v18.deltaOn);
+      ok('v0.18 faster AI (thinkingBudget=0 + search on intent)', v18.aiFast);
+      ok('v0.18 discord wait-for-start + call-button retry', v18.dcWait);
+      ok('v0.18 minimal player HTML/CSS (big now-playing, no boxes)', v18.minimalHtml && v18.minimalCss);
+    } catch (e) { console.log('SKIP | v0.18 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98 v0.18 — runtime: log bridge + minimal player layout in DOM
+    try {
+      const rt = await probe(`(() => ({
+        logBridge: !!(window.ava && ava.log && ava.log.act && ava.log.get),
+        cover: (() => { const c = document.querySelector('.np-cover'); return c ? getComputedStyle(c).width : 'none'; })(),
+        area: !!document.querySelector('.np-area'),
+        pl: !!document.querySelector('.pl-area'),
+      }))()`);
+      ok('v0.18 log bridge exposed', rt.logBridge);
+      ok('v0.18 big now-playing cover (168px)', rt.cover === '168px', rt.cover);
+      ok('v0.18 minimal layout in DOM', rt.area && rt.pl);
+      await probe(`ava.log.act('smoke: runtime log test').then(() => 'logged')`);
+    } catch (e) { console.log('SKIP | v0.18 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 9. v0.16.2 — TDZ regression: cold boot with safeMode/noFx preset must survive.
     // User crash report v0.16.1: applyPerf() ran at boot before `let vizRaf` (app.js:4936)

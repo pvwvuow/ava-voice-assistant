@@ -196,6 +196,9 @@
     'set.dc.probed': ['نشانگر روی مکان دکمهٔ تماس قرار گرفت — درست است؟ عدد X/Y را اگر لازم است عوض کن', 'Mouse is now on the call button spot — adjust X/Y if it is off'],
     'set.dc.note': ['فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.', 'Commands: "call Ali", "hang up", "mute Discord", "deafen Discord", "answer", "decline". For hangup/answer/decline bind once in Discord › Settings › Keybinds: Disconnect = Ctrl+Shift+H, Answer = Ctrl+Shift+A, Decline = Ctrl+Shift+E; Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work by default.'],
     'disc.namePh': ['اسم دوستت در دیسکورد…', "Your friend's Discord name…"],
+    /* ---------- v0.18 ---------- */
+    'report.working': ['گزارش عملکرد آماده می‌شود…', 'Preparing the activity report…'],
+    'report.sent': ['گزارش آماده شد — صفحهٔ گیت‌هاب باز شد، فقط دکمهٔ Submit را بزن ✓ (اگر مرورگر باز نشد، گزارش در کلیپ‌بورد کپی شده)', 'Report ready — GitHub opened, just press Submit ✓ (if no browser opened, the report was copied to clipboard)'],
     'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
     'dnsp.title': ['DNS Changer', 'DNS Changer'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
@@ -306,7 +309,7 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۱۷ — تشخیص گفتار کلاس AI (الگوی سایت‌های حرفه‌ای تایپ صوتی): موتور Gemini Audio با همان کلید جمنای خودت + Whisper سازگار با OpenAI (پیش‌فرض Groq، سریع‌ترین) — کنترل دیسکورد کامل شد: تماس واقعی با مخاطبین اسم‌دار («به علی زنگ بزن» با آی‌دی ذخیره‌شده)، حالت بک‌گراند مخصوص وسط بازی و صفحهٔ تنظیمات اختصاصی — اولویت اول پاسخ‌ها با جمنای + نشان موتور پاسخ‌دهنده — دکمهٔ میکروفون فلت در حالت بهینه‌سازی — پلیر مینیمال‌تر و تم تیرهٔ سبک برای سیستم ضعیف.', 'v0.17 — AI-class speech recognition (like pro voice-typing sites): Gemini Audio with your own key + OpenAI-compatible Whisper (Groq default, blazing fast) — Discord control completed: real calling with named contacts, background mode for mid-game use, full settings page — Gemini-first AI replies with an engine badge — flat mic button in performance mode — more minimal player and a flat dark theme for weak PCs.'],
+    'about.desc': ['نسخه ۰.۱۸ هات‌فیکس — دستیار صوتی دوباره کامل کار می‌کند (فیکس مسیر موتورهای جمنای/Whisper)، تم و تنظیماتت بعد از هر ریستارت یا آپدیت سر جایشان می‌مانند، آپدیت‌ها فقط بخش‌های تغییرکرده را دانلود می‌کنند (تأیید SHA512)، پاسخ‌های هوش مصنوعی خیلی سریع‌تر شدند (بدون «فکر کردن» اضافه + سرچ فقط وقتی لازم است)، تماس دیسکورد صبورتر شد (صبر برای استارت دیسکورد + چندبار تلاش برای دکمهٔ تماس)، پلیر مینیمال شد: بدون کارت و اکولایزر، با آهنگ در حال پخشِ بزرگ — و یک لاگ عملکرد کامل که با بگو «آوا گزارش بفرست» به گیت‌هاب می‌آید.', 'v0.18 hotfix — voice assistant works again with Gemini/Whisper engines (dispatch fix), your theme and settings survive restarts and updates, delta updates are back (only changed chunks downloaded, SHA512-verified), AI replies are much faster (no extra thinking + search only when needed), Discord calls are patient (waits for Discord start + retries the call button), the player is minimal: no boxes or equalizer, a big now-playing section — and a full activity log you can send to GitHub by saying "AVA, send report".'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
@@ -890,18 +893,36 @@
       try { bridge.settings.save({ ...settings, customCmds, history }); } catch (_) { /* noop */ }
     }, 600);
   }
+  /* لاگ عملکرد (v0.18) — فقط داخل نرم‌افزار؛ هیچ‌وقت نمی‌شکند */
+  const actLog = (msg) => { try { if (bridge && bridge.log && bridge.log.act) bridge.log.act(String(msg)); } catch (_) { /* noop */ } };
   (async () => {
     /* بارگذاری تنظیمات ذخیره‌شده در فایل — بعد از تعریف کامل صفحه */
     if (!bridge || !bridge.settings || !bridge.settings.load) return;
     try {
       const f = await bridge.settings.load();
       if (f && typeof f === 'object' && Object.keys(f).length) {
-        Object.keys(settings).forEach((k) => { if (f[k] !== undefined) settings[k] = f[k]; });
+        /* v0.18 — فیکس «تم/تنظیمات بعد از ریستارت یا آپدیت برنمی‌گردد»:
+           بعد از merge، ظاهر و تم و افزونه‌ها دوباره اعمال و localStorage هم
+           همگام می‌شود (فایل در userData از آپدیت جان سالم به در می‌برد) */
+        let changed = 0;
+        Object.keys(settings).forEach((k) => {
+          if (f[k] !== undefined && JSON.stringify(f[k]) !== JSON.stringify(settings[k])) {
+            settings[k] = f[k];
+            try { localStorage.setItem('ava.' + k, JSON.stringify(f[k])); changed++; } catch (_) { /* noop */ }
+          }
+        });
         if (Array.isArray(f.customCmds) && f.customCmds.length) { customCmds = f.customCmds; store.set('customCmds', customCmds); }
         if (Array.isArray(f.history)) { history = f.history; store.set('history', history); }
+        applyTheme();
+        applyPerf();
+        syncPerfUI();
+        if (typeof applyExtensions === 'function') applyExtensions();
+        if (typeof renderDiscordContacts === 'function') renderDiscordContacts();
+        if (optTheme) optTheme.value = settings.theme || 'dark';
         refreshEngineUI();
         renderCustomChips();
         updateHandsFreeUI();
+        actLog(`settings restored from file (changed=${changed}) theme=${settings.theme} stt=${settings.sttEngine}`);
       }
     } catch (_) { /* noop */ }
   })();
@@ -2070,10 +2091,31 @@
     setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
   }
 
+  /* v0.18 — ارسال لاگ عملکرد به گیت‌هاب (بدون توکن داخل برنامه؛ صفحهٔ Issue پیش‌پر می‌شود) */
+  async function sendActivityReport() {
+    if (!bridge || !bridge.log || !bridge.log.get) return LANG === 'en' ? 'Log report works only inside the Windows app.' : 'ارسال گزارش فقط داخل نرم‌افزار ویندوزی کار می‌کند';
+    let lines = [];
+    try { const r = await bridge.log.get(); lines = (r && r.lines) || []; } catch (_) { /* noop */ }
+    const ver = (typeof appVersion !== 'undefined' && appVersion) || '?';
+    const bodyText = ([
+      'AVA activity log — v' + ver,
+      'UA: ' + (navigator.userAgent || '?'),
+      '',
+      ...lines.slice(-60),
+    ].join('\n') || '(log is empty)').slice(0, 3200);
+    const url = 'https://github.com/pvwvuow/ava-voice-assistant/issues/new?title=' + encodeURIComponent('AVA log report (v' + ver + ')') + '&body=' + encodeURIComponent(bodyText);
+    let okOpen = false;
+    try { if (bridge.system && bridge.system.openUrl) { await bridge.system.openUrl(url); okOpen = true; } } catch (_) { /* noop */ }
+    if (!okOpen) { try { await navigator.clipboard.writeText(bodyText); } catch (_) { /* noop */ } }
+    actLog('activity report ' + (okOpen ? 'opened in browser' : 'copied to clipboard'));
+    return t('report.sent');
+  }
+
   async function runCommand(cmd, opts) {
     if (!cmd) return;
     if (cmdBusy) return;
     const raw = String(cmd).trim();
+    actLog('cmd: ' + raw.slice(0, 120));
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
     const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ|برام\s*تایپ\s*کن|برایم\s*تایپ\s*کن|این\s*(رو|را)\s*تایپ\s*کن|تایپش\s*کن/i;
     const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
@@ -2084,6 +2126,24 @@
       return;
     }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
+    /* ارسال گزارش عملکرد (v0.18) — «آوا گزارش بفرست» */
+    if (/گزارش\s*(بفرست|بده|بگیر)|لاگ\s*(بفرست|بده)|گزارش\s*مشکل|ارسال\s*گزارش|send\s+log\s+report/i.test(raw)) {
+      if (cmdBusy) return;
+      cmdBusy = true;
+      setState('processing');
+      statusText.textContent = t('report.working');
+      const rep = await sendActivityReport();
+      setState('success');
+      statusText.textContent = t('status.done');
+      body.classList.add('has-card');
+      rcHeard.textContent = `«${raw}»`;
+      rcTag.textContent = 'LOG';
+      typeText(rcReply, rep);
+      speak(rep);
+      cmdBusy = false;
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+      return;
+    }
     /* کنترل دیسکورد (v0.16) — قبل از DNS/برنامه تا «زنگ بزن» قاطی نشود */
     if (/زنگ\s*بزن|تماس\s*بگیر|کال\s*کن|دیسکورد|discord|میکروفون[^.]{0,10}(قطع|میوت)/i.test(raw)) {
       const dr = await tryDiscordCmd(raw);
@@ -2544,7 +2604,9 @@
       const eng = chain[i];
       if (!eng) { finishIdle(why || t('stt.convFail', { x: '—' })); return; }
       let r = null;
+      const te0 = Date.now();
       try { r = await runEngine(eng); } catch (_) { r = { ok: false, error: t('stt.connFail') }; }
+      actLog(`stt ${eng} ${r && r.ok ? 'ok' : 'fail'} (${Date.now() - te0}ms)${r && r.error ? ' err=' + String(r.error).slice(0, 80) : ''}`);
       if (r && r.ok && r.text) {
         const tx = r.text.trim();
         if (dictation.active) dictateHandle(tx);
@@ -3366,18 +3428,16 @@
         /* استارت موتور وب شکست خورد → زنجیره ادامه پیدا کند */
         srBroken = true;
         refreshEngineUI();
-        if (googleReady()) { startGoogleListen(); return; }
-        if (glmReady()) { startGlmListen(); return; }
+        if (buildCloudChain()[0]) { startCloudListen(); return; }
         noEngine(t('stt.noEngineApp'));
         return;
       }
     }
-    if (eng === 'google') {
-      startGoogleListen();
-      return;
-    }
-    if (eng === 'glm') {
-      startGlmListen();
+    /* v0.18 — فیکس باگ اصلی «دستیار کار نمی‌کند»: انتخاب موتور gemini/whisper
+       (و google/glm) باید به ضبط‌کنندهٔ ابری مشترک می‌رفت — قبلاً به هیچ‌کدام
+       از شاخه‌ها نمی‌خورد و پیام «موتور در دسترس نیست» می‌آمد! */
+    if (eng === 'gemini' || eng === 'whisper' || eng === 'google' || eng === 'glm') {
+      startCloudListen();
       return;
     }
     noEngine(t('stt.noEngineApp'));
@@ -3799,7 +3859,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.17.0';
+  let appVersion = '0.18.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -3915,6 +3975,7 @@
     if (!bridge || !bridge.discord) return toast('کنترل دیسکورد فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
     toast(t('disc.working'), '#i-smile');
     const r = await bridge.discord.cmd({ action, name, userId, ...discordCtx() }).catch((e) => ({ ok: false, error: String(e) }));
+    actLog('discord manual ' + action + (name ? ' name=' + name.slice(0, 24) : '') + ' -> ' + (r && r.ok ? String(r.result) : String(r && r.error || 'fail')));
     if (r && r.ok) {
       /* شفاف‌سازی: در حالت بک‌گراند کلیدها به دیسکورد فرستاده می‌شوند ولی
          قابل تأیید نیست — اگر اثری دیدی نشد، حالت بک‌گراند را خاموش کن */
@@ -4692,6 +4753,7 @@
      «خودکار»: اول Gemini (با سرچ زنده گوگل) → حساب GLM (z.ai) → کلید GLM → OpenAI
      یا پرووایدر ثابت از تنظیمات. اولین جواب موفق برگردانده می‌شود. */
   async function aiAsk(text) {
+    const t0 = Date.now();
     const msgs = [{ role: 'system', content: aiSystem() }, ...chatHist.slice(-8), { role: 'user', content: text }];
     const prov = settings.aiProvider || 'auto';
     let lastErr = null;
@@ -4724,7 +4786,14 @@
     };
 
     /* v0.17 — اولویت اول با جمنای (خواست کاربر) + برچسب موتور پاسخ‌دهنده */
-    const tag = (r, via) => (r ? Object.assign({}, r, { via }) : r);
+    const tag = (r, via) => {
+      if (r) {
+        r.via = via;
+        r.ms = Date.now() - t0;
+        actLog('ai ' + via + ' ok ' + r.ms + 'ms model=' + (r.model || '?'));
+      }
+      return r;
+    };
     if (prov === 'zai') { const r = await tryZai(); if (r) return tag(r, 'GLM'); }
     else if (prov === 'glm') { const r = await tryGlm(); if (r) return tag(r, 'GLM API'); }
     else if (prov === 'gemini') { const r = await tryGemini(); if (r) return tag(r, 'Gemini'); }
@@ -4738,7 +4807,7 @@
     }
 
     if (!bridge || !bridge.ai) return { ok: false, error: 'چت با هوش مصنوعی فقط داخل نرم‌افزار ویندوزی کار می‌کند' };
-    if (lastErr && lastErr.error) return lastErr;
+    if (lastErr && lastErr.error) { actLog('ai fail ' + (Date.now() - t0) + 'ms — ' + String(lastErr.error).slice(0, 90)); return lastErr; }
     const needAny = !(settings.geminiKey || settings.openaiKey);
     if (needAny && prov !== 'gemini' && prov !== 'openai') {
       return { ok: false, needLogin: true, error: 'برای چت، اول در تب «صفحه چت GLM» وارد حسابت شو یا کلید Gemini/OpenAI را در تنظیمات بگذار' };
@@ -5132,7 +5201,7 @@
 
   if (mAudio) {
     mAudio.volume = settings.musicVol;
-    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); vizStart(); });
+    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); vizStart(); actLog('music play'); });
     mAudio.addEventListener('pause', () => { music.playing = false; updatePlayerUI(); vizStop(); });
     mAudio.addEventListener('ended', () => {
       if (music.repeat === 'one') playTrack(music.cur);

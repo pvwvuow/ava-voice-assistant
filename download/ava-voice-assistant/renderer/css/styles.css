@@ -2272,3 +2272,61 @@ body.music-playing .np-disc {
 .warn-note { color: #f59e0b; border-inline-start: 3px solid #f59e0b; }
 [data-theme="light"] .warn-note { color: #b45309; }
 [data-theme="darklite"] .dc-contact { background: rgba(255, 255, 255, 0.03); }
+
+/* ============================================================
+   v0.18 — بازطراحی مینیمال پلیر: بدون کارت/جعبهٔ مستطیلی؛
+   «آهنگ در حال پخش» بزرگ و واضح (کاور ۱۶۸px + تیتر ۲۱px)؛
+   اکولایزر/ویژوالایزر از پلیر حذف شد (متن پلی‌لیست eqbars کوچک مانده)
+   ============================================================ */
+.music-deck {
+  grid-template-columns: minmax(300px, 430px) minmax(280px, 1fr);
+  gap: 28px;
+  max-width: 980px;
+  margin-top: 4px;
+}
+@media (max-width: 900px) { .music-deck { grid-template-columns: 1fr; } }
+.np-area {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; text-align: center;
+  padding: 12px 6px 2px;
+}
+.np-cover {
+  position: relative; width: 168px; height: 168px; flex-shrink: 0;
+  border-radius: 24px; overflow: hidden;
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 32% 26%, #155e46 0%, #0d3d2d 58%, #07271d 100%);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #7ef0c2;
+  box-shadow: 0 18px 44px rgba(16, 185, 129, 0.22);
+  transition: transform 0.3s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+.np-cover:hover { transform: scale(1.02); }
+.np-cover .ic { width: 46px; height: 46px; opacity: 0.7; position: relative; z-index: 2; }
+.np-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+body.music-playing .np-cover {
+  border-color: rgba(52, 211, 153, 0.85);
+  box-shadow: 0 18px 52px rgba(16, 185, 129, 0.42);
+  transform: scale(1.02);
+}
+.np-area .np-head {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; width: 100%; min-width: 0;
+}
+.np-area .np-head b { font-size: 21px; font-weight: 800; max-width: 100%; }
+.np-area .np-head > span { font-size: 13px; color: var(--text2); max-width: 100%; }
+.np-area .np-chips { justify-content: center; min-height: 0; margin-top: 0; }
+.np-area .m-seek-row { width: 100%; max-width: 380px; }
+.np-area .m-controls { gap: 18px; }
+.np-area .m-play { width: 64px; height: 64px; }
+.np-area .m-play .ic { width: 25px; height: 25px; }
+.np-vol { justify-content: center; }
+.pl-area {
+  display: flex; flex-direction: column; gap: 10px;
+  min-width: 0; min-height: 240px;
+  padding-top: 12px;
+}
+.pl-area .m-search { max-width: none; }
+.pl-area .m-list { flex: 1; min-height: 0; max-height: calc(100vh - 400px); padding-inline-end: 6px; }
+.pl-area #mEmpty { text-align: center; }
+[data-theme="light"] .np-cover { background: radial-gradient(circle at 32% 26%, #efe9fb 0%, #e2d7f7 58%, #d3c3f2 100%); border-color: rgba(139, 92, 246, 0.45); color: #6d28d9; box-shadow: 0 18px 44px rgba(139, 92, 246, 0.18); }
+[data-theme="darklite"] .np-cover { background: #0f2c21; box-shadow: none; }
