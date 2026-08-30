@@ -2713,7 +2713,12 @@ switch ($Action) {
     Write-Output (Try-CallClick)
   }
   'callswitch' {
-    $name = ($Name -replace '[''’"]', '')
+    # v0.28.1 فیکس خطای پاورشل (ava-dc.ps1:193 char:34): کاراکتر گیومهٔ کج
+    # درون regex باعث خطای پارسر پاورشل می‌شد — پاورشل U+2019 را
+    # جداکنندهٔ رشته می‌داند! پس در فایل فقط گیومهٔ ASCII و حذف کاراکترهای
+    # کج در زمانِ اجرا با [char] — هیچ‌وقت کاراکتر کج در این فایل ننویس
+    $name = ($Name -replace '[''"]', '')
+    foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $name = $name.Replace([string]$cq, '') }
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
     try { Set-Clipboard -Value $name -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
     if ($bg) {
@@ -2748,7 +2753,7 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
   const longRun = psAction === 'clickcall' || psAction === 'callswitch';
   const waitMs = longRun ? 25000 : 6000;
   const retries = longRun ? 12 : 1;
-  const safeName = String(nm || '').replace(/['’`"…]/g, '');
+  const safeName = String(nm || '').replace(/['’‘“”`"…]/g, ''); /* v0.28.1 + گیومهٔ کج */
   let psFile = '';
   try {
     psFile = path.join(app.getPath('userData'), 'ava-dc.ps1');
@@ -2787,8 +2792,14 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
       if (/^ERR:PS:/.test(out)) {
         return resolve({ ok: false, error: ('خطای اسکریپت: ' + out.replace(/^ERR:PS:/, '')).slice(0, 160) });
       }
-      if (!out && errTxt && /FullyQualifiedErrorId|ParameterBinding|is not recognized|Cannot find path/i.test(errTxt)) {
-        return resolve({ ok: false, error: ('خطای پاورشل: ' + errTxt.split(/\r?\n/)[0]).slice(0, 160) });
+      /* v0.28.1 — پیامِ واقعی خطا نشان داده شود، نه فقط خط اول («At ... char:N»)
+          خطِ پیام = اولین خطی که At / + / CategoryInfo / FullyQualifiedErrorId نیست */
+      if (!out && errTxt) {
+        const el = errTxt.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        const msgLine = el.find((l) => !/^At /.test(l) && !/^\+/.test(l) && !/^CategoryInfo/i.test(l) && !/^FullyQualifiedErrorId/i.test(l)) || el[0] || '';
+        const posM = (el[0] || '').match(/:(\d+) char:(\d+)\s*$/);
+        const posTxt = posM ? ` (خط ${posM[1]})` : '';
+        return resolve({ ok: false, error: ('خطای پاورشل: ' + msgLine + posTxt).slice(0, 240) });
       }
       if (!out) {
         return resolve({

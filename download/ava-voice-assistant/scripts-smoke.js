@@ -963,7 +963,7 @@ app.whenReady().then(async () => {
         card: h27.includes('id="offCard"') && h27.includes('id="btnOfflineDl"') && a27.includes('function updateOfflineCard(') && a27.includes('refreshLocalStatus()'),
         deps: p27.dependencies['sherpa-onnx-node'] && p27.optionalDependencies['sherpa-onnx-win-x64'] && Array.isArray(p27.build.asarUnpack),
         tts: a27.includes('gTtsNext') && a27.includes('__avaB64'),
-        version: p27.version === '0.28.0',
+        version: p27.version === '0.28.1',
       };
       ok('v0.27 local offline engine (sherpa-onnx + whisper int8, on-device)', v27.localEngine);
       ok('v0.27 no external-buffer APIs (Electron-hardened PCM conversion)', v27.noExternalBuffer);
@@ -974,7 +974,7 @@ app.whenReady().then(async () => {
       ok('v0.27 offline pack card in settings (download/progress/status)', v27.card);
       ok('v0.27 packaging: native deps + asarUnpack for NAPI addon', v27.deps);
       ok('v0.27 TTS double-buffer prefetch (zero gap between chunks)', v27.tts);
-      ok('v0.27+ version 0.28.0', v27.version);
+      ok('v0.27+ version 0.28.1', v27.version);
     } catch (e) { console.log('SKIP | v0.27 markers | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.993 v0.27.1 — fix "it types my request, then goes back to listening,
@@ -1029,6 +1029,32 @@ app.whenReady().then(async () => {
       ok('v0.28 Gemini key: AIza auto-routed from speech field + save toasts', v28.gemRoute);
       ok('v0.28 Gemini server errors translated to actionable Persian', v28.gemErr);
     } catch (e) { console.log('SKIP | v0.28 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.9935 v0.28.1 — Discord PS1 parse-error root fix: a curly apostrophe
+    // (U+2019) inside the callswitch regex terminated the PowerShell string
+    // mid-pattern (PS treats curly quotes as string DELIMITERS) →
+    // ava-dc.ps1:193 char:34 "The string is missing the terminator: \"" →
+    // the WHOLE script never ran → EVERY Discord command failed. Invariant:
+    // the generated ps1 body must be 100% curly-quote-free; stripping happens
+    // at runtime via [char] codes; stderr is surfaced with the real message
+    // line instead of only the "At ... char:N" position header.
+    try {
+      const m281 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const body281 = (m281.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+      const v281 = {
+        bodyFound: body281.length > 4000,
+        noCurly: body281.length > 0 && !/[\u2018\u2019\u201C\u201D]/.test(body281),
+        fixedLine: body281.includes("$name = ($Name -replace '[''\"]', '')"),
+        runtimeStrip: body281.includes('foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D)'),
+        safeNameStrip: m281.includes('’‘“”`'),
+        errSurfaced: m281.includes("const msgLine = el.find((l) => !/^At /.test(l)") && m281.includes("('خطای پاورشل: ' + msgLine + posTxt)"),
+      };
+      ok('v0.28.1 Discord PS body extracted for invariant check', v281.bodyFound);
+      ok('v0.28.1 PS body 100% curly-quote-free (U+2019 can never break the PS parser again)', v281.noCurly);
+      ok('v0.28.1 callswitch regex ASCII-only + runtime [char] strip of all 4 curly quotes', v281.fixedLine && v281.runtimeStrip);
+      ok('v0.28.1 safeName entry-sanitizer also strips curly quotes (JS side)', v281.safeNameStrip);
+      ok('v0.28.1 PS stderr surfaced with the real message line, not just "At ... char:N"', v281.errSurfaced);
+    } catch (e) { console.log('SKIP | v0.28.1 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
@@ -1046,7 +1072,7 @@ app.whenReady().then(async () => {
         aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.28') : false; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.28 about page shows v0.28.0', rt24.aboutV26);
+      ok('v0.28 about page shows v0.28.1', rt24.aboutV26);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons
