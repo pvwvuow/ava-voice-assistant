@@ -216,8 +216,8 @@
     'set.stt.handsFree': ['حالت بی‌دست (گوش دائمی)', 'Hands-free (always listening)'],
     'set.stt.handsFreeHint': ['آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A', 'AVA always listens; say the wake word first to run a command — shortcut: Ctrl+Alt+A'],
     'set.stt.wake': ['کلمه بیدارباش «آوا»', 'Wake word "Ava"'],
-    'set.stt.wakeHint': ['در حالت بی‌دست، فقط فرمان‌هایی که با «آوا» شروع شوند اجرا شوند (غیرفعال = هر حرفی که می‌گویی اجرا می‌شود)', 'In hands-free mode only commands starting with "Ava" run (off = everything you say runs)'],
-    'set.stt.gkey': ['کلید اختصاصی گوگل (اختیاری)', 'Custom Google key (optional)'],
+    'set.stt.wakeHint': ['در حالت بی‌دست فقط فرمان‌هایی که با «آوا» شروع شوند اجرا می‌شوند — و با همین یک «آوا» حالت گفتگو باز می‌شود: تا مدتی بقیهٔ حرف‌ها بدون تکرار اسم اجرا می‌شوند (مثل سیری)', 'In hands-free only commands starting with "Ava" run — and that one "Ava" opens conversation mode: for a while the rest runs without repeating the name (like Siri)'],
+    'set.stt.gkey': ['کلید اختصاصی موتور گفتار گوگل (اختیاری — مربوط به جمنای نیست)', 'Custom Google speech key (optional — not for Gemini)'],
     'set.stt.gkeyHint': ['خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی', 'Empty = built-in free key — only if you hit 403 errors'],
     'set.stt.gkeyPh': ['خالی = رایگان و بدون کلید', 'Empty = free, no key'],
     'set.stt.demo': ['حالت نمایشی (دمو)', 'Demo mode'],
@@ -439,8 +439,8 @@
     'set.stt.handsFree': ['حالت بی‌دست (گوش دائمی)', 'Hands-free (always listening)'],
     'set.stt.handsFreeHint': ['آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A', 'AVA always listens; say the wake word first to run a command — shortcut: Ctrl+Alt+A'],
     'set.stt.wake': ['کلمه بیدارباش «آوا»', 'Wake word "Ava"'],
-    'set.stt.wakeHint': ['در حالت بی‌دست، فقط فرمان‌هایی که با «آوا» شروع شوند اجرا شوند (غیرفعال = هر حرفی که می‌گویی اجرا می‌شود)', 'In hands-free mode only commands starting with "Ava" run (off = everything you say runs)'],
-    'set.stt.gkey': ['کلید اختصاصی گوگل (اختیاری)', 'Custom Google key (optional)'],
+    'set.stt.wakeHint': ['در حالت بی‌دست فقط فرمان‌هایی که با «آوا» شروع شوند اجرا می‌شوند — و با همین یک «آوا» حالت گفتگو باز می‌شود: تا مدتی بقیهٔ حرف‌ها بدون تکرار اسم اجرا می‌شوند (مثل سیری)', 'In hands-free only commands starting with "Ava" run — and that one "Ava" opens conversation mode: for a while the rest runs without repeating the name (like Siri)'],
+    'set.stt.gkey': ['کلید اختصاصی موتور گفتار گوگل (اختیاری — مربوط به جمنای نیست)', 'Custom Google speech key (optional — not for Gemini)'],
     'set.stt.gkeyHint': ['خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی', 'Empty = built-in free key — only if you hit 403 errors'],
     'set.stt.gkeyPh': ['خالی = رایگان و بدون کلید', 'Empty = free, no key'],
     'set.stt.demo': ['حالت نمایشی (دمو)', 'Demo mode'],
@@ -706,9 +706,13 @@
     'upd.manualFailToast': ['دانلود مستقیم ناموفق بود', 'Direct download failed'],
     'upd.current': ['نسخه فعلی: v{x}', 'Current version: v{x}'],
     'wake.need': ['بگو «آوا …» تا فرمانت را اجرا کنم', 'Say "Ava …" and I will run your command'],
+    /* v0.28 — سیری‌وار: با یک «آوا» حالت گفتگو باز می‌شود + صدای بانمک */
+    'wake.sessOn': ['حالت گفتگو فعال شد — تا چند لحظهٔ دیگر هر چه بگویید بدون «آوا» اجرا می‌شود', 'Conversation mode on — for the next little while everything runs without saying "Ava"'],
+    'wake.sessExp': ['حالت گفتگو تمام شد — برای ادامه دوباره بگو «آوا»', 'Conversation mode ended — say "Ava" again to continue'],
+    'wake.dropSpoken': ['اول اسم من را صدا بزن — بگو «آوا» و بعد درخواستت را؛ با همین یک «آوا» حالت گفتگو باز می‌شود', 'Say my name first — say "Ava" and then your request; one "Ava" opens conversation mode'],
     /* v0.27.1 — فرمان بدون «آوا» دیگر بی‌صدا دور ریخته نمی‌شود */
     'wake.dropTag': ['شنیدم — بی‌اجرا', 'Heard — not run'],
-    'wake.dropHint': ['فرمانت آماده است ولی اجرا نشد — در حالت بی‌دست اول بگو «آوا» (مثلاً: آوا، کروم رو باز کن) یا با دکمهٔ پایین همین را اجرا کن.', 'Your command is ready but was not run — in hands-free say "Ava" first (e.g.: Ava, open Chrome), or run it with the button below.'],
+    'wake.dropHint': ['فرمانت آماده است ولی اجرا نشد — در حالت بی‌دست اول بگو «آوا» (مثلاً: آوا، کروم رو باز کن)؛ با گفتن «آوا» حالت گفتگو باز می‌شود و تا مدتی بدون تکرار اسم، همه چیز اجرا می‌شود. یا همین حالا با دکمهٔ پایین اجرایش کن.', 'Your command is ready but was not run — in hands-free say "Ava" first (e.g.: Ava, open Chrome); one "Ava" opens conversation mode so for a while everything runs without the name. Or run it now with the button below.'],
     'wake.runNow': ['همین حالا اجرا کن', 'Run it now'],
     'wake.noWake': ['از این به بعد بدون «آوا»', 'From now on without "Ava"'],
     'wake.noWakeDone': ['فیلتر «آوا» خاموش شد — هر چی بگویید اجرا می‌شود', 'Wake filter is off — everything you say will run'],
@@ -854,6 +858,16 @@
     /* ---------- v0.24 — شنیدن مثل کروم (دورزدن DNS داخلی) ---------- */
     'net.googleFail': ['Google از داخل برنامه در دسترس نیست — شنوندهٔ سریع وب محدود می‌شود؛ اینترنت/فیلترشکن را چک کن (جزئیات در activity.log)', 'Google is unreachable from the app — fast web listening will be limited; check your internet/VPN (details in activity.log)'],
     'set.net.status': ['وضعیت اتصال (سلف‌چک بعد از بوت)', 'Network status (self-check after boot)'],
+    /* ---------- v0.28 — سایت مستقیم + دیسکورد + جمنای ---------- */
+    'disc.off': ['افزونهٔ کنترل دیسکورد خاموش است — از تنظیمات › افزونه‌ها روشنش کن', 'The Discord control extension is off — enable it in Settings › Extensions'],
+    'web.siteOpen': ['سایت {x} باز شد', 'The {x} website is open'],
+    'web.siteFail': ['باز کردن «{x}» ممکن نشد', 'Could not open "{x}"'],
+    'set.ai.gemMoved': ['این کلید جمنای بود — خودکار در بخش هوش مصنوعی ذخیره شد ✓', 'That is a Gemini key — saved to the AI section automatically ✓'],
+    'set.ai.gemSaved': ['کلید جمنای ذخیره شد ✓ — چت و سرچ لحظه‌ای فعال شد', 'Gemini key saved ✓ — chat and live search enabled'],
+    'set.ai.gemCleared': ['کلید جمنای پاک شد', 'Gemini key cleared'],
+    'set.ai.gemBadFormat': ['کلید جمنای معمولاً با «AIza» شروع می‌شود — اگر مطمئنی درست است، بی‌خیال این پیام', 'A Gemini key usually starts with "AIza" — ignore this notice if you are sure it is right'],
+    'set.ai.gemErrKey': ['کلید جمنای معتبر نیست — از aistudio.google.com کلید بگیر و کامل بچسبان (با AIza شروع می‌شود)', 'The Gemini key is not valid — get a free one from aistudio.google.com and paste it fully (starts with AIza)'],
+    'set.ai.gemErrLoc': ['گوگل جمنای را برای سرزمین تو محدود کرده — موتورهای دیگر آوا همین حالا جواب می‌دهند (خودکار/گوگل/بستهٔ آفلاین)', 'Google restricts Gemini in your region — the other AVA engines answer right now (Auto / Google / offline pack)'],
   };
   const t = (key, vars) => {
     const e = I18N[key];
@@ -1728,6 +1742,74 @@
       .replace(/[\s\u200C]+/g, ' ')
       .trim();
 
+  /* ============================================================
+     v0.28 — باز کردن مستقیم سایت: «برو به سایت دیجی کالا»
+     دیگر «برو به» در گوگل سرچ نمی‌شود؛ دیکشنری سایت‌های معروف
+     (فارسی + انگلیسی) مستقیم URL می‌دهد، دامنهٔ خام هم باز می‌شود.
+     ============================================================ */
+  const KNOWN_SITES = [
+    ['دیجی کالا', 'https://www.digikala.com'], ['دیجی\u200Cکالا', 'https://www.digikala.com'], ['digikala', 'https://www.digikala.com'],
+    ['آپارات', 'https://www.aparat.com'], ['اپارات', 'https://www.aparat.com'], ['aparat', 'https://www.aparat.com'],
+    ['فیلیمو', 'https://www.filimo.com'], ['filimo', 'https://www.filimo.com'],
+    ['نماوا', 'https://www.namava.ir'], ['namava', 'https://www.namava.ir'],
+    ['ترب', 'https://torob.com'], ['torob', 'https://torob.com'],
+    ['اسنپ', 'https://snapp.ir'], ['snapp', 'https://snapp.ir'],
+    ['تپسی', 'https://tapsi.ir'], ['tapsi', 'https://tapsi.ir'],
+    ['بازاره', 'https://basalam.com'], ['باسلام', 'https://basalam.com'], ['basalam', 'https://basalam.com'],
+    ['ایران سل', 'https://www.irancell.ir'], ['ایرانسل', 'https://www.irancell.ir'], ['همراه اول', 'https://www.mci.ir'],
+    ['بانک ملت', 'https://bankmellat.ir'], ['بانک ملی', 'https://www.bmi.ir'], ['بانک صادرات', 'https://bsi.ir'],
+    ['جیمیل', 'https://mail.google.com'], ['gmail', 'https://mail.google.com'],
+    ['توییتر', 'https://x.com'], ['تویتر', 'https://x.com'], ['twitter', 'https://x.com'], ['ایکس', 'https://x.com'],
+    ['اینستاگرام', 'https://www.instagram.com'], ['insta', 'https://www.instagram.com'], ['instagram', 'https://www.instagram.com'],
+    ['واتساپ', 'https://web.whatsapp.com'], ['whatsapp', 'https://web.whatsapp.com'],
+    ['تلگرام وب', 'https://web.telegram.org'], ['telegram web', 'https://web.telegram.org'],
+    ['گیت هاب', 'https://github.com'], ['گیت\u200Cهاب', 'https://github.com'], ['github', 'https://github.com'],
+    ['استک اورفلو', 'https://stackoverflow.com'], ['stack overflow', 'https://stackoverflow.com'],
+    ['ویکی پدیا', 'https://fa.wikipedia.org'], ['ویکی\u200Cپدیا', 'https://fa.wikipedia.org'], ['wikipedia', 'https://wikipedia.org'],
+    ['دیجی استایل', 'https://style.digikala.com'], ['کافه بازار', 'https://cafebazaar.ir'], ['بازار', 'https://cafebazaar.ir'],
+  ];
+  const SITE_NAV_STRIP =
+    /(لطفا|لطفاً|می\u200Cخوام|میخوام|برام|برای\s*من|وارد\s*شو\s*به|وارد\s*شو|وارد\s*کن|وارد|برو\s*به|برو\s*تو|برو|باز\s*کن|باز\s*بکن|بکن|کن\s*باز|رفتن|بریم|بساز)/gi;
+  const SITE_WORD_STRIP = /^(سایت|وب\s?سایت|سایتِ|website|web\s?site|the\s+site|site)\s*(از|ی|of|for)?\s*/gi;
+  /* نرمال‌سازی مقایسه: نیم‌فاصله/فاصله‌های تکراری + عربی‌به‌فارسی */
+  const siteNorm = (s) => String(s || '')
+    .replace(/[\u200C]/g, ' ')
+    .replace(/[ك]/g, 'ک').replace(/[يی]/g, 'ی').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ؤ/g, 'و')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+  function knownSiteOf(cmd) {
+    const s = siteNorm(faToEn(String(cmd || '')));
+    if (!s) return null;
+    for (const [name, url] of KNOWN_SITES) {
+      const n = siteNorm(name);
+      if (!n) continue;
+      if (s === n || s.includes(n) || (n.includes(s) && s.length >= 3)) return url;
+    }
+    return null;
+  }
+  /* دامنهٔ خام داخل جمله: «باز کن app.example.ir» → app.example.ir */
+  function siteDomainOf(cmd) {
+    const s = siteNorm(faToEn(String(cmd || '')));
+    const m = s.match(/(?:https?:\/\/)?((?:[a-z0-9-]+\.)+(?:com|ir|net|org|io|dev|co|app|shop|xyz|me|tv|info|biz|online|site)(?:\/\S*)?)/i);
+    return m ? m[1] : null;
+  }
+  /* اسم تمیز سایت برای فالبکِ جستجو — «برو به سایت دیجی کالا» → «دیجی کالا» */
+  function cleanSiteQuery(cmd) {
+    let s = String(cmd || '');
+    s = s.replace(SITE_NAV_STRIP, ' ').replace(/[\s\u200C]+/g, ' ').trim(); /* v0.28.1: تریم قبل از ریشهٔ «سایت» */
+    s = s.replace(SITE_WORD_STRIP, ' ');
+    s = s.replace(/\s*(از|در|تو|توی)\s+(سایت|وب\s?سایت)\s*/gi, ' ');
+    s = s.replace(/(سایت|وب\s?سایت)\s*(رو|را)?\s*$/gi, ' ');
+    s = s.replace(/[\s\u200C]+/g, ' ').trim();
+    s = s.replace(/^(رو|را|به|تو|ی)\s+/i, '').replace(/\s+(رو|را)$/i, '');
+    return s.length >= 2 ? s.slice(0, 60) : '';
+  }
+  /* v0.28 — دروازهٔ فرمان‌های دیسکورد: «تماس/کال/call» هم بدون اسم دیسکورد
+     پذیرفته می‌شود (ریشهٔ «تماس رو قطع کن کار نمی‌کند»: دروازه قبلی فقط
+     با «دیسکورد/زنگ بزن/تماس بگیر» روشن می‌شد) */
+  const DISC_GATE_RE = /زنگ\s*بزن|تماس|کال|call\b|دیسکورد|discord|میکروفون[^.]{0,10}(قطع|میوت)|دیفن|دی\s?فن|deafen/i;
+
   const JOKES = [
     'به برنامه‌نویس میگن چقدر طول می‌کشد این کار تموم شه؟ میگه دو دقیقه… بعد دو هفته برمی‌گردد!',
     'دو تا بایت به هم می‌رسند؛ یکی می‌پرسد حالت چطوره؟ می‌گوید یکم بیت‌دارم!',
@@ -1830,12 +1912,23 @@
     },
     {
       k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
-      run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : 'web_search'),
+      run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : (knownSiteOf(c) || siteDomainOf(c) ? 'web_open' : 'web_search')),
       arg: (c) => {
         const m = c.match(/https?:\/\/\S+/);
-        return m ? m[0] : stripSearch(c) || 'گوگل';
+        if (m) return m[0];
+        /* v0.28 — «برو به سایت دیجی کالا» باید خودِ سایت را باز کند، نه اینکه
+           «برو به» را در گوگل سرچ کند: اول دیکشنری سایت‌های معروف، بعد دامنهٔ
+           خام (x.com/x.ir)، در آخر فقط «اسم تمیزِ سایت» برای جستجو */
+        const ks = knownSiteOf(c);
+        if (ks) return ks;
+        const dom = siteDomainOf(c);
+        if (dom) return 'https://' + dom;
+        return cleanSiteQuery(c) || 'گوگل';
       },
-      r: (c) => (LANG === 'en' ? (/https?:\/\//i.test(c) ? 'The website is open.' : 'I searched it on Google; the first result is usually the site.') : (/https?:\/\//i.test(c) ? 'سایت موردنظر باز شد.' : 'در گوگل جستجویش کردم؛ نتیجه اول معمولاً همان سایت است.')),
+      r: (c) => {
+        if (/https?:\/\//i.test(c) || knownSiteOf(c) || siteDomainOf(c)) return LANG === 'en' ? 'The website is open.' : 'سایت موردنظر باز شد.';
+        return LANG === 'en' ? `I searched "${cleanSiteQuery(c) || 'it'}" on Google; the first result is usually the site.` : `«${cleanSiteQuery(c) || 'آن'}» را در گوگل جستجویش کردم؛ نتیجهٔ اول معمولاً همان سایت است.`;
+      },
     },
     {
       k: /جستجو|سرچ|گوگل|google|search( for)?( the)? web|search$/i, t: 'جستجوی وب', i: '#i-search',
@@ -2101,7 +2194,7 @@
       .replace(/(لطفا|لطفاً)/g, '')
       .replace(/[\u200C]/g, ' ')
       .trim();
-    const en = /\b(discord)\b/i.test(t0);
+    const en = /\b(discord)\b/i.test(t0) || /\bcall\b/i.test(t0);
     const fa = /دیسکورد|دیسبورد|دیسکوردُ/.test(t0);
     const ctx = discordCtx();
     /* قطع تماس — «تماس/زنگ/کال» + قطع/ببند/کات */
@@ -2122,14 +2215,16 @@
       const r = await bridge.discord.cmd({ action: 'answer', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.answer') : ((r && r.error) || t('disc.fail'));
     }
-    /* بی‌صدای کل (deafen) — «صدای دیسکورد رو قطع/کرافت کن» */
-    if (/صدای?[^.]{0,8}(دیسکورد|discord)/.test(t0) && /(قطع|بیصدا|بی صدا|کرافت)/.test(t0)) {
+    /* بی‌صدای کل (deafen) — v0.28: «دیفن» هم پذیرفته می‌شود
+       «صدای دیسکورد رو قطع/کرافت کن» / «دیسکورد رو دیفن کن» / «deafen» */
+    if (/(دیفن|دی\s?فن|کرافت|deafen)/i.test(t0) || (/صدای?[^.]{0,8}(دیسکورد|discord)/.test(t0) && /(قطع|بیصدا|بی صدا|وصل|روشن)/.test(t0))) {
       const r = await bridge.discord.cmd({ action: 'deafen', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.deafened') : ((r && r.error) || t('disc.fail'));
     }
-    /* میوت میکروفون — «دیسکورد رو میوت کن» / «میکروفون دیسکورد قطع» */
+    /* میوت میکروفون — «دیسکورد رو میوت کن» / «میکروفون دیسکورد قطع/وصل»
+       v0.28: «ان‌میوت» هم همان کلیدِ تاگل است */
     if (fa || en) {
-      if (/(میوت|مایوت|بیصدا|بی صدا)/.test(t0) || (/میکروفون/.test(t0) && /قطع/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
+      if (/(میوت|مایوت|بیصدا|بی صدا|ان\s?میوت)/.test(t0) || (/میکروفون/.test(t0) && /(قطع|وصل)/.test(t0)) || /وصل[^.]{0,6}(میکروفون|میوت)/.test(t0)) {
         const r = await bridge.discord.cmd({ action: 'mute', ...ctx }).catch(() => null);
         return r && r.ok ? t('disc.muted') : ((r && r.error) || t('disc.fail'));
       }
@@ -2137,8 +2232,8 @@
     /* تماس با نام: «به علی زنگ بزن» / «در دیسکورد به علی تماس بگیر» / «کال کن علی»
        v0.17 — اول مخاطبین ذخیره‌شده (اسم ساده → آی‌دی) تطبیق می‌شوند؛
        اگر مخاطب پیدا شد تماس با دیپ‌لینک مستقیم انجام می‌شود */
-    const callRe = [/(?:در\s*)?(?:دیسکورد|discord)[^.]{0,10}?(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)\s*(?:به|برای)?\s+(.+)/];
-    if (/(زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/.test(t0)) {
+    const callRe = [/(?:در\s*)?(?:دیسکورد|discord)[^.]{0,10}?(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:به|برای)\s+(.+?)\s*(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)/, /(?:زنگ\s*بزن|تماس\s*بگیر|کال\s*کن)\s*(?:به|برای)?\s+(.+)/, /(?:call|ring)\s+(?:up\s+)?(.+)/i];
+    if (/(زنگ\s*بزن|تماس\s*بگیر|کال\s*کن|\bcall\b)/.test(t0)) {
       let nm = null;
       for (const re of callRe) { const m = re.exec(t0); if (m && m[1]) { nm = m[1]; break; } }
       if (nm || fa || en) {
@@ -2531,8 +2626,10 @@
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
       return;
     }
-    /* کنترل دیسکورد (v0.16) — قبل از DNS/برنامه تا «زنگ بزن» قاطی نشود */
-    if (/زنگ\s*بزن|تماس\s*بگیر|کال\s*کن|دیسکورد|discord|میکروفون[^.]{0,10}(قطع|میوت)/i.test(raw)) {
+    /* کنترل دیسکورد (v0.16) — قبل از DNS/برنامه تا «زنگ بزن» قاطی نشود
+       v0.28: دروازهٔ مشترک DISC_GATE_RE — «دیفن/تماس/کال/call» هم پذیرفته
+       می‌شود + وقتی افزونه خاموش است پیام روشن (نه سرچ گوگل، نه سکوت) */
+    if (DISC_GATE_RE.test(raw)) {
       const dr = await tryDiscordCmd(raw);
       if (dr) {
         if (cmdBusyGuard()) return;
@@ -2545,6 +2642,23 @@
         speak(dr);
         pushHistory(raw, true);
         setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+        return;
+      }
+      /* افزونهٔ دیسکورد خاموش است ولی کاربر فرمان کنترل داد → پیام شفاف
+         (ولی «دیسکورد رو باز کن» نیت اجرای خود برنامه است → به مسیر عادی برود) */
+      if (settings.extDiscord === false
+          && !/(باز\s*کن|اجرا\s*کن|باز\s*شو|بیار\s*بالا|\b(open|run|launch)\b)/i.test(raw)) {
+        if (cmdBusyGuard()) return;
+        setState('success');
+        statusText.textContent = t('status.done');
+        body.classList.add('has-card');
+        rcHeard.textContent = `«${raw}»`;
+        rcTag.textContent = 'DISCORD';
+        const offMsg = t('disc.off');
+        typeText(rcReply, offMsg);
+        speak(offMsg);
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+        cmdBusy = false;
         return;
       }
     }
@@ -3234,6 +3348,7 @@
   if (btnWakeRun) btnWakeRun.addEventListener('click', () => {
     const c = wakeDropCmd;
     hideWakeDropCard();
+    wakeSessOpen(); /* اجرای همان فرمان + باز شدن حالت گفتگو برای ادامهٔ حرف‌ها */
     if (c) handleUtterance(c, { force: true }); /* اجرای همان فرمان بدون نیاز به «آوا» */
   });
   if (btnWakeOff) btnWakeOff.addEventListener('click', () => {
@@ -3246,27 +3361,89 @@
     if (c) handleUtterance(c); /* فیلتر خاموش شد → بدون force هم اجرا می‌شود */
   });
 
+  /* ============================================================
+     v0.28 — حالت گفتگو سیری‌وار:
+     کاربر یک بار «آوا» را صدا می‌زند → صدای بانمک + حالت گفتگو باز
+     می‌شود و تا WAKE_SESS_MS میلی‌ثانیه (هر فرمان تمدید می‌شود)
+     دیگر نیازی به تکرار اسم نیست — دقیقاً مثل سیری آیفون.
+     ============================================================ */
+  let wakeSessUntil = 0;
+  let wakeSessTimer = 0;
+  const WAKE_SESS_MS = 90000;
+  const WAKE_WORD_RE = /^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|ava)[\s،,:-]*(.*)$/i;
+  const wakeSessActive = () => Date.now() < wakeSessUntil;
+  function wakeSessOpen() {
+    wakeSessUntil = Date.now() + WAKE_SESS_MS;
+    clearTimeout(wakeSessTimer);
+    wakeSessTimer = setTimeout(() => {
+      if (!wakeSessActive()) return;
+      wakeSessUntil = 0;
+      if (state === 'listening' && settings.handsFree && settings.wakeWord) {
+        statusText.textContent = t('wake.sessExp');
+        setTimeout(() => { if (state === 'listening') statusText.textContent = t('status.listening'); }, 2200);
+      }
+    }, WAKE_SESS_MS + 400);
+  }
+  function wakeSessExtend() {
+    if (wakeSessActive()) wakeSessOpen();
+  }
+  /* صدای بانمک فعال‌شدن دستیار — دو نت بالارونده سینتِز‌شده (بدون فایل صوتی،
+     بدون SwiftShader ریسک؛ فقط WebAudio ساده) */
+  function playWakeChime() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ac = playWakeChime._ac || (playWakeChime._ac = new AC());
+      if (ac.state === 'suspended') { ac.resume().catch(() => { /* noop */ }); }
+      const t0 = ac.currentTime + 0.03;
+      [[880, 0, 0.12], [1318.51, 0.10, 0.22]].forEach(([f, off, dur]) => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(f, t0 + off);
+        g.gain.setValueAtTime(0.0001, t0 + off);
+        g.gain.exponentialRampToValueAtTime(0.18, t0 + off + 0.025);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + dur);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t0 + off); o.stop(t0 + off + dur + 0.06);
+      });
+    } catch (_) { /* noop — هیچ‌وقت بوت را نکشد */ }
+  }
+
   async function handleUtterance(text, opts) {
     const h0 = Date.now(); /* v0.19 — لاگ تأخیر کل از شنیدن تا اجرا */
     let cmd = text;
-    if (settings.handsFree && settings.wakeWord && !dictation.active && !(opts && opts.force)) {
-      const m = text.match(/^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|ava)[\s،,:-]*(.*)$/i);
+    const wakeGate = settings.handsFree && settings.wakeWord && !dictation.active && !(opts && opts.force);
+    if (wakeGate && !wakeSessActive()) {
+      const m = text.match(WAKE_WORD_RE);
       if (!m) {
-        /* بدون کلمه بیدارباش → v0.27.1: کارت اقدام‌پذیر، نه دورریز بی‌صدا */
+        /* بدون کلمه بیدارباش → v0.27.1: کارت اقدام‌پذیر، نه دورریز بی‌صدا
+           v0.28: پیام شفاهی یک‌بار در هر اجرا + کارت می‌ماند (ناپدید لحظه‌ای ندارد) */
         setState('idle');
         statusText.textContent = t('wake.need');
         showWakeDropCard(text);
-        handsFreeRearm();
+        if (!handleUtterance._dropSpoken) {
+          handleUtterance._dropSpoken = true; /* فقط یک بار در هر اجرای برنامه */
+          try { speak(t('wake.dropSpoken')); } catch (_) { /* noop */ }
+        }
+        handsFreeRearm(2300); /* فرصت خواندن پیام — قبل از شروع دوبارهٔ گوش دادن */
         return;
       }
+      /* «آوا» شنیده شد → صدای بانمک + باز شدن حالت گفتگو */
+      wakeSessOpen();
+      playWakeChime();
       cmd = (m[2] || '').trim();
       if (!cmd) {
         setState('idle');
-        statusText.textContent = t('wake.yes');
+        statusText.textContent = t('wake.sessOn');
         speak(t('wake.yes'));
-        handsFreeRearm();
+        handsFreeRearm(1600);
         return;
       }
+    } else if (wakeGate && wakeSessActive()) {
+      /* داخل حالت گفتگو: اسم لازم نیست — ولی اگر گفت، همان اول برداشته شود */
+      const m = text.match(WAKE_WORD_RE);
+      if (m && (m[2] || '').trim()) cmd = (m[2] || '').trim();
     }
     /* بازخورد فوری: متن شنیده‌شده همان لحظه در کارت پاسخ بنشیند */
     if (cmd && !dictation.active) {
@@ -3274,12 +3451,13 @@
       rcHeard.textContent = `«${cmd}»`;
       if (!respCard.classList.contains('show')) { body.classList.add('has-card'); respCard.classList.add('show'); }
     }
-    await runCommand(cmd, { wake: !!(settings.handsFree && settings.wakeWord && !dictation.active) });
+    await runCommand(cmd, { wake: wakeGate });
+    wakeSessExtend(); /* هر فرمان اجراشده، مدت گفتگو را تمدید می‌کند */
     actLog(`utterance total ${Date.now() - h0}ms: ${cmd.slice(0, 60)}`);
   }
 
   /* در حالت بی‌دست، بعد از هر فرمان/خطا دوباره گوش می‌دهیم */
-  function handsFreeRearm() {
+  function handsFreeRearm(delay) {
     if (!settings.handsFree) return;
     setTimeout(() => {
       if (!settings.handsFree) return;
@@ -3291,7 +3469,7 @@
       } catch (_) { /* noop */ }
       if (ttsAudioBusy()) { handsFreeRearm(); return; } /* صدای گوگل هنوز در جریان است */
       startListening();
-    }, 700);
+    }, Math.max(400, Number(delay) || 700));
   }
 
   function setHandsFree(on) {
@@ -4315,7 +4493,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.27.1';
+  let appVersion = '0.28.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -4708,10 +4886,25 @@
     store.set('aiProvider', settings.aiProvider);
     toast(t('toast.saved'), '#i-spark');
   });
-  if (optGeminiKey) optGeminiKey.addEventListener('change', () => {
-    settings.geminiKey = optGeminiKey.value.trim();
-    store.set('geminiKey', settings.geminiKey);
-  });
+  if (optGeminiKey) {
+    /* v0.28 — ذخیرهٔ کلید جمنای با بازخورد روشن: تا کاربر نداند «ثبت شد» یا نه.
+       هم change (blur) و هم input (تایپ/پیست — debounce) ذخیره می‌کند */
+    let gemSaveT = 0;
+    const saveGemKey = () => {
+      const v = optGeminiKey.value.trim();
+      settings.geminiKey = v;
+      store.set('geminiKey', v);
+    };
+    optGeminiKey.addEventListener('change', () => {
+      saveGemKey();
+      toast(settings.geminiKey ? t('set.ai.gemSaved') : t('set.ai.gemCleared'), '#i-key');
+      if (settings.geminiKey && !/^AIza/.test(settings.geminiKey)) toast(t('set.ai.gemBadFormat'), '#i-info');
+    });
+    optGeminiKey.addEventListener('input', () => {
+      clearTimeout(gemSaveT);
+      gemSaveT = setTimeout(saveGemKey, 500);
+    });
+  }
   if (optOpenaiKey) optOpenaiKey.addEventListener('change', () => {
     settings.openaiKey = optOpenaiKey.value.trim();
     store.set('openaiKey', settings.openaiKey);
@@ -4828,8 +5021,22 @@
     toast(settings.demoMode ? t('toast.demoOn') : t('toast.demoOff'), '#i-info');
   });
 
+  /* v0.28 — خطای رایج کاربر: کلید جمنای (AIza…) در «کلید اختصاصی گوگل» بخش
+     تشخیص گفتار چسبانده می‌شود و بعد «کلید جمنای ثبت نشده» دیده می‌شود.
+     کلیدِ AIza خودکار به جای درستش (بخش هوش مصنوعی) می‌رود. */
   optGoogleKey.addEventListener('change', () => {
-    settings.googleKey = optGoogleKey.value.trim();
+    const v = optGoogleKey.value.trim();
+    if (v && /^AIza/.test(v)) {
+      settings.geminiKey = v;
+      store.set('geminiKey', v);
+      settings.googleKey = '';
+      optGoogleKey.value = '';
+      store.set('googleKey', '');
+      refreshEngineUI();
+      toast(t('set.ai.gemMoved'), '#i-key');
+      return;
+    }
+    settings.googleKey = v;
     store.set('googleKey', settings.googleKey);
     refreshEngineUI();
     toast(settings.googleKey ? t('toast.gKeySaved') : t('toast.gKeyCleared'), '#i-key');

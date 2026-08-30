@@ -779,7 +779,7 @@ app.whenReady().then(async () => {
         sttTimeouts: mainjs.includes('AbortSignal.timeout(15000)') && mainjs.includes('AbortSignal.timeout(12000)') && mainjs.includes('signal: AbortSignal.timeout(20000)'),
         aiTimeos: mainjs.includes('AbortSignal.timeout(35000)') && mainjs.includes('AbortSignal.timeout(40000)') && mainjs.includes('AbortSignal.timeout(45000)'),
         modelCache: mainjs.includes('gemSttWorkingModel') && mainjs.includes('gemWorkingModel'),
-        keyBreak: mainjs.includes('if ([401, 403, 429].includes(r.status)) break;'),
+        keyBreak: mainjs.includes('if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }'),
         glmThink: mainjs.includes("body.thinking = { type: 'disabled' }"),
         ttsParallel: mainjs.includes('await Promise.all(chunks.map(') && mainjs.includes('parts.filter(Boolean)'),
         sttFuse: appjs.includes("STT_LAST_KEY = 'avaSttLast'") && appjs.includes('sttMarkFail(eng)') && appjs.includes('sttBenched'),
@@ -963,7 +963,7 @@ app.whenReady().then(async () => {
         card: h27.includes('id="offCard"') && h27.includes('id="btnOfflineDl"') && a27.includes('function updateOfflineCard(') && a27.includes('refreshLocalStatus()'),
         deps: p27.dependencies['sherpa-onnx-node'] && p27.optionalDependencies['sherpa-onnx-win-x64'] && Array.isArray(p27.build.asarUnpack),
         tts: a27.includes('gTtsNext') && a27.includes('__avaB64'),
-        version: p27.version === '0.27.1',
+        version: p27.version === '0.28.0',
       };
       ok('v0.27 local offline engine (sherpa-onnx + whisper int8, on-device)', v27.localEngine);
       ok('v0.27 no external-buffer APIs (Electron-hardened PCM conversion)', v27.noExternalBuffer);
@@ -974,7 +974,7 @@ app.whenReady().then(async () => {
       ok('v0.27 offline pack card in settings (download/progress/status)', v27.card);
       ok('v0.27 packaging: native deps + asarUnpack for NAPI addon', v27.deps);
       ok('v0.27 TTS double-buffer prefetch (zero gap between chunks)', v27.tts);
-      ok('v0.27+ version 0.27.1', v27.version);
+      ok('v0.27+ version 0.28.0', v27.version);
     } catch (e) { console.log('SKIP | v0.27 markers | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.993 v0.27.1 — fix "it types my request, then goes back to listening,
@@ -998,6 +998,37 @@ app.whenReady().then(async () => {
       ok('v0.27.1 cmdBusy 45s stale guard (commands can never be permanently blocked)', v271.busyGuard);
       ok('v0.27.1 drop-card hidden on live-heard/command repaint + i18n', v271.hideOnRepaint && v271.i18n);
     } catch (e) { console.log('SKIP | v0.27.1 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.994 v0.28 — Siri-style wake session + cute chime + persistent hint;
+    // direct site opening ("برو به سایت دیجی کالا" opens digikala.com, no "برو به"
+    // searched on Google); Discord deafen ("دیفن") accepted + extension-off
+    // explanation instead of silent fallthrough; Gemini key UX (auto-route AIza
+    // from the speech Google field, save-feedback toasts, Persian server errors).
+    try {
+      const a28 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const m28 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const v28 = {
+        sess: a28.includes('wakeSessUntil') && a28.includes('WAKE_SESS_MS') && a28.includes('function wakeSessOpen(') && a28.includes('wakeSessExtend()'),
+        chime: a28.includes('function playWakeChime(') && a28.includes('createOscillator') && a28.includes('.ogg') === false,
+        dropSpoken: a28.includes("'wake.dropSpoken'") && a28.includes('wakeSessOpen(); /* اجرای همان فرمان'),
+        noWakeRe: a28.includes('WAKE_WORD_RE') && !a28.includes("text.match(/^\\s*(هی\\s+آوا|آوا\\s?جان|آوا|اوا|آوای|اوای|ava)"),
+        siteDict: a28.includes('const KNOWN_SITES') && a28.includes('digikala.com') && a28.includes('function knownSiteOf(') && a28.includes('function cleanSiteQuery('),
+        siteNavStrip: a28.includes('برو\\s*به') && a28.includes('siteDomainOf('),
+        discDeafen: a28.includes('دیفن|دی\\s?فن|کرافت|deafen') && a28.includes("action: 'deafen'"),
+        discGate: a28.includes('دیفن|دی\\s?فن|deafen') && a28.includes("'disc.off'"),
+        gemRoute: a28.includes('set.ai.gemMoved') && a28.includes('/^AIza/') && a28.includes("'set.ai.gemSaved'"),
+        gemErr: m28.includes('const gemErrHuman') && m28.includes('API key not valid') && m28.includes('location is not supported') && m28.includes('gemErrHuman(r.status, msg)'),
+      };
+      ok('v0.28 Siri-style wake session (one "Ava" opens 90s conversation mode)', v28.sess);
+      ok('v0.28 cute synthesized activation chime (WebAudio, no audio file)', v28.chime);
+      ok('v0.28 wake-drop speaks the hint once + run-now opens the session', v28.dropSpoken);
+      ok('v0.28 wake-word regex centralized (session-aware gate)', v28.noWakeRe);
+      ok('v0.28 known-sites dict — "go to Digikala site" opens the site directly', v28.siteDict);
+      ok('v0.28 navigation words stripped ("برو به" never searched on Google)', v28.siteNavStrip);
+      ok('v0.28 Discord deafen via "دیفن" + clear extension-off message', v28.discDeafen && v28.discGate);
+      ok('v0.28 Gemini key: AIza auto-routed from speech field + save toasts', v28.gemRoute);
+      ok('v0.28 Gemini server errors translated to actionable Persian', v28.gemErr);
+    } catch (e) { console.log('SKIP | v0.28 markers | ' + String(e && e.message).slice(0, 80)); }
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
@@ -1012,10 +1043,10 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.27') : false; })(),
+        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent.includes('0.28') : false; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);
-      ok('v0.27 about page shows v0.27.0', rt24.aboutV26);
+      ok('v0.28 about page shows v0.28.0', rt24.aboutV26);
     } catch (e) { console.log('SKIP | v0.24 runtime | ' + String(e && e.message).slice(0, 80)); }
 
     // 8.93 v0.21 — runtime: DOM checks for new music controls + updater buttons

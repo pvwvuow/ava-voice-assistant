@@ -2156,6 +2156,27 @@ const gemMarkBad = (m) => {
 const gemIsModel404 = (status, msg) =>
   status === 404 || (status === 400 && /not found|not supported|is not a valid model/i.test(String(msg || '')));
 
+/* v0.28 — پیام‌های سرور جمنای به فارسیِ قابل‌فهم:
+   کاربر گزارش کرد «کلید را ثبت کردم ولی می‌گوید ثبت نشده» — ریشه: خطای
+   انگلیسیِ خام سرور (API key not valid / location not supported). حالا
+   این خطاها ترجمهٔ روشن دارند؛ جزئیات فنی همچون خودش در activity.log می‌ماند. */
+const gemErrHuman = (status, raw) => {
+  const s = String(raw || '');
+  if (/API_?KEY_?INVALID|API key not valid|Please pass a valid API key/i.test(s)) {
+    return 'کلید جمنای معتبر نیست — کلید را کامل و درست وارد کن؛ از aistudio.google.com رایگان می‌شود (با AIza شروع می‌شود)';
+  }
+  if (/location is not supported|not supported for the API use|user location/i.test(s)) {
+    return 'گوگل جمنای را برای سرزمین تو محدود کرده — موتورهای دیگر آوا همین حالا جواب می‌دهند (خودکار/گوگل/بستهٔ آفلاین)';
+  }
+  if (status === 429 || /quota|RESOURCE_EXHAUSTED|rate limit/i.test(s)) {
+    return 'سهمیهٔ رایگان کلید جمنای این لحظه تمام شده — چند دقیقه بعد یا با کلید دوم (با ویرگول جدا کن) امتحان کن';
+  }
+  if (status === 403) {
+    return 'کلید جمنای به این سرویس اجازهٔ کار نداد — در گوگل کلاود «Generative Language API» را برای همین کلید فعال کن';
+  }
+  return null;
+};
+
 ipcMain.handle('stt:gemini', async (_e, p) => {
   const { buf, key, model, lang } = p || {};
   const keys = splitKeys(key);
@@ -2190,8 +2211,10 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
           lastErr = `Gemini-ASR: ${String(msg).slice(0, 120)}`;
           if (gemIsModel404(r.status, msg)) gemMarkBad(mdl); /* v0.26 */
           if (isNetFail(String(msg))) sawNetFail = true;
-          /* کلید نامعتبر/محدود → امتحان بقیهٔ مدل‌ها با همین کلید بی‌فایده است */
-          if ([401, 403, 429].includes(r.status)) break;
+          /* v0.28 — پیام فارسیِ قابل‌فهم برای خطاهای کلید/سرزمین/سهمیه */
+          if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }
+          const hum = gemErrHuman(r.status, msg);
+          if (hum) lastErr = 'Gemini-ASR: ' + hum;
           continue;
         }
         const cand = j && j.candidates && j.candidates[0];
@@ -2401,7 +2424,10 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
           if (isNetFail(String(msg))) sawNetFail = true;
           /* v0.21 — کلید بی‌اعتبار/محدود (401/403/429) → بقیهٔ مدل‌ها با همین کلید
              بی‌فایده‌اند؛ بلافاصله کلید بعدی (قبلاً تا ۶ مدل × ۶۰ ثانیه معطل می‌شد) */
-          if ([401, 403, 429].includes(r.status)) break;
+          if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }
+          /* v0.28 — پیام فارسیِ قابل‌فهم برای خطاهای کلید/سرزمین (400: API key not valid) */
+          const hum = gemErrHuman(r.status, msg);
+          if (hum) lastErr = 'Gemini: ' + hum;
           continue; /* مدل ناموجود (400/404) → مدل بعدی */
         }
         const cand = j && j.candidates && j.candidates[0];
