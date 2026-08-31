@@ -408,8 +408,8 @@
                   </select>
                 </div>
                 <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.ai.geminiKey">کلید API گوگل جمنای (اختیاری)</b><span data-i18n="set.ai.geminiKeyHint">برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com</span></span>
-                  <input type="password" id="optGeminiKey" class="set-input" data-i18n-ph="set.ai.geminiPh" placeholder="AIza…" autocomplete="off" dir="ltr" />
+                  <span class="set-info"><b data-i18n="set.ai.geminiKey">کلید API گوگل جمنای (اختیاری)</b><span data-i18n="set.ai.geminiKeyHint">برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com؛ هر دو فرمت کلید (قدیمی AIza… و جدید AQ.…) کار می‌کنند</span></span>
+                  <input type="password" id="optGeminiKey" class="set-input" data-i18n-ph="set.ai.geminiPh" placeholder="AIza… یا AQ.…" autocomplete="off" dir="ltr" />
                 </div>
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.ai.gemTest">تست اتصال جمنای</b><span data-i18n="set.ai.gemTestHint">کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی</span></span>
@@ -427,16 +427,30 @@
                   <span class="set-info"><b data-i18n="set.ai.openaiKey">کلید API اوپن‌ای‌آی (اختیاری)</b><span data-i18n="set.ai.openaiKeyHint">از platform.openai.com — با GPT جواب می‌دهد</span></span>
                   <input type="password" id="optOpenaiKey" class="set-input" data-i18n-ph="set.ai.openaiPh" placeholder="sk-…" autocomplete="off" dir="ltr" />
                 </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ai.geminiModel">مدل جمنای</b><span data-i18n="set.ai.geminiModelHint">مدل پیش‌فرض: flash-latest (همیشه جدیدترین فلاش) — اگر منسوخ شد از همین‌جا عوضش کن</span></span>
-                  <input type="text" id="optGeminiModel" class="set-input" list="geminiModelList" dir="ltr" data-i18n-ph="set.ai.geminiModelPh" placeholder="gemini-flash-latest" autocomplete="off" />
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.ai.geminiModel">مدل جمنای</b><span data-i18n="set.ai.geminiModelHint">مدل پیش‌فرض: flash-lite-latest (همیشه جدیدترین فلاش سبک) — اگر مدلی کار نکرد، آوا خودکار به مدل بعدی می‌رود</span></span>
+                  <div class="gem-model-line">
+                    <input type="text" id="optGeminiModel" class="set-input" list="geminiModelList" dir="ltr" data-i18n-ph="set.ai.geminiModelPh" placeholder="gemini-flash-lite-latest" autocomplete="off" />
+                    <button class="chip" id="btnGemModels" data-i18n-title="set.ai.gemModelsBtn" title="مشاهده و انتخاب از فهرست کامل مدل‌های کلید تو"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ai.gemModelsBtn">فهرست مدل‌ها</span></button>
+                  </div>
+                  <!-- v0.39 — پنل لیست کامل مدل‌ها: قبلاً datalist فقط چند مورد نشان می‌داد و کاربر
+                       «نمی‌توانست مدل نوشته‌شده را کامل ببیند»؛ حالا لیست واقعی کلید (کشف‌شده از گوگل)
+                       با جستجو و اسکرول کامل باز می‌شود -->
+                  <div class="gem-panel" id="gemModelPanel" hidden>
+                    <input type="text" id="gemModelSearch" class="set-input" dir="ltr" data-i18n-ph="set.ai.gemSearchPh" placeholder="جستجو بین مدل‌ها…" autocomplete="off" />
+                    <div class="gem-mlist" id="gemModelListDiv" role="listbox"></div>
+                    <p class="set-note" id="gemModelsNote" hidden></p>
+                  </div>
                   <datalist id="geminiModelList">
+                    <option value="gemini-flash-lite-latest"></option>
                     <option value="gemini-flash-latest"></option>
+                    <option value="gemini-3.7-flash"></option>
+                    <option value="gemini-3.6-flash"></option>
                     <option value="gemini-3.5-flash-lite"></option>
+                    <option value="gemini-3.5-flash"></option>
+                    <option value="gemini-3.1-flash-lite"></option>
                     <option value="gemini-2.5-flash"></option>
                     <option value="gemini-2.5-flash-lite"></option>
-                    <option value="gemini-2.0-flash"></option>
-                    <option value="gemini-2.0-flash-lite"></option>
                   </datalist>
                 </div>
                 <div class="set-row">
@@ -931,6 +945,20 @@
     </div>
   </div>
 
+  <!-- ============ v0.39 — پیشنهاد زمینه‌ای فرمان‌ها ============
+       وقتی کاربر درگیر یوتیوب/ویدیو/موسیقی است، یک کارت شیشه‌ای کوچک با انیمیشن
+       باز می‌شود و فرمان‌های مرتبط همان لحظه را نشان می‌دهد («می‌خای کامندهای
+       مربوط به ویدیو رو ببینی؟») — کلیک = اجرا؛ خودش هم بعد از چند ثانیه می‌رود -->
+  <div id="cmdSuggest" class="cs-card glass" hidden aria-live="polite">
+    <div class="cs-head">
+      <span class="cs-ico"><svg class="ic"><use href="#i-spark"/></svg></span>
+      <b id="csTitle"></b>
+      <button class="cs-x" id="csClose" aria-label="بستن"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <p id="csSub"></p>
+    <div class="cs-chips" id="csChips"></div>
+  </div>
+
   <!-- ============ فرم شیشه‌ای «DNS جدید» — داخل صفحه اصلی با انیمیشن ============ -->
   <div id="dnsQuick" class="dnsq" hidden>
     <div class="dnsq-backdrop" id="dnsqBackdrop"></div>
@@ -1000,7 +1028,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.38.1-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.39.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

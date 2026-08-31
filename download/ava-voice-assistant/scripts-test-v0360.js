@@ -110,7 +110,7 @@ ok('cloud 2nd chance when the offline engine hears nothing (10s cooldown)',
 
 console.log('\n[4] C3: joke routes to AI, never to search');
 ok('joke rule: جک/جوک/لطیفه + AI_FALLBACK when AI connected, local joke otherwise',
-   appSrc.includes('k: /جوک|جک|لطیفه|بخندون|شوخی|tell me a joke|make me laugh|joke/i, t: \'جوک\', i: \'#i-smile\',') &&
+   appSrc.includes('k: /جوک|جک|لطیفه|بخندون|شوخی|tell me a joke|make me laugh|joke/i, id: \'joke\', t: \'جوک\', i: \'#i-smile\',') /* v0.39: id */ &&
    appSrc.includes('r: async () => { if (aiConnected()) return AI_FALLBACK; return joke(); },'));
 ok('AI system prompt (FA) forbids searching jokes/sites and DO-block for jokes',
    appSrc.includes('خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن') &&

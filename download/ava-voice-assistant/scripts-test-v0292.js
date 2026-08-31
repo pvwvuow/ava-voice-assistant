@@ -92,8 +92,8 @@ ok('sentinel → aiHandleCommand(cmd) with same utterance',
    /reply\.__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd(, rule && rule\.__aiExtra)?\); return; \}/.test(appSrc));
 ok('honest pre-set reply when AI itself is unreachable',
    /__aiFallback[\s\S]{0,420}t\('weather\.fail'\)/.test(appSrc));
-ok('unknown-command → AI path intact (v0.20 regression)',
-   appSrc.includes('if (aiConnected()) {\n        /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */\n        await aiHandleCommand(cmd);'));
+ok('unknown-command → AI path intact (v0.20 regression; v0.39 + catalog)',
+   /if \(aiConnected\(\)\) \{[\s\S]{0,400}await aiHandleCommand\(cmd, aiCmdCatalogCtx\(\)\);/.test(appSrc));
 
 /* ---- 3) sys:weather honesty + offline city dict ---- */
 console.log('\n[3] sys:weather — gr.ok check, netFail flag, offline cities');

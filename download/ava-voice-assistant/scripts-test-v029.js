@@ -42,11 +42,11 @@ ok('PS body: v0.28.1 callswitch fix intact', body.includes("$name = ($Name -repl
 
 /* ---- 2) Gemini test + relay ---- */
 ok('main: ai:gemtest handler exists', mainSrc.includes("ipcMain.handle('ai:gemtest'"));
-ok('main: gemtest tries discovery+statics + marks bad keys (401/403/429)',
+ok('main: gemtest tries discovery+statics + marks bad keys (v0.39: 401/403 break, 429 continue)',
    mainSrc.includes('const discT = await gemDiscoverModels(keys[0], gbase);') &&
-   mainSrc.includes("'gemini-flash-latest', 'gemini-2.5-flash'") &&
+   /const models = \[\.\.\.new Set\(\[\.\.\.discT\.slice\(0, 4\), \.\.\.geminiModelChain\(''\)\.slice\(0, 4\)\]\)\]\.slice\(0, 6\)/.test(mainSrc) &&
    mainSrc.includes('badKeys.add(k)') &&
-   !mainSrc.includes("['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash']"));
+   mainSrc.includes('if (r.status === 429) continue;'));
 ok('main: ai:gemini honors optional relay base', mainSrc.includes("const { key, model, messages, search, base } = p || {};") && mainSrc.includes("${gbase}/v1beta/models/"));
 ok('main: stt:gemini honors optional relay base', mainSrc.includes("const { buf, key, model, lang, base } = p || {};"));
 ok('preload: ai.gemTest bridge', preSrc.includes("gemTest: (payload) => ipcRenderer.invoke('ai:gemtest', payload)"));

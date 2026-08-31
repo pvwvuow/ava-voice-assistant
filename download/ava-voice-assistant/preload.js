@@ -103,6 +103,8 @@ contextBridge.exposeInMainWorld('ava', {
     gemini: (payload) => ipcRenderer.invoke('ai:gemini', payload),
     /* v0.29 — تست اتصال جمنای از تنظیمات (درخواست واقعی کوچک + خطای فارسی دقیق) */
     gemTest: (payload) => ipcRenderer.invoke('ai:gemtest', payload),
+    /* v0.39 — فهرست کامل مدل‌های چتِ جمنای برای انتخابگر تنظیمات */
+    gemModels: (payload) => ipcRenderer.invoke('ai:gemmodels', payload),
     openai: (payload) => ipcRenderer.invoke('ai:openai', payload),
   },
 

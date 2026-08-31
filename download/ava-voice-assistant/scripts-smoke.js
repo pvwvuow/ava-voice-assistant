@@ -757,7 +757,7 @@ app.whenReady().then(async () => {
       const html = read('renderer/index.html');
       const v20 = {
         normLayer: /function normFaFull\(s\)/.test(appjs) && appjs.includes('raw = normFaFull(raw);') && appjs.includes('\\u06F0-\\u06F9'),
-        doProtocol: /function parseDo\(text\)/.test(appjs) && /async function executeDoActions\(actions\)/.test(appjs) && appjs.includes('const DO_ACTS = ['),
+        doProtocol: /function parseDo\(text\)/.test(appjs) && /async function executeDoActions\(actions(?:, origCmd)?\)/.test(appjs) /* v0.39: +origCmd for run_cmd */ && appjs.includes('const DO_ACTS = ['),
         doPrompt: appjs.includes('<<<DO>>>') && appjs.includes('discord_call') && appjs.includes('run_custom'),
         doHook: appjs.includes('const doRes = parseDo(r.text);') && appjs.includes("rcTag.textContent = t('tag.aiDo')"),
         doSafe: appjs.includes("DO_ACTS.includes(a.act)") && appjs.includes("askConfirm({") && appjs.includes("Sleep the PC?"),
@@ -789,7 +789,7 @@ app.whenReady().then(async () => {
         sttTimeouts: mainjs.includes('AbortSignal.timeout(15000)') && mainjs.includes('AbortSignal.timeout(12000)') && mainjs.includes('signal: AbortSignal.timeout(20000)'),
         aiTimeos: mainjs.includes('AbortSignal.timeout(35000)') && mainjs.includes('AbortSignal.timeout(40000)') && mainjs.includes('AbortSignal.timeout(45000)'),
         modelCache: mainjs.includes('gemSttWorkingModel') && mainjs.includes('gemWorkingModel'),
-        keyBreak: mainjs.includes('if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }'),
+        keyBreak: mainjs.includes('if ([401, 403].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }') && mainjs.includes('if (r.status === 429) { lastErr = gemErrHuman(r.status, msg) || lastErr; continue; }'), /* v0.39: 401/403 break + 429 continue */
         glmThink: mainjs.includes("body.thinking = { type: 'disabled' }"),
         ttsParallel: mainjs.includes('await Promise.all(chunks.map(') && mainjs.includes('parts.filter(Boolean)'),
         sttFuse: appjs.includes("STT_LAST_KEY = 'avaSttLast'") && appjs.includes('sttMarkFail(eng)') && appjs.includes('sttBenched'),
@@ -1493,7 +1493,7 @@ app.whenReady().then(async () => {
         openUrl: pm38.includes('function openUrl(u)') && pm38.includes('openUrl,') && pm38.includes('pip:host:search') && pm38.includes("{ kind: 'note'") && pm38.includes('results?search_query='),
         player: pr38.includes('enablejsapi=1') && (pr38.match(/btnClose\.addEventListener/g) || []).length === 1 && (pr38.match(/btnLock\.addEventListener/g) || []).length === 1 && pr38.includes("kind === 'note'") && pr38.includes('emptyDefault'),
         ui: ph38.includes('id="btnPlay"') && ph38.includes('id="btnMute"') && ph38.includes('id="pipSearch"') && ph38.includes('.pip-search') && pl38.includes('search: (q)'),
-        errors: m38.includes('v0.38 — فیلور بی‌صدا') && m38.includes('سرویس هوش مصنوعی موقتاً شلوغ است') && m38.includes("actLog('gemini-chat fail: tried models ") && !m38.includes('مدل‌های امتحان‌شده: ') && !m38.includes('هیچ کلید Gemini جواب نداد'),
+        errors: m38.includes('429 سهمیهٔ همین مدل است') && m38.includes('سرویس هوش مصنوعی موقتاً شلوغ است') && m38.includes("actLog('gemini-chat fail: tried models ") && !m38.includes('مدل‌های امتحان‌شده: ') && !m38.includes('هیچ کلید Gemini جواب نداد'), /* v0.39: failover markers refreshed */
         voice: a38.includes('const ytQueryOf') && a38.includes("run: 'pip_youtube'") && a38.includes("run: 'youtube_search'") && a38.indexOf("run: 'pip_youtube'") < a38.indexOf('AVAVoice.PIP_COMMAND_RE'),
         ver: /^0\.3[8-9]\.[\w.-]+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[8-9]\.[\w.-]+';/.test(a38) && />v0\.3[8-9]\./.test(ih38),
       };

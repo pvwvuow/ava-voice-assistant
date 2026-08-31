@@ -216,6 +216,7 @@
     'set.ai.gemTesting': ['در حال تست…', 'Testing…'],
     'set.ai.gemTestNoKey': ['اول کلید جمنای را در کادر بالا بگذار', 'Put your Gemini key in the field above first'],
     'set.ai.gemTestOk': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه', 'Connected ✓ model {x} — {y} ms'],
+    'set.ai.gemTestOkList': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه ({z} مدل زنده پیدا شد — دکمهٔ «فهرست مدل‌ها»)', 'Connected ✓ model {x} — {y} ms ({z} live models found — see "Model list")'],
     'set.ai.gemTestToastOk': ['جمنای وصل است ✓', 'Gemini is connected ✓'],
     'set.ai.gemTestFail': ['وصل نشد: {x}', 'Connection failed: {x}'],
     'set.ai.gemBase': ['آدرس رلهٔ جمنای (پیشرفته — اختیاری)', 'Gemini relay URL (advanced — optional)'],
@@ -494,6 +495,7 @@
     'set.ai.gemTesting': ['در حال تست…', 'Testing…'],
     'set.ai.gemTestNoKey': ['اول کلید جمنای را در کادر بالا بگذار', 'Put your Gemini key in the field above first'],
     'set.ai.gemTestOk': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه', 'Connected ✓ model {x} — {y} ms'],
+    'set.ai.gemTestOkList': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه ({z} مدل زنده پیدا شد — دکمهٔ «فهرست مدل‌ها»)', 'Connected ✓ model {x} — {y} ms ({z} live models found — see "Model list")'],
     'set.ai.gemTestToastOk': ['جمنای وصل است ✓', 'Gemini is connected ✓'],
     'set.ai.gemTestFail': ['وصل نشد: {x}', 'Connection failed: {x}'],
     'set.ai.gemBase': ['آدرس رلهٔ جمنای (پیشرفته — اختیاری)', 'Gemini relay URL (advanced — optional)'],
@@ -941,8 +943,11 @@
 
     /* --- v0.13: انتخاب مدل + فیدبک دکمه میکروفون --- */
     'set.ai.geminiModel': ['مدل جمنای', 'Gemini model'],
-    'set.ai.geminiModelHint': ['هر مدلی تایپ کن — اگر مدل منسوخ شده باشد، آوا خودکار با جدیدترین فلاش جواب می‌دهد', 'Type any model — if it has retired, AVA automatically falls back to the newest flash'],
-    'set.ai.geminiModelPh': ['gemini-flash-latest', 'gemini-flash-latest'],
+    'set.ai.geminiModelHint': ['هر مدلی تایپ کن — اگر مدلی کار نکرد (بازنشسته/بی‌سهمیه)، آوا خودکار به مدل بعدی می‌رود؛ دکمهٔ «فهرست مدل‌ها» همهٔ مدل‌های زندهٔ کلیدت را نشان می‌دهد', 'Type any model — if one fails (retired/no quota), AVA automatically tries the next; the "Model list" button shows every live model of your key'],
+    'set.ai.geminiModelPh': ['gemini-flash-lite-latest', 'gemini-flash-lite-latest'],
+    'set.ai.gemModelsBtn': ['فهرست مدل‌ها', 'Model list'],
+    'set.ai.gemSearchPh': ['جستجو بین مدل‌ها…', 'Search models…'],
+    'set.ai.gemModelsNone': ['فهرست مدل‌ها الان در دسترس نیست — اول «تست اتصال» را بزن تا مدل‌های زندهٔ کلیدت خوانده شود', 'Model list is unavailable right now — run "Test connection" first so AVA can read your live models'],
     'set.ai.openaiModel': ['مدل OpenAI', 'OpenAI model'],
     'set.ai.openaiModelHint': ['می‌توانی هر مدلی بنویسی؛ پیشنهادها از منوی پایین ورودی هم می‌آید', 'Type any model name; suggestions appear below the input'],
     'set.ai.openaiModelPh': ['gpt-4o-mini', 'gpt-4o-mini'],
@@ -964,8 +969,8 @@
     'set.ai.pGemini': ['گوگل جمنای', 'Google Gemini'],
     'set.ai.pOpenai': ['OpenAI', 'OpenAI'],
     'set.ai.geminiKey': ['کلیدهای API گوگل جمنای (اختیاری)', 'Google Gemini API keys (optional)'],
-    'set.ai.geminiKeyHint': ['برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com. چند کلید؟ با ویرگول جدا کن؛ اگر یکی محدود شد، بعدی خودکار استفاده می‌شود', 'Search-like questions get live Google Search answers — free key from aistudio.google.com. Multiple keys: separate with commas — auto rotation on rate limits'],
-    'set.ai.geminiPh': ['AIza… , AIza… (چند کلید با ویرگول)', 'AIza… , AIza… (comma separated)'],
+    'set.ai.geminiKeyHint': ['برای سوال‌های «سرچ» جواب لحظه‌ای با جستجوی گوگل می‌گیرد — کلید رایگان از aistudio.google.com؛ هر دو فرمت (AIza… و AQ.…) کار می‌کنند. چند کلید؟ با ویرگول جدا کن', 'Search-like questions get live Google Search answers — free key from aistudio.google.com; both formats (AIza… and AQ.…) work. Multiple keys: comma separated'],
+    'set.ai.geminiPh': ['AIza… یا AQ.… (چند کلید با ویرگول)', 'AIza… or AQ.… (comma separated)'],
     'set.ai.openaiKey': ['کلیدهای API اوپن‌ای‌آی (اختیاری)', 'OpenAI API keys (optional)'],
     'set.ai.openaiKeyHint': ['از platform.openai.com — با GPT جواب می‌دهد. چند کلید را می‌توانی با ویرگول بدهی (چرخش خودکار)', 'From platform.openai.com — answers with GPT. Multiple keys can be comma separated (auto rotation)'],
     'set.ai.openaiPh': ['sk-… , sk-… (چند کلید با ویرگول)', 'sk-… , sk-… (comma separated)'],
@@ -993,7 +998,7 @@
     'set.ai.gemMoved': ['این کلید جمنای بود — خودکار در بخش هوش مصنوعی ذخیره شد ✓', 'That is a Gemini key — saved to the AI section automatically ✓'],
     'set.ai.gemSaved': ['کلید جمنای ذخیره شد ✓ — چت و سرچ لحظه‌ای فعال شد', 'Gemini key saved ✓ — chat and live search enabled'],
     'set.ai.gemCleared': ['کلید جمنای پاک شد', 'Gemini key cleared'],
-    'set.ai.gemBadFormat': ['کلید جمنای معمولاً با «AIza» شروع می‌شود — اگر مطمئنی درست است، بی‌خیال این پیام', 'A Gemini key usually starts with "AIza" — ignore this notice if you are sure it is right'],
+    'set.ai.gemBadFormat': ['این فرمت شبیه کلید جمنای نیست — کلیدهای جمنای با «AIza» یا «AQ.» شروع می‌شوند؛ اگر مطمئنی درست است، بی‌خیال این پیام', 'This does not look like a Gemini key — Gemini keys start with "AIza" or "AQ."; ignore this notice if you are sure it is right'],
     'set.ai.gemErrKey': ['کلید جمنای معتبر نیست — از aistudio.google.com کلید بگیر و کامل بچسبان (با AIza شروع می‌شود)', 'The Gemini key is not valid — get a free one from aistudio.google.com and paste it fully (starts with AIza)'],
     'set.ai.gemErrLoc': ['گوگل جمنای را برای سرزمین تو محدود کرده — موتورهای دیگر آوا همین حالا جواب می‌دهند (خودکار/گوگل/بستهٔ آفلاین)', 'Google restricts Gemini in your region — the other AVA engines answer right now (Auto / Google / offline pack)'],
     /* --- v0.31.0: قیمت‌ها / اوقات شرعی / یادداشت / تاریخ میلادی --- */
@@ -2398,50 +2403,50 @@
   const RULES = [
     /* --- پاور: خواب / خاموش / ریستارت / مانیتور (نسخه ۰.۱۰) --- */
     {
-      k: /لغو.{0,8}(خاموش|شات\s?داون)|انصراف.{0,8}(خاموش|ریستارت)|cancel.{0,8}(shutdown|restart)|abort.{0,8}shutdown/i, t: 'لغو خاموش شدن', i: '#i-power', run: 'shutdown_abort',
+      k: /لغو.{0,8}(خاموش|شات\s?داون)|انصراف.{0,8}(خاموش|ریستارت)|cancel.{0,8}(shutdown|restart)|abort.{0,8}shutdown/i, id: 'shutdown_abort', t: 'لغو خاموش شدن', i: '#i-power', run: 'shutdown_abort',
       r: () => runPower('shutdown_abort'),
     },
-    { k: /(بخواب|خواب.{0,6}ببر|حالت.{0,6}خواب|به\s*خواب|sleep( now)?|go to sleep)/i, t: 'حالت خواب', i: '#i-moon', run: 'sys_sleep', r: () => runPower('sys_sleep') },
-    { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, t: 'خاموش کردن مانیتور', i: '#i-monitor', run: 'monitor_off', r: () => runPower('monitor_off') },
-    { k: /ری\s?استارت|ریستارت|راه\s?اندازی.{0,4}مجدد|restart|reboot/i, t: 'راه‌اندازی مجدد', i: '#i-refresh', run: 'sys_restart', confirm: 'restart', r: () => runPower('sys_restart') },
+    { k: /(بخواب|خواب.{0,6}ببر|حالت.{0,6}خواب|به\s*خواب|sleep( now)?|go to sleep)/i, id: 'sleep', t: 'حالت خواب', i: '#i-moon', run: 'sys_sleep', r: () => runPower('sys_sleep') },
+    { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, id: 'monitor_off', t: 'خاموش کردن مانیتور', i: '#i-monitor', run: 'monitor_off', r: () => runPower('monitor_off') },
+    { k: /ری\s?استارت|ریستارت|راه\s?اندازی.{0,4}مجدد|restart|reboot/i, id: 'restart', t: 'راه‌اندازی مجدد', i: '#i-refresh', run: 'sys_restart', confirm: 'restart', r: () => runPower('sys_restart') },
     {
       /* v0.38.1 — «صدا رو خاموش کن» دیگر دیالوگ خاموشی PC باز نمی‌کرد!
          قبلاً گروهِ دستگاه اختیاری بود و «خاموش» تنها کافی بود؛ حالا باید
          دستگاه (کامپیوتر/سیستم/ویندوز/pc) در جمله باشد — در هر دو ترتیب */
-      k: /(خاموش|شات\s?داون|shutdown|shut\s?down|power\s?off|turn\s?off)[^.]{0,16}(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)|(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)[^.]{0,16}(خاموش|شات\s?داون|shutdown|power\s?off)/i, t: 'خاموش کردن', i: '#i-power', run: 'sys_shutdown', confirm: 'shutdown',
+      k: /(خاموش|شات\s?داون|shutdown|shut\s?down|power\s?off|turn\s?off)[^.]{0,16}(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)|(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)[^.]{0,16}(خاموش|شات\s?داون|shutdown|power\s?off)/i, id: 'shutdown', t: 'خاموش کردن', i: '#i-power', run: 'sys_shutdown', confirm: 'shutdown',
       r: () => runPower('sys_shutdown'),
     },
 
     /* --- برنامه‌های ویندوز --- */
-    { k: /کروم|مرورگر|chrome|browser/i, t: 'باز کردن کروم', i: '#i-globe', run: 'open_chrome', r: () => LANG === 'en' ? 'Chrome is open. Enjoy!' : 'مرورگر کروم باز شد. خوش بگذره!' },
-    { k: /نت[\s\u200C.]?پد|نوت[\s\u200C]?پد|دفترچه|notepad/i, t: 'باز کردن نت‌پد', i: '#i-note', run: 'open_notepad', r: () => LANG === 'en' ? 'Notepad is open.' : 'نت‌پد باز شد.' },
+    { k: /کروم|مرورگر|chrome|browser/i, id: 'open_chrome', t: 'باز کردن کروم', i: '#i-globe', run: 'open_chrome', r: () => LANG === 'en' ? 'Chrome is open. Enjoy!' : 'مرورگر کروم باز شد. خوش بگذره!' },
+    { k: /نت[\s\u200C.]?پد|نوت[\s\u200C]?پد|دفترچه|notepad/i, id: 'open_notepad', t: 'باز کردن نت‌پد', i: '#i-note', run: 'open_notepad', r: () => LANG === 'en' ? 'Notepad is open.' : 'نت‌پد باز شد.' },
     /* v0.38.1 — «حساب کن» از این قانون حذف شد: «حساب کن پنج ضربدر هفت» باید
        محاسبهٔ صوتی شود نه باز شدن اپ ماشین‌حساب (قانون محاسبه پایین‌تر است) */
-    { k: /ماشین[\s\u200C]?حساب|calculator/i, t: 'باز کردن ماشین‌حساب', i: '#i-calc', run: 'open_calc', r: () => LANG === 'en' ? 'Calculator is open.' : 'ماشین‌حساب باز شد.' },
-    { k: /اکسپلورر|فایل‌?ها|مای\s?کامپیوتر|این\s?کامپیوتر|explorer|file explorer/i, t: 'باز کردن اکسپلورر', i: '#i-window', run: 'open_explorer', r: () => LANG === 'en' ? 'File Explorer is open.' : 'فایل اکسپلورر باز شد.' },
-    { k: /وی[\s\u200C]?اس\s?کد|vs\s?code|کدنویس/i, t: 'باز کردن VS Code', i: '#i-note', run: 'open_vscode', r: () => LANG === 'en' ? 'VS Code is open (must be installed).' : 'وی‌اس کد باز شد (باید روی سیستم نصب باشد).' },
-    { k: /تسک[\s\u200C]?منیجر|مدیریت[\s\u200C]?فرایند|task\s?manager/i, t: 'باز کردن تسک‌منیجر', i: '#i-pulse', run: 'open_taskmgr', r: () => LANG === 'en' ? 'Task Manager is open.' : 'تسک‌منیجر باز شد.' },
-    { k: /تنظیمات|windows settings|open settings/i, t: 'باز کردن تنظیمات', i: '#i-gear', run: 'open_settings', r: () => LANG === 'en' ? 'Windows Settings is open.' : 'تنظیمات ویندوز باز شد.' },
-    { k: /پینت|نقاشی|paint/i, t: 'باز کردن پینت', i: '#i-calc', run: 'open_paint', r: () => LANG === 'en' ? 'Paint is open; get creative!' : 'پینت باز شد؛ خلاق باش!' },
+    { k: /ماشین[\s\u200C]?حساب|calculator/i, id: 'open_calc', t: 'باز کردن ماشین‌حساب', i: '#i-calc', run: 'open_calc', r: () => LANG === 'en' ? 'Calculator is open.' : 'ماشین‌حساب باز شد.' },
+    { k: /اکسپلورر|فایل‌?ها|مای\s?کامپیوتر|این\s?کامپیوتر|explorer|file explorer/i, id: 'open_explorer', t: 'باز کردن اکسپلورر', i: '#i-window', run: 'open_explorer', r: () => LANG === 'en' ? 'File Explorer is open.' : 'فایل اکسپلورر باز شد.' },
+    { k: /وی[\s\u200C]?اس\s?کد|vs\s?code|کدنویس/i, id: 'open_vscode', t: 'باز کردن VS Code', i: '#i-note', run: 'open_vscode', r: () => LANG === 'en' ? 'VS Code is open (must be installed).' : 'وی‌اس کد باز شد (باید روی سیستم نصب باشد).' },
+    { k: /تسک[\s\u200C]?منیجر|مدیریت[\s\u200C]?فرایند|task\s?manager/i, id: 'open_taskmgr', t: 'باز کردن تسک‌منیجر', i: '#i-pulse', run: 'open_taskmgr', r: () => LANG === 'en' ? 'Task Manager is open.' : 'تسک‌منیجر باز شد.' },
+    { k: /تنظیمات|windows settings|open settings/i, id: 'open_settings', t: 'باز کردن تنظیمات', i: '#i-gear', run: 'open_settings', r: () => LANG === 'en' ? 'Windows Settings is open.' : 'تنظیمات ویندوز باز شد.' },
+    { k: /پینت|نقاشی|paint/i, id: 'open_paint', t: 'باز کردن پینت', i: '#i-calc', run: 'open_paint', r: () => LANG === 'en' ? 'Paint is open; get creative!' : 'پینت باز شد؛ خلاق باش!' },
 
     /* --- وب --- */
-    { k: /یوتیوب|youtube/i, t: 'باز کردن یوتیوب', i: '#i-music', run: 'open_youtube', r: () => LANG === 'en' ? 'YouTube is open.' : 'یوتیوب باز شد.' },
-    { k: /موسیقی|آهنگ|موزیک|play music|play some music/i, t: 'پخش موسیقی', i: '#i-music', run: 'open_music', r: () => LANG === 'en' ? 'YouTube Music is open; pick a song.' : 'یوتیوب موزیک باز شد؛ آهنگ دلخواهت را بزن.' },
+    { k: /یوتیوب|youtube/i, id: 'open_youtube', t: 'باز کردن یوتیوب', i: '#i-music', run: 'open_youtube', r: () => LANG === 'en' ? 'YouTube is open.' : 'یوتیوب باز شد.' },
+    { k: /موسیقی|آهنگ|موزیک|play music|play some music/i, id: 'open_music', t: 'پخش موسیقی', i: '#i-music', run: 'open_music', r: () => LANG === 'en' ? 'YouTube Music is open; pick a song.' : 'یوتیوب موزیک باز شد؛ آهنگ دلخواهت را بزن.' },
     {
-      k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?(چطور|چنده|چی|چیکار)|درجه[\s\u200C]?هوا|چند\s?درجه|دما|weather/i, t: 'آب‌وهوا', i: '#i-cloud',
+      k: /آب[\s\u200C]?و[\s\u200C]?هوا|هوا\s?(چطور|چنده|چی|چیکار)|درجه[\s\u200C]?هوا|چند\s?درجه|دما|weather/i, id: 'weather', t: 'آب‌وهوا', i: '#i-cloud',
       r: (c) => weatherReply(c),
     },
     /* --- v0.31.0: قیمت لحظه‌ای + اوقات شرعی (قبل از جستجو/ساعت تا قاطی نشوند) --- */
     {
       k: /((قیمت|نرخ)[^.]{0,24}(دلار|دولار|یورو|پوند|درهم|طلا|مثقال|انس|اونس|سکه|گرمی|بیت|کوین|تتر|اتریوم|سولانا|دوج|بایننس|ارز)|(دلار|دولار|یورو|پوند|درهم|طلا|مثقال|انس|اونس|سکه|بیت\s?کوین|تتر|اتریوم|سولانا|دوج|بایننس|ارز)[^.]{0,10}(چنده|چند\s?مه|چند\s?میشه|چقدر|قیمتش)|(price|rate)\s+(of\s+)?(dollar|euro|gold|bitcoin|crypto|tether))/i,
-      t: 'قیمت لحظه‌ای', i: '#i-pulse', r: (c) => ratesReply(c),
+      id: 'rates', t: 'قیمت لحظه‌ای', i: '#i-pulse', r: (c) => ratesReply(c),
     },
     {
       k: /اوقات\s*شرعی|شرعی|اذان|اذون|نماز[^.]{0,10}(چنده|چند|ساعت|وقت)|وقت\s*نماز|prayer times?/i,
-      t: 'اوقات شرعی', i: '#i-clock', r: (c) => prayerReply(c),
+      id: 'prayer', t: 'اوقات شرعی', i: '#i-clock', r: (c) => prayerReply(c),
     },
     {
-      k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
+      k: /(سایت|وب\s?سایت)|https?:\/\//i, id: 'web_open', t: 'باز کردن سایت', i: '#i-globe',
       run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : (knownSiteOf(c) || knownSiteOf(siteTargetOf(c)) || siteDomainOf(c) || siteDomainOf(siteTargetOf(c)) ? 'web_open' : 'web_search')),
       arg: (c) => {
         const m = c.match(/https?:\/\/\S+/);
@@ -2461,27 +2466,27 @@
       },
     },
     {
-      k: /جستجو|سرچ|گوگل|google|search( for)?( the)? web|search$/i, t: 'جستجوی وب', i: '#i-search',
+      k: /جستجو|سرچ|گوگل|google|search( for)?( the)? web|search$/i, id: 'web_search', t: 'جستجوی وب', i: '#i-search',
       run: 'web_search', arg: (c) => stripSearch(c),
       r: (c) => LANG === 'en' ? `I searched "${stripSearch(c) || 'Google'}" on Google.` : `«${stripSearch(c) || 'گوگل'}» را در گوگل جستجو کردم.`,
     },
 
     /* --- پنجره‌ها و سیستم --- */
-    { k: /اسکرین\s?شات|اسکرین|عکس.{0,8}(صفحه|نمایشگر)|screenshot|take a screenshot/i, t: 'اسکرین‌شات', i: '#i-camera', run: 'screenshot', r: () => LANG === 'en' ? 'Screenshot taken and saved to your Pictures folder.' : 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
-    { k: /مینیمایز|کوچک.{0,8}(کن)|دسکتاپ|پنجره‌ها|minimize|show (the )?desktop/i, t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => LANG === 'en' ? 'All windows minimized; desktop is clear.' : 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
-    { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین|lock (the )?(pc|computer|screen)/i, t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => LANG === 'en' ? 'Screen locked; bye!' : 'صفحه قفل شد؛ بدرود!' },
+    { k: /اسکرین\s?شات|اسکرین|عکس.{0,8}(صفحه|نمایشگر)|screenshot|take a screenshot/i, id: 'screenshot', t: 'اسکرین‌شات', i: '#i-camera', run: 'screenshot', r: () => LANG === 'en' ? 'Screenshot taken and saved to your Pictures folder.' : 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
+    { k: /مینیمایز|کوچک.{0,8}(کن)|دسکتاپ|پنجره‌ها|minimize|show (the )?desktop/i, id: 'minimize_all', t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => LANG === 'en' ? 'All windows minimized; desktop is clear.' : 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
+    { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین|lock (the )?(pc|computer|screen)/i, id: 'lock', t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => LANG === 'en' ? 'Screen locked; bye!' : 'صفحه قفل شد؛ بدرود!' },
 
     /* --- ضبط صدا (واقعی) --- */
-    { k: /(شروع|بگیر).{0,8}ضبط|ضبط.{0,8}(صدا|شروع)|start recording|record (my )?(voice|audio)/i, t: 'شروع ضبط صدا', i: '#i-mic', r: () => startAudioRec() },
-    { k: /توقف.{0,8}ضبط|پایان.{0,8}ضبط|ضبط.{0,8}(تموم|کافی)|قطع.{0,8}ضبط|stop recording/i, t: 'پایان ضبط صدا', i: '#i-mic', r: () => stopAudioRec() },
+    { k: /(شروع|بگیر).{0,8}ضبط|ضبط.{0,8}(صدا|شروع)|start recording|record (my )?(voice|audio)/i, id: 'rec_start', t: 'شروع ضبط صدا', i: '#i-mic', r: () => startAudioRec() },
+    { k: /توقف.{0,8}ضبط|پایان.{0,8}ضبط|ضبط.{0,8}(تموم|کافی)|قطع.{0,8}ضبط|stop recording/i, id: 'rec_stop', t: 'پایان ضبط صدا', i: '#i-mic', r: () => stopAudioRec() },
 
     /* --- صدا --- */
     /* v0.38.1 — «صدا رو خاموش کن» حالا میوت می‌شود (قبلاً به خاموشی PC می‌رفت) */
-    { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت|خاموش)|میوت|mute( the)?( volume| sound)?|بی[\s\u200C]?صدا/i, t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => LANG === 'en' ? 'Sound is muted.' : 'صدا قطع شد.' },
-    { k: /(صدا|ولوم|بلندی).{0,12}(بلند|زیاد|بالا|بده)|volume up|louder|turn (it )?up/i, t: 'بلندتر کردن صدا', i: '#i-volume', run: 'vol_up', r: () => LANG === 'en' ? 'Volume raised.' : 'صدای سیستم را بلندتر کردم.' },
-    { k: /(صدا|ولوم|بلندی).{0,12}(کم|پایین|آرام)|volume down|quieter|turn (it )?down/i, t: 'کم کردن صدا', i: '#i-volume', run: 'vol_down', r: () => LANG === 'en' ? 'Volume lowered.' : 'صدای سیستم را کمتر کردم.' },
+    { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت|خاموش)|میوت|mute( the)?( volume| sound)?|بی[\s\u200C]?صدا/i, id: 'vol_mute', t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => LANG === 'en' ? 'Sound is muted.' : 'صدا قطع شد.' },
+    { k: /(صدا|ولوم|بلندی).{0,12}(بلند|زیاد|بالا|بده)|volume up|louder|turn (it )?up/i, id: 'vol_up', t: 'بلندتر کردن صدا', i: '#i-volume', run: 'vol_up', r: () => LANG === 'en' ? 'Volume raised.' : 'صدای سیستم را بلندتر کردم.' },
+    { k: /(صدا|ولوم|بلندی).{0,12}(کم|پایین|آرام)|volume down|quieter|turn (it )?down/i, id: 'vol_down', t: 'کم کردن صدا', i: '#i-volume', run: 'vol_down', r: () => LANG === 'en' ? 'Volume lowered.' : 'صدای سیستم را کمتر کردم.' },
     {
-      k: /(صدا|ولوم|بلندی|volume)[^0-9۰-۹]{0,12}[0-9۰-۹]+|[0-9۰-۹]+[^0-9۰-۹]{0,8}(درصد)?[\s\u200C]*(صدا|ولوم)|volume (to )?\d+/i, t: 'تنظیم دقیق صدا', i: '#i-volume',
+      k: /(صدا|ولوم|بلندی|volume)[^0-9۰-۹]{0,12}[0-9۰-۹]+|[0-9۰-۹]+[^0-9۰-۹]{0,8}(درصد)?[\s\u200C]*(صدا|ولوم)|volume (to )?\d+/i, id: 'vol_set', t: 'تنظیم دقیق صدا', i: '#i-volume',
       run: 'vol_set',
       arg: (c) => { const m = faToEn(c).match(/\d+/); return m ? Math.min(100, +m[0]) : 50; },
       r: (c) => { const m = faToEn(c).match(/\d+/); return LANG === 'en' ? `Volume set to ${m ? Math.min(100, +m[0]) : 50}%.` : `بلندی صدا روی ${faNum(m ? Math.min(100, +m[0]) : 50)}٪ تنظیم شد.`; },
@@ -2489,7 +2494,7 @@
 
     /* --- ماشین‌حساب صوتی (قبل از جستجو تا قاطی نشود) --- */
     {
-      k: /(?=.*(ضرب|تقسیم|علاوه|بعلاوه|منهای|منها|جمع|چند\s?میشه|چنده))(?=.*(\d|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|بیست|سی|چهل|پنجاه|شصت|هفتاد|هشتاد|نود|صد|هزار))|(?=.*(plus|minus|times|multiplied|divided))(?=.*\d)|what(?:'s| is) \d/i, t: 'محاسبه', i: '#i-calc',
+      k: /(?=.*(ضرب|تقسیم|علاوه|بعلاوه|منهای|منها|جمع|چند\s?میشه|چنده))(?=.*(\d|یک|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده|بیست|سی|چهل|پنجاه|شصت|هفتاد|هشتاد|نود|صد|هزار))|(?=.*(plus|minus|times|multiplied|divided))(?=.*\d)|what(?:'s| is) \d/i, id: 'calc', t: 'محاسبه', i: '#i-calc',
       r: (c) => calcReply(c),
     },
 
@@ -2497,15 +2502,15 @@
        «بیدارم کن» زیررشتهٔ «رم» بود و مانیتورینگ می‌ربود؛
        «ساعت ۵ یادآوری بذار» قانون ساعت می‌ربود. ترتیب درست شد. */
     {
-      k: /یادآوری|یادم\s?بنداز|یادت\s?بنداز|یادآور|آلارم|بیدارم\s?کن|remind me/i, t: 'یادآوری ثبت شد', i: '#i-timer',
+      k: /یادآوری|یادم\s?بنداز|یادت\s?بنداز|یادآور|آلارم|بیدارم\s?کن|remind me/i, id: 'reminder', t: 'یادآوری ثبت شد', i: '#i-timer',
       r: (c) => reminderReply(c),
     },
-    { k: /تایمر|هشدار\s?بذار|timer/i, t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
+    { k: /تایمر|هشدار\s?بذار|timer/i, id: 'timer', t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
 
     /* --- اطلاعات --- */
-    { k: /وضعیت|سیستم|پردازنده|(?<![\u0600-\u06FF])رم(?![\u0600-\u06FF])|system status|cpu|\bram\b|how is (the )?system/i, t: 'مانیتورینگ', i: '#i-pulse', r: () => t('sys.reply', { cpu: faNum(lastCpu), ram: faNum(lastRam) }) },
+    { k: /وضعیت|سیستم|پردازنده|(?<![\u0600-\u06FF])رم(?![\u0600-\u06FF])|system status|cpu|\bram\b|how is (the )?system/i, id: 'status', t: 'مانیتورینگ', i: '#i-pulse', r: () => t('sys.reply', { cpu: faNum(lastCpu), ram: faNum(lastRam) }) },
     {
-      k: /باتری|شارژ|battery|charge/i, t: 'باتری', i: '#i-pulse',
+      k: /باتری|شارژ|battery|charge/i, id: 'battery', t: 'باتری', i: '#i-pulse',
       r: async () => {
         if (navigator.getBattery) {
           try {
@@ -2516,8 +2521,8 @@
         return t('battery.fail');
       },
     },
-    { k: /ساعت|چند\s?ساعته|what time|the time/i, t: 'ساعت', i: '#i-clock', r: () => t('time.reply', { x: fmtTime() }) },
-    { k: /تاریخ|چندمه|امروز|what('s| is) (the )?date|today'?s date/i, t: 'تاریخ', i: '#i-clock',
+    { k: /ساعت|چند\s?ساعته|what time|the time/i, id: 'clock', t: 'ساعت', i: '#i-clock', r: () => t('time.reply', { x: fmtTime() }) },
+    { k: /تاریخ|چندمه|امروز|what('s| is) (the )?date|today'?s date/i, id: 'date', t: 'تاریخ', i: '#i-clock',
       /* v0.31.0 — «تاریخ میلادی امروز» هم پشتیبانی شد (پیش‌فرض: شمسی) */
       r: (c) => /میلادی|gregorian/i.test(c)
         ? t('date.greg', { x: new Intl.DateTimeFormat(LANG === 'en' ? 'en-US' : 'fa-IR-u-ca-gregory', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date()) })
@@ -2525,16 +2530,16 @@
 
     /* --- ابزار --- */
     /* v0.31.0 — یادداشت صوتی ماندگار */
-    { k: /یادداشت|یادداشتم|note (down|to self)|take a note|my notes/i, t: 'یادداشت', i: '#i-note', r: (c) => notesReply(c) },
+    { k: /یادداشت|یادداشتم|note (down|to self)|take a note|my notes/i, id: 'notes', t: 'یادداشت', i: '#i-note', r: (c) => notesReply(c) },
 
     /* --- مدیای سیستم (هر پلیری — Spotify/مرورگر و…) --- */
-    { k: /مدیا[^.]{0,10}(بعدی|بعد)|پلیر[^.]{0,10}(بعدی|بعد)|آهنگ بعدی پلیر|media next|next (track|media)/i, t: 'مدیای بعدی', i: '#i-music', run: 'media_next', r: () => (LANG === 'en' ? 'Next track on the system player.' : 'آهنگ بعدی در پلیر سیستم.') },
-    { k: /مدیا[^.]{0,10}(قبلی|قبل)|پلیر[^.]{0,10}(قبلی|قبل)|آهنگ قبلی پلیر|media prev|previous (track|media)/i, t: 'مدیای قبلی', i: '#i-music', run: 'media_prev', r: () => (LANG === 'en' ? 'Previous track on the system player.' : 'آهنگ قبلی در پلیر سیستم.') },
-    { k: /مدیا[^.]{0,12}(پاز|توقف|پخش|نگه دار)|(پاز|پخش).{0,6}مدیا|media (play|pause)|play pause media/i, t: 'پخش/توقف مدیا', i: '#i-music', run: 'media_toggle', r: () => (LANG === 'en' ? 'Toggled the system player.' : 'پلیر سیستم را پخش/توقف کردم.') },
+    { k: /مدیا[^.]{0,10}(بعدی|بعد)|پلیر[^.]{0,10}(بعدی|بعد)|آهنگ بعدی پلیر|media next|next (track|media)/i, id: 'media_next', t: 'مدیای بعدی', i: '#i-music', run: 'media_next', r: () => (LANG === 'en' ? 'Next track on the system player.' : 'آهنگ بعدی در پلیر سیستم.') },
+    { k: /مدیا[^.]{0,10}(قبلی|قبل)|پلیر[^.]{0,10}(قبلی|قبل)|آهنگ قبلی پلیر|media prev|previous (track|media)/i, id: 'media_prev', t: 'مدیای قبلی', i: '#i-music', run: 'media_prev', r: () => (LANG === 'en' ? 'Previous track on the system player.' : 'آهنگ قبلی در پلیر سیستم.') },
+    { k: /مدیا[^.]{0,12}(پاز|توقف|پخش|نگه دار)|(پاز|پخش).{0,6}مدیا|media (play|pause)|play pause media/i, id: 'media_toggle', t: 'پخش/توقف مدیا', i: '#i-music', run: 'media_toggle', r: () => (LANG === 'en' ? 'Toggled the system player.' : 'پلیر سیستم را پخش/توقف کردم.') },
     {
       /* v0.36 — «بابا یه جوک خفن بگو ولی از تو» دیگر سرچ نمی‌شود: جک/جوک/لطیفه
          اول به هوش مصنوعی می‌رود (جوکِ تازه از خودِ آوا)، بدون اتصال هم جوکِ محلی هست */
-      k: /جوک|جک|لطیفه|بخندون|شوخی|tell me a joke|make me laugh|joke/i, t: 'جوک', i: '#i-smile',
+      k: /جوک|جک|لطیفه|بخندون|شوخی|tell me a joke|make me laugh|joke/i, id: 'joke', t: 'جوک', i: '#i-smile',
       r: async () => { if (aiConnected()) return AI_FALLBACK; return joke(); },
     },
 
@@ -2543,9 +2548,9 @@
     { k: /متشکر|مرسی|ممنون|thank( you|s)/i, t: 'خواهش', i: '#i-wave', r: () => LANG === 'en' ? 'You are welcome! Anything else?' : 'خواهش می‌کنم! کار دیگری هست؟' },
 
     /* --- پوشه‌های ویندوز و سطل بازیافت --- */
-    { k: /پوشه.{0,6}دانلود|دانلودها|downloads|open downloads/i, t: 'باز کردن دانلودها', i: '#i-download', run: 'open_downloads', r: () => LANG === 'en' ? 'Downloads folder is open.' : 'پوشه دانلودها باز شد.' },
-    { k: /پوشه.{0,6}(اسناد|داکیومنت|مستندات)|documents|open documents/i, t: 'باز کردن اسناد', i: '#i-note', run: 'open_documents', r: () => LANG === 'en' ? 'Documents folder is open.' : 'پوشه اسناد باز شد.' },
-    { k: /سطل.{0,10}(زباله|بازیافت).{0,12}(خالی|پاک|تمیز|بریز)|empty (the )?(recycle|trash)|empty trash/i, t: 'خالی کردن سطل بازیافت', i: '#i-trash', run: 'recycle_empty', r: () => LANG === 'en' ? 'Recycle Bin emptied.' : 'سطل بازیافت خالی شد.' },
+    { k: /پوشه.{0,6}دانلود|دانلودها|downloads|open downloads/i, id: 'open_downloads', t: 'باز کردن دانلودها', i: '#i-download', run: 'open_downloads', r: () => LANG === 'en' ? 'Downloads folder is open.' : 'پوشه دانلودها باز شد.' },
+    { k: /پوشه.{0,6}(اسناد|داکیومنت|مستندات)|documents|open documents/i, id: 'open_documents', t: 'باز کردن اسناد', i: '#i-note', run: 'open_documents', r: () => LANG === 'en' ? 'Documents folder is open.' : 'پوشه اسناد باز شد.' },
+    { k: /سطل.{0,10}(زباله|بازیافت).{0,12}(خالی|پاک|تمیز|بریز)|empty (the )?(recycle|trash)|empty trash/i, id: 'recycle_empty', t: 'خالی کردن سطل بازیافت', i: '#i-trash', run: 'recycle_empty', r: () => LANG === 'en' ? 'Recycle Bin emptied.' : 'سطل بازیافت خالی شد.' },
   ];
 
   /* فرمان‌های صوتی موزیک — قبل از قانون قدیمی یوتیوب‌موزیک */
@@ -2554,23 +2559,23 @@
     const musicRules = [
       {
         k: new RegExp(`(?:${MUSIC_FA})[^.]{0,14}(بعدی|بعد)|(بعدی|next)[^.]{0,8}(?:${MUSIC_FA})|next (song|track|music)`, 'i'),
-        t: 'آهنگ بعدی', i: '#i-music', r: () => voiceMusicNext(),
+        id: 'music_next', t: 'آهنگ بعدی', i: '#i-music', r: () => voiceMusicNext(),
       },
       {
         k: new RegExp(`(?:${MUSIC_FA})[^.]{0,14}(قبلی|قبل)|(قبلی|previous|prev)[^.]{0,8}(?:${MUSIC_FA})|previous (song|track|music)`, 'i'),
-        t: 'آهنگ قبلی', i: '#i-music', r: () => voiceMusicPrev(),
+        id: 'music_prev', t: 'آهنگ قبلی', i: '#i-music', r: () => voiceMusicPrev(),
       },
       {
         k: new RegExp(`(?:${MUSIC_FA})[^.]{0,16}(پاز|توقف|نگه\s?[\u200C]?دار|قطع|استاپ|استپ|ساکت|stop|pause)|(پاز|stop|pause)[^.]{0,10}(?:${MUSIC_FA})`, 'i'),
-        t: 'توقف موزیک', i: '#i-music', r: () => voiceMusicPause(),
+        id: 'music_pause', t: 'توقف موزیک', i: '#i-music', r: () => voiceMusicPause(),
       },
       {
         k: new RegExp(`(?:پخش|بزن|پلی|شروع|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|play|کن)`, 'i'),
-        t: 'پخش موزیک', i: '#i-music', r: () => voiceMusicPlay(),
+        id: 'music_play', t: 'پخش موزیک', i: '#i-music', r: () => voiceMusicPlay(),
       },
       {
         k: /پلی\s?[\u200C]?لیست|playlist|صفحه.{0,8}موزیک|موزیک.{0,8}(باز|صفحه)/i,
-        t: 'پلیر موزیک', i: '#i-music', r: () => { showView('music'); return t('music.pageOpen'); },
+        id: 'music_page', t: 'پلیر موزیک', i: '#i-music', r: () => { showView('music'); return t('music.pageOpen'); },
       },
     ];
     RULES.splice(1, 0, ...musicRules);
@@ -2596,7 +2601,7 @@
     const pipRules = [
       {
         k: /چ(?:طور|جور|گونه)[^.]{0,8}(?:میتونم|می\s?تونم|میشه|بشه|بکنم|کنم|بدم|بذارم|بزنم)|how (do|can) i\b|what can you do|چی\s?(?:میتونی|می\s?تونی|بلدی)|چیکار.{0,8}(?:میتونی|بلدی)|چه\s?(?:کارایی|کارهایی|فرمانهایی|فرمان\u200cهایی)|لیست\s?فرمان|توانایی/i,
-        t: 'راهنمای فرمان‌ها', i: '#i-gear', r: (c) => howToReply(c),
+        id: 'howto', t: 'راهنمای فرمان‌ها', i: '#i-gear', r: (c) => howToReply(c),
         __aiExtra: AVACapabilities.aiPromptAddon(),
       },
       /* --- v0.38 — یوتیوب شناور با عبارت: «یوتیوب شناور آهنگ X» ---
@@ -2604,7 +2609,7 @@
          «پین» عمداً در الگو نیست تا «یوتیوب رو پین کن» همان جریانِ قبلی بماند */
       {
         k: /(یوتیوب|youtube)[^.]{0,24}(شناور|فیپ)|شناور[^.]{0,14}(یوتیوب|youtube)|floating\s+youtube|youtube\s+pip/i,
-        t: 'یوتیوب شناور', i: '#i-music', run: 'pip_youtube',
+        id: 'pip_youtube', t: 'یوتیوب شناور', i: '#i-music', run: 'pip_youtube',
         arg: (c) => ytQueryOf(c),
         r: (c) => {
           const q = ytQueryOf(c);
@@ -2616,7 +2621,7 @@
          قبل از قانونِ یوتیوبِ ساده (که هر جملهٔ یوتیوب‌دار را می‌بلعد) */
       {
         k: /(یوتیوب|youtube)[^.]{0,20}(جستجو|سرچ|سیرچ|بگرد)|(جستجو|سرچ|سیرچ)[^.]{0,14}(یوتیوب|youtube)|youtube\s+search|search\s+youtube/i,
-        t: 'جستجوی یوتیوب', i: '#i-search', run: 'youtube_search',
+        id: 'yt_search', t: 'جستجوی یوتیوب', i: '#i-search', run: 'youtube_search',
         arg: (c) => ytQueryOf(c),
         r: (c) => {
           const q = ytQueryOf(c);
@@ -2626,10 +2631,91 @@
         },
       },
       {
-        k: AVAVoice.PIP_COMMAND_RE, t: 'ویدیوی شناور', i: '#i-window', r: (c) => pipVoiceReply(c),
+        k: AVAVoice.PIP_COMMAND_RE, id: 'pip', t: 'ویدیوی شناور', i: '#i-window', r: (c) => pipVoiceReply(c),
       },
     ];
     RULES.splice(1, 0, ...pipRules);
+  }
+
+  /* ============================================================
+     v0.39 — پیشنهاد زمینه‌ای فرمان‌ها (درخواست کاربر):
+     «اگه کاربر داره با یه دستور دربارهٔ یوتیوب و فیلم کار میکنه، اون لحظه
+     پیشنهاد بده میخای کامندهای مربوط به ویدیو یا یوتیوبو ببینی .. بعد یه
+     صفحهٔ ساده با یه انیمیشن باز بشه کامندها رو نشون بده»
+     کارت شیشه‌ای کوچک با انیمیشن پایین صفحه باز می‌شود؛ کلیک روی هر فرمان
+     = اجرا؛ بعد از ۱۶ ثانیه خودش می‌رود. هر دسته حداکثر هر ۱۲ ساعت یک‌بار
+     تا اذیت نکند — و در وسط کار هرگز جلوی فرمان بعدی را نمی‌گیرد.
+     ============================================================ */
+  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'pip_youtube', 'pip', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
+  const SUGGEST_DECK = {
+    video: {
+      title: { fa: 'درگیر یوتیوب و ویدیویی؟', en: 'Working with YouTube/video?' },
+      sub: { fa: 'این فرمان‌ها همین حالا کار می‌کنند — بگو یا کلیک کن:', en: 'These commands work right now — say or click:' },
+      items: {
+        fa: ['ویدیو رو پین کن', 'ویدیو رو ببر گوشهٔ بالا راست', 'ویدیو رو شیشه‌ای کن', 'ویدیو رو ببند', 'آهنگ بعدی', 'صدا رو کم کن', 'تو یوتیوب آهنگ X رو سرچ کن'],
+        en: ['Pin the video', 'Move it to top-right', 'Make it translucent', 'Close the video', 'Next song', 'Lower the volume', 'Search YouTube for X'],
+      },
+    },
+  };
+  let csTimer = 0, csByeT = 0;
+  function maybeSuggestCommands(cat) {
+    try {
+      const d = SUGGEST_DECK[cat];
+      if (!d) return;
+      /* هر دسته هر ۱۲ ساعت یک‌بار — نه هر فرمان (کاربر معتاد پیشنهاد نشود) */
+      const seen = store.get('cmdSuggestAt', {}) || {};
+      if (Date.now() - Number(seen[cat] || 0) < 12 * 60 * 60 * 1000) return;
+      seen[cat] = Date.now();
+      store.set('cmdSuggestAt', seen);
+      const L = LANG === 'en';
+      const titleEl = $('#csTitle'), subEl = $('#csSub'), chips = $('#csChips'), card = $('#cmdSuggest');
+      if (!titleEl || !chips || !card) return;
+      titleEl.textContent = L ? d.title.en : d.title.fa;
+      if (subEl) subEl.textContent = L ? d.sub.en : d.sub.fa;
+      chips.innerHTML = '';
+      (L ? d.items.en : d.items.fa).forEach((txt) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'cs-chip';
+        b.textContent = txt;
+        b.addEventListener('click', () => { hideCmdSuggest(); runCommand(txt, { wake: false }); });
+        chips.appendChild(b);
+      });
+      card.hidden = false;
+      card.classList.remove('bye');
+      clearTimeout(csTimer);
+      clearTimeout(csByeT);
+      csTimer = setTimeout(hideCmdSuggest, 16000);
+      actLog('suggest card shown: ' + cat);
+    } catch (_) { /* noop */ }
+  }
+  function hideCmdSuggest() {
+    try {
+      const card = $('#cmdSuggest');
+      if (!card || card.hidden) return;
+      card.classList.add('bye');
+      clearTimeout(csByeT);
+      csByeT = setTimeout(() => { card.hidden = true; card.classList.remove('bye'); }, 300);
+    } catch (_) { /* noop */ }
+  }
+  {
+    const csCloseBtn = $('#csClose');
+    if (csCloseBtn) csCloseBtn.addEventListener('click', hideCmdSuggest);
+  }
+
+  /* v0.39 — کاتالوگ فشردهٔ فرمان‌های آوا برای هوش مصنوعی (درخواست کاربر:
+     «اگه کاربر یه شکل دیگ درخواست کنه، AI بررسی کنه اگه توی کامندها بود اجراش کنه»).
+     فقط وقتی فرمان به قوانین نرسید به پیام کاربر می‌چسبد تا توکن هدر نرود؛
+     AI اگر هم‌معنا پیدا کرد، بلوک DO با act=run_cmd می‌دهد و اجرا با کد محلی است. */
+  function aiCmdCatalogCtx() {
+    try {
+      const rows = RULES.filter((r) => r.id).map((r) => r.id + ' = ' + r.t);
+      if (!rows.length) return '';
+      return (LANG === 'en'
+        ? '[AVA command catalog — if the user request means one of these commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id>. If it matches none, ignore this list.\n'
+        : '[فهرست فرمان‌های آوا — اگر درخواست کاربر هم‌معنای یکی از این فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id. اگر به هیچ‌کدام ربط نداشت این فهرست را نادیده بگیر.\n')
+        + rows.join('\n') + ']';
+    } catch (_) { return ''; }
   }
 
   /* ============================================================
@@ -3468,8 +3554,10 @@
         return;
       }
       if (aiConnected()) {
-        /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */
-        await aiHandleCommand(cmd);
+        /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد
+           v0.39 — کاتالوگ فرمان‌ها هم می‌چسبد تا AI درخواستِ با تعبیر متفاوت را
+           به فرمان واقعی آوا نگاشت کند (act=run_cmd) */
+        await aiHandleCommand(cmd, aiCmdCatalogCtx());
         return;
       }
     }
@@ -3492,6 +3580,8 @@
       typeText(rcReply, reply);
       speak(reply);
       if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
+      /* v0.39 — پیشنهاد زمینه‌ای: کاربر درگیر یوتیوب/ویدیو/موسیقی بود → کارت فرمان‌ها */
+      if (rule && rule.id && SUGGEST_TRIGGERS.has(rule.id)) maybeSuggestCommands('video');
       pushHistory(cmd, !/نشده|نمی‌شود|Failed/.test(rcTag.textContent || ''));
       handsFreeRearm();
       setTimeout(() => {
@@ -5615,7 +5705,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.38.1-beta';
+  let appVersion = '0.39.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -6048,7 +6138,7 @@
     optGeminiKey.addEventListener('change', () => {
       saveGemKey();
       toast(settings.geminiKey ? t('set.ai.gemSaved') : t('set.ai.gemCleared'), '#i-key');
-      if (settings.geminiKey && !/^AIza/.test(settings.geminiKey)) toast(t('set.ai.gemBadFormat'), '#i-info');
+      if (settings.geminiKey && !/^(AIza|AQ\.)/.test(settings.geminiKey)) toast(t('set.ai.gemBadFormat'), '#i-info'); /* v0.39 — کلیدهای جدید AQ. هم معتبرند */
     });
     optGeminiKey.addEventListener('input', () => {
       clearTimeout(gemSaveT);
@@ -6078,14 +6168,100 @@
       gemTestOut.hidden = false;
       if (r && r.ok) {
         gemTestOut.className = 'set-note ok-note';
-        gemTestOut.textContent = t('set.ai.gemTestOk', { x: r.model, y: faNum(r.ms) });
+        /* v0.39 — تعداد مدل‌های زندهٔ کشف‌شده هم نشان داده می‌شود */
+        const n = Array.isArray(r.models) ? r.models.length : 0;
+        gemTestOut.textContent = n
+          ? t('set.ai.gemTestOkList', { x: r.model, y: faNum(r.ms), z: faNum(n) })
+          : t('set.ai.gemTestOk', { x: r.model, y: faNum(r.ms) });
+        if (n) { fillGemModelList(r.models); store.set('gemModelList', r.models); }
         toast(t('set.ai.gemTestToastOk'), '#i-check');
       } else {
         gemTestOut.className = 'set-note warn-note';
         gemTestOut.textContent = t('set.ai.gemTestFail', { x: (r && r.error) || '?' });
+        if (r && Array.isArray(r.models) && r.models.length) fillGemModelList(r.models);
       }
     });
   }
+
+  /* ============================================================
+     v0.39 — انتخابگر کامل مدل جمنای
+     گزارش کاربر: «نمی‌توانم مدل نوشته‌شده را کامل ببینم» — datalist فقط
+     چند مورد نشان می‌داد. حالا دکمهٔ «فهرست مدل‌ها» کل مدل‌های زندهٔ
+     همین کلید (کشف‌شده از خود گوگل) را با جستجو و اسکرول کامل نشان می‌دهد.
+     ============================================================ */
+  let gemModelAll = [];
+  function fillGemModelList(list) {
+    gemModelAll = (Array.isArray(list) ? list : []).map((m) => String(m).trim()).filter(Boolean);
+    /* datalist هم با فهرست واقعی پر می‌شود تا پیشنهاد تایپ هم زنده شود */
+    const dl = $('#geminiModelList');
+    if (dl) {
+      dl.innerHTML = '';
+      for (const m of gemModelAll) { const o = document.createElement('option'); o.value = m; dl.appendChild(o); }
+    }
+    renderGemModelItems('');
+  }
+  function renderGemModelItems(q) {
+    const box = $('#gemModelListDiv');
+    if (!box) return;
+    const cur = (optGeminiModel && optGeminiModel.value || '').trim();
+    const f = String(q || '').trim().toLowerCase();
+    const rows = gemModelAll.filter((m) => !f || m.toLowerCase().includes(f));
+    box.innerHTML = '';
+    if (!rows.length) {
+      const p = document.createElement('p');
+      p.className = 'gem-mempty';
+      p.textContent = gemModelAll.length ? t('set.ai.gemModelsNone') : t('set.ai.gemModelsNone');
+      box.appendChild(p);
+      return;
+    }
+    for (const m of rows) {
+      const it = document.createElement('button');
+      it.type = 'button';
+      it.className = 'gem-mitem' + (m === cur ? ' on' : '');
+      it.innerHTML = `<span></span>${m === cur ? '<span class="gm-check">✓</span>' : ''}`;
+      it.querySelector('span').textContent = m;
+      it.addEventListener('click', () => {
+        if (optGeminiModel) {
+          optGeminiModel.value = m;
+          optGeminiModel.dispatchEvent(new Event('change')); /* خودش توست ذخیره دارد */
+        }
+        renderGemModelItems($('#gemModelSearch') ? $('#gemModelSearch').value : '');
+      });
+      box.appendChild(it);
+    }
+  }
+  const btnGemModels = $('#btnGemModels'), gemModelPanel = $('#gemModelPanel');
+  if (btnGemModels && gemModelPanel) {
+    btnGemModels.addEventListener('click', async () => {
+      if (gemModelPanel.hidden) {
+        gemModelPanel.hidden = false;
+        renderGemModelItems('');
+        /* تازه‌سازی از گوگل: فهرست واقعیِ همین کلید (کش ۳۰ دقیقه‌ای در main) */
+        const key = settings.geminiKey || (optGeminiKey ? optGeminiKey.value.trim() : '');
+        if (key && bridge && bridge.ai && bridge.ai.gemModels) {
+          const r = await bridge.ai.gemModels({ key, base: settings.gemBase || '' }).catch(() => null);
+          if (r && Array.isArray(r.models) && r.models.length) {
+            fillGemModelList(r.models);
+            store.set('gemModelList', r.models);
+          } else if (!gemModelAll.length) {
+            const note = $('#gemModelsNote');
+            if (note) { note.hidden = false; note.textContent = t('set.ai.gemModelsNone'); }
+          }
+        } else if (!gemModelAll.length) {
+          const note = $('#gemModelsNote');
+          if (note) { note.hidden = false; note.textContent = t('set.ai.gemModelsNone'); }
+        }
+        const s = $('#gemModelSearch');
+        if (s) { s.value = ''; s.focus(); }
+      } else {
+        gemModelPanel.hidden = true;
+      }
+    });
+    const gs = $('#gemModelSearch');
+    if (gs) gs.addEventListener('input', () => renderGemModelItems(gs.value));
+  }
+  /* فهرست ذخیره‌شدهٔ دفعهٔ قبل — همان اول انتخابگر پر باشد */
+  try { const saved = store.get('gemModelList', []); if (Array.isArray(saved) && saved.length) fillGemModelList(saved); } catch (_) { /* noop */ }
   if (optOpenaiKey) optOpenaiKey.addEventListener('change', () => {
     settings.openaiKey = optOpenaiKey.value.trim();
     store.set('openaiKey', settings.openaiKey);
@@ -6633,6 +6809,8 @@
     'قانون مهم ۱: اگر کاربر جوک/جک/لطیفه/شوخی خواست (مثل «بابا یه جوک خفن بگو ولی از تو»)، خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن و بلوک DO هم ننویس.\n' +
     'قانون مهم ۲: اگر کاربر باز کردن سایت/وبسایت خواست (مثل «سایت سافت 98 که خیلی خوبه رو باز کن»)، فقط اسمِ سایت را بردار (بندهای «که …» جزو اسم نیستند) و بلوک DO با open_url بده؛ دامنه را خودت حدس بزن (سافت 98=soft98.ir، دیجی‌کالا=digikala.com). هرگز کل جمله را جستجو نکن.\n' +
     'قانون مهم ۳: اگر درخواست، سوال یا درخواست گفتگویی است (بگو/چرا/چطور/چیه)، هرگز آن را به جستجوی وب تبدیل نکن — خودت جواب بده.\n' +
+    /* v0.39 — نگاشت فرمان نامتعارف به فرمان واقعی آوا */
+    'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -6666,6 +6844,8 @@
     'Important rule 1: if the user asks for a joke (جوک/جک/لطیفه), tell a short fresh joke yourself — NEVER search the web for it and write no DO block.\n' +
     'Important rule 2: if the user asks to open a website, extract ONLY the site name (relative clauses like «که …» are not part of it) and emit a DO block with open_url; guess the domain yourself (soft98.ir, digikala.com, zoomit.ir). NEVER web_search the whole sentence.\n' +
     'Important rule 3: conversational asks (tell me / why / how / what is) must NEVER become web_search — answer them yourself.\n' +
+    /* v0.39 — map differently-phrased requests onto real AVA commands */
+    'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -6722,7 +6902,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom'];
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd']; /* v0.39 — +run_cmd */
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -6752,10 +6932,22 @@
     minimize_all: () => LANG === 'en' ? 'All windows minimized.' : 'همهٔ پنجره‌ها کمینه شدند.',
     recycle_empty: () => LANG === 'en' ? 'Recycle bin emptied.' : 'سطل بازیافت خالی شد.',
   };
-  async function executeDoActions(actions) {
+  async function executeDoActions(actions, origCmd) { /* v0.39 — origCmd برای run_cmd */
     const outs = [];
     for (const a of actions) {
       try {
+        /* v0.39 — نگاشت فرمان نامتعارف: AI فهمید درخواست هم‌معنای یکی از
+           فرمان‌های آواست؛ اجرا با همان کد محلیِ آوا (بدون حلقه — مستقیم
+           resolveReply، نه runCommand) */
+        if (a.act === 'run_cmd') {
+          const rr = RULES.find((x) => x.id === String(a.value || '').trim());
+          if (!rr) { outs.push(LANG === 'en' ? 'That command is not in my list.' : 'چنین فرمانی در فهرست آوا نیست.'); break; }
+          actLog('ai run_cmd → ' + rr.id);
+          const out = await resolveReply(rr, String(origCmd || a.value || ''));
+          outs.push(typeof out === 'string' && out ? out : (LANG === 'en' ? 'Done.' : 'انجام شد.'));
+          if (rr.id && SUGGEST_TRIGGERS.has(rr.id)) maybeSuggestCommands('video');
+          continue;
+        }
         switch (a.act) {
           case 'open_app': {
             if (!bridge || !bridge.apps) { outs.push(t('toast.onlyApp')); break; }
@@ -7103,7 +7295,7 @@
         const doRes = parseDo(r.text);
         if (doRes.do) {
           actLog('ai DO: ' + doRes.do.actions.map((a) => a.act + (a.value ? '(' + a.value.slice(0, 24) + ')' : '')).join(' + '));
-          const actReply = await executeDoActions(doRes.do.actions);
+          const actReply = await executeDoActions(doRes.do.actions, cmd); /* v0.39 — cmd برای run_cmd */
           const finalReply = [doRes.do.reply, actReply].filter(Boolean).join(' — ');
           chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: finalReply });
           setState('success');

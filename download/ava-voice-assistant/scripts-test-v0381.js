@@ -43,7 +43,8 @@ function extractRuleK(tag) {
   const i = app.indexOf(tag);
   if (i === -1) return null;
   const seg = app.slice(Math.max(0, i - 400), i);
-  const m = seg.match(/k: (\/(?:[^\/\\]|\\.)+\/[a-z]*)\s*,\s*$/);
+  /* v0.39 — بین k: و t: ممکن است id: '...' اضافه شده باشد */
+  const m = seg.match(/k: (\/(?:[^\/\\]|\\.)+\/[a-z]*)\s*,\s*(?:id: '[a-z_]+',\s*)?$/);
   return m ? m[1] : null;
 }
 const evalRe = (src) => { try { return eval(src); } catch (_) { return null; } };
@@ -89,7 +90,7 @@ ok(iRem !== -1 && iMon !== -1 && iClk !== -1 && iRem < iMon && iRem < iClk,
 
 /* ۵) ماشین‌حساب — «حساب کن» حذف شد */
 const calcSeg = app.slice(app.indexOf("t: 'باز کردن ماشین‌حساب'") - 500, app.indexOf("t: 'باز کردن ماشین‌حساب'"));
-const calcKm = calcSeg.match(/k: (\/(?:[^\/\\]|\\.)+\/[a-z]*)\s*,\s*$/);
+const calcKm = calcSeg.match(/k: (\/(?:[^\/\\]|\\.)+\/[a-z]*)\s*,\s*(?:id: '[a-z_]+',\s*)?$/); /* v0.39: id بین k و t */
 const calcRe = calcKm && evalRe(calcKm[1]);
 ok(!!calcRe && !calcRe.test('حساب کن پنج ضربدر هفت'), 'NEG: «حساب کن …» دیگر اپ ماشین‌حساب باز نمی‌کند');
 ok(calcRe && calcRe.test('ماشین حساب رو باز کن'), 'POS: «ماشین حساب» هنوز اپ را باز می‌کند');
@@ -225,8 +226,8 @@ ok(/bridge\.reminders\.remove\(rem\.id\)/.test(app), 'app: حذف تک یادآ�
 ok(/bridge\.reminders\.clear\(\)/.test(app), 'app: پاک کردن همهٔ یادآوری‌ها wired');
 ok(!app.includes('ویژوالایزر زنده، ویجت') , 'app: ادعای ویژوالایزر زنده از توضیح موزیک حذف شد (بوم ندارد — ریسک سکوت WebAudio)');
 ok(/یورو|ارو\(\?!\[\\u0600-\\u06FF\]\)|euro/.test(app) && !/ارو\\b/.test(app), 'app: alias یورو با lookahead (ب مرده حذف شد)');
-ok(pkg.version === '0.38.1-beta', 'نسخه 0.38.1-beta در package.json');
-ok(/0\.38\.1-beta/.test(app) || app.includes("'0.38.1-beta'") || app.includes('"0.38.1-beta"'), 'نسخه در app.js');
+ok(/^0\.(38|39)\./.test(pkg.version), 'نسخه 0.38.x+ در package.json (forward-regex)');
+ok(/0\.38\.1-beta|0\.39\.0-beta/.test(app), 'نسخه در app.js (forward-regex)');
 
 console.log('');
 console.log(`RESULT: ${pass}/${pass + fail}`);

@@ -127,14 +127,14 @@ ok('پارسر PiP: «یوتیوب رو پین کن» هنوز PIN می‌دهد
 
 /* ---------- ۷) خطاها ---------- */
 ok('پیام ۴۲۹ محترمانه و راهنما', mSrc.includes('سرویس هوش مصنوعی موقتاً شلوغ است یا سهمیهٔ این کلید به سقف مجاز رسیده'));
-ok('فیلور بی‌صدا: 401/403/429 → continue (نه break کل زنجیره)', /401, 403, 429\]\.includes\(r\.status\)\) \{ lastErr = gemErrHuman\(r\.status, msg\) \|\| lastErr; continue; \}/.test(mSrc));
+ok('فیلور بی‌صدا: 401/403 → کلید بعدی؛ 429 → مدل بعدی (v0.39: سهمیه مدل‌به‌مدل)', /\[401, 403\]\.includes\(r\.status\)\) \{ lastErr = gemErrHuman\(r\.status, msg\) \|\| lastErr; break; \}/.test(mSrc) && /r\.status === 429\) \{ lastErr = gemErrHuman\(r\.status, msg\) \|\| lastErr; continue; \}/.test(mSrc));
 ok('لیست مدل‌های امتحان‌شده فقط در activity.log می‌رود، نه پیام کاربر', mSrc.includes("actLog('gemini-chat fail: tried models ") && !mSrc.includes('مدل‌های امتحان‌شده: ') && !mSrc.includes('هیچ کلید Gemini جواب نداد'));
 ok('پاسخ نهایی چت بدون جزئیات فنی است', mSrc.includes('سرویس Gemini در حال حاضر پاسخگو نیست'));
 
 /* ---------- ۸) نسخه ---------- */
 ok('نسخهٔ beta در package.json / app.js / index.html (forward-relaxed)', (() => {
   const v = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
-  return /^0\.38\.\d+-beta$/.test(v) && new RegExp("let appVersion = '" + v + "';").test(aSrc) && new RegExp('v' + v + '</span>').test(ihSrc);
+  return /^0\.(38|39)\.\d+-beta$/.test(v) /* v0.39 forward */ && new RegExp("let appVersion = '" + v + "';").test(aSrc) && new RegExp('v' + v + '</span>').test(ihSrc);
 })());
 ok('پارسر v0370 سالم مانده (رگرسیون رفتاری سریع)', (() => {
   const vp = require('./renderer/js/voiceCommandParser.js');

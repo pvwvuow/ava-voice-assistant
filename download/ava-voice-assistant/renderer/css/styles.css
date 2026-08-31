@@ -2486,3 +2486,90 @@ details.set-adv > summary {
 }
 details.set-adv > summary:hover { color: var(--acc); }
 details.set-adv[open] > summary { color: var(--text); }
+
+/* ============================================================
+   v0.39 — انتخابگر مدل جمنای (فهرست کامل + جستجو + اسکرول)
+   قبلاً datalist کوچک فقط چند مورد نشان می‌داد و کاربر نمی‌توانست
+   فهرست کامل کلید خودش را ببیند.
+   ============================================================ */
+.gem-model-line { display: flex; gap: 8px; align-items: stretch; }
+.gem-model-line .set-input { flex: 1 1 auto; min-width: 0; }
+.gem-model-line .chip { flex: 0 0 auto; white-space: nowrap; }
+.gem-panel {
+  margin-top: 8px; padding: 10px;
+  background: rgba(10, 16, 14, 0.92);
+  border: 1px solid var(--stroke); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.gem-mlist {
+  margin-top: 8px; max-height: 240px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px;
+  scrollbar-width: thin; scrollbar-color: rgba(52, 211, 153, 0.35) transparent;
+}
+.gem-mitem {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 10px; border-radius: 8px; cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 12px; color: var(--text); direction: ltr; text-align: left;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+.gem-mitem:hover { background: rgba(52, 211, 153, 0.10); border-color: rgba(52, 211, 153, 0.25); }
+.gem-mitem.on { border-color: rgba(52, 211, 153, 0.45); background: rgba(16, 185, 129, 0.14); }
+.gem-mitem .gm-check { color: var(--acc2); font-weight: 700; }
+.gem-mempty { padding: 10px; font-size: 11.5px; color: var(--text2); text-align: center; }
+
+/* ============================================================
+   v0.39 — کارت پیشنهاد زمینه‌ای فرمان‌ها
+   کاربر درگیر یوتیوب/ویدیو/موسیقی است → کارت شیشه‌ای کوچک با
+   انیمیشن باز می‌شود و فرمان‌های مرتبط را پیشنهاد می‌دهد.
+   ============================================================ */
+.cs-card {
+  position: fixed; z-index: 90;
+  inset-inline-start: 18px; bottom: 18px;
+  width: min(340px, calc(100vw - 36px));
+  padding: 12px 14px;
+  background: rgba(10, 16, 14, 0.94);
+  border: 1px solid rgba(52, 211, 153, 0.22); border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.06);
+  animation: csIn 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.cs-card.bye { animation: csOut 0.3s ease both; }
+@keyframes csIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes csOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(14px) scale(0.97); }
+}
+.cs-head { display: flex; align-items: center; gap: 8px; }
+.cs-ico {
+  width: 26px; height: 26px; border-radius: 8px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(16, 185, 129, 0.16); color: var(--acc2);
+}
+.cs-ico .ic { width: 15px; height: 15px; }
+.cs-head b { flex: 1 1 auto; font-size: 13px; }
+.cs-x {
+  flex: 0 0 auto; width: 24px; height: 24px; border-radius: 7px;
+  border: none; background: transparent; color: var(--text3); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cs-x:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.cs-x .ic { width: 13px; height: 13px; }
+.cs-card p { margin: 6px 0 0; font-size: 11.5px; color: var(--text2); line-height: 1.7; }
+.cs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.cs-chip {
+  border: 1px solid var(--stroke); background: var(--panel);
+  color: var(--text); font: inherit; font-size: 11.5px;
+  padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  animation: csChipIn 0.35s ease both;
+}
+.cs-chip:nth-child(2) { animation-delay: 0.05s; }
+.cs-chip:nth-child(3) { animation-delay: 0.1s; }
+.cs-chip:nth-child(4) { animation-delay: 0.15s; }
+.cs-chip:nth-child(5) { animation-delay: 0.2s; }
+.cs-chip:nth-child(6) { animation-delay: 0.25s; }
+.cs-chip:nth-child(7) { animation-delay: 0.3s; }
+@keyframes csChipIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cs-chip:hover { border-color: rgba(52, 211, 153, 0.45); color: var(--acc2); background: rgba(16, 185, 129, 0.12); }

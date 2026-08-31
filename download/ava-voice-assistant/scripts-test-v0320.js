@@ -138,10 +138,10 @@ function makeGem(mockFetch, badSeed) {
      mainSrc.includes("'gemini-3.6-flash'") && mainSrc.includes("'gemini-3.5-flash'") && mainSrc.includes("'gemini-flash-lite-latest'"));
   ok('zero dead-model list literals left anywhere (2.0 as chain item)',
      (mainSrc.match(/'gemini-2\.0-flash(?:-lite)?',/g) || []).length === 0);
-  ok('ai:gemini chain: discovery spread BEFORE the static aliases',
-     /const models = gemChainPruned\(\[\.\.\.new Set\(\[\s*gemWorkingModel,\s*String\(model \|\| ''\)\.trim\(\),\s*\.\.\.disc,/.test(mainSrc));
+  ok('ai:gemini chain: discovery spread BEFORE the static aliases (v0.39: statics via geminiModelChain)',
+     /const baseModels = gemChainPruned\(\[\.\.\.new Set\(\[\s*gemWorkingModel,\s*String\(model \|\| ''\)\.trim\(\),\s*\.\.\.disc,\s*\.\.\.geminiModelChain\(''\),/.test(mainSrc));
   ok('stt:gemini chain: working model + discovery + static chain',
-     mainSrc.includes('gemChainPruned([...new Set([gemSttWorkingModel, ...disc, ...geminiModelChain(model)].filter(Boolean))].slice(0, 12))'));
+     mainSrc.includes('gemChainPruned([...new Set([gemSttWorkingModel, ...disc, ...geminiModelChain(model)].filter(Boolean))].slice(0, 12))')); /* ساختار STT حفظ شده */
   ok('ai:gemini + stt:gemini chains capped at 12 models', (mainSrc.match(/\.slice\(0, 12\)/g) || []).length >= 2);
   ok('gemtest uses discovery too', mainSrc.includes('const discT = await gemDiscoverModels(keys[0], gbase);'));
 

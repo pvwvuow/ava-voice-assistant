@@ -2433,15 +2433,22 @@ ipcMain.handle('stt:transcribe', async (_e, p) => {
       Groq (whisper-large-v3-turbo — سریع‌ترین، پلن رایگان)، OpenAI،
       یا سرور محلی whisper.cpp — کاربر آدرس/کلید/مدل را در تنظیمات می‌گذارد. */
 function geminiModelChain(userModel) {
-  /* v0.32 — نسل ۲.۰ حذف شد (طبق سند رسمی گوگل از ۲۰۲۶/۰۳/۱۲ خاموش است و
-     فقط یک اسلات 404 هدر می‌داد)؛ نسل ۳ + نام مستعار lite اضافه شد؛
-     مدل‌های واقعاً زنده علاوه بر این‌ها با gemDiscoverModels پویا پیدا می‌شوند. */
+  /* v0.39 — تست زنده با کلید واقعی نشان داد نسل ۲.۵ برای «کلیدهای جدید» بازنشسته
+     شده است (پیام رسمی گوگل: "no longer available to new users … use
+     models/gemini-3.5-flash-lite") — یعنی زنجیرهٔ قبلی (flash-latest اول، ۲.۵ آخر)
+     برای کاربر تازه‌وارد نصفش مرده بود. ترتیب تازه: نام‌های مستعار همیشه‌سبز
+     (نسلِ روز را نشان می‌دهند) → فلاش‌های ۳.۷/۳.۶/۳.۵ → لایت ۳.۱ → و فقط به‌عنوان
+     آخرین فالبک ۲.۵ برای کلیدهای قدیمی. مدل‌های واقعاً زنده علاوه بر این‌ها با
+     gemDiscoverModels پویا پیدا می‌شوند و اولِ صف می‌نشینند. */
   return [...new Set([
     String(userModel || '').trim(),
-    'gemini-flash-latest',
-    'gemini-3.6-flash',
-    'gemini-3.5-flash',
     'gemini-flash-lite-latest',
+    'gemini-flash-latest',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
   ])].filter(Boolean);
@@ -2467,6 +2474,27 @@ const gemMarkBad = (m) => {
 const gemIsModel404 = (status, msg) =>
   status === 404 || (status === 400 && /not found|not supported|is not a valid model/i.test(String(msg || '')));
 
+/* v0.39 — خودِ گوگل در خطای 404 نامِ مدل جایگزین را می‌گوید:
+   "no longer available … Please update your code to use models/gemini-3.5-flash-lite"
+   این نام را می‌گیریم و بی‌درنگ اولِ صف می‌گذاریم — یعنی برنامه برای هر
+   بازنشستگیِ «آینده» هم خودترمیم است؛ دیگر نیازی به آپدیت زنجیره نیست. */
+const gemHintModel = (msg) => {
+  const s = String(msg || '');
+  /* اول الگوی رسمی: "Please update your code to use models/X" — چون پیام گوگل
+     دو بار models/ دارد (اولی خودِ مدلِ مرده!) */
+  let m = s.match(/use models\/([a-z0-9][a-z0-9.\-_]+)/i);
+  if (!m) {
+    const all = [...s.matchAll(/models\/([a-z0-9][a-z0-9.\-_]+)/gi)];
+    m = all.length ? all[all.length - 1] : null; /* آخرین اشاره = جایگزین */
+  }
+  return m ? m[1] : '';
+};
+/* v0.39 — خطای «location not supported» مدل‌به‌مدل نیست؛ کل مسیر است.
+   امتحانِ ۱۰ مدلِ بعدی فقط ۱۰ بار همان خطا را تکرار می‌کند — اولین بار
+   حلقه را با پیام رله قطع می‌کنیم. */
+const gemIsLocationErr = (status, msg) =>
+  /location is not supported|not supported for the API use/i.test(String(msg || ''));
+
 /* v0.32 — پشتیبانی از «فکر نکردن» فقط برای نسل ۲.۵ به بعد؛ نسخهٔ قبل یک regex
    ثابت بود که با آمدن نسل‌های جدید (۳ و بعد) باید هر بار دستی عوض می‌شد.
    حالا از خودِ شمارهٔ نسل در نام مدل خوانده می‌شود — برای هر نسل آینده کار می‌کند. */
@@ -2485,10 +2513,11 @@ const gemSupportsThinking = (mdl) => {
    نام/نسلی که گوگل بیاورد (۳.۶، ۳.۵، ۴ و...) بدون آپدیت برنامه پیدا می‌شود.
    حافظهٔ منفی (gemBadModels) هم برای مدل‌هایی که گوگل زنده اعلام‌شان می‌کند
    پاک می‌شود — وگرنه یک 404 گذرا برای همیشه مدل خوب را مسدود می‌کرد. */
-const gemDiscoverCache = { at: 0, models: [], inflight: null, failAt: 0 };
-function gemRankModels(names) {
+const gemDiscoverCache = { at: 0, models: [], all: [], inflight: null, failAt: 0 };
+function gemRankModels(names, cap) {
   /* امتیازدهی: فلاش سریع‌تر از پرو → اول؛ نسل جدیدتر → اول؛ نام مستعار
-     همیشه‌سبز (latest) بالای همه؛ مدل‌های تصویری/زنده/آزمایشی حذف. */
+     همیشه‌سبز (latest) بالای همه؛ مدل‌های تصویری/زنده/آزمایشی حذف.
+     v0.39 — با cap=8 برای زنجیرهٔ چت؛ بدون cap برای فهرست کاملِ انتخابگر مدل. */
   const uniq = [...new Set((names || []).map((n) => String(n).trim()).filter(Boolean))];
   const usable = uniq.filter((n) =>
     !/embedding|aqa|imagen|veo|tts|image|native-audio|live|banana|robotics|computer-use|(^|[-.])exp([-._]|$)/i.test(n));
@@ -2501,7 +2530,8 @@ function gemRankModels(names) {
     if (/preview/i.test(n)) s -= 20; /* پیش‌نمایش = عمر کوتاه */
     return s + verOf(n) * 10;
   };
-  return usable.sort((a, b) => score(b) - score(a)).slice(0, 8);
+  const sorted = usable.sort((a, b) => score(b) - score(a));
+  return cap ? sorted.slice(0, cap) : sorted;
 }
 async function gemDiscoverModels(key, gbase) {
   const now = Date.now();
@@ -2513,18 +2543,21 @@ async function gemDiscoverModels(key, gbase) {
   gemDiscoverCache.inflight = (async () => {
     try {
       const r = await cloudFetch(
-        `${gbase}/v1beta/models?key=${encodeURIComponent(String(key || '').trim())}&pageSize=200`,
-        { method: 'GET', signal: AbortSignal.timeout(9000) }
+        `${gbase}/v1beta/models?pageSize=200`,
+        /* v0.39 — کلید در هدر می‌رود نه کوئری: هر دو فرمت کلید (AIza قدیمی و
+           AQ. جدیدِ AI Studio) با هدر x-goog-api-key کار می‌کنند */
+        { method: 'GET', headers: { 'x-goog-api-key': String(key || '').trim() }, signal: AbortSignal.timeout(9000) }
       );
       const j = await r.json().catch(() => null);
       if (r.ok && j && Array.isArray(j.models)) {
         const chat = j.models
           .filter((m) => m && m.name && Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
           .map((m) => String(m.name).replace(/^models\//, ''));
-        const ranked = gemRankModels(chat);
+        const ranked = gemRankModels(chat, 8);
         if (ranked.length) {
           gemDiscoverCache.at = Date.now();
           gemDiscoverCache.models = ranked;
+          gemDiscoverCache.all = gemRankModels(chat, 0); /* v0.39 — فهرست کامل برای انتخابگر مدل */
           gemDiscoverCache.inflight = null; /* انقضای کش باید دوباره بپرسد — Promise قدیمی نچسبد */
           for (const n of ranked) gemBadModels.delete(n); /* 404 گذرا مسدودی دائمی نسازد */
           actLog('gemini discover: ' + ranked.slice(0, 6).join(', ') + (ranked.length > 6 ? ' +' + (ranked.length - 6) : ''));
@@ -2554,7 +2587,9 @@ const gemErrHuman = (status, raw) => {
     return 'کلید جمنای معتبر نیست — کلید را کامل و درست وارد کن؛ از aistudio.google.com رایگان می‌شود (با AIza شروع می‌شود)';
   }
   if (/location is not supported|not supported for the API use|user location/i.test(s)) {
-    return 'گوگل جمنای را برای سرزمین تو محدود کرده — موتورهای دیگر آوا همین حالا جواب می‌دهند (خودکار/گوگل/بستهٔ آفلاین)';
+    /* v0.39 — راهنمای واقعی به‌جای پیام بی‌خروجی: اپ «آدرس رلهٔ جمنای» دارد؛
+       کاربر باید بداند راه‌حل همین است (درخواست از سرور شخصی خودش رد می‌شود) */
+    return 'گوگل جمنای را برای موقعیت فعلی سیستم محدود کرده — در تنظیمات › هوش مصنوعی، «آدرس رلهٔ جمنای» را با آدرس رلهٔ شخصی خودت پر کن تا درخواست‌ها از سرور خودت رد شوند؛ تا آن‌هنگاه موتورهای دیگر آوا (خودکار/GLM/بستهٔ آفلاین) جواب می‌دهند';
   }
   if (status === 429 || /quota|RESOURCE_EXHAUSTED|rate limit/i.test(s)) {
     /* v0.38 — پیام محترمانه و راهنما به‌جای «سهمیه تمام شده» */
@@ -2584,9 +2619,18 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
      v0.26 — مدل‌های ۴۰۴شده از حافظهٔ منفی حذف می‌شوند */
   /* v0.32 — اول کشف پویا: هرچه گوگل همین حالا واقعاً برای این کلید دارد */
   const disc = await gemDiscoverModels(keys[0], gbase);
-  const models = gemChainPruned([...new Set([gemSttWorkingModel, ...disc, ...geminiModelChain(model)].filter(Boolean))].slice(0, 12));
+  const baseModels = gemChainPruned([...new Set([gemSttWorkingModel, ...disc, ...geminiModelChain(model)].filter(Boolean))].slice(0, 12));
+  /* v0.39 — صف پویا: 404ِ «مدل بازنشسته شده» خودش مدل جایگزین را معرفی می‌کند
+     و همان بی‌درنگ اولِ صف می‌نشیند (خودترمیمی برای هر بازنشستگی آینده)؛
+     خطای «موقعیت» هم کل مسیر است نه یک مدل → اولین بار حلقه را قطع می‌کند */
+  let locBlocked = false;
   for (const k of keys) {
-    for (const mdl of models) {
+    if (locBlocked) break;
+    const queue = baseModels.slice();
+    const hinted = new Set();
+    let guard = 0;
+    while (queue.length && guard++ < 24) {
+      const mdl = queue.shift();
       try {
         const body = {
           contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: b64 } }] }],
@@ -2595,19 +2639,25 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
         /* v0.32 — thinkingConfig فقط نسل ۲.۵ به بعد — از روی نام مدل خوانده می‌شود */
         if (gemSupportsThinking(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         const r = await cloudFetch(
-          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) } /* v0.21: ۴۵→۱۵ ثانیه */
+          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': k }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) } /* v0.21: ۴۵→۱۵ ثانیه */
         );
         const j = await r.json().catch(() => ({}));
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = `Gemini-ASR: ${String(msg).slice(0, 120)}`;
-          if (gemIsModel404(r.status, msg)) gemMarkBad(mdl); /* v0.26 */
+          if (gemIsModel404(r.status, msg)) {
+            gemMarkBad(mdl); /* v0.26 */
+            const hint = gemHintModel(msg); /* v0.39 — جایگزینِ رسمیِ گوگل، اول صف */
+            if (hint && !hinted.has(hint) && !gemBadModels.has(hint)) { hinted.add(hint); gemBadModels.delete(hint); queue.unshift(hint); }
+          }
           if (isNetFail(String(msg))) sawNetFail = true;
-          /* v0.28 — پیام فارسیِ قابل‌فهم برای خطاهای کلید/سرزمین/سهمیه */
-          /* v0.38 — فیلور بی‌صدا: خطای کلید/سهمیه = ادامه به مدل بعدی؛
-             حلقه‌ها به‌طور طبیعی تا آخرین کلید/مدل می‌روند و پیام انسانی فقط آخرِ کار برمی‌گردد */
-          if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; continue; }
+          /* v0.39 — محدودیت منطقه‌ای = کل مسیر؛ ۱۲ مدلِ بعدی همان خطا را می‌دهند */
+          if (gemIsLocationErr(r.status, msg)) { lastErr = 'Gemini-ASR: ' + (gemErrHuman(r.status, msg) || lastErr); locBlocked = true; break; }
+          /* v0.39 — 401/403 کلید را دور می‌زند (کلید بعدی)؛ 429 سهمیهٔ «این مدل» است
+             → مدل بعدی سهمیهٔ جدا دارد (گزارش کاربر: «اگر یک مدل کار نکرد خودت برو مدل بعدی») */
+          if ([401, 403].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }
+          if (r.status === 429) { lastErr = gemErrHuman(r.status, msg) || lastErr; continue; }
           const hum = gemErrHuman(r.status, msg);
           if (hum) lastErr = 'Gemini-ASR: ' + hum;
           continue;
@@ -2623,7 +2673,7 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
     }
   }
   /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ هم صریح بنویس (تشنخیص آسان) */
-  if (sawNetFail) actLog('gemini-asr: all attempts failed at NETWORK level (DNS/فیلترینگ) — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
+  if (sawNetFail) actLog('gemini-asr: all attempts failed at NETWORK level — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
   return { ok: false, error: (lastErr || 'Gemini-ASR پاسخ نداد') };
 });
 
@@ -2773,20 +2823,22 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
      بعد نسل ۳ (بر اساس سند رسمی گوگل نسل ۲.۰ بازنشسته شده)، و در انتها ۲.۵
      به‌عنوان فالبک خیلی قدیمی — دیگر هیچ مدل مرده‌ای در زنجیره اسلات هدر نمی‌دهد */
   const disc = await gemDiscoverModels(keys[0], gbase);
-  const models = gemChainPruned([...new Set([
+  const baseModels = gemChainPruned([...new Set([
     gemWorkingModel,
     String(model || '').trim(),
     ...disc,
-    'gemini-flash-latest',
-    'gemini-3.6-flash',
-    'gemini-3.5-flash',
-    'gemini-flash-lite-latest',
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
+    ...geminiModelChain(''),
   ])].filter(Boolean)).slice(0, 12);
-  /* چرخش کلید × مدل: کلید محدود/خراب → کلید بعدی؛ مدل نبود → مدل بعدی */
+  /* v0.39 — صف پویا + قطع سریع خطای منطقه‌ای + 429 → مدل بعدی (سهمیهٔ جدا)
+     (همان منطق stt:gemini — توضیح کامل آنجا) */
+  let locBlocked = false;
   for (const k of keys) {
-    for (const mdl of models) {
+    if (locBlocked) break;
+    const queue = baseModels.slice();
+    const hinted = new Set();
+    let guard = 0;
+    while (queue.length && guard++ < 24) {
+      const mdl = queue.shift();
       try {
         const sys = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
         const contents = messages
@@ -2811,10 +2863,10 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         const wantsSearch = !mediaCmd && lastUserText && SEARCH_INTENT_RE.test(ut);
         if (search && wantsSearch) body.tools = [{ google_search: {} }];
         const r = await cloudFetch(
-          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': k }, /* v0.39 — هدر (هر دو فرمت کلید) */
             body: JSON.stringify(body),
             signal: AbortSignal.timeout(35000), /* v0.21: ۶۰→۳۵ ثانیه */
           }
@@ -2823,11 +2875,19 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = `Gemini: ${String(msg).slice(0, 140)}`;
-          if (gemIsModel404(r.status, msg)) gemMarkBad(mdl); /* v0.26 */
+          if (gemIsModel404(r.status, msg)) {
+            gemMarkBad(mdl); /* v0.26 */
+            const hint = gemHintModel(msg); /* v0.39 — جایگزینِ رسمیِ گوگل، اول صف */
+            if (hint && !hinted.has(hint) && !gemBadModels.has(hint)) { hinted.add(hint); gemBadModels.delete(hint); queue.unshift(hint); }
+          }
           if (isNetFail(String(msg))) sawNetFail = true;
-          /* v0.21 — کلید بی‌اعتبار/محدود (401/403/429) → بقیهٔ مدل‌ها با همین کلید
-             بی‌فایده‌اند؛ بلافاصله کلید بعدی (قبلاً تا ۶ مدل × ۶۰ ثانیه معطل می‌شد) */
-          if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }
+          /* v0.39 — موقعیت = کل مسیر؛ قطع فوری با پیام رله */
+          if (gemIsLocationErr(r.status, msg)) { lastErr = 'Gemini: ' + (gemErrHuman(r.status, msg) || lastErr); locBlocked = true; break; }
+          /* v0.21 — کلید بی‌اعتبار/ممنوع (401/403) → کلید بعدی */
+          if ([401, 403].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }
+          /* v0.39 — 429 سهمیهٔ همین مدل است؛ مدل بعدی سهمیهٔ جدا دارد (درخواست کاربر:
+             «اگر یک مدل کار نکرد خودت خودکار برو مدل بعدی») */
+          if (r.status === 429) { lastErr = gemErrHuman(r.status, msg) || lastErr; continue; }
           /* v0.28 — پیام فارسیِ قابل‌فهم برای خطاهای کلید/سرزمین (400: API key not valid) */
           const hum = gemErrHuman(r.status, msg);
           if (hum) lastErr = 'Gemini: ' + hum;
@@ -2847,9 +2907,9 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
     }
   }
   /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ صریح بنویس (تشخیص آسان کاربر) */
-  if (sawNetFail) actLog('gemini-chat: all attempts failed at NETWORK level (DNS/فیلترینگ) — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
+  if (sawNetFail) actLog('gemini-chat: all attempts failed at NETWORK level — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
   /* v0.38 — لیست فنی مدل‌های امتحان‌شده فقط در activity.log می‌ماند، نه در پیام کاربر */
-  try { actLog('gemini-chat fail: tried models ' + models.join(', ')); } catch (_) { /* noop */ }
+  try { actLog('gemini-chat fail: tried models ' + baseModels.join(', ') + (gemHintModel(lastErr) ? ' (hint applied live)' : '')); } catch (_) { /* noop */ }
   return { ok: false, error: (lastErr || 'سرویس Gemini در حال حاضر پاسخگو نیست — چند لحظه بعد دوباره امتحان کن') };
 });
 
@@ -2861,21 +2921,24 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
   const gbase = String(base || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'اول کلید جمنای را در کادر بالا بگذار و صبر کن ذخیره شود' };
-  /* v0.32 — تست اتصال هم از کشف پویا استفاده می‌کند: مدل‌های واقعاً زندهٔ همین کلید */
+  /* v0.32 — تست اتصال هم از کشف پویا استفاده می‌کند: مدل‌های واقعاً زندهٔ همین کلید
+     v0.39 — زنجیرهٔ تازه + فهرست کامل مدل‌ها در پاسخ (برای انتخابگر تنظیمات) */
   const discT = await gemDiscoverModels(keys[0], gbase);
-  const models = [...new Set([...discT.slice(0, 3), 'gemini-flash-latest', 'gemini-2.5-flash'])].slice(0, 5);
+  const models = [...new Set([...discT.slice(0, 4), ...geminiModelChain('').slice(0, 4)])].slice(0, 6);
   const badKeys = new Set();
   let lastErr = null;
+  let locBlockedT = false;
   for (const mdl of models) {
+    if (locBlockedT) break;
     for (const k of keys) {
       if (badKeys.has(k)) continue;
       const t0 = Date.now();
       try {
         const r = await cloudFetch(
-          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
+          `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': k }, /* v0.39 — هدر */
             body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Reply with exactly: pong' }] }], generationConfig: { maxOutputTokens: 8 } }),
             signal: AbortSignal.timeout(15000),
           }
@@ -2884,7 +2947,9 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
         if (!r.ok) {
           const msg = (j && j.error && (j.error.message || j.error.status)) || `HTTP ${r.status}`;
           lastErr = gemErrHuman(r.status, msg) || String(msg).slice(0, 160);
-          if ([401, 403, 429].includes(r.status)) { badKeys.add(k); continue; } /* این کلید خراب/محدود است */
+          if (gemIsLocationErr(r.status, msg)) { locBlockedT = true; break; } /* v0.39 — همهٔ مدل‌ها همان را می‌دهند */
+          if ([401, 403].includes(r.status)) { badKeys.add(k); continue; } /* این کلید خراب/ممنوع است */
+          if (r.status === 429) continue; /* v0.39 — سهمیهٔ این مدل؛ مدل بعدی */
           continue; /* مدل ناموجود → مدل بعدی */
         }
         const cand = j && j.candidates && j.candidates[0];
@@ -2892,7 +2957,8 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
           ? cand.content.parts.map((x) => x.text || '').join('').trim()
           : '';
         if (!txt) { lastErr = 'اتصال برقرار شد ولی پاسخ خالی برگشت'; continue; }
-        return { ok: true, model: mdl, ms: Date.now() - t0, reply: txt.slice(0, 40), via: __cloudVia || '?' };
+        gemWorkingModel = mdl; /* v0.39 — تست موفق = مدل کاری چت هم همین شود */
+        return { ok: true, model: mdl, ms: Date.now() - t0, reply: txt.slice(0, 40), via: __cloudVia || '?', models: (gemDiscoverCache.all || []).slice() };
       } catch (e) {
         lastErr = netErr(e);
       }
@@ -2907,7 +2973,21 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
       ? 'هیچ پراکسی فعالی دیده نمی‌شود — اگر فیلترشکن داری روشنش کن، یا در کادر «آدرس رله» یک آدرس بگذار'
       : 'پراکسی سیستم فعاله — مسیر کرومیوم امتحان شد؛ اگر باز هم خطا آمد کلید/رله را چک کن';
   } catch (_) { /* noop */ }
-  return { ok: false, error: ((lastErr || 'اتصال برقرار نشد') + (hint ? ' — ' + hint : '')).slice(0, 300), via: __cloudVia || '?' };
+  return { ok: false, error: ((lastErr || 'اتصال برقرار نشد') + (hint ? ' — ' + hint : '')).slice(0, 300), via: __cloudVia || '?', models: (gemDiscoverCache.all || []).slice() };
+});
+
+/* v0.39 — فهرست کامل مدل‌های چتِ همین کلید برای انتخابگر تنظیمات؛
+   کشف ۳۰ دقیقه‌ای کش می‌شود — این هندلر فقط همان کش را می‌دهد (سریع) */
+ipcMain.handle('ai:gemmodels', async (_e, p) => {
+  const { key, base } = p || {};
+  const gbase = String(base || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
+  const keys = splitKeys(key);
+  if (!keys.length) return { ok: false, models: [], error: 'اول کلید جمنای را ذخیره کن' };
+  if (!gemDiscoverCache.all.length || Date.now() - gemDiscoverCache.at > 30 * 60 * 1000) {
+    await gemDiscoverModels(keys[0], gbase).catch(() => []);
+  }
+  const all = (gemDiscoverCache.all || []).slice();
+  return { ok: all.length > 0, models: all, error: all.length ? '' : 'فهرست مدل‌ها همین حالا در دسترس نیست — بعداً دوباره امتحان کن' };
 });
 
 ipcMain.handle('ai:openai', async (_e, p) => {
