@@ -788,6 +788,8 @@
     'calc.reply': ['{x} می‌شود {y}؛ حساب کردم!', '{x} equals {y} — calculated!'],
     'calc.fail': ['این محاسبه را متوجه نشدم — مثلاً بگو «پنج ضربدر هفت چند میشه» یا «۱۲ به علاوه ۳۰».', 'I did not understand that calculation — try "12 plus 30" or "five times seven".'],
     'timer.on': ['تایمر {x} {y}‌ای فعال شد؛ به‌محض رسیدن وقت خبرت می‌کنم.', 'A {x} {y} timer is set; I will ping you when time is up.'],
+    'timer.multi': ['(الان {n} تایمر فعالی)', '({n} timers are now running)'],
+    'notes.open': ['یادداشتت ({when}): «{x}»', 'Your note ({when}): "{x}"'],
     'timer.min': ['دقیقه', 'minute(s)'], 'timer.sec': ['ثانیه', 'second(s)'], 'timer.hour': ['ساعت', 'hour(s)'],
     'timer.done': ['زمان تایمر تمام شد!', "Time's up!"], 'timer.doneTag': ['تایمر', 'Timer'],
     'timer.doneReply': ['زمان تمام شد؛ خبرت کردم!', "Time is up — I kept my promise!"], 'timer.doneSpeak': ['زمان تایمر تمام شد؛ خبرت کردم!', "Time is up!"],
@@ -894,6 +896,7 @@
     'music.none': ['در این پوشه فایل صوتی پیدا نشد (mp3، wav، m4a، flac، ogg…)', 'No audio files found here (mp3, wav, m4a, flac, ogg…)'],
     'music.playing': ['در حال پخش: {x}', 'Now playing: {x}'],
     'music.paused': ['موزیک متوقف شد', 'Music paused'], 'music.stopped': ['موزیک قطع شد — از ابتدا', 'Music stopped — back to the start'],
+    'music.extOff': ['افزونهٔ موزیک خاموشه — صفحهٔ افزونه‌ها را باز کردم؛ از همان‌جا فعالش کن', 'Music extension is off — I opened the extensions page; enable it there'],
     'music.resumed': ['موزیک ادامه پیدا کرد', 'Music resumed'],
     'music.next': ['آهنگ بعدی', 'Next track'], 'music.prev': ['آهنگ قبلی', 'Previous track'],
     'music.emptyPlay': ['پلی‌لیست خالی است — اول از صفحه موزیک یک پوشه انتخاب کن', 'Playlist is empty — pick a folder in the music page first'],
@@ -953,13 +956,15 @@
     'set.ai.openaiModelPh': ['gpt-4o-mini', 'gpt-4o-mini'],
     'mic.busy': ['یک لحظه! دارم فرمان قبلی‌ات را انجام می‌دهم…', 'One moment! I am still working on your previous command…'],
     'voice.engine': ['موتور صدا', 'Voice engine'],
-    'voice.engineHint': ['«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)', '"Google": natural professional female voice (online — the Google Translate voice); "Windows": the installed Windows voice (offline)'],
+    'voice.engineHint': ['«اِج» (پیشنهادی): صدای عصبی رایگان مایکروسافت — طبیعی‌ترین فارسی، همان موتور openai-edge-tts؛ «گوگل»: صدای زن گوگل‌ترنسلیت؛ «ویندوز»: آفلاین', '"Edge" (recommended): free Microsoft neural voice — the most natural Persian, the openai-edge-tts engine; "Google": the Google Translate voice; "Windows": offline'],
+    'voice.eEng': ['اِج — صدای عصبی مایکروسافت (پیشنهادی)', 'Edge — Microsoft neural voice (recommended)'],
     'voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
     'voice.wEng': ['ویندوز — آفلاین', 'Windows — offline'],
     'voice.googleFail': ['صدای گوگل در دسترس نبود — با صدای ویندوز گفتم', 'Google voice unavailable — used the Windows voice'],
     'set.voice.engine': ['موتور صدا', 'Voice engine'],
-    'set.voice.engineHint': ['«گوگل»: صدای زن طبیعی و حرفه‌ای (آنلاین — همان صدای گوگل‌ترنسلیت)؛ «ویندوز»: صدای نصب‌شده ویندوز (آفلاین)', '"Google": natural professional female voice (online); "Windows": the installed Windows voice (offline)'],
-    'set.voice.gEng': ['گوگل — صدای زن (پیشنهادی)', 'Google — female voice (recommended)'],
+    'set.voice.engineHint': ['«اِج» (پیشنهادی): صدای عصبی رایگان مایکروسافت — طبیعی‌ترین فارسی، همان موتور openai-edge-tts؛ «گوگل»: صدای زن گوگل‌ترنسلیت؛ «ویندوز»: آفلاین', '"Edge" (recommended): free Microsoft neural voice — most natural Persian; "Google": the Google Translate voice; "Windows": offline'],
+    'set.voice.eEng': ['اِج — صدای عصبی مایکروسافت (پیشنهادی)', 'Edge — Microsoft neural voice (recommended)'],
+    'set.voice.gEng': ['گوگل — صدای زن', 'Google — female voice'],
     'set.voice.wEng': ['ویندوز — آفلاین', 'Windows — offline'],
     'set.ai.provider': ['موتور هوش مصنوعی', 'AI engine'],
     'set.ai.providerHint': ['«خودکار»: اول کلید Gemini (با سرچ زنده گوگل)، بعد حساب GLM، کلید GLM و در آخر OpenAI — یا یکی را ثابت انتخاب کن', '"Auto": Gemini key first (with live Google Search), then GLM account, GLM key, and OpenAI last — or fix one'],
@@ -1281,7 +1286,7 @@
   const settings = {
     tts: store.get('tts', true),
     voiceURI: store.get('voiceURI', ''),
-    ttsEngine: store.get('ttsEngine', 'google'),
+    ttsEngine: store.get('ttsEngine', 'edge'), /* v0.42 — اِج پیش‌فرض */
     autoUpdate: store.get('autoUpdate', true),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
@@ -1394,13 +1399,23 @@
           store.set('migV22', true);
           actLog('migration v0.22 applied: extDns=' + settings.extDns + ' sttEngine=' + settings.sttEngine);
         }
+        /* v0.42 — مهاجرت یک‌بارهٔ موتور صدا: اِج (عصبی مایکروسافت — همان موتور
+           رایگان openai-edge-tts که کاربر معرفی کرد) صدای پیش‌فرض آوا می‌شود؛
+           «گوگل» قبلی هم یک‌بار به اِج می‌رود، «ویندوز» دست‌نخورده می‌ماند و
+           کاربر هر وقت بخواهد از تنظیمات برمی‌گرداند */
+        if (store.get('migV42') !== true) {
+          if (settings.ttsEngine !== 'windows') { settings.ttsEngine = 'edge'; store.set('ttsEngine', 'edge'); }
+          store.set('migV42', true);
+          actLog('migration v0.42 applied: ttsEngine=' + settings.ttsEngine);
+        }
         applyTheme();
         applyPerf();
         syncPerfUI();
         if (typeof applyExtensions === 'function') applyExtensions();
         if (typeof renderDiscordContacts === 'function') renderDiscordContacts();
-        /* v0.22 — اگر پوشه‌های موزیک از فایل آمد، پلی‌لیست دوباره ساخته می‌شود */
-        try { if (typeof restoreMusicLibrary === 'function') restoreMusicLibrary(); } catch (_) { /* noop */ }
+        /* v0.22 — اگر پوشه‌های موزیک از فایل آمد، پلی‌لیست دوباره ساخته می‌شود
+           (v0.42 — فقط وقتی افزونهٔ موزیک روشن است؛ سبک‌سازی) */
+        try { if (typeof restoreMusicLibrary === 'function' && settings.extMusic) restoreMusicLibrary(); } catch (_) { /* noop */ }
         if (optTheme) optTheme.value = settings.theme || 'dark';
         refreshEngineUI();
         renderCustomChips();
@@ -1469,6 +1484,22 @@
     } catch (_) { return false; }
   }
 
+  /* v0.42 — موتور عصبی مایکروسافت اِج (رایگان) — همان موتور پروژهٔ
+     openai-edge-tts که کاربر معرفی کرد، بدون سرور پایتون و مستقیم در آوا.
+     تلفظ فارسی طبیعی‌تر و هر تکه تا ۳۰۰۰ نویسه در یک درخواست خوانده می‌شود. */
+  async function speakEdge(text) {
+    if (!bridge || !bridge.tts || !bridge.tts.edge) return false;
+    const lang = settings.sttLang === 'en-US' ? 'en' : 'fa';
+    try {
+      const r = await bridge.tts.edge({ text: String(text).slice(0, 3000), lang });
+      if (!(r && r.ok && Array.isArray(r.chunks) && r.chunks.length)) return false;
+      stopGoogleSpeak();
+      gTtsQueue = r.chunks.slice();
+      playNextGoogleChunk();
+      return gTtsPlaying;
+    } catch (_) { return false; }
+  }
+
   /* مسیر آفلاین ویندوز — فالبک مطمئن */
   function speakWindows(text) {
     if (!('speechSynthesis' in window)) return;
@@ -1496,6 +1527,14 @@
     if (!txt) return;
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
     stopGoogleSpeak();
+    /* v0.42 — زنجیره: اِج → گوگل → ویندوز (اِج پیش‌فرض جدید؛ هر حلقه اگر
+       جواب نداد خودکار به بعدی می‌رود تا صدا هیچ‌وقت خاموش نماند) */
+    if (settings.ttsEngine === 'edge') {
+      if (await speakEdge(txt)) return;
+      if (await speakGoogle(txt)) return;
+      speakWindows(txt);
+      return;
+    }
     if (settings.ttsEngine === 'google') {
       const ok = await speakGoogle(txt);
       if (ok) return;
@@ -2441,6 +2480,31 @@
     return t('notes.ask');
   }
 
+  /* ============================================================
+     v0.42 — «اون یادداشتی که نوشتیم رو باز کن» — حافظهٔ محلی یادداشت‌ها
+     (خواستهٔ کاربر: کامندنویسی برای این سخته؛ AI ببینه و باز کنه —
+     مسیر محلیِ آنی + اکشن note_show برای مسیر هوش مصنوعی)
+     query خالی یا بدون قطعهٔ قابل‌جستجو → آخرین یادداشت؛ وگرنه جستجوی متنی داخل متن یادداشت‌ها
+     ============================================================ */
+  async function openLastNote(query) {
+    if (!bridge || !bridge.notes) return t('notes.onlyApp');
+    const arr = await notesLoad();
+    if (!arr.length) return t('notes.empty');
+    const q = normFaFull(String(query || '')).toLowerCase().replace(/[\s\u200C]+/g, ' ').trim();
+    let note = null;
+    if (q && q.length >= 3) {
+      /* قطعهٔ جستجو: واژه‌های اضافهٔ فرمانی حذف و بلندترین بخش زنده می‌ماند */
+      const frag = q
+        .replace(/(^|\s)(اون|همون|آخرین|قبلی|یادداشت|نوت|رو|را|باز|کن|بکن|نشون|بده|بخون|بگو|که|نوشتیم|بودیم|دوباره|برام|برای|من)(?=\s|$)/g, ' ')
+        .replace(/[\s\u200C]+/g, ' ').trim();
+      if (frag.length >= 3) note = arr.find((n) => normFaFull(String(n.x || '')).toLowerCase().includes(frag)) || null;
+    }
+    if (!note) note = arr[0]; /* جدیدترین */
+    const when = note && note.t ? new Intl.DateTimeFormat(LANG === 'en' ? 'en-US' : 'fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(note.t)) : '';
+    actLog('note open: ' + String((note && note.x) || '').slice(0, 40));
+    return t('notes.open', { when, x: String((note && note.x) || '').slice(0, 220) });
+  }
+
   const RULES = [
     /* --- پاور: خواب / خاموش / ریستارت / مانیتور (نسخه ۰.۱۰) --- */
     {
@@ -2509,9 +2573,15 @@
     {
       /* v0.41 — دایرهٔ لغات جستجوی وب: گوگل کن / سرچش / جستجوش / پیداش کن /
          برام سرچ کن / تو اینترنت … (پیش از این «گوگل کن» به هیچ‌جا نمی‌رسید) */
+      /* v0.42 — «سرچ کن» تنها دیگر «» را جستجو کردم» دروغ نمی‌گوید: گوگلِ
+         ساده باز می‌شود و از کاربر عبارت پرسیده می‌شود (گزارش: «انجام نده») */
       k: /جستجو|سرچ|سیرچ|گوگل\s*(کن|بزن)?|google|پیداش\s*کن|search( for)?( the)? web|search$/i, id: 'web_search', t: 'جستجوی وب', i: '#i-search',
       run: 'web_search', arg: (c) => stripSearch(c),
-      r: (c) => LANG === 'en' ? `I searched "${stripSearch(c) || 'Google'}" on Google.` : `«${stripSearch(c) || 'گوگل'}» را در گوگل جستجو کردم.`,
+      r: (c) => {
+        const q = stripSearch(c);
+        if (!q) return LANG === 'en' ? 'Google is open — tell me what to search for.' : 'گوگل باز شد — بگو چی رو برات سرچ کنم.';
+        return LANG === 'en' ? `I searched "${q}" on Google.` : `«${q}» را در گوگل جستجو کردم.`;
+      },
     },
 
     /* --- پنجره‌ها و سیستم --- */
@@ -2551,6 +2621,16 @@
       k: /یادآوری|یادم\s?بنداز|یادت\s?بنداز|یادآور|آلارم|بیدارم\s?کن|remind me/i, id: 'reminder', t: 'یادآوری ثبت شد', i: '#i-timer',
       r: (c) => reminderReply(c),
     },
+    /* --- v0.42 — وضعیت/لغو تایمر — باید «قبل از» قانون ست‌کردن تایمر باشد --- */
+    {
+      k: /تایمر[^.]{0,14}(لغو|بردار|پاک|قطع|کنسل|بی\s?خیال)|لغو[^.]{0,10}تایمر|cancel (the )?timers?|clear (the )?timers?/i,
+      id: 'timer_cancel', t: 'لغو تایمرها', i: '#i-timer', r: () => cancelTimersReply(),
+    },
+    {
+      /* «چند تا تایمر دارم؟» / «تایمرام چیه؟» / «تایمر فعاله؟» — محلی و آنی */
+      k: /چند(تا|\s*تا|\s*دونه)?\s*تایمر|تایمر(ام|هام|ها)[^.]{0,14}(چیه|چی|هست|فعال|باقی|مونده|کدوم|بگو|نشون)|تایمر[^.]{0,18}(فعاله|باقی\s*مونده|وضعیت|لیست|چندتا)|how many timers|(my )?timers?\s*(active|running|left|status)/i,
+      id: 'timer_report', t: 'وضعیت تایمرها', i: '#i-timer', r: () => timersReportReply(),
+    },
     { k: /تایمر|هشدار\s?بذار|timer/i, id: 'timer', t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
 
     /* --- اطلاعات --- */
@@ -2575,6 +2655,11 @@
         : t('date.reply', { x: fmtDate() }) },
 
     /* --- ابزار --- */
+    /* v0.42 — «اون یادداشتی که نوشتیم رو باز کن» — قبل از قانون عمومی یادداشت */
+    {
+      k: /(اون|همون|آخرین|قبلی)\s*(یادداشت|نوت)|(یادداشت|نوت)[^.]{0,6}(آخر|قبلی|قبل)|یادداشتم\s*(رو|را)?\s*(باز|نشون|بخون)|(open|show|read)\s*(that|the last|my last)\s*note/i,
+      id: 'notes_open', t: 'یادداشت آخر', i: '#i-note', r: (c) => openLastNote(c),
+    },
     /* v0.31.0 — یادداشت صوتی ماندگار */
     { k: /یادداشت|یادداشتم|note (down|to self)|take a note|my notes/i, id: 'notes', t: 'یادداشت', i: '#i-note', r: (c) => notesReply(c) },
 
@@ -2978,6 +3063,8 @@
     vol_set: 'صدا روی عدد مشخص (مثلا ۵۰ درصد)',
     reminder: 'یادآوری، آلارم، بیدارم کن',
     timer: 'تایمر (مثلا ۱۰ دقیقه)',
+    timer_report: 'چند تا تایمر دارم/تایمرام چیه/فعاله؟ — وضعیت محلی',
+    timer_cancel: 'لغو/برداشتن تایمرها',
     screenshot: 'اسکرین‌شات/عکس صفحه',
     lock: 'قفل کردن صفحه',
     minimize_all: 'نمایش دسکتاپ/مینیمایز همهٔ پنجره‌ها',
@@ -2986,6 +3073,7 @@
     clock: 'ساعت چنده',
     date: 'تاریخ امروز/چندمه',
     notes: 'یادداشت',
+    notes_open: 'باز کردن/خواندن یادداشت ذخیره‌شده: اون یادداشت رو باز کن',
     open_chrome: 'باز کردن مرورگر کروم',
     rec_start: 'شروع ضبط صدا',
     rec_stop: 'پایان ضبط صدا',
@@ -3028,6 +3116,51 @@
       localStorage.setItem(AI_MAP_KEY, JSON.stringify(aiCmdMap));
       actLog('ai map cached: "' + k.slice(0, 40) + '" → ' + id);
     } catch (_) { /* noop */ }
+  }
+
+  /* ============================================================
+     v0.42 — عکسِ لحظه‌ایِ وضعیت آوا برای هوش مصنوعی (خواستهٔ کاربر:
+     «gemini یا ai پس‌زمینه … درخواست‌های پس‌زمینه و ذخیره‌شدهٔ کاربر
+     رو بتونه ببینه») — تایمرهای فعال، یادآوری‌ها، یادداشت‌های ذخیره‌شده،
+     آخرین سایت. فقط وقتی چیزی واقعاً هست پر می‌شود (هزینهٔ توکن ≈ صفر) و
+     AI با act=note_show می‌تواند یادداشت را هم دوباره «باز» کند.
+     ============================================================ */
+  async function avaStateCtx() {
+    try {
+      const rows = [];
+      if (typeof TIMERS !== 'undefined' && TIMERS.length) {
+        rows.push('تایمرهای فعال: ' + TIMERS.slice(0, 5).map((tm) => `${tm.label} ${tm.unit}`).join('، '));
+      }
+      try {
+        if (bridge && bridge.reminders && bridge.reminders.list) {
+          const r = await bridge.reminders.list();
+          const items = (((r && r.reminders) || [])).slice().sort((a, b) => a.at - b.at).slice(0, 5);
+          if (items.length) {
+            const fmt = new Intl.DateTimeFormat(LANG === 'en' ? 'en-US' : 'fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            rows.push('یادآوری‌های ثبت‌شده: ' + items.map((x) => `«${String(x.text).slice(0, 40)}» (${fmt.format(new Date(x.at))})`).join('، '));
+          }
+        }
+      } catch (_) { /* noop */ }
+      try {
+        const notes = Array.isArray(NOTES) && NOTES.length ? NOTES : (await notesLoad());
+        const live = (notes || []).filter((n) => n && n.x).slice(0, 3);
+        if (live.length) {
+          rows.push('یادداشت‌های ذخیره‌شدهٔ کاربر: ' + live.map((n, i) => `${i + 1}) «${String(n.x).slice(0, 60)}»`).join('  '));
+        }
+      } catch (_) { /* noop */ }
+      const ls = String(store.get('lastSite', '') || '');
+      if (ls) rows.push('آخرین سایتی که با آوا باز شد: ' + ls);
+      rows.push('افزونهٔ موزیک: ' + (settings.extMusic ? 'روشن' : 'خاموش'));
+      if (!rows.length) return '';
+      return '[وضعیت لحظه‌ای آوا]\n' + rows.join('\n') +
+        '\n(اگر سوال کاربر دربارهٔ همین وضعیت بود — چند تایمر دارد، یادداشتش چی بود، یادآوری فعال دارد یا نه — خودت از همین اطلاعات کوتاه جواب بده و هیچ بلوکی ننویس. اگر کاربر خواست یک یادداشت را دوباره ببیند/بخواند، بلوک DO با act=note_show بده: value=بخشی از متن همان یادداشت، یا value خالی برای آخرین یادداشت.)';
+    } catch (_) { return ''; }
+  }
+  /* v0.42 — بستهٔ کامل زمینه برای فالبک AI: کاتالوگ + وضعیت + extra قانون */
+  async function aiFallbackCtx(rule) {
+    const parts = [aiCmdCatalogCtx(), await avaStateCtx()];
+    if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
+    return parts.filter(Boolean).join('\n');
   }
 
   /* ============================================================
@@ -3519,8 +3652,13 @@
 
   let lastCpu = 12, lastRam = 46;
 
-  /* ---------- تایمر واقعی ---------- */
+  /* ---------- تایمر واقعی ----------
+     v0.42 — «چندتایمری»: هر تایمر در TIMERS می‌نشیند (کاربر: «میخوام بدونه
+     چند تا تایمر داره… آیا فعاله؟») — نزدیک‌ترین تایمر زنگ می‌خورد و بقیه
+     سر جایشان می‌مانند. وضعیت با «چند تا تایمر دارم؟» محلی و آنی جواب می‌گیرد. */
   let timerId = null;
+  let TIMERS = []; /* {id, endsAt, label, unit} */
+  let timerSeq = 0;
   function beep() {
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -3536,6 +3674,37 @@
       g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.9);
       o.start(); o.stop(ac.currentTime + 1);
     } catch (_) { /* noop */ }
+  }
+  function fmtRemaining(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return faNum(s) + ' ثانیه';
+    const m = Math.floor(s / 60);
+    if (m < 60) return faNum(m) + ' دقیقه';
+    return faNum(Math.round(m / 60)) + ' ساعت';
+  }
+  function armNextTimer() {
+    if (timerId) { clearTimeout(timerId); timerId = null; }
+    if (!TIMERS.length) return;
+    TIMERS.sort((a, b) => a.endsAt - b.endsAt);
+    const next = TIMERS[0];
+    timerId = setTimeout(() => fireTimer(next.id), Math.max(0, next.endsAt - Date.now()));
+  }
+  function fireTimer(id) {
+    const idx = TIMERS.findIndex((x) => x.id === id);
+    const tm = idx >= 0 ? TIMERS[idx] : null;
+    if (idx >= 0) TIMERS.splice(idx, 1);
+    armNextTimer();
+    beep();
+    const doneMsg = t('timer.done') + (tm ? ` (${tm.label} ${tm.unit})` : '');
+    toast(doneMsg, '#i-timer');
+    setState('success');
+    statusText.textContent = doneMsg;
+    rcTag.textContent = t('timer.doneTag');
+    rcHeard.textContent = t('timer.doneTag');
+    rcReply.textContent = t('timer.doneReply');
+    respCard.classList.add('show');
+    speak(doneMsg);
+    setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
   }
   function startTimer(c, msOverride) {
     const txt = faToEn(c);
@@ -3561,25 +3730,48 @@
     /* پیش‌نمایش مرورگر: یادآوریِ زمان‌دار دقیق به‌جای حدسِ عدد اول (v0.38.1) */
     if (Number.isFinite(msOverride) && msOverride > 0) mins = msOverride / 60000;
     mins = Math.max(0.05, Math.min(600, mins));
-    if (timerId) clearTimeout(timerId);
-    timerId = setTimeout(() => {
-      beep();
-      toast(t('timer.done'), '#i-timer');
-      setState('success');
-      statusText.textContent = t('timer.done');
-      rcTag.textContent = t('timer.doneTag');
-      rcHeard.textContent = t('timer.doneTag');
-      rcReply.textContent = t('timer.doneReply');
-      respCard.classList.add('show');
-      speak(t('timer.doneSpeak'));
-      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
-    }, mins * 60000);
     /* برچسب: ثانیه → ثانیه، ساعت خالص → ساعت، بقیه → دقیقه */
     let unit = t('timer.min');
     let label = faNum(+(mins.toFixed(1)));
     if (firstUnit === 's') { unit = t('timer.sec'); label = faNum(Math.round(mins * 60)); }
     else if (firstUnit === 'h' && Number.isInteger(mins / 60) && mins / 60 < 24) { unit = t('timer.hour'); label = faNum(mins / 60); }
-    return t('timer.on', { x: label, y: unit });
+    TIMERS.push({ id: ++timerSeq, endsAt: Date.now() + mins * 60000, label, unit });
+    armNextTimer();
+    const base = t('timer.on', { x: label, y: unit });
+    /* v0.42 — کاربر بداند چند تایمر فعال دارد (چندتایمری جدید) */
+    return TIMERS.length > 1
+      ? base + ' ' + t('timer.multi', { n: faNum(TIMERS.length) })
+      : base;
+  }
+  /* v0.42 — «چند تا تایمر دارم؟» / «تایمر فعاله؟» — جواب محلیِ آنی، بدون شبکه */
+  async function timersReportReply() {
+    const lines = TIMERS.slice(0, 6).map((tm) => `${tm.label} ${tm.unit} — ${fmtRemaining(tm.endsAt - Date.now())} مونده`);
+    let remCount = 0, nextRem = null;
+    try {
+      if (bridge && bridge.reminders && bridge.reminders.list) {
+        const r = await bridge.reminders.list();
+        const items = (((r && r.reminders) || [])).slice().sort((a, b) => a.at - b.at);
+        remCount = items.length;
+        nextRem = items[0] || null;
+      }
+    } catch (_) { /* noop */ }
+    if (!TIMERS.length && !remCount) return LANG === 'en' ? 'No timers are running right now — say "10 minute timer".' : 'الان هیچ تایمری فعاله نیست — بگو مثلاً: «تایمر ۱۰ دقیقه».';
+    let out = TIMERS.length
+      ? (LANG === 'en' ? `${TIMERS.length} timer(s) running: ` : `${faNum(TIMERS.length)} تایمر فعال داری: `) + lines.join('، ')
+      : (LANG === 'en' ? 'No local timers running.' : 'تایمر محلی فعالی نداری.');
+    if (remCount) {
+      out += (LANG === 'en' ? ` — ${remCount} reminder(s) saved` : ` — ${faNum(remCount)} یادآوری ثبت شده`)
+        + (nextRem ? (LANG === 'en' ? `, next: ${nextRem.text} (${fmtClock(nextRem.at)})` : `، نزدیک‌ترین: «${nextRem.text}» (${fmtClock(nextRem.at)})`) : '');
+    }
+    return out;
+  }
+  /* v0.42 — «تایمر رو بردار/لغو کن» — همهٔ تایمرهای محلی */
+  function cancelTimersReply() {
+    if (!TIMERS.length) return LANG === 'en' ? 'There is no active timer to cancel.' : 'تایمری فعاله نیست که لغو کنم.';
+    const n = TIMERS.length;
+    TIMERS = [];
+    armNextTimer();
+    return LANG === 'en' ? `${n} timer(s) cancelled.` : `${faNum(n)} تایمر فعال لغو شد.`;
   }
 
   /* ---------- تایپ متن پاسخ ---------- */
@@ -3646,8 +3838,18 @@
   const cmdBusySet = () => { cmdBusy = true; cmdBusyAt = Date.now(); };
 
   /* اجرای فرمان‌های DNS (با UAC واقعی) — هم از مسیر «دی ان اس …»
-     و هم از مسیر «الکترو رو تنظیم کن» (اسم ذخیره‌شده کاربر) */
+     و هم از مسیر «الکترو رو تنظیم کن» (اسم ذخیره‌شده کاربر)
+     v0.42 — «پویا»: حتی اگر افزونهٔ DNS خاموش باشد، فرمان صوتی آن را همان
+     لحظه روشن و دکمه‌اش را به ستون کنار می‌آورد (خواستهٔ کاربر: غیرفعال
+     باشند ولی هر موقع کاربر خواست باز شوند) */
   async function runDnsCommand(raw) {
+    if (settings.extDns === false) {
+      settings.extDns = true;
+      store.set('extDns', true);
+      if (typeof applyExtensions === 'function') applyExtensions();
+      toast(t('toast.extOn', { x: 'DNS Changer' }), '#i-shield');
+      actLog('dns ext auto-enabled by voice command (dynamic extension)');
+    }
     if (cmdBusyGuard()) return;
     cmdBusySet();
     setState('processing');
@@ -3868,8 +4070,10 @@
       if (aiConnected()) {
         /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد
            v0.39 — کاتالوگ فرمان‌ها هم می‌چسبد تا AI درخواستِ با تعبیر متفاوت را
-           به فرمان واقعی آوا نگاشت کند (act=run_cmd) */
-        await aiHandleCommand(cmd, aiCmdCatalogCtx());
+           به فرمان واقعی آوا نگاشت کند (act=run_cmd)
+           v0.42 — عکسِ وضعیت (تایمرها/یادآوری‌ها/یادداشت‌ها/آخرین سایت) هم
+           می‌چسبد تا AI «ذخیره‌شده‌های» کاربر را ببیند */
+        await aiHandleCommand(cmd, await aiFallbackCtx());
         return;
       }
     }
@@ -3880,7 +4084,7 @@
     if (reply && typeof reply === 'object' && reply.__aiFallback) {
       actLog('rule "' + ((rule && rule.t) || '?') + '" could not fulfill → AI fallback');
       /* v0.37 — __aiExtra: قانون راهنما فهرست توانایی‌های آوا را به AI می‌چسباند */
-      if (aiConnected()) { await aiHandleCommand(cmd, rule && rule.__aiExtra); return; }
+      if (aiConnected()) { await aiHandleCommand(cmd, await aiFallbackCtx(rule)); return; }
       reply = t('weather.fail'); /* AI هم در دسترس نیست → پیام صادقانهٔ از پیش تعریف‌شده */
       rcTag.textContent = t('tag.reply');
     }
@@ -6079,7 +6283,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.41.0-beta';
+  let appVersion = '0.42.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -6151,6 +6355,14 @@
     if (!musOn) {
       try { if (typeof mAudio !== 'undefined' && mAudio && !mAudio.paused) mAudio.pause(); } catch (_) { /* noop */ }
       if (musicWidget) musicWidget.hidden = true;
+    } else {
+      /* v0.42 — فعال‌سازی افزونه → بازسازی پلی‌لیست در همین لحظه (lazy، نه در شروع)
+         try/catch: در اولین init شیء music هنوز تعریف نشده (پایین‌تر از این‌جاست) */
+      try {
+        if (!music.restored && Array.isArray(settings.musicDirs) && settings.musicDirs.length) {
+          setTimeout(() => { try { restoreMusicLibrary(); } catch (_) { /* noop */ } }, 250);
+        }
+      } catch (_) { /* music هنوز آماده نیست — مسیر 1500ms پایینِ فایل خودش می‌گیرد */ }
     }
   }
   if (btnExt) btnExt.addEventListener('click', () => showView(extPage && !extPage.hidden ? 'home' : 'ext'));
@@ -6447,7 +6659,7 @@
     optGlmKey.value = settings.glmKey || '';
     optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
-    if (optTtsEngine) optTtsEngine.value = settings.ttsEngine || 'google';
+    if (optTtsEngine) optTtsEngine.value = settings.ttsEngine || 'edge';
     if (optAiProvider) optAiProvider.value = settings.aiProvider || 'auto';
     if (optGeminiKey) optGeminiKey.value = settings.geminiKey || '';
     const ogb2 = $('#optGemBase'); if (ogb2) ogb2.value = settings.gemBase || '';
@@ -6489,11 +6701,12 @@
   const needApp = () => toast(t('toast.onlyApp'), '#i-info');
 
   if (optTtsEngine) optTtsEngine.addEventListener('change', () => {
-    settings.ttsEngine = optTtsEngine.value === 'windows' ? 'windows' : 'google';
+    /* v0.42 — سه موتور: اِج / گوگل / ویندوز */
+    settings.ttsEngine = ['edge', 'google', 'windows'].includes(optTtsEngine.value) ? optTtsEngine.value : 'edge';
     store.set('ttsEngine', settings.ttsEngine);
     stopGoogleSpeak();
     if (window.speechSynthesis) speechSynthesis.cancel();
-    speak(t(settings.ttsEngine === 'google' ? 'voice.gEng' : 'voice.wEng'));
+    speak(t(settings.ttsEngine === 'edge' ? 'voice.eEng' : settings.ttsEngine === 'google' ? 'voice.gEng' : 'voice.wEng'));
   });
   if (optAiProvider) optAiProvider.addEventListener('change', () => {
     settings.aiProvider = optAiProvider.value || 'auto';
@@ -7208,6 +7421,7 @@
     '- screenshot / lock / monitor_off / minimize_all / recycle_empty؛ sys_sleep: فقط با درخواست صریح کاربر (برنامه تأیید می‌گیرد)\n' +
     '- dns_set: value=اسم پروفایل DNS؛ dns_reset (بدون value)\n' +
     '- reminder_add: value=متن کامل با زمان (مثل: ۲۰ دقیقه دیگه چایی درست کن)\n' +
+    '- note_show: value=بخشی از متن یک یادداشت ذخیره‌شدهٔ کاربر (یا خالی برای آخرین یادداشت) — یادداشت را برایش می‌خوانی\n' +
     '- discord_call: value=اسم مخاطب ذخیره‌شده؛ discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer (جواب تماس)؛ discord_decline (رد تماس)\n' +
     '- run_custom: value=عنوان فرمان سفارشی قبلی\n' +
     'اگر فقط سوال است، جواب متنی کوتاه بده و هیچ بلوکی ننویس؛ اگر هم کار و هم سوال است، بلوک DO با reply بده.';
@@ -7233,7 +7447,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -7276,7 +7490,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd']; /* v0.39 — +run_cmd */
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show']; /* v0.39 +run_cmd؛ v0.42 +note_show */
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -7368,7 +7582,8 @@
             break;
           }
           case 'music_play': {
-            if (!settings.extMusic || typeof playTrack !== 'function') { outs.push(LANG === 'en' ? 'Music extension is off.' : 'افزونهٔ موزیک خاموش است.'); break; }
+            /* v0.42 — پیام یکدست «افزونه خاموشه» + باز شدن صفحهٔ افزونه‌ها */
+            if (!settings.extMusic || typeof playTrack !== 'function') { outs.push(musicExtOffReply()); break; }
             const q = normFaFull(a.value);
             let idx = -1;
             if (q) idx = music.tracks.findIndex((tr) => normFaFull(tr.title).includes(q) || normFaFull(tr.artist || '').includes(q));
@@ -7389,6 +7604,11 @@
           }
           case 'reminder_add': {
             outs.push(await reminderReply(a.value));
+            break;
+          }
+          /* v0.42 — باز کردن/خواندن یادداشت ذخیره‌شده (value خالی = آخرین یادداشت) */
+          case 'note_show': {
+            outs.push(await openLastNote(a.value));
             break;
           }
           case 'discord_call': {
@@ -8501,29 +8721,41 @@
     if (music.cur < 0) { music.cur = 0; mAudio.src = music.tracks[0].url; updatePlayerUI(); mediaSessionMeta(); }
   }
   /* v0.22 — بازسازی خودکار پلی‌لیست بعد از ری‌استارت (با درنگ کوتاه تا
-     تنظیمات فایل هم لود شود؛ اگر زودتر آماده شد فلگ restored جلوی دوباره‌کاری را می‌گیرد) */
-  if (Array.isArray(settings.musicDirs) && settings.musicDirs.length) {
+     تنظیمات فایل هم لود شود؛ اگر زودتر آماده شد فلگ restored جلوی دوباره‌کاری را می‌گیرد)
+     v0.42 — سبک‌سازی: فقط وقتی افزونهٔ موزیک روشن است؛ با خاموش بودن،
+     هیچ اسکن پوشه‌ای در شروع انجام نمی‌شود (فعال‌کردن افزونه خودش بازسازی می‌کند) */
+  if (settings.extMusic && Array.isArray(settings.musicDirs) && settings.musicDirs.length) {
     setTimeout(() => { try { restoreMusicLibrary(); } catch (_) { /* noop */ } }, 1500);
   }
 
-  /* --- کمک‌کننده‌های فرمان صوتی موزیک --- */
+  /* --- کمک‌کننده‌های فرمان صوتی موزیک ---
+     v0.42 — اگر افزونهٔ موزیک خاموش باشد آوا «می‌گوید خاموشه» و صفحهٔ
+     افزونه‌ها را باز می‌کند (خواستهٔ کاربر: «اگ موزیک خاست بگ اکستنشن افه») */
+  function musicExtOffReply() {
+    showView('ext');
+    return t('music.extOff');
+  }
   function voiceMusicPlay() {
+    if (!settings.extMusic) return musicExtOffReply();
     if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
     if (!mAudio.src) { playTrack(music.cur < 0 ? 0 : music.cur); return t('music.playing', { x: music.tracks[Math.max(0, music.cur)].title }); }
     if (mAudio.paused) { mAudio.play().catch(() => {}); return t('music.resumed'); }
     return t('music.playing', { x: music.tracks[music.cur].title });
   }
   function voiceMusicPause() {
+    if (!settings.extMusic) return musicExtOffReply();
     if (!music.tracks.length || mAudio.paused) return t('music.paused');
     mAudio.pause();
     return t('music.paused');
   }
   function voiceMusicNext() {
+    if (!settings.extMusic) return musicExtOffReply();
     if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
     musicNext();
     return t('music.next');
   }
   function voiceMusicPrev() {
+    if (!settings.extMusic) return musicExtOffReply();
     if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
     musicPrev();
     return t('music.prev');

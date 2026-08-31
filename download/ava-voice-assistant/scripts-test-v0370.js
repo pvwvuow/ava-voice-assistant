@@ -155,7 +155,7 @@ ok('pipPreload: پل امن صفحهٔ PiP (ready/close/hoverUi/dragStart/ctl/on
 
 ok('app.js: قانون PIP با AVAVoice.PIP_COMMAND_RE + pipVoiceReply + قانون HOW با __aiExtra', appSrc.includes('AVAVoice.PIP_COMMAND_RE') && appSrc.includes('pipVoiceReply') && appSrc.includes('__aiExtra: AVACapabilities.aiPromptAddon()'));
 ok('app.js: HOW قبل از PIP splice می‌شود (چجوری…پین کنم → راهنما نه پین!)', (() => { const m = appSrc.match(/const pipRules = \[[\s\S]*?\];/); return !!m && m[0].indexOf('howToReply') < m[0].indexOf('AVAVoice.PIP_COMMAND_RE'); })());
-ok('app.js: dispatch fallback مانیفست را به aiHandleCommand می‌دهد', appSrc.includes('aiHandleCommand(cmd, rule && rule.__aiExtra)'));
+ok('app.js: dispatch fallback مانیفست را به aiHandleCommand می‌دهد', /aiHandleCommand\(cmd, (?:await aiFallbackCtx\(rule\)|rule && rule\.__aiExtra)\)/.test(appSrc)); /* v0.42: aiFallbackCtx شامل __aiExtra */
 ok('app.js: aiAsk/aiHandleCommand پارامتر extraCtx دارند', appSrc.includes('async function aiAsk(text, extraCtx)') && appSrc.includes('async function aiHandleCommand(cmd, extraCtx)'));
 ok('app.js: detectActiveVideo سه‌مسیره (video → webview → کلیپ‌بورد)', appSrc.includes('async function detectActiveVideo') && appSrc.includes("document.querySelectorAll('video')") && appSrc.includes("document.querySelector('webview')") && appSrc.includes('bridge.pipAPI.clipboard()'));
 ok('app.js: مسیر blob صادقانه است (قابل انتقال نیست)', appSrc.includes("kind: 'blob'") && appSrc.includes('انتقال مستقیم ممکن نیست'));

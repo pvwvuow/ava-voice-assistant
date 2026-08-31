@@ -9,6 +9,7 @@ const { exec, spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto'); /* v0.42 — توکن Sec-MS-GEC برای TTS اِج */
 const { Readable } = require('stream');
 
 /* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
@@ -585,7 +586,15 @@ const COMMANDS = {
 
   /* وب */
   web_open:   { cmd: (a) => { const u = safeUrl(a); return u ? `start "" "${u}"` : null; }, fa: 'سایت' },
-  web_search: { cmd: (a) => `start "" "https://www.google.com/search?q=${encodeURIComponent(String(a || '').slice(0, 200))}"`, fa: 'جستجو' },
+  /* v0.42 — «سرچ کن» بدون عبارت دیگر صفحهٔ خالی نتایج گوگل باز نمی‌کند
+     (گزارش کاربر: «میگه سرچ کن انجام نده») — خود گوگل باز می‌شود تا کاربر
+     عبارتش را تایپ کند؛ عبارت‌دار مثل قبل مستقیم نتایج می‌رود */
+  web_search: { cmd: (a) => {
+    const q = String(a || '').trim();
+    return q
+      ? `start "" "https://www.google.com/search?q=${encodeURIComponent(q.slice(0, 200))}"`
+      : 'start "" "https://www.google.com"';
+  }, fa: 'جستجو' },
 
   /* پنجره‌ها و سیستم */
   minimize_all: { cmd: 'powershell -NoProfile -Command "(New-Object -ComObject Shell.Application).MinimizeAll()"', fa: 'دسکتاپ' },
@@ -2781,6 +2790,168 @@ ipcMain.handle('tts:google', async (_e, p) => {
     }));
     if (!parts.some(Boolean)) return { ok: false, error: firstFail || 'صدایی از گوگل نرسید' };
     return { ok: true, mime: 'audio/mpeg', chunks: parts.filter(Boolean).map((b) => b.toString('base64')) };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ============================================================
+   v0.42 — TTS عصبی مایکروسافت اِج — همان موتورِ پروژهٔ متن‌باز
+   openai-edge-tts (https://github.com/travisvn/openai-edge-tts)
+   ------------------------------------------------------------
+   کاربر این پروژه را فرستاد و گفت «اگه خوبه و رایگانه برای صدای
+   آوا استفاده کن». آن پروژه یک «سرور پایتون» است؛ راه‌انداختن
+   سرور کنار آوا یعنی مصرف رم و سنگینی بیشتر (برخلاف خواستهٔ
+   سبک‌سازی). پس «همان موتورِ» آن پروژه — صداهای عصبی رایگان
+   Microsoft Edge (fa-IR-DilaraNeural / en-US-AriaNeural) — را
+   مستقیم و بدون هیچ سروری اینجا پیاده کردیم؛ همان کیفیت، صفر
+   هزینهٔ اضافه. مزیت نسبت به TTS گوگل: هر تکه تا ۳۰۰۰ نویسه در
+   «یک» درخواست خوانده می‌شود (جمله وسط راه عوض نمی‌شود) و تلفظ
+   فارسی بسیار طبیعی‌تر است. آفلاین → فالبک خودکار به گوگل/ویندوز.
+   ============================================================ */
+const EDGE_TRUSTED_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const EDGE_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
+  'Chrome/130.0.0.0 Safari/537.36 Edg/130.0.2849.68';
+const EDGE_VOICES = { fa: 'fa-IR-DilaraNeural', en: 'en-US-AriaNeural' };
+
+/* توکن DRM رایگان اِج: SHA-256(تیک‌های ویندوز در واحد ۱۰۰ نانوثانیه،
+   رُند به پایین نزدیک‌ترین ۵ دقیقه + توکن ثابت) به حروف بزرگ — همان
+   الگوریتم رسمی edge-tts/msedge-tts؛ بدون آن endpoint خطای 403 می‌دهد */
+function edgeSecMsGec() {
+  let ticks = Math.floor(Date.now() / 1000) + 11644473600;
+  ticks -= ticks % 300;
+  ticks *= 10000000; /* 100-ns intervals */
+  return crypto.createHash('sha256').update(String(ticks) + EDGE_TRUSTED_TOKEN).digest('hex').toUpperCase();
+}
+
+const edgeEscaped = (t) =>
+  String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+/* اِج کل متنِ هر تکه را در «یک» درخواست می‌خواند — سقف تکه ۳۰۰۰ نویسه است
+   (قبلاً در مسیر گوگل ۱۹۰ نویسه بود و جمله وسط راه تکه می‌شد) */
+function splitEdgeChunks(text) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return [];
+  const sentences = clean.split(/(?<=[.!?؟。…])\s+/);
+  const chunks = [];
+  let cur = '';
+  const pushCur = () => { if (cur.trim()) chunks.push(cur.trim()); cur = ''; };
+  const addPiece = (piece) => {
+    piece = piece.trim();
+    if (!piece) return;
+    if (piece.length > 3000) {
+      const words = piece.split(' ');
+      for (const w of words) {
+        if ((cur + ' ' + w).trim().length > 3000) pushCur();
+        cur = (cur ? cur + ' ' : '') + w;
+      }
+      pushCur();
+      return;
+    }
+    if ((cur + ' ' + piece).trim().length > 3000) pushCur();
+    cur = (cur ? cur + ' ' : '') + piece;
+  };
+  for (const s of sentences) addPiece(s);
+  pushCur();
+  return chunks.slice(0, 8);
+}
+
+/* یک تکه → یک اتصال WebSocket کوتاه به endpoint عصبی اِج → MP3 کامل همان تکه */
+function edgeSynthChunk(text, lang) {
+  return new Promise((resolve) => {
+    let WebSocketCtor;
+    try { WebSocketCtor = require('ws'); } catch (e) { return resolve({ error: 'ws module missing' }); }
+    const isEn = String(lang) === 'en';
+    const voice = EDGE_VOICES[isEn ? 'en' : 'fa'];
+    const reqId = crypto.randomBytes(16).toString('hex');
+    const ts = new Date().toISOString();
+    const url =
+      'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1' +
+      '?TrustedClientToken=' + EDGE_TRUSTED_TOKEN +
+      '&Sec-MS-GEC=' + edgeSecMsGec() +
+      '&Sec-MS-GEC-Version=1-130.0.2849.68';
+    let ws = null, settled = false;
+    const audio = [];
+    const done = (res) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(tmo);
+      try { if (ws) ws.close(); } catch (_) { /* noop */ }
+      resolve(res);
+    };
+    const tmo = setTimeout(() => done({ error: 'edge tts: timeout' }), 15000);
+    try {
+      ws = new WebSocketCtor(url, {
+        headers: {
+          Origin: 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+          'User-Agent': EDGE_UA,
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Accept-Language': 'fa,en;q=0.8',
+        },
+        handshakeTimeout: 8000,
+      });
+    } catch (e) { return done({ error: netErr(e) }); }
+    ws.on('open', () => {
+      try {
+        const cfg =
+          'X-Timestamp:' + ts + '\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n' +
+          '{"context":{"synthesis":{"audio":{"metadataoptions":' +
+          '{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},' +
+          '"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}';
+        ws.send(cfg);
+        const ssml =
+          "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='" +
+          (isEn ? 'en-US' : 'fa-IR') + "'><voice name='" + voice +
+          "'><prosody pitch='+0Hz' rate='+0%' volume='+0%'>" + edgeEscaped(text) + '</prosody></voice></speak>';
+        ws.send('X-RequestId:' + reqId + '\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:' + ts + 'Z\r\nPath:ssml\r\n\r\n' + ssml);
+      } catch (e) { done({ error: netErr(e) }); }
+    });
+    ws.on('message', (data, isBinary) => {
+      if (settled) return;
+      try {
+        if (isBinary) {
+          const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+          if (buf.length <= 2) return;
+          /* فرمت فریم باینری اِج: ۲ بایت اول = طول هدر (big-endian)، بعد هدر، بعد MP3 خام */
+          const hlen = buf.readUInt16BE(0);
+          if (2 + hlen < buf.length) audio.push(buf.subarray(2 + hlen));
+        } else if (String(data).includes('Path:turn.end')) {
+          done(audio.length ? { ok: true, buffer: Buffer.concat(audio) } : { error: 'edge: بدون صدا' });
+        }
+      } catch (_) { /* noop */ }
+    });
+    ws.on('error', (e) => done({ error: netErr(e) }));
+    ws.on('close', () => done(audio.length ? { ok: true, buffer: Buffer.concat(audio) } : { error: 'edge: اتصال بدون صدا بسته شد' }));
+  });
+}
+
+/* قطع‌کنٔ مدار (v0.42) — اگر endpoint اِج برای IP کاربر بسته باشد (برخی
+   شبکه‌ها/کشورها)، دو شکست پیاپی اِج را ۱۰ دقیقه از جاده خارج می‌کند تا
+   هر فرمان ۱۵ ثانیه معطل نشود؛ فالبک گوگل/ویندوز بی‌درنگ جایگزین می‌شود */
+const edgeHealth = { fails: 0, until: 0 };
+
+ipcMain.handle('tts:edge', async (_e, p) => {
+  const { text, lang } = p || {};
+  if (Date.now() < edgeHealth.until) return { ok: false, error: 'edge cooling down' };
+  const chunks = splitEdgeChunks(String(text || '').slice(0, 24000));
+  if (!chunks.length) return { ok: false, error: 'متنی برای خواندن نیست' };
+  try {
+    /* تکه‌ها موازی (هر تکه یک اتصال کوتاه) — ترتیب حفظ می‌شود */
+    const res = await Promise.all(chunks.map((c) => edgeSynthChunk(c, lang)));
+    const parts = [];
+    for (const r of res) {
+      if (!(r && r.ok)) {
+        edgeHealth.fails++;
+        if (edgeHealth.fails >= 2) { edgeHealth.until = Date.now() + 10 * 60 * 1000; edgeHealth.fails = 0; }
+        return { ok: false, error: String((r && r.error) || 'edge tts failed').slice(0, 160) };
+      }
+      parts.push(r.buffer);
+    }
+    if (!parts.length) return { ok: false, error: 'صدایی از اِج نرسید' };
+    edgeHealth.fails = 0; edgeHealth.until = 0;
+    return { ok: true, mime: 'audio/mpeg', chunks: parts.map((b) => b.toString('base64')) };
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }

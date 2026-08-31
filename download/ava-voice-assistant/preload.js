@@ -138,9 +138,10 @@ contextBridge.exposeInMainWorld('ava', {
     onDue: (cb) => ipcRenderer.on('reminders:due', (_e, r) => cb(r)),
   },
 
-  /* صدای گوینده (TTS) — صدای زن گوگل برای فارسی (v0.11) */
+  /* صدای گوینده (TTS) — v0.42: موتور عصبی مایکروسافت اِج (رایگان) + گوگل */
   tts: {
     google: (payload) => ipcRenderer.invoke('tts:google', payload),
+    edge: (payload) => ipcRenderer.invoke('tts:edge', payload),
   },
 
   /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید)

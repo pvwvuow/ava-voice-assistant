@@ -89,11 +89,11 @@ ok('calcReply returns AI_FALLBACK when parseMath fails',
 ok('runCommand intercepts the sentinel',
    appSrc.includes('reply && typeof reply === \'object\' && reply.__aiFallback'));
 ok('sentinel → aiHandleCommand(cmd) with same utterance',
-   /reply\.__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd(, rule && rule\.__aiExtra)?\); return; \}/.test(appSrc));
+   /reply\.__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\(rule\)))?\); return; \}/.test(appSrc)); /* v0.42: aiFallbackCtx(rule) */
 ok('honest pre-set reply when AI itself is unreachable',
    /__aiFallback[\s\S]{0,420}t\('weather\.fail'\)/.test(appSrc));
 ok('unknown-command → AI path intact (v0.20 regression; v0.39 + catalog)',
-   /if \(aiConnected\(\)\) \{[\s\S]{0,400}await aiHandleCommand\(cmd, aiCmdCatalogCtx\(\)\);/.test(appSrc));
+   /if \(aiConnected\(\)\) \{[\s\S]{0,400}await aiHandleCommand\(cmd, (?:await aiFallbackCtx\(\)|aiCmdCatalogCtx\(\))\);/.test(appSrc)); /* v0.42 */
 
 /* ---- 3) sys:weather honesty + offline city dict ---- */
 console.log('\n[3] sys:weather — gr.ok check, netFail flag, offline cities');
