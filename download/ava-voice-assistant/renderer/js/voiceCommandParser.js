@@ -238,7 +238,135 @@
      اپسیتی/واضح اضافه شد (پارسر خودش گارد ضد-ربایش دارد) */
   const PIP_COMMAND_RE = /پین(?!گ)|شناور|فیپ|پی\s?ای\s?پی|\bpip\b|picture|شفاف|کلیک|همیشه|بردار|ببندش|ببند\s|کوچیکش|کوچکترش|بزرگش|بزرگترش|متوسطش|ریستش کن|opacity|اپسیتی|اوپسیتی|واضح|شیشه|ویدیو|فیلم|کلیپ|ببرش|بیارش|pin video|float video/i;
 
-  const api = { parseVoiceCommand, normFa, PIP_COMMAND_RE, INTENTS };
+  /* ============================================================
+     v0.41 — جستجوی درون-سایتی با دایرهٔ لغات باز (درخواست کاربر:
+     «برو توی سایت فلان اینو سرچ کن» → اشتباهی در گوگل سرچ می‌شد،
+     در حالی که «دنبال … بگرد» درست کار می‌کرد). حالا همهٔ تعبیرها
+     یک پارسر مشترک دارند:
+     • فعل جستجو: سرچ/سیرچ/سارچ/جستجو/جستجوی/بگرد/بگرده/پیدا کن/پیداش کن/search/find
+     • لنگر سایت: «سایت/وبسایت X» ، اسم معروف بدون واژهٔ «سایت» ،
+       دامنهٔ خام (zoomit.ir) ، «این/همین/همون سایت» (حافظهٔ آخرین سایت)
+     • پیشوندها: برو/برو به/برو توی/وارد شو/از/توی/تو/در
+     • علامت پرسش: دنبال، اینو/این رو، رو/را، دربارهٔ/راجع به، هرچی، چیزی
+     خروجی: {thisSite, base, siteName, rawName, query} | null
+     یوتیوب → null (مسیر بومی yt_search اولویت خودش را دارد)
+     deps: {knownSite(name)→url|null, knownName(cmd)→{name,url}|null,
+            domainOf(cmd)→host|null, lastSite→url}
+     ============================================================ */
+  function parseSiteSearch(cmd, deps) {
+    const raw = String(cmd || '');
+    const c = normFa(raw);
+    if (!c || c.length < 6) return null;
+    if (/یوتیوب|youtube|\bwebview\b/.test(c)) return null; /* یوتیوب = yt_search بومی */
+    /* فعل جستجو — دایرهٔ باز؛ بدون آن جستجوی درون-سایتی معنا ندارد */
+    if (!/(سرچ|سیرچ|سارچ|جستجو|بگرد|بگرده|پیدا|search|find|look\s*up)/i.test(c)) return null;
+    const knownSite = deps && deps.knownSite;   /* تطبیق دقیق اسم (برای اسکن پیشوندی) */
+    const knownName = deps && deps.knownName;   /* تطبیق شامل (روی کل جمله — مسیر C) */
+    const domainOf = deps && deps.domainOf;
+    const lastSite = String((deps && deps.lastSite) || '');
+    const escRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    let site = '', siteName = '', rawName = '', thisSite = false, work = c;
+
+    /* مرز اسم سایت: از این‌جا به بعد اسم نیست (علامت پرسش/فعل/موضوع/را) */
+    const CUT_NAME = /\s+(?:دنبال|اینو|این\s*رو|این\s*را|آنو|آن\s*رو|هرچی|هر\s*چی|چیزی|چیزایی|درباره|دربارهی|راجع|مطلب|ویدیو|آهنگ|عکس|اخبار|سرچ|سیرچ|سارچ|جستجو|جستجوی|بگرد|بگرده|پیدا|رو|را|این|آن)(?=\s|$)[\s\S]*$/i;
+    const cutName = (s) => String(s || '').replace(CUT_NAME, '').trim();
+    /* دامنهٔ خام همیشه روی متن خام — نرمال‌سازی نقطهٔ دامنه را می‌خورد */
+    const domRaw = domainOf ? (domainOf(raw) || '') : '';
+
+    /* A) «توی این/همین/همون سایت …» — حافظهٔ آخرین سایت باز‌شده */
+    const thisM = c.match(/(توی|تو|در|از)?\s*(این|همین|همون)\s+(سایت|وب\s*سایت|صفحه)/i);
+    if (thisM) {
+      thisSite = true;
+      site = lastSite;
+      siteName = lastSite.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+      work = c.replace(thisM[0], ' ');
+    } else {
+      /* B) «سایت X …» — اسم بعد از واژهٔ سایت */
+      const wordM = c.match(/(?:سایت|وب\s*سایت)\s+(.+)$/i);
+      if (wordM && wordM[1]) {
+        const name = cutName(wordM[1]).replace(/^(از|در|توی|تو)\s+/i, '').trim();
+        if (name.length >= 2 && name.length <= 40) {
+          rawName = name;
+          if (domRaw && (name.includes(domRaw.split('.')[0]) || name.includes(domRaw.replace(/\./g, ' ')))) {
+            /* «سایت zoomit.ir …» — دامنهٔ خام از متن خام */
+            site = 'https://' + domRaw.replace(/^https?:\/\//i, '');
+            siteName = domRaw; rawName = '';
+            work = c.slice(0, wordM.index) + ' ' + wordM[1]
+              .replace(new RegExp(escRe(domRaw), 'gi'), ' ')
+              .replace(domRaw.replace(/\./g, ' '), ' ');
+          } else {
+            /* اسکن پیشوندی بلند→کوتاه: «دیجیاتو بهترین لپ تاپ» → «دیجیاتو» +
+               باقی = عبارت پرسش — تطبیق دقیق تا «دیجی»ِ ناقص دیجی‌کالا را نبیرد */
+            const toks = name.split(/\s+/);
+            let nameRest = '';
+            for (let i = toks.length; i >= 1 && !site; i--) {
+              const pref = toks.slice(0, i).join(' ');
+              const u = knownSite ? knownSite(pref) : null;
+              if (u) { site = u; siteName = pref; nameRest = toks.slice(i).join(' '); }
+            }
+            if (site) {
+              rawName = '';
+              const cutPart = wordM[1].slice(name.length); /* بخشی که cutName بریده */
+              work = c.slice(0, wordM.index) + ' ' + nameRest + ' ' + cutPart;
+            } else {
+              /* سایت ناشناس («سایت موزیک بلاگ …») — اسم از عبارت پرسش حذف شود */
+              work = c.slice(0, wordM.index) + ' ' + wordM[1].slice(name.length);
+            }
+          }
+        }
+      }
+      /* C) بدون واژهٔ «سایت»: دامنهٔ خام یا اسم معروف داخل جمله
+         («توی دیجی کالا دنبال ساعت بگرد» / «توی zoomit.ir قیمت رو بگرد») */
+      if (!site && !rawName) {
+        if (domRaw) {
+          site = 'https://' + domRaw.replace(/^https?:\/\//i, '');
+          siteName = domRaw;
+          work = c
+            .replace(new RegExp(escRe(domRaw), 'gi'), ' ')
+            .replace(domRaw.replace(/\./g, ' '), ' ');
+        } else if (knownName) {
+          const hit = knownName(c);
+          if (hit && hit.url && hit.name) {
+            const nm = String(hit.norm || hit.name);
+            /* اگر بعد از اسم سایت چیزی نماند («سرچ کن دیجی کالا») اسم خودش
+               عبارت جستجوی گوگل است، نه مقصد جستجوی درون-سایتی → رد */
+            const afterName = c.slice(c.lastIndexOf(nm) + nm.length) || '';
+            const tailWords = afterName
+              .replace(/(سرچ|سیرچ|سارچ|جستجو|جستجوی|بگرد|بگرده|پیدا)(ش)?\s*(کن|بکن|بزن|کنی)?/gi, ' ')
+              .replace(/\s+/g, ' ').trim();
+            if (tailWords.length < 2) return null;
+            site = hit.url; siteName = hit.name;
+            work = c.replace(new RegExp(escRe(nm), 'gi'), ' ');
+          }
+        }
+      }
+    }
+    if (!site && !rawName && !thisSite) return null; /* لنگر سایت نبود → گوگل معمولی */
+
+    /* عبارت پرسش: بقیهٔ جمله منهای پیشوند/فعل/علامت‌ها */
+    let q = work
+      .replace(/(لطفا|لطفا|خب|خوب|بابا|دیگه|دیگ|الان|الان|حالا|ممنون|مرسی|چشم)/gi, ' ')
+      .replace(/(^|\s)(برو|وارد\s*شو|بزن|واسم|برام|برای\s*من|میخوام|می\s*خوام)(?=\s|$)/gi, '$1')
+      .replace(/(توی|تو|در|از|روی)\s+(سایت|وب\s*سایت)/gi, ' ')
+      .replace(/(سایت|وب\s*سایت)/gi, ' ')
+      .replace(/(سرچ|سیرچ|سارچ|جستجو|جستجوی)(ش)?\s*(کن|بکن|بزن|کنی|میکنی|می\s*کنی)?/gi, ' ')
+      .replace(/(بگرد|بگرده|گردش)(ش)?/gi, ' ')
+      .replace(/پیدا(ش)?\s*(کن|بکن|کنی)?/gi, ' ')
+      .replace(/\b(search|find|look)\s*(for|up)?\b/gi, ' ')
+      .replace(/(^|\s)(دنبال|اینو|آنو|هرچی|هر\s*چی|چیزی|چیزایی|درباره|دربارهی|راجع|عبارت|موضوع|مطلب)(?=\s|$)/gi, '$1')
+      .replace(/(^|\s)(رو|را|روی|در|تو|توی|از|که|هم|فقط)(?=\s|$)/gi, ' ')
+      .replace(/\s+ی(?=\s|$)/g, ' ')
+      /* علامت مفعولی پایانی: «این ساعتو» → «این ساعت» — وِا اضافهٔ پایان واژه (≥۴ حرف) حذف.
+         واژه‌به‌واژه تا regex داخل «ویدیو» برنگردد (ویدی+و): استثنا رو/لو/یو
+         (آبرو، پهلو، ویدیو — وِا جزو خود واژه است). «و» مستقل (رابط) دست نمی‌خورد */
+      .replace(/\S+/g, (w) => (w.length >= 4 && w.endsWith('و') && !/(رو|لو|یو)$/i.test(w) ? w.slice(0, -1) : w))
+      .replace(/\s+/g, ' ').trim();
+    if (q.length > 80) q = q.slice(0, 80).trim();
+    return { thisSite, base: site, siteName, rawName, query: q.length >= 2 ? q : '' };
+  }
+
+  const api = { parseVoiceCommand, normFa, PIP_COMMAND_RE, INTENTS, parseSiteSearch };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAVoice = api;
 })(typeof window !== 'undefined' ? window : null);

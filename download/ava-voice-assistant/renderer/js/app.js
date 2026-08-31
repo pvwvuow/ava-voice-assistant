@@ -1894,13 +1894,17 @@
   /* ---------- قوانین فرمان‌ها ----------
      k = الگوی شنیدن | t = توست | i = آیکون | r = متن پاسخ
      run = شناسه فرمان واقعی ویندوز | arg = آرگومان استخراجی */
+  /* v0.41 — دایرهٔ لغاتِ جستجوی وب بازتر شد: «گوگل کن»، «سرچش کن»،
+     «جستجوش کن»، «پیداش کن»، «برام سرچ کن»، «سرچش کن تو گوگل» … */
   const stripSearch = (c) =>
     c.replace(/(لطفا|لطفاً)/g, '')
+      .replace(/(در|توی|تو)\s+(گوگل|google)/gi, '')
       .replace(/(در\s+)?(گوگل|google)/gi, '')
       /* v0.36 — پرت‌گوی‌ها جزو عبارت جستجو نیستند («بابا دیگه ممنون») */
-      .replace(/(^|\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|الان)(?=\s|$)/gi, '$1')
+      .replace(/(^|\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|برای\s*من|واسم|الان)(?=\s|$)/gi, '$1')
       .replace(/(را|رو)\s+/g, '')
-      .replace(/(جستجو|سرچ|search)[\s\u200C]*(کن|بکن|بگیر)?[\s\u200C]*ی?[\s\u200C]*/gi, '')
+      .replace(/(جستجو|جستجوی|سرچ|سیرچ|سارچ|پیداش?|search)[\s\u200C]*(ش)?\s*(کن|بکن|بزن|بگیر|میکنی|می\s*کنی)?[\s\u200C]*ی?[\s\u200C]*/gi, '')
+      .replace(/\s+ی(?=\s|$)/g, ' ')
       .replace(/[\s\u200C]+/g, ' ')
       .trim();
 
@@ -1957,6 +1961,17 @@
     ['زومیت', 'https://www.zoomit.ir'], ['zoomit', 'https://www.zoomit.ir'],
     ['دیجیاتو', 'https://www.digiato.com'], ['digiato', 'https://www.digiato.com'],
     ['نی نی سایت', 'https://www.ninisite.com'], ['نینی سایت', 'https://www.ninisite.com'], ['ninisite', 'https://www.ninisite.com'],
+    /* v0.41 — گسترش دایرهٔ سایت‌های معروف (درخواست کاربر: «دایرهٔ لغات را بیشتر کن») */
+    ['ورزش سه', 'https://www.varzesh3.com'], ['ورزش۳', 'https://www.varzesh3.com'], ['ورزش ۳', 'https://www.varzesh3.com'], ['varzesh3', 'https://www.varzesh3.com'],
+    ['نمناک', 'https://www.namnak.com'], ['namnak', 'https://www.namnak.com'],
+    ['ویرگول', 'https://virgool.io'], ['virgool', 'https://virgool.io'],
+    ['رددیت', 'https://www.reddit.com'], ['reddit', 'https://www.reddit.com'],
+    ['آمازون', 'https://www.amazon.com'], ['amazon', 'https://www.amazon.com'],
+    ['اوکالا', 'https://okala.com'], ['کوئرا', 'https://quera.org'], ['quera', 'https://quera.org'],
+    ['پونیشا', 'https://ponisha.ir'], ['کارلنسر', 'https://karlancer.com'],
+    ['مایکت', 'https://myket.ir'], ['myket', 'https://myket.ir'],
+    ['نوبیتکس', 'https://nobitex.ir'], ['والکس', 'https://wallex.ir'],
+    ['آپارت', 'https://www.aparat.com'], ['اپارت', 'https://www.aparat.com'], /* رایج‌ترین خطای تلفظ STT */
     ['فرادرس', 'https://faradars.org'], ['faradars', 'https://faradars.org'],
     ['مکتب خونه', 'https://maktabkhooneh.org'], ['مکتب\u200Cخونه', 'https://maktabkhooneh.org'], ['maktabkhooneh', 'https://maktabkhooneh.org'],
     ['گوگل', 'https://www.google.com'], ['یوتیوب', 'https://www.youtube.com'], ['youtube', 'https://www.youtube.com'],
@@ -1980,6 +1995,32 @@
       if (s === n || s.includes(n) || (n.includes(s) && s.length >= 3)) return url;
     }
     return null;
+  }
+  /* v0.41 — تطبیق «دقیق» اسم سایت: برای اسکن پیشوندیِ پارسر جستجوی درون-سایتی —
+     «دیجی» ناقص نباید دیجی‌کالا بخورد وگرنه باقی جمله («کالا این ساعت…»)
+     عبارت پرسشِ آلوده می‌شد */
+  function knownExactOf(cmd) {
+    const s = siteNorm(faToEn(String(cmd || '')));
+    if (!s) return null;
+    for (const [name, url] of KNOWN_SITES) {
+      if (s === siteNorm(name)) return url;
+    }
+    return null;
+  }
+  /* v0.41 — کدام اسم معروف داخل جمله است؟ ({name,url,norm} — name برای نمایش،
+     norm شکلِ نرمال‌شدهٔ واقعی داخل جمله برای حذف تمیز از متن) */
+  function knownNameOf(cmd) {
+    const s = siteNorm(faToEn(String(cmd || '')));
+    if (!s) return null;
+    /* بلندترین اسم اول — «کافه بازار» قبل از «بازار» */
+    let best = null;
+    for (const [name, url] of KNOWN_SITES) {
+      const n = siteNorm(name);
+      if (n && n.length >= 3 && s.includes(n) && (!best || n.length > best.norm.length)) {
+        best = { name, url, norm: n };
+      }
+    }
+    return best;
   }
   /* دامنهٔ خام داخل جمله: «باز کن app.example.ir» → app.example.ir */
   function siteDomainOf(cmd) {
@@ -2466,7 +2507,9 @@
       },
     },
     {
-      k: /جستجو|سرچ|گوگل|google|search( for)?( the)? web|search$/i, id: 'web_search', t: 'جستجوی وب', i: '#i-search',
+      /* v0.41 — دایرهٔ لغات جستجوی وب: گوگل کن / سرچش / جستجوش / پیداش کن /
+         برام سرچ کن / تو اینترنت … (پیش از این «گوگل کن» به هیچ‌جا نمی‌رسید) */
+      k: /جستجو|سرچ|سیرچ|گوگل\s*(کن|بزن)?|google|پیداش\s*کن|search( for)?( the)? web|search$/i, id: 'web_search', t: 'جستجوی وب', i: '#i-search',
       run: 'web_search', arg: (c) => stripSearch(c),
       r: (c) => LANG === 'en' ? `I searched "${stripSearch(c) || 'Google'}" on Google.` : `«${stripSearch(c) || 'گوگل'}» را در گوگل جستجو کردم.`,
     },
@@ -2767,55 +2810,75 @@
     RULES.splice(1, 0, cmdPageRule);
   }
 
-  /* --- v0.40 — جستجوی درون-سایتی: «توی سایت دیجی کالا دنبال X بگرد» --- */
+  /* --- v0.40/v0.41 — جستجوی درون-سایتی با دایرهٔ لغات باز ---
+     v0.41 (درخواست کاربر): «برو توی سایت فلان اینو سرچ کن» اشتباهی در گوگل
+     سرچ می‌شد ولی «دنبال … بگرد» درست بود — حالا پارسر مشترک
+     AVAVoice.parseSiteSearch همهٔ تعبیرها را می‌گیرد: سرچ/جستجو/بگرد/پیدا کن
+     × سایت X / اسم معروف بدون واژهٔ سایت / دامنهٔ خام / این سایت (حافظه). */
   function siteSearchUrlFor(base, q) {
     const host = String(base || '').replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
     const enc = encodeURIComponent(q || '');
     if (/digikala/.test(host)) return 'https://www.digikala.com/search/?q=' + enc;
     if (/aparat/.test(host)) return 'https://www.aparat.com/result/' + enc;
     if (/torob/.test(host)) return 'https://torob.com/search/?query=' + enc;
+    /* v0.41 — جستجوی بومی سایت‌های بیشتر */
+    if (/zoomit/.test(host)) return 'https://www.zoomit.ir/search/?q=' + enc;
+    if (/digiato/.test(host)) return 'https://www.digiato.com/search/?q=' + enc;
+    if (/wikipedia/.test(host)) return 'https://fa.wikipedia.org/w/index.php?search=' + enc;
+    if (/github/.test(host)) return 'https://github.com/search?q=' + enc;
+    if (/stackoverflow/.test(host)) return 'https://stackoverflow.com/search?q=' + enc;
+    if (/cafebazaar/.test(host)) return 'https://cafebazaar.ir/search?q=' + enc;
+    if (/filimo/.test(host)) return 'https://www.filimo.com/search?q=' + enc;
+    if (/virgool/.test(host)) return 'https://virgool.io/search?q=' + enc;
+    if (/namnak/.test(host)) return 'https://www.namnak.com/search/?q=' + enc;
+    if (/varzesh3/.test(host)) return 'https://www.varzesh3.com/search?q=' + enc;
+    if (/downloadha|soft98/.test(host)) return 'https://www.google.com/search?q=' + encodeURIComponent('site:' + host + ' ' + q);
     return 'https://www.google.com/search?q=' + encodeURIComponent('site:' + host + ' ' + q);
   }
-  function siteSearchQueryOf(c) {
-    const m = String(c || '').match(/دنبال\s+(.+?)\s*(?:بگرده?|پیدا\s*کن|سرچ\s*کن|جستجو\s*کن)/i);
-    let q = m && m[1] ? m[1] : '';
-    if (!q) return '';
-    q = q.replace(/(برام|برای من|لطفا|لطفاً|خب|دیگه|بابا|حالا)/g, ' ');
-    q = q.replace(/(توی|تو|در)\s+(سایت|وب\s?سایت)/gi, ' ');
-    q = q.replace(/[\s\u200C]+/g, ' ').trim();
-    return q.length >= 2 ? q.slice(0, 80) : '';
+  /* deps پارسر — هر بار از وضعیت واقعی برنامه (حافظهٔ آخرین سایت) */
+  function siteSearchDeps() {
+    return {
+      knownSite: (s) => knownExactOf(s),
+      knownName: (s) => knownNameOf(s),
+      domainOf: (s) => siteDomainOf(s) || siteDomainOf(siteTargetOf(s)),
+      lastSite: String(store.get('lastSite', '') || ''),
+    };
   }
   async function siteSearchReply(c) {
-    /* یوتیوب مسیر بومی خودش را دارد (yt_search) — نباید سرچ گوگلِ site: شود */
-    if (/یوتیوب|youtube/i.test(c)) return AI_FALLBACK;
-    const q = siteSearchQueryOf(c);
-    if (!q || !bridge || !bridge.system) return AI_FALLBACK;
-    const thisSite = /(توی|تو|در)\s+(این|همین)\s+سایت/i.test(c);
-    let base = '', siteName = '';
-    if (thisSite) {
-      base = String(store.get('lastSite', '') || '');
-      if (!base) {
-        await bridge.system.run('web_search', q).catch(() => null);
-        return LANG === 'en' ? `I searched the web for "${q}" — no site was opened before.` : `سایتی قبلاً باز نشده بود؛ «${q}» را در وب جستجو کردم.`;
-      }
-      siteName = base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
-    } else {
-      base = knownSiteOf(c) || knownSiteOf(siteTargetOf(c));
-      if (!base) return AI_FALLBACK;
-      const nm = KNOWN_SITES.find(([n, u]) => u === base);
-      siteName = nm ? nm[0] : base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    const hit = AVAVoice.parseSiteSearch(c, siteSearchDeps());
+    if (!hit || !bridge || !bridge.system) return AI_FALLBACK;
+    const q = hit.query;
+    /* سایت ناشناس («سایت موزیک بلاگ …») → گوگل با «اسم سایت + عبارت» —
+       دیگر کل جملهٔ «برو توی سایت … سرچ کن» به گوگل نمی‌رود */
+    if (hit.rawName) {
+      const wq = (hit.rawName + ' ' + q).trim();
+      await bridge.system.run('web_search', wq).catch(() => null);
+      return LANG === 'en' ? `"${q}" on ${hit.rawName} — searched the web.` : `«${q}» را در ${hit.rawName} جستجو کردم (از طریق وب).`;
     }
+    if (!q) return AI_FALLBACK;
+    if (hit.thisSite && !hit.base) {
+      await bridge.system.run('web_search', q).catch(() => null);
+      return LANG === 'en' ? `I searched the web for "${q}" — no site was opened before.` : `سایتی قبلاً باز نشده بود؛ «${q}» را در وب جستجو کردم.`;
+    }
+    let base = hit.base, siteName = hit.siteName;
+    if (hit.thisSite) base = String(store.get('lastSite', '') || '');
+    if (!base) return AI_FALLBACK;
+    if (!siteName) siteName = base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
     store.set('lastSite', base); /* «حالا توی این سایت…» بعدی همین‌جا می‌افتد */
     await bridge.system.run('web_open', siteSearchUrlFor(base, q)).catch(() => null);
     return LANG === 'en' ? `I searched "${q}" on ${siteName}.` : `«${q}» را در ${siteName} جستجو کردم.`;
   }
   {
+    /* v0.41 — قانون site_search با دروازهٔ پارسرِ کامل (نه یک regex)، و
+       «قبل از web_open» تا «توی سایت X سرچ کن» دیگر هرگز Googleِ کور نشود؛
+       خود پارسر برای یوتیوب null می‌دهد تا مسیر بومی yt_search (جلوتر در
+       فهرست) اولویت خودش را نگه دارد */
     const siteSearchRule = {
-      k: /دنبال\s+[^.]{0,60}بگرده?|(توی|تو|در)\s+(این|همین)\s+سایت/i,
+      k: { test: (c) => !!AVAVoice.parseSiteSearch(c, siteSearchDeps()) },
       id: 'site_search', t: 'جستجو در سایت', i: '#i-search', r: (c) => siteSearchReply(c),
     };
-    const yi = RULES.findIndex((r) => r.id === 'yt_search');
-    RULES.splice(yi >= 0 ? yi + 1 : RULES.length, 0, siteSearchRule);
+    const wi = RULES.findIndex((r) => r.id === 'web_open');
+    RULES.splice(wi >= 0 ? wi : RULES.length, 0, siteSearchRule);
   }
 
   /* ============================================================
@@ -2894,16 +2957,77 @@
   /* v0.39 — کاتالوگ فشردهٔ فرمان‌های آوا برای هوش مصنوعی (درخواست کاربر:
      «اگه کاربر یه شکل دیگ درخواست کنه، AI بررسی کنه اگه توی کامندها بود اجراش کنه»).
      فقط وقتی فرمان به قوانین نرسید به پیام کاربر می‌چسبد تا توکن هدر نرود؛
-     AI اگر هم‌معنا پیدا کرد، بلوک DO با act=run_cmd می‌دهد و اجرا با کد محلی است. */
+     AI اگر هم‌معنا پیدا کرد، بلوک DO با act=run_cmd می‌دهد و اجرا با کد محلی است.
+     v0.41 — CATALOG_HINTS: برای پرتکرارترین سوءتفهم‌ها چند مترادفِ فارسی کنار
+     عنوان می‌نشیند تا «ای آی متوجه بشه به کدام کامند مربوط میشه» دقیق‌تر شود
+     (خواستهٔ خود کاربر) — چند خط کوتاه، هزینهٔ توکن ناچیز. */
+  const CATALOG_HINTS = {
+    web_search: 'سرچ کن، جستجو کن، گوگل کن، پیداش کن — کل وب',
+    site_search: 'جستجو داخل یک سایت مشخص: توی سایت X اینو/دنبال … سرچ کن/بگرد/پیدا کن',
+    yt_search: 'جستجو داخل یوتیوب: تو یوتیوب X رو سرچ کن',
+    web_open: 'فقط باز کردن سایت — بدون هیچ جستجویی',
+    open_youtube: 'باز کردن خود یوتیوب',
+    open_music: 'پخش موزیک/آهنگ',
+    music_play: 'پخش آهنگ یا پلی‌لیست',
+    music_pause: 'توقف/ادامهٔ موزیک',
+    music_next: 'آهنگ بعدی',
+    music_prev: 'آهنگ قبلی',
+    vol_up: 'بلند کردن صدا',
+    vol_down: 'کم کردن صدا',
+    vol_mute: 'قطع/بی‌صدا کردن صدا',
+    vol_set: 'صدا روی عدد مشخص (مثلا ۵۰ درصد)',
+    reminder: 'یادآوری، آلارم، بیدارم کن',
+    timer: 'تایمر (مثلا ۱۰ دقیقه)',
+    screenshot: 'اسکرین‌شات/عکس صفحه',
+    lock: 'قفل کردن صفحه',
+    minimize_all: 'نمایش دسکتاپ/مینیمایز همهٔ پنجره‌ها',
+    status: 'وضعیت سیستم/CPU/RAM',
+    battery: 'میزان باتری',
+    clock: 'ساعت چنده',
+    date: 'تاریخ امروز/چندمه',
+    notes: 'یادداشت',
+    open_chrome: 'باز کردن مرورگر کروم',
+    rec_start: 'شروع ضبط صدا',
+    rec_stop: 'پایان ضبط صدا',
+    cmdpage: 'نمایش همهٔ فرمان‌ها',
+  };
   function aiCmdCatalogCtx() {
     try {
-      const rows = RULES.filter((r) => r.id).map((r) => r.id + ' = ' + r.t);
+      const rows = RULES.filter((r) => r.id).map((r) => r.id + ' = ' + r.t + (CATALOG_HINTS[r.id] ? ' — ' + CATALOG_HINTS[r.id] : ''));
       if (!rows.length) return '';
       return (LANG === 'en'
         ? '[AVA command catalog — if the user request means one of these commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id>. If it matches none, ignore this list.\n'
         : '[فهرست فرمان‌های آوا — اگر درخواست کاربر هم‌معنای یکی از این فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id. اگر به هیچ‌کدام ربط نداشت این فهرست را نادیده بگیر.\n')
         + rows.join('\n') + ']';
     } catch (_) { return ''; }
+  }
+
+  /* v0.41 — حافظهٔ نگاشت AI (درخواست کاربر: «سریعتر به AI وصلش کنیم»):
+     بار اول AI عبارتِ نامتعارف را به فرمان واقعی آوا نگاشت می‌کند (run_cmd)؛
+     از دفعهٔ بعد همان عبارت «بی‌شبکه و در لحظه» اجرا می‌شود — نگاشت‌های
+     موفق محلیِ امن (فقط run_cmd) تا ۵۰ عدد و ۳۰ روز در localStorage. */
+  const AI_MAP_KEY = 'avaAiCmdMap';
+  const AI_MAP_TTL = 30 * 24 * 60 * 60 * 1000;
+  let aiCmdMap = (() => { try { return JSON.parse(localStorage.getItem(AI_MAP_KEY) || '{}') || {}; } catch (_) { return {}; } })();
+  const aiMapNorm = (c) => normFaFull(String(c || '')).toLowerCase().replace(/[\s\u200C]+/g, ' ').trim();
+  function aiMapGet(cmd) {
+    try {
+      const e = aiCmdMap[aiMapNorm(cmd)];
+      if (!e || !e.id || Date.now() - Number(e.at || 0) > AI_MAP_TTL) return null;
+      return RULES.some((r) => r.id === e.id) ? e.id : null;
+    } catch (_) { return null; }
+  }
+  function aiMapSet(cmd, id) {
+    try {
+      const k = aiMapNorm(cmd);
+      if (!k || !id || k.length < 3) return;
+      const now = Date.now();
+      const keep = Object.entries(aiCmdMap).filter(([kk, vv]) => kk !== k && now - Number(vv.at || 0) <= AI_MAP_TTL);
+      keep.push([k, { id: String(id), at: now }]);
+      aiCmdMap = Object.fromEntries(keep.slice(-50));
+      localStorage.setItem(AI_MAP_KEY, JSON.stringify(aiCmdMap));
+      actLog('ai map cached: "' + k.slice(0, 40) + '" → ' + id);
+    } catch (_) { /* noop */ }
   }
 
   /* ============================================================
@@ -5955,7 +6079,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.40.0-beta';
+  let appVersion = '0.41.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7196,6 +7320,8 @@
           const out = await resolveReply(rr, String(origCmd || a.value || ''));
           outs.push(typeof out === 'string' && out ? out : (LANG === 'en' ? 'Done.' : 'انجام شد.'));
           if (rr.id && SUGGEST_TRIGGERS.has(rr.id)) maybeSuggestCommands('video');
+          /* v0.41 — نگاشت موفق ذخیره شود؛ دفعهٔ بعدِ همین عبارت = اجرای آنی بی‌شبکه */
+          if (origCmd && typeof out === 'string' && out && !(out && typeof out === 'object' && out.__aiFallback)) aiMapSet(origCmd, rr.id);
           continue;
         }
         switch (a.act) {
@@ -7537,6 +7663,34 @@
     hideWakeDropCard(); /* v0.27.1 */
     rcReply.textContent = '';
     rcTag.textContent = t('tag.ai');
+    /* v0.41 — نگاشت آموخته‌شده: این عبارت قبلاً AI به یک فرمان واقعی آوا
+       نگاشتش کرده → همین حالا اجرا، صفر شبکه (سرعت: «سریعتر به AI وصلش کنیم») */
+    if (extraCtx) {
+      const cachedId = aiMapGet(cmd);
+      if (cachedId) {
+        const rr = RULES.find((x) => x.id === cachedId);
+        if (rr) {
+          actLog('ai map cache → ' + rr.id);
+          const out = await resolveReply(rr, cmd).catch(() => null);
+          if (!(out && typeof out === 'object' && out.__aiFallback)) {
+            const fin = (typeof out === 'string' && out) ? out : (LANG === 'en' ? 'Done.' : 'انجام شد.');
+            chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: fin });
+            setState('success');
+            statusText.textContent = t('ai.got');
+            rcTag.textContent = t('tag.aiDo') + ' · ⚡';
+            typeText(rcReply, fin);
+            speak(fin);
+            pushHistory(cmd, true);
+            if (rr.id && SUGGEST_TRIGGERS.has(rr.id)) maybeSuggestCommands('video');
+            handsFreeRearm();
+            cmdBusy = false;
+            setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+            return;
+          }
+          /* نگاشت کش‌شده امروز نتوانست انجام دهد → مسیر عادی AI */
+        }
+      }
+    }
     try {
       const r = await aiAsk(cmd, extraCtx);
       if (r && r.ok) {
@@ -8570,6 +8724,35 @@
   setTimeout(() => { attachMic(); }, 1200);
   /* v0.29 — اگر «بیدارباش همیشگی» روشن باشد، حلقهٔ آفلاین همین‌جا شروع می‌شود */
   setTimeout(() => { wakeBootRetry(); }, 2600);
+  /* v0.41 — پیش‌گرم هوش مصنوعی (درخواست کاربر: «سریعتر به AI وصلش کنیم»):
+     چند ثانیه بعد از باز شدن برنامه یک پینگ کوچک به Gemini می‌رود؛ همان یک
+     درخواست، کشف مدل‌ها + مدلِ کاری + TLS/DNS را از راه می‌اندازد — یعنی
+     «اولین فرمان واقعی کاربر» دیگر چند ثانیه کاوشِ سرد را تجربه نمی‌کند.
+     هر بار اجرای برنامه فقط یک‌بار؛ هزینهٔ کوئیک‌نظام flash-lite قابل چشم‌پوشی. */
+  let aiWarmedUp = false;
+  function warmupAI() {
+    if (aiWarmedUp) return;
+    aiWarmedUp = true;
+    try {
+      const prov = settings.aiProvider || 'auto';
+      if (!settings.geminiKey || (prov !== 'auto' && prov !== 'gemini')) return;
+      if (!bridge || !bridge.ai || !bridge.ai.gemini) return;
+      setTimeout(() => {
+        const t0 = Date.now();
+        actLog('ai warmup: pinging Gemini …');
+        bridge.ai.gemini({
+          key: settings.geminiKey,
+          model: settings.geminiModel || '',
+          base: settings.gemBase || '',
+          search: false,
+          messages: [{ role: 'user', content: 'فقط یک کلمه «آماده» بنویس.' }],
+        }).then((r) => {
+          actLog('ai warmup ' + (r && r.ok ? 'ok ' : 'fail ') + (Date.now() - t0) + 'ms' + (r && r.model ? ' model=' + r.model : ''));
+        }).catch(() => { /* خاموش — کاربر هنوز فرمانی نداده */ });
+      }, 3000);
+    } catch (_) { /* noop */ }
+  }
+  warmupAI();
   /* فرم شیشه‌ای DNS جدید — درخواست از پروسه اصلی (اگر از بیرون آمده باشد) */
   if (bridge && bridge.dns && bridge.dns.onQuickRequest) {
     bridge.dns.onQuickRequest(() => openDnsQuickOverlay());

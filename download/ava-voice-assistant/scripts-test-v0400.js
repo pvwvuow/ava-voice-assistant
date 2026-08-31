@@ -194,23 +194,32 @@ const OP = (r) => (r && r.entities && typeof r.entities.opacity === 'number' ? r
   ok(MIN.test('نمایش دسکتاپ'), 'REG: «نمایش دسکتاپ» می‌ماند');
 }
 
-/* ---------- ۷) جستجوی درون-سایتی (v0.40) ---------- */
+/* ---------- ۷) جستجوی درون-سایتی (v0.40 → v0.41 forward-relax) ----------
+   v0.41 پارسرِ مشترک AVAVoice.parseSiteSearch جای siteSearchQueryOf را گرفت و
+   قانون site_search «قبل از web_open» رفت (ریشهٔ «توی سایت X سرچ کن → گوگل»). */
 {
-  const qFn = extractFn('siteSearchQueryOf', app);
   const uFn = extractFn('siteSearchUrlFor', app);
-  ok(!!qFn && !!uFn, 'ساخت: توابع جستجوی سایت');
-  const { siteSearchQueryOf, siteSearchUrlFor } = new Function(qFn + '\n' + uFn + '\nreturn { siteSearchQueryOf, siteSearchUrlFor };')();
-  eq(siteSearchQueryOf('توی سایت دیجی کالا برام دنبال ساعت رولکس بگرد'), 'ساعت رولکس', 'W9: عبارت جستجو = «ساعت رولکس»');
-  eq(siteSearchQueryOf('تو دیجی کالا برام دنبال ساعت رولکس بگرد'), 'ساعت رولکس', 'W9b: «تو دیجی کالا…» هم همین');
-  eq(siteSearchQueryOf('حالا توی این سایت برام دنبال ساعت رولکس بگرد'), 'ساعت رولکس', 'W9c: «توی این سایت…» همین');
+  ok(!!uFn, 'ساخت: تابع URL جستجوی سایت');
+  const { siteSearchUrlFor } = new Function(uFn + '\nreturn { siteSearchUrlFor };')();
   eq(siteSearchUrlFor('https://www.digikala.com', 'ساعت رولکس'), 'https://www.digikala.com/search/?q=' + encodeURIComponent('ساعت رولکس'), 'W9d: سرچ واقعی دیجی‌کالا');
   eq(siteSearchUrlFor('https://www.aparat.com', 'گربه'), 'https://www.aparat.com/result/' + encodeURIComponent('گربه'), 'W9e: سرچ واقعی آپارات');
   ok(decodeURIComponent(siteSearchUrlFor('https://example.ir', 'ساعت')).includes('site:example.ir'), 'W9f: سایت ناشناس → site: در گوگل');
   ok(/id: 'site_search'/.test(app), 'ساخت: قانون site_search');
-  ok(/RULES\.splice\(yi >= 0 \? yi \+ 1/.test(app), 'ساخت: site_search بعد از yt_search (جستجوی بومی یوتیوب اولویت دارد)');
+  /* v0.41 — ترتیب تازه: site_search «قبل از web_open» (پارسر خودش یوتیوب را رد می‌کند
+     تا مسیر بومی yt_search اول بماند) — هر دو ساختار قدیم/تازه قبول */
+  ok(/RULES\.splice\(wi >= 0 \? wi/.test(app) || /RULES\.splice\(yi >= 0 \? yi \+ 1/.test(app), 'ساخت: site_search قبل از web_open (دیگر Googleِ کور نمی‌شود)');
+  ok(/AVAVoice\.parseSiteSearch\(c, siteSearchDeps\(\)\)/.test(app), 'ساخت: دروازهٔ site_search = پارسر کامل v0.41');
   ok(/store\.set\('lastSite', base\)/.test(app) && /store\.get\('lastSite'/.test(app), 'ساخت: حافظهٔ «این سایت»');
   ok(/if \(ks\) \{ store\.set\('lastSite', ks\); return ks; \}/.test(app), 'ساخت: باز کردن سایت عادی هم حافظه را پر می‌کند');
-  ok(/یوتیوب\|youtube\/i\.test\(c\)\) return AI_FALLBACK;/.test(app.replace(/\s+/g, '')) || /\/یوتیوب\|youtube\/i\.test\(c\)\) return AI_FALLBACK;/.test(app), 'ساخت: یوتیوب به مسیر بومی خودش می‌رود');
+  /* v0.41 — رفتار W9 با پارسر تازه (همان جملات لاگ کاربر) */
+  const D9 = {
+    knownSite: (n) => (/دیجی|digikala/i.test(n) ? 'https://www.digikala.com' : null),
+    knownName: (c) => (/دیجی\s*کالا|دیجی کالا/i.test(c) ? { name: 'دیجی کالا', url: 'https://www.digikala.com', norm: 'دیجی کالا' } : null),
+    domainOf: null, lastSite: '',
+  };
+  eq((AVAVoice.parseSiteSearch('توی سایت دیجی کالا برام دنبال ساعت رولکس بگرد', D9) || {}).query, 'ساعت رولکس', 'W9: عبارت جستجو = «ساعت رولکس»');
+  eq((AVAVoice.parseSiteSearch('تو دیجی کالا برام دنبال ساعت رولکس بگرد', D9) || {}).query, 'ساعت رولکس', 'W9b: «تو دیجی کالا…» هم همین');
+  eq((AVAVoice.parseSiteSearch('حالا توی این سایت برام دنبال ساعت رولکس بگرد', D9) || {}).thisSite, true, 'W9c: «توی این سایت…» همین');
 }
 
 /* ---------- ۸) پارسر ctx.opacity از وضعیت واقعی PiP ---------- */
@@ -220,9 +229,9 @@ const OP = (r) => (r && r.entities && typeof r.entities.opacity === 'number' ? r
 
 /* ---------- ۹) نسخه و سلامت فایل‌ها ---------- */
 {
-  eq(pkg.version, '0.40.0-beta', 'نسخهٔ 0.40.0-beta در package.json');
-  ok(/let appVersion = '0\.40\.0-beta';/.test(app), 'نسخه در app.js');
-  ok(/v0\.40\.0-beta/.test(idx), 'نسخه در دربارهٔ index.html');
+  ok(/^0\.4[0-9]+\.0-beta$/.test(pkg.version), 'نسخهٔ 0.4x-beta در package.json (forward-compatible)');
+  ok(/let appVersion = '0\.4[0-9]+\.0-beta';/.test(app), 'نسخه در app.js (forward-compatible)');
+  ok(/v0\.4[0-9]+\.0-beta/.test(idx), 'نسخه در دربارهٔ index.html (forward-compatible)');
   const { execSync } = require('child_process');
   for (const f of ['renderer/js/app.js', 'renderer/js/voiceCommandParser.js', 'main.js', 'preload.js']) {
     let okk = true;

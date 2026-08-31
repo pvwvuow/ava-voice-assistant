@@ -140,7 +140,7 @@ ok('site rule run/arg/reply all consult siteTargetOf (web_open decision + knownS
      appSrc.includes("بند وابستهٔ «که …» جزو اسم سایت نیست"));
 }
 ok('stripSearch drops filler tokens (بابا/دیگه/خب/ممنون/مرسی/واسه/برام/الان)',
-   appSrc.includes("replace(/(^|\\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|الان)(?=\\s|$)/gi, '$1')"));
+   (appSrc.includes("replace(/(^|\\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|الان)(?=\\s|$)/gi, '$1')") || appSrc.includes("replace(/(^|\\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|برای\\s*من|واسم|الان)(?=\\s|$)/gi, '$1')")));
 
 console.log('\n[6] C5: settings — tidy for real');
 ok('orphan disc.hint note removed (was always visible between panes)',
