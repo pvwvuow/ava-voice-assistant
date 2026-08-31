@@ -2981,6 +2981,10 @@ namespace AvaDc3 {
     [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
     [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder sb, int max);
+    public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr lParam);
   }
 }
 '@
@@ -3003,19 +3007,56 @@ namespace AvaDc3 {
 #   KEYS-UNVERIFIED / ERR:NOFOCUS / ERR:NOBTN — هیچ «OK دروغین» وجود ندارد.
 $VKNAME = @{ 'ctrl' = 0x11; 'shift' = 0x10; 'm' = 0x4D; 'd' = 0x44; 'h' = 0x48; 'a' = 0x41; 'e' = 0x45; 'k' = 0x4B; 'v' = 0x56; 'enter' = 0x0D }
 $SCNAME = @{ 'ctrl' = 0x1D; 'shift' = 0x2A; 'm' = 0x32; 'd' = 0x20; 'h' = 0x23; 'a' = 0x1E; 'e' = 0x12; 'k' = 0x25; 'v' = 0x2F; 'enter' = 0x1C }
-$proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+# v0.36 — دیگر فیلتر MainWindowHandle وجود ندارد: دیسکوردِ داخل try پنجرهٔ «مخفی»
+# دارد (MainWindowHandle=0) و فیلتر قبلی همین‌جا ERR:NO_DISCORD می‌داد — ریشهٔ
+# «دیسکورد دیگه اصلاً کار نمی‌کنه» بعد از آپدیت/بستن به try. حالا پروسه هست؟ کافی است.
+$dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue)
+$proc = $dcProcs | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
 if (-not $proc) {
   # اگر دیسکورد با دیپ‌لینک در حال بالا آمدن است، تا $WaitMs میلی‌ثانیه صبر کن
   $waited = 0
   while ($waited -lt $WaitMs) {
     Start-Sleep -Milliseconds 600
     $waited += 600
-    $proc = Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+    $dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue)
+    $proc = $dcProcs | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
     if ($proc) { break }
   }
 }
-if (-not $proc) { Write-Output 'ERR:NO_DISCORD'; exit }
-$hwnd = $proc.MainWindowHandle
+if (-not $dcProcs -or $dcProcs.Count -eq 0) { Write-Output 'ERR:NO_DISCORD'; exit }
+# v0.36 — پیدا کردن پنجرهٔ واقعی حتی وقتی مخفی/مینیمایز در try است: EnumWindows
+# روی همهٔ PIDهای دیسکورد + کلاس Chrome_WidgetWin_1؛ پنجرهٔ نمایان مقدم است.
+function Find-DcHwndByPid {
+  $pidSet = @{}
+  foreach ($p in $dcProcs) { $pidSet[[uint32]$p.Id] = $true }
+  # hashtables نوع مرجع‌اند — دیلیگیتِ EnumWindows همان نمونه را می‌بیند (دامنهٔ اسکوپ امن است)
+  $box = @{ best = [IntPtr]::Zero; any = [IntPtr]::Zero }
+  $cb = [AvaDc3.W+EnumProc]{
+    param($h, $l)
+    try {
+      [uint32]$wpid = 0
+      [AvaDc3.W]::GetWindowThreadProcessId($h, [ref]$wpid) | Out-Null
+      if (-not $pidSet.ContainsKey($wpid)) { return $true }
+      $sb = New-Object System.Text.StringBuilder 256
+      [AvaDc3.W]::GetClassName($h, $sb, 256) | Out-Null
+      if ($sb.ToString() -ne 'Chrome_WidgetWin_1') { return $true }
+      if ($box['any'] -eq [IntPtr]::Zero) { $box['any'] = $h }
+      if ([AvaDc3.W]::IsWindowVisible($h)) { $box['best'] = $h; return $false }
+    } catch { }
+    return $true
+  }
+  try { [AvaDc3.W]::EnumWindows($cb, [IntPtr]::Zero) | Out-Null } catch { }
+  if ($box['best'] -ne [IntPtr]::Zero) { return $box['best'] }
+  return $box['any']
+}
+$hwnd = [IntPtr]::Zero
+if ($proc) { $hwnd = $proc.MainWindowHandle }
+if (-not $hwnd -or $hwnd -eq [IntPtr]::Zero) { $hwnd = Find-DcHwndByPid }
+if ($hwnd -eq [IntPtr]::Zero) {
+  # پروسه هست ولی هیچ پنجرهٔ شناخته‌شده‌ای نیست — میوت/دیفن با کلید سراسری
+  # هنوز ممکن است (UIA صادقانه ناموفق می‌شود)؛ فقط مسیرهای پنجره‌دار می‌میرند
+  Write-Output 'DBG:NOHWND=1'
+}
 $child = [AvaDc3.W]::FindWindowEx($hwnd, [IntPtr]::Zero, 'Chrome_RenderWidgetHostHWND', [IntPtr]::Zero)
 if ($child -eq [IntPtr]::Zero) { $child = $hwnd }
 Write-Output "DBG:PROC=$($proc.ProcessName) CHILD=$(if ($child -ne [IntPtr]::Zero) { 1 } else { 0 }) MODE=$Mode ACT=$Action"
@@ -3170,19 +3211,26 @@ function Test-Flip([string]$doRx, [string]$alrRx) {
 }
 function Show-DcQuiet {
   # v0.35 — پنجرهٔ مینیمایز را «بدون گرفتن فوکوس» نشان بده (SW_SHOWNOACTIVATE=4)
-  # تا درخت دسترس‌پذیری کرومیوم زنده شود؛ خروجی: آیا مینیمایز بود (برای برگرداندن)
-  $was = $false
-  try { $was = [AvaDc3.W]::IsIconic($hwnd) } catch { $was = $false }
-  if ($was) {
-    [AvaDc3.W]::ShowWindow($hwnd, 4) | Out-Null
+  # تا درخت دسترس‌پذیری کرومیوم زنده شود.
+  # v0.36 — پنجرهٔ مخفیِ try هم بدون فوکوس نشان داده می‌شود.
+  # خروجی (تک‌مقداری — بدون خط DBG تا آرایه‌ای نشود): ۰=تغییری نکرد، ۱=مینیمایز بود، ۲=مخفی بود
+  $mode = 0
+  try {
+    if ([AvaDc3.W]::IsIconic($hwnd)) { $mode = 1 }
+    elseif (-not [AvaDc3.W]::IsWindowVisible($hwnd)) { $mode = 2 }
+  } catch { return 0 }
+  if ($mode -ne 0) {
+    try { [AvaDc3.W]::ShowWindow($hwnd, 4) | Out-Null } catch { return 0 }
     Start-Sleep -Milliseconds 500
-    Write-Output 'DBG:BGSHOW=1'
   }
-  return $was
+  return $mode
 }
-function Re-Minimize-Dc([bool]$was) {
-  # فقط اگر خودمان از مینیمایز بیرون آورده بودیم، بعد از کار دوباره مینیمایز (6)
-  if ($was) { try { [AvaDc3.W]::ShowWindow($hwnd, 6) | Out-Null } catch { } }
+function Re-Minimize-Dc($was) {
+  # فقط اگر خودمان از مینیمایز/مخفی بیرون آورده بودیم، بعد از کار همان حالت قبلی
+  # ۶=SW_MINIMIZE برای حالت ۱؛ ۰=SW_HIDE برای حالت ۲ (پنجرهٔ try مثل قبل پنهان بماند)
+  if ($was -is [array]) { $was = $was[-1] } # محافظت از خروجی چندخطی تصادفی
+  if ($was -eq 1) { try { [AvaDc3.W]::ShowWindow($hwnd, 6) | Out-Null } catch { } }
+  elseif ($was -eq 2) { try { [AvaDc3.W]::ShowWindow($hwnd, 0) | Out-Null } catch { } }
 }
 function Press-DcBg([string]$doRx, [string]$alrRx, [string]$label) {
   # v0.35 — میوت/دیفن «بدون باز کردن صفحهٔ دیسکورد»: درخواست اصلی کاربر.
@@ -3225,14 +3273,49 @@ function Try-Keys($st, [string]$doRx, [string]$alrRx, [string]$label, [string]$c
   Restore-Focus
   return ('OK:' + $label + ':KEYS-UNVERIFIED')
 }
+function Try-HotkeyBg([bool]$preAlive, [string]$doRx, [string]$alrRx, [string]$label, [string]$combo) {
+  # v0.36 — کلیدِ سراسری دیسکورد (Settings › Keybinds → Global) توسط ویندوز گرفته
+  # می‌شود و به فوکوس پنجرهٔ دیسکورد نیاز ندارد؛ پس حتی وقتی دیسکورد مخفی/try/
+  # مینیمایز/بازی است کار می‌کند — بدون جابه‌جایی فوکوس، بدون کلید به پنجرهٔ اشتباه
+  # (RegisterHotKey کلید را قبل از برنامهٔ فعال مصرف می‌کند).
+  # اثبات فلِیپ فقط وقتی ادعا می‌شود که اسکنِ «قبل» زنده بود (وضعیت قبلی معلوم بود) —
+  # وگرنه زنجیرهٔ بعدی خودش وضعیت را می‌خواند و در صورت نیاز اصلاح می‌کند.
+  if (-not $combo) { return '' }
+  Write-Output ('DBG:HOTKEY=' + $combo)
+  Send-Combo $combo
+  if (-not $alrRx) { return ('OK:' + $label + ':KEYS-UNVERIFIED') }
+  Start-Sleep -Milliseconds 400
+  $flipped = Test-Flip $doRx $alrRx
+  if (-not $flipped) {
+    Start-Sleep -Milliseconds 600
+    $flipped = Test-Flip $doRx $alrRx
+  }
+  if ($flipped -and $preAlive) { return ('OK:' + $label + ':HOTKEY-VERIFIED') }
+  if ($preAlive) { Write-Output 'DBG:HOTKEY_NOFLIP' }
+  return ''
+}
 function Press-Dc([string]$doRx, [string]$alrRx, [string]$label, [string]$combo = '', [bool]$keysFirst = $true) {
   # چرخهٔ کامل v0.30: حالت واقعی → عمل لایه‌ای → تایید فلِیپ — هرگز کورکورانه OK نمی‌گوید
   # v0.35 — حالت bg برای خانوادهٔ mute (فقط مسیرهای کلیددار): اول مسیر کاملاً
   # بدون‌فوکوس (Press-DcBg)؛ فقط وقتی UIA پس‌زمینه جواب نداد، همان چرخهٔ
   # فوکوس‌دارِ تاییدشدهٔ قبلی اجرا می‌شود — هیچ مسیر بی‌اثری اضافه نشده
+  # v0.36 — ترتیب جدید حالت bg: (۰) اسکن سریع وضعیت فعلی — اگر از قبل در وضعیت
+  # هدفیم هیچ کلیدی فرستاده نمی‌شود؛ (۱) کلید سراسری بدون نیاز به فوکوس — حتی
+  # دیسکورد در try؛ (۲) UIA مینیمایز v0.35؛ (۳) چرخهٔ فوکوس‌دار قبلی.
   if ($bg -and $keysFirst -and $combo) {
+    $wasIc0 = Show-DcQuiet
+    $pre = Scan-DcBtns $doRx $alrRx $true
+    Re-Minimize-Dc $wasIc0
+    if ($pre.alive -and $pre.already -and (-not $pre.hit)) { return ('OK:' + $label + '-ALREADY') }
+    $hk = Try-HotkeyBg ([bool]$pre.alive) $doRx $alrRx $label $combo
+    if ($hk) { return $hk }
     $bgR = Press-DcBg $doRx $alrRx $label
-    if ($bgR) { return $bgR }
+    if ($bgR) {
+      # ALREADY این‌جا یعنی «بعد از کلیدِ ما وضعیت هدف برقرار است» (اسکن قبل آن را
+      # ندیده بود) — برچسب صادقانهٔ تاییدشده می‌گیرد، نه «از قبل»
+      if ($bgR -like ('OK:' + $label + '-ALREADY') -and (-not ($pre.alive -and $pre.already))) { $bgR = ('OK:' + $label + ':BG-UIA-VERIFIED') }
+      return $bgR
+    }
   }
   $st = Scan-DcBtns $doRx $alrRx $false
   if ($st.alive -and $st.already -and (-not $st.hit)) { return ('OK:' + $label + '-ALREADY') }

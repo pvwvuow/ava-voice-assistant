@@ -137,14 +137,14 @@ ok('hint text now promises minimized/game operation (both i18n blocks)',
 console.log('\n[8] C8: chime + response page + tidy settings');
 ok('new 3-note glass chime (E5/A5/C#6) with harmonic + lowpass, still WebAudio-only',
    appSrc.includes('659.25') && appSrc.includes('880.0') && appSrc.includes('1108.73') && appSrc.includes('createBiquadFilter') && /playWakeChime\(\) \{[\s\S]{0,1600}createBiquadFilter[\s\S]{0,1200}\n  \}/.test(appSrc));
-ok('Gemini answer page bigger: card 720px + scrollable reply + taller dict box',
-   cssSrc.includes('width: min(720px, 100%)') && cssSrc.includes('#rcReply { max-height: 46vh') && cssSrc.includes('min-height: 300px'));
+ok('Gemini answer page bigger: card 720px+ (v0.36: 860px) + scrollable reply + taller dict box',
+   /width: min\((720|760|860)px, 100%\)/.test(cssSrc) && cssSrc.includes('#rcReply { max-height: 46vh') && cssSrc.includes('min-height: 300px'));
 ok('discord hub in settings: toggle + dcActions + call row all inside settingsPage',
-   (() => { const h = htmlSrc; const p = (m) => h.indexOf(m); return p('id="settingsPage"') < p('id="extDiscordOpt"') && p('id="extDiscordOpt"') < p('data-pane="perf"') && p('id="dcActions"') < p('id="extPage"') && p('id="btnDcCall"') < p('id="extPage"') && p('data-i18n="disc.hint"') < p('data-pane="perf"'); })());
+   (() => { const h = htmlSrc; const p = (m) => h.indexOf(m); return p('id="settingsPage"') < p('id="extDiscordOpt"') && p('id="extDiscordOpt"') < p('data-pane="perf"') && p('id="dcActions"') < p('id="extPage"') && p('id="btnDcCall"') < p('id="extPage"'); })()); /* v0.36: orphan disc.hint note removed, disc.hint clause dropped */
 ok('extPage discord card stripped to toggle + settings button',
    htmlSrc.includes('id="btnDcSettingsPage"') && htmlSrc.indexOf('id="btnDcMute"') < htmlSrc.indexOf('id="extPage"'));
-ok('advanced rows collapsed: two details.set-adv (stt + ai)',
-   (htmlSrc.match(/<details class="set-adv">/g) || []).length === 2 && htmlSrc.includes('data-i18n="set.adv.stt"') && htmlSrc.includes('data-i18n="set.adv.ai"'));
+ok('advanced rows collapsed: details.set-adv (stt + ai, v0.36 adds discord adv)',
+   (htmlSrc.match(/<details class="set-adv">/g) || []).length >= 2 && htmlSrc.includes('data-i18n="set.adv.stt"') && htmlSrc.includes('data-i18n="set.adv.ai"'));
 ok('document head intact (no structural cut damage)',
    htmlSrc.startsWith('<!DOCTYPE html>') && htmlSrc.includes('<title>آوا') && htmlSrc.split('<div class="set-pane" data-pane="perf">').length === 2);
 
@@ -183,9 +183,9 @@ if (hasPwsh && body) {
 
 console.log('\n[11] V: versions 0.35');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.35.0', pkg.version === '0.35.0', pkg.version);
-ok('about box v0.35.0', htmlSrc.includes('>v0.35.0</span>'));
-ok('app.js appVersion 0.35.0', appSrc.includes("let appVersion = '0.35.0';"));
+ok('package.json 0.35.x+ (v0.36 forward-regex)', /^0\.3[5-9]\.\d+$/.test(pkg.version), pkg.version);
+ok('about box v0.35.x+', />v0\.3[5-9]\.\d+<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.35.x+', /let appVersion = '0\.3[5-9]\.\d+';/.test(appSrc));
 ok('older suites stay forward-regex', !read('scripts-test-v0320.js').includes("pkg.version === '0.32.0'") && !read('scripts-test-v0330.js').includes("pkg.version === '0.33.0'"));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);

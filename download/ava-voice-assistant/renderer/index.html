@@ -217,7 +217,7 @@
           <!-- کادر فرمان -->
           <form id="cmdBar" class="cmd-bar glass" autocomplete="off">
             <button type="button" class="cmd-mic" id="cmdMic" aria-label="میکروفون"><svg class="ic"><use href="#i-mic"/></svg></button>
-            <input id="cmdInput" type="text" data-i18n-ph="cmd.ph" placeholder="فرمان را اینجا بنویس یا دکمه میکروفون را بزن…" />
+            <textarea id="cmdInput" rows="1" data-i18n-ph="cmd.ph" placeholder="فرمان را اینجا بنویس یا دکمه میکروفون را بزن…"></textarea>
             <button type="submit" class="cmd-send" aria-label="اجرا کردن فرمان"><svg class="ic"><use href="#i-send"/></svg></button>
           </form>
 
@@ -234,8 +234,7 @@
 
             <!-- پنل‌ها -->
             <div class="set-panes">
-
-              <!-- میکروفون -->
+<!-- میکروفون -->
               <div class="set-pane active" data-pane="mic">
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.mic.input">ورودی میکروفون</b><span id="micStat" data-i18n="set.mic.checking">دسترسی میکروفون بررسی می‌شود…</span></span>
@@ -248,7 +247,8 @@
                 <p class="set-note" data-i18n="set.mic.note">برای دقت بیشتر در تشخیص گفتار، میکروفون نزدیک‌تر باشد و با آهنگ یکنواخت حرف بزن.</p>
               </div>
 
-              <!-- تشخیص گفتار -->
+
+            <!-- تشخیص گفتار -->
               <div class="set-pane" data-pane="stt">
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب زنده؛ بعد آفلاین داخلی و سریع‌ترین‌های ابری — Whisper، گوگل رایگان، GLM و آخر Gemini</span></span>
@@ -278,23 +278,7 @@
                     <option value="en-US">English (en-US)</option>
                   </select>
                 </div>
-                <label class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.handsFree">حالت بی‌دست (گوش دائمی)</b><span data-i18n="set.stt.handsFreeHint">آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A</span></span>
-                  <span class="sw"><input type="checkbox" id="optHandsFree"/><i></i></span>
-                </label>
-                <label class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.wake">کلمه بیدارباش «آوا»</b><span data-i18n="set.stt.wakeHint">در حالت بی‌دست، فقط فرمان‌هایی که با «آوا» شروع شوند اجرا شوند (غیرفعال = هر حرفی که می‌گویی اجرا می‌شود)</span></span>
-                  <span class="sw"><input type="checkbox" id="optWakeWord"/><i></i></span>
-                </label>
-                <label class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.wakeAlways">بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)</b><span data-i18n="set.stt.wakeAlwaysHint">میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود</span></span>
-                  <span class="sw"><input type="checkbox" id="optWakeAlways"/><i></i></span>
-                </label>
-                <!-- v0.34 — وضعیت سلامت بیدارباش: کاربر دیگر در تاریکی نماند که چرا کار نمی‌کند -->
-                <div class="set-row col" id="wakeHealthRow">
-                  <span class="set-info"><b data-i18n="wake.healthTitle">وضعیت بیدارباش</b><span id="wakeHealth" data-i18n="wake.healthIdle">خاموش — سوییچ بالا را روشن کن</span></span>
-                  <button class="btn ghost" id="btnWakeTest" data-i18n="wake.testBtn">تست بیدارباش</button>
-                </div>
+                
                 <details class="set-adv">
                   <summary data-i18n="set.adv.stt">سرور Whisper، کلید گوگل و دمو (پیشرفته — همان پیش‌فرض‌ها برای اکثر مردم کافی است)</summary>
                 <div class="set-row col">
@@ -321,7 +305,32 @@
                 <p class="set-note" data-i18n="set.stt.note">بلندی صدای میکروفون خودکار نرمال می‌شود، آستانه تشخیص صدا برای هر میکروفون تطبیقی تنظیم می‌شود و اگر موتوری جواب نداد، همان صدا به موتور بعدی فرستاده می‌شود.</p>
               </div>
 
-              <!-- تایپ صوتی -->
+
+            
+
+              <!-- بیدارباش (v0.36) — جدا از تشخیص گفتار تا هر پنل کوچک و واضح بماند -->
+              <div class="set-pane" data-pane="wake">
+                <p class="set-note" data-i18n="set.wake.note">بیدارباش یعنی آوا همیشه گوش می‌دهد که کی داری حرف می‌زنی — حتی وقتی برنامه مینیمایز باشد یا در بازی هستی. با گفتن «آوا» (یا تلفظ‌های نزدیک مانند «آبا») آمادهٔ گوش دادن می‌شود.</p>
+<label class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.handsFree">حالت بی‌دست (گوش دائمی)</b><span data-i18n="set.stt.handsFreeHint">آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A</span></span>
+                  <span class="sw"><input type="checkbox" id="optHandsFree"/><i></i></span>
+                </label>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.wake">کلمه بیدارباش «آوا»</b><span data-i18n="set.stt.wakeHint">در حالت بی‌دست، فقط فرمان‌هایی که با «آوا» شروع شوند اجرا شوند (غیرفعال = هر حرفی که می‌گویی اجرا می‌شود)</span></span>
+                  <span class="sw"><input type="checkbox" id="optWakeWord"/><i></i></span>
+                </label>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.wakeAlways">بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)</b><span data-i18n="set.stt.wakeAlwaysHint">میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود</span></span>
+                  <span class="sw"><input type="checkbox" id="optWakeAlways"/><i></i></span>
+                </label>
+                <!-- v0.34 — وضعیت سلامت بیدارباش: کاربر دیگر در تاریکی نماند که چرا کار نمی‌کند -->
+                <div class="set-row col" id="wakeHealthRow">
+                  <span class="set-info"><b data-i18n="wake.healthTitle">وضعیت بیدارباش</b><span id="wakeHealth" data-i18n="wake.healthIdle">خاموش — سوییچ بالا را روشن کن</span></span>
+                  <button class="btn ghost" id="btnWakeTest" data-i18n="wake.testBtn">تست بیدارباش</button>
+                </div>
+              </div>
+
+            <!-- تایپ صوتی -->
               <div class="set-pane" data-pane="dict">
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.dict.start">شروع و پایان</b><span data-i18n="set.dict.startHint">بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین</span></span>
@@ -346,96 +355,8 @@
                 <p class="set-note" data-i18n="set.dict.note">علائم داخلی: بگو «نقطه»، «کاما»، «علامت سوال»، «علامت تعجب»، «دو نقطه»، «خط تیره»، «پرانتز باز/بسته»، «خط جدید»، «پاک کن».</p>
               </div>
 
-              <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
-              <div class="set-pane" data-pane="ext">
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ext.dns">افزونهٔ DNS Changer</b><span data-i18n="set.ext.dnsHint">با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند</span></span>
-                  <span class="sw"><input type="checkbox" id="extDnsOpt"/><i></i></span>
-                </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ext.music">افزونهٔ پلیر موزیک</b><span data-i18n="set.ext.musicHint">تا وقتی فعالش نکنی در ستون نمی‌آید و برنامه سبک‌تر می‌ماند</span></span>
-                  <span class="sw"><input type="checkbox" id="extMusicOpt"/><i></i></span>
-                </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.ext.open">مدیریت افزونه‌ها</b><span data-i18n="set.ext.openHint">صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی</span></span>
-                  <button class="chip" id="btnOpenExtPage"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ext.openBtn">باز کردن افزونه‌ها</span></button>
-                </div>
-                <p class="set-note" data-i18n="set.ext.note2">به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.</p>
-              </div>
 
-              <!-- دیسکورد (v0.17) — مخاطبین و اجرای بک‌گراند -->
-              <div class="set-pane" data-pane="discord">
-                <label class="set-row">
-                  <span class="set-info"><b data-i18n="ext.discord">کنترل دیسکورد با صدا</b><span data-i18n="ext.discordHint">زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد</span></span>
-                  <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
-                </label>
-                <!-- v0.35 — همه‌چیزِ دیسکورد همین‌جاست: دکمه‌های سریع و زنگ زدن سریع
-                     از کارت شلوغ صفحهٔ افزونه‌ها به تنظیمات › دیسکورد منتقل شدند -->
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dc.quick">دکمه‌های سریع دیسکورد</b><span data-i18n="set.dc.quickHint">میوت، بی‌صدای کل، جواب/رد/قطع تماس — حتی وقتی دیسکورد مینیمایز است (بدون باز شدن پنجره)</span></span>
-                  <div class="dc-actions" id="dcActions">
-                    <button class="chip sm" id="btnDcMute"><svg class="ic"><use href="#i-mute"/></svg><span data-i18n="disc.muteBtn">میوت</span></button>
-                    <button class="chip sm" id="btnDcDeafen"><svg class="ic"><use href="#i-volume"/></svg><span data-i18n="disc.deafenBtn">بی‌صدا کردن کل</span></button>
-                    <button class="chip sm" id="btnDcAnswer"><svg class="ic"><use href="#i-phone"/></svg><span data-i18n="disc.answerBtn">جواب تماس</span></button>
-                    <button class="chip sm" id="btnDcDecline"><svg class="ic"><use href="#i-close"/></svg><span data-i18n="disc.declineBtn">رد تماس</span></button>
-                    <button class="chip sm" id="btnDcHangup"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="disc.hangupBtn">قطع تماس</span></button>
-                    <button class="chip sm" id="btnDcFocus"><svg class="ic"><use href="#i-window"/></svg><span data-i18n="disc.focusBtn">فوکوس دیسکورد</span></button>
-                  </div>
-                  <div class="dc-call-row">
-                    <input type="text" id="dcCallName" class="set-input" data-i18n-ph="disc.namePh" placeholder="اسم دوستت در دیسکورد…" autocomplete="off" />
-                    <button class="chip" id="btnDcCall"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="disc.callBtn">زنگ بزن</span></button>
-                  </div>
-                </div>
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dc.contacts">مخاطبین دیسکورد</b><span data-i18n="set.dc.contactsHint">برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID</span></span>
-                  <form id="dcAddForm" class="tc-add" autocomplete="off">
-                    <input type="text" id="dcName" class="set-input" data-i18n-ph="set.dc.namePh" placeholder="اسم ساده (مثلاً: علی)" maxlength="40" />
-                    <input type="text" id="dcUserId" class="set-input" dir="ltr" data-i18n-ph="set.dc.idPh" placeholder="Discord User ID — ۱۷/۱۸ رقم" inputmode="numeric" />
-                    <button type="submit" class="chip sm" id="dcAddBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dc.add">افزودن</span></button>
-                  </form>
-                  <div id="dcContactsList" class="dc-list"></div>
-                </div>
-                <label class="set-row">
-                  <span class="set-info"><b data-i18n="set.dc.bg">اجرای بک‌گراند (وسط بازی)</b><span data-i18n="set.dc.bgHint">کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود</span></span>
-                  <span class="sw"><input type="checkbox" id="optDiscordBg"/><i></i></span>
-                </label>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dc.callMode">روش شروع تماس</b><span data-i18n="set.dc.callModeHint">«کمکی»: فقط صفحهٔ مخاطب باز می‌شود و خودت دکمهٔ تماس را می‌زنی — کاملاً مطابق قوانین دیسکورد. «خودکار (آزمایشی)»: آوا کلید/کلیک شبیه‌سازی‌شده به پنجرهٔ دیسکورد خودت می‌فرستد (مثل ماکروهای دسترسی‌پذیری) — هیچ توکن یا API دیسکورد استفاده نمی‌شود، ولی ممکن است روی بعضی نسخه‌ها کار نکند</span></span>
-                  <select id="optDiscordCallMode" class="set-select">
-                    <option value="auto" data-i18n="set.dc.modeAuto">خودکار (آزمایشی)</option>
-                    <option value="assist" data-i18n="set.dc.modeAssist">کمکی — امن</option>
-                  </select>
-                </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dc.cal">مکان دکمهٔ تماس (فالبک)</b><span data-i18n="set.dc.calHint">وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند</span></span>
-                  <div class="dc-cal">
-                    <input type="number" id="optDiscordCallDx" class="set-input num" min="10" max="320" value="46" aria-label="X" />
-                    <input type="number" id="optDiscordCallDy" class="set-input num" min="10" max="220" value="52" aria-label="Y" />
-                    <button class="chip sm" id="btnDcProbe" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.dc.probe">آزمایش</span></button>
-                  </div>
-                </div>
-                <p class="set-note" data-i18n="set.dc.note">فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.</p>
-              </div>
-
-                <p class="set-note" data-i18n="disc.hint">برای «قطع/جواب/رد تماس» یک‌بار در دیسکورد: Settings › Keybinds — اکشن Disconnect از Voice Channel را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار. میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) پیش‌فرض دیسکورد کار می‌کنند.</p>
-              <!-- بهینه‌سازی (v0.15) -->
-              <div class="set-pane" data-pane="perf">
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.perf.anim">انیمیشن‌ها</b><span data-i18n="set.perf.animHint">همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر</span></span>
-                  <span class="sw"><input type="checkbox" id="optNoAnim"/><i></i></span>
-                </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.perf.fx">افکت‌های پس‌زمینه</b><span data-i18n="set.perf.fxHint">ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند</span></span>
-                  <span class="sw"><input type="checkbox" id="optNoFx"/><i></i></span>
-                </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.perf.theme">تم‌های سبک (سیستم ضعیف)</b><span data-i18n="set.perf.themeHint">هر بار کلیک، یک قدم جلو: سبک روشن → سبک تیره → بازگشت — ظاهر ساده و صاف بدون شیشه و گرادیان سنگین</span></span>
-                  <button class="chip" id="btnLiteTheme"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.perf.themeBtn">تغییر تم سبک</span></button>
-                </div>
-                <p class="set-note" data-i18n="set.perf.note">تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.</p>
-              </div>
-
-              <!-- صدا و پاسخ گفتاری -->
+            <!-- صدا و پاسخ گفتاری -->
               <div class="set-pane" data-pane="voice">
                 <label class="set-row">
                   <span class="set-info"><b data-i18n="set.voice.tts">پاسخ گفتاری (TTS)</b><span data-i18n="set.voice.ttsHint">آوا جواب‌ها را با صدای بلند بخواند</span></span>
@@ -454,7 +375,8 @@
                 </div>
               </div>
 
-              <!-- هوش مصنوعی GLM -->
+
+            <!-- هوش مصنوعی GLM -->
               <div class="set-pane" data-pane="ai">
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.ai.nokey">اتصال بدون کلید API</b><span data-i18n="set.ai.nokeyHint">از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — پیام‌ها مستقیم به چت حسابت می‌روند و جوابش برمی‌گردد</span></span>
@@ -534,7 +456,102 @@
                 <p class="set-note" data-i18n="set.ai.note">سوالات پیچیده‌ای که فرمان نباشند، خودکار به هوش مصنوعی می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.</p>
               </div>
 
-              <!-- برنامه -->
+
+            <!-- دیسکورد (v0.17) — مخاطبین و اجرای بک‌گراند -->
+              <div class="set-pane" data-pane="discord">
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="ext.discord">کنترل دیسکورد با صدا</b><span data-i18n="ext.discordHint">زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد</span></span>
+                  <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
+                </label>
+                <!-- v0.35 — همه‌چیزِ دیسکورد همین‌جاست: دکمه‌های سریع و زنگ زدن سریع
+                     از کارت شلوغ صفحهٔ افزونه‌ها به تنظیمات › دیسکورد منتقل شدند -->
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.dc.quick">دکمه‌های سریع دیسکورد</b><span data-i18n="set.dc.quickHint">میوت، بی‌صدای کل، جواب/رد/قطع تماس — حتی وقتی دیسکورد مینیمایز است (بدون باز شدن پنجره)</span></span>
+                  <div class="dc-actions" id="dcActions">
+                    <button class="chip sm" id="btnDcMute"><svg class="ic"><use href="#i-mute"/></svg><span data-i18n="disc.muteBtn">میوت</span></button>
+                    <button class="chip sm" id="btnDcDeafen"><svg class="ic"><use href="#i-volume"/></svg><span data-i18n="disc.deafenBtn">بی‌صدا کردن کل</span></button>
+                    <button class="chip sm" id="btnDcAnswer"><svg class="ic"><use href="#i-phone"/></svg><span data-i18n="disc.answerBtn">جواب تماس</span></button>
+                    <button class="chip sm" id="btnDcDecline"><svg class="ic"><use href="#i-close"/></svg><span data-i18n="disc.declineBtn">رد تماس</span></button>
+                    <button class="chip sm" id="btnDcHangup"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="disc.hangupBtn">قطع تماس</span></button>
+                    <button class="chip sm" id="btnDcFocus"><svg class="ic"><use href="#i-window"/></svg><span data-i18n="disc.focusBtn">فوکوس دیسکورد</span></button>
+                  </div>
+                  <div class="dc-call-row">
+                    <input type="text" id="dcCallName" class="set-input" data-i18n-ph="disc.namePh" placeholder="اسم دوستت در دیسکورد…" autocomplete="off" />
+                    <button class="chip" id="btnDcCall"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="disc.callBtn">زنگ بزن</span></button>
+                  </div>
+                </div>
+                <details class="set-adv">
+                  <summary data-i18n="set.dc.adv">مخاطبین، روش تماس و مکان دکمه (پیشرفته)</summary>
+<div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.dc.contacts">مخاطبین دیسکورد</b><span data-i18n="set.dc.contactsHint">برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID</span></span>
+                  <form id="dcAddForm" class="tc-add" autocomplete="off">
+                    <input type="text" id="dcName" class="set-input" data-i18n-ph="set.dc.namePh" placeholder="اسم ساده (مثلاً: علی)" maxlength="40" />
+                    <input type="text" id="dcUserId" class="set-input" dir="ltr" data-i18n-ph="set.dc.idPh" placeholder="Discord User ID — ۱۷/۱۸ رقم" inputmode="numeric" />
+                    <button type="submit" class="chip sm" id="dcAddBtn"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dc.add">افزودن</span></button>
+                  </form>
+                  <div id="dcContactsList" class="dc-list"></div>
+                </div>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.bg">اجرای بک‌گراند (وسط بازی)</b><span data-i18n="set.dc.bgHint">کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود</span></span>
+                  <span class="sw"><input type="checkbox" id="optDiscordBg"/><i></i></span>
+                </label>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.callMode">روش شروع تماس</b><span data-i18n="set.dc.callModeHint">«کمکی»: فقط صفحهٔ مخاطب باز می‌شود و خودت دکمهٔ تماس را می‌زنی — کاملاً مطابق قوانین دیسکورد. «خودکار (آزمایشی)»: آوا کلید/کلیک شبیه‌سازی‌شده به پنجرهٔ دیسکورد خودت می‌فرستد (مثل ماکروهای دسترسی‌پذیری) — هیچ توکن یا API دیسکورد استفاده نمی‌شود، ولی ممکن است روی بعضی نسخه‌ها کار نکند</span></span>
+                  <select id="optDiscordCallMode" class="set-select">
+                    <option value="auto" data-i18n="set.dc.modeAuto">خودکار (آزمایشی)</option>
+                    <option value="assist" data-i18n="set.dc.modeAssist">کمکی — امن</option>
+                  </select>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.dc.cal">مکان دکمهٔ تماس (فالبک)</b><span data-i18n="set.dc.calHint">وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند</span></span>
+                  <div class="dc-cal">
+                    <input type="number" id="optDiscordCallDx" class="set-input num" min="10" max="320" value="46" aria-label="X" />
+                    <input type="number" id="optDiscordCallDy" class="set-input num" min="10" max="220" value="52" aria-label="Y" />
+                    <button class="chip sm" id="btnDcProbe" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.dc.probe">آزمایش</span></button>
+                  </div>
+                </div>
+                </details>
+                <p class="set-note" data-i18n="set.dc.note">فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.</p>
+              </div>
+
+
+            <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
+              <div class="set-pane" data-pane="ext">
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.dns">افزونهٔ DNS Changer</b><span data-i18n="set.ext.dnsHint">با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند</span></span>
+                  <span class="sw"><input type="checkbox" id="extDnsOpt"/><i></i></span>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.music">افزونهٔ پلیر موزیک</b><span data-i18n="set.ext.musicHint">تا وقتی فعالش نکنی در ستون نمی‌آید و برنامه سبک‌تر می‌ماند</span></span>
+                  <span class="sw"><input type="checkbox" id="extMusicOpt"/><i></i></span>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.open">مدیریت افزونه‌ها</b><span data-i18n="set.ext.openHint">صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی</span></span>
+                  <button class="chip" id="btnOpenExtPage"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.ext.openBtn">باز کردن افزونه‌ها</span></button>
+                </div>
+                <p class="set-note" data-i18n="set.ext.note2">به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.</p>
+              </div>
+
+
+            <!-- بهینه‌سازی (v0.15) -->
+              <div class="set-pane" data-pane="perf">
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.anim">انیمیشن‌ها</b><span data-i18n="set.perf.animHint">همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر</span></span>
+                  <span class="sw"><input type="checkbox" id="optNoAnim"/><i></i></span>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.fx">افکت‌های پس‌زمینه</b><span data-i18n="set.perf.fxHint">ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند</span></span>
+                  <span class="sw"><input type="checkbox" id="optNoFx"/><i></i></span>
+                </div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.perf.theme">تم‌های سبک (سیستم ضعیف)</b><span data-i18n="set.perf.themeHint">هر بار کلیک، یک قدم جلو: سبک روشن → سبک تیره → بازگشت — ظاهر ساده و صاف بدون شیشه و گرادیان سنگین</span></span>
+                  <button class="chip" id="btnLiteTheme"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.perf.themeBtn">تغییر تم سبک</span></button>
+                </div>
+                <p class="set-note" data-i18n="set.perf.note">تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.</p>
+              </div>
+
+
+            <!-- برنامه -->
               <div class="set-pane" data-pane="app">
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.app.lang">زبان برنامه / App language</b><span data-i18n="set.app.langHint">کل رابط کاربری و پاسخ‌های آوا به این زبان نشان داده می‌شود</span></span>
@@ -577,7 +594,8 @@
                 </div>
               </div>
 
-              <!-- به‌روزرسانی -->
+
+            <!-- به‌روزرسانی -->
               <div class="set-pane" data-pane="update">
                 <label class="set-row">
                   <span class="set-info"><b data-i18n="set.upd.auto">بررسی خودکار هنگام شروع</b><span data-i18n="set.upd.autoHint">۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود</span></span>
@@ -600,21 +618,21 @@
                 </div>
                 <p class="set-note" data-i18n="set.upd.note">بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.</p>
               </div>
-
-            </div>
+</div>
 
             <!-- ناوبری لیستی — سمت چپ -->
             <nav class="set-nav" id="setNav" aria-label="بخش‌های تنظیمات">
-              <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
-              <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
-              <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
-              <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
-              <button class="set-nav-item" data-pane="discord" type="button"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.nav.discord">دیسکورد</span></button>
-              <button class="set-nav-item" data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
-              <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
-              <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
-              <button class="set-nav-item" data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
-              <button class="set-nav-item" data-pane="update" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.nav.update">به‌روزرسانی</span></button>
+                            <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
+              <button class="set-nav-item " data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
+              <button class="set-nav-item " data-pane="wake" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.wake">بیدارباش</span></button>
+              <button class="set-nav-item " data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
+              <button class="set-nav-item " data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
+              <button class="set-nav-item " data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
+              <button class="set-nav-item " data-pane="discord" type="button"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.nav.discord">دیسکرد</span></button>
+              <button class="set-nav-item " data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
+              <button class="set-nav-item " data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
+              <button class="set-nav-item " data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
+              <button class="set-nav-item " data-pane="update" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.nav.update">به‌روزرسانی</span></button>
             </nav>
 
           </div>
@@ -676,7 +694,7 @@
           <div class="chat-wrap glass" id="quickWrap">
             <div class="chat-msgs" id="chatMsgs" aria-live="polite"></div>
             <form id="chatBar" class="chat-bar" autocomplete="off">
-              <input id="chatInput" type="text" data-i18n-ph="chat.ph" placeholder="پیامت را بنویس… مثلاً: چطور حافظه رم رو بهینه کنم؟" />
+              <textarea id="chatInput" rows="1" data-i18n-ph="chat.ph" placeholder="پیامت را بنویس… مثلاً: چطور حافظه رم رو بهینه کنم؟"></textarea>
               <button type="submit" class="cmd-send" aria-label="ارسال"><svg class="ic"><use href="#i-send"/></svg></button>
             </form>
           </div>
@@ -973,7 +991,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.35.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.36.0</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

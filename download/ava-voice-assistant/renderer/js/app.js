@@ -109,6 +109,9 @@
     'set.title': ['تنظیمات', 'Settings'], 'set.back': ['بازگشت به خانه', 'Back to home'],
     'set.nav.mic': ['میکروفون', 'Microphone'], 'set.nav.stt': ['تشخیص گفتار', 'Speech recognition'],
     'set.nav.dict': ['تایپ صوتی', 'Voice typing'], 'set.nav.dns': ['DNS و شبکه', 'DNS & network'],
+    'set.nav.wake': ['بیدارباش', 'Wake word'],
+    'set.wake.note': ['بیدارباش یعنی آوا همیشه گوش می‌دهد که کی داری حرف می‌زنی — حتی وقتی برنامه مینیمایز باشد یا در بازی هستی. با گفتن «آوا» (یا تلفظ‌های نزدیک مانند «آبا») آمادهٔ گوش دادن می‌شود.', 'Wake word means AVA always listens for your voice — even minimized or in a game. Say "Ava" (or close pronunciations like "Aba") and it gets ready to listen.'],
+    'set.dc.adv': ['مخاطبین، روش تماس و مکان دکمه (پیشرفته)', 'Contacts, call mode & button position (advanced)'],
     'set.nav.voice': ['صدا و پاسخ', 'Voice & replies'], 'set.nav.ai': ['هوش مصنوعی', 'AI'],
     'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
     'set.nav.ext': ['افزونه‌ها', 'Extensions'],
@@ -384,6 +387,9 @@
     'set.title': ['تنظیمات', 'Settings'], 'set.back': ['بازگشت به خانه', 'Back to home'],
     'set.nav.mic': ['میکروفون', 'Microphone'], 'set.nav.stt': ['تشخیص گفتار', 'Speech recognition'],
     'set.nav.dict': ['تایپ صوتی', 'Voice typing'], 'set.nav.dns': ['DNS و شبکه', 'DNS & network'],
+    'set.nav.wake': ['بیدارباش', 'Wake word'],
+    'set.wake.note': ['بیدارباش یعنی آوا همیشه گوش می‌دهد که کی داری حرف می‌زنی — حتی وقتی برنامه مینیمایز باشد یا در بازی هستی. با گفتن «آوا» (یا تلفظ‌های نزدیک مانند «آبا») آمادهٔ گوش دادن می‌شود.', 'Wake word means AVA always listens for your voice — even minimized or in a game. Say "Ava" (or close pronunciations like "Aba") and it gets ready to listen.'],
+    'set.dc.adv': ['مخاطبین، روش تماس و مکان دکمه (پیشرفته)', 'Contacts, call mode & button position (advanced)'],
     'set.nav.voice': ['صدا و پاسخ', 'Voice & replies'], 'set.nav.ai': ['هوش مصنوعی', 'AI'],
     'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
     'set.nav.ext': ['افزونه‌ها', 'Extensions'],
@@ -1880,6 +1886,8 @@
   const stripSearch = (c) =>
     c.replace(/(لطفا|لطفاً)/g, '')
       .replace(/(در\s+)?(گوگل|google)/gi, '')
+      /* v0.36 — پرت‌گوی‌ها جزو عبارت جستجو نیستند («بابا دیگه ممنون») */
+      .replace(/(^|\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|الان)(?=\s|$)/gi, '$1')
       .replace(/(را|رو)\s+/g, '')
       .replace(/(جستجو|سرچ|search)[\s\u200C]*(کن|بکن|بگیر)?[\s\u200C]*ی?[\s\u200C]*/gi, '')
       .replace(/[\s\u200C]+/g, ' ')
@@ -1910,6 +1918,17 @@
     ['استک اورفلو', 'https://stackoverflow.com'], ['stack overflow', 'https://stackoverflow.com'],
     ['ویکی پدیا', 'https://fa.wikipedia.org'], ['ویکی\u200Cپدیا', 'https://fa.wikipedia.org'], ['wikipedia', 'https://wikipedia.org'],
     ['دیجی استایل', 'https://style.digikala.com'], ['کافه بازار', 'https://cafebazaar.ir'], ['بازار', 'https://cafebazaar.ir'],
+    /* v0.36 — سایت‌های پرکاربرد ایرانی (ریشهٔ «سایت سافت 98 که خیلی خوبه رو باز کن»
+       که سرچ می‌شد: سافت 98 در دیکشنری نبود) — اسمِ عددی هم با حروف پوشیده شده */
+    ['سافت 98', 'https://soft98.ir'], ['سافت98', 'https://soft98.ir'], ['سافت ۹۸', 'https://soft98.ir'], ['سافت۹۸', 'https://soft98.ir'],
+    ['سافت نود و هشت', 'https://soft98.ir'], ['سافت نودوهشت', 'https://soft98.ir'], ['soft98', 'https://soft98.ir'],
+    ['دانلودها', 'https://downloadha.com'], ['دانلود ها', 'https://downloadha.com'], ['downloadha', 'https://downloadha.com'],
+    ['زومیت', 'https://www.zoomit.ir'], ['zoomit', 'https://www.zoomit.ir'],
+    ['دیجیاتو', 'https://www.digiato.com'], ['digiato', 'https://www.digiato.com'],
+    ['نی نی سایت', 'https://www.ninisite.com'], ['نینی سایت', 'https://www.ninisite.com'], ['ninisite', 'https://www.ninisite.com'],
+    ['فرادرس', 'https://faradars.org'], ['faradars', 'https://faradars.org'],
+    ['مکتب خونه', 'https://maktabkhooneh.org'], ['مکتب\u200Cخونه', 'https://maktabkhooneh.org'], ['maktabkhooneh', 'https://maktabkhooneh.org'],
+    ['گوگل', 'https://www.google.com'], ['یوتیوب', 'https://www.youtube.com'], ['youtube', 'https://www.youtube.com'],
   ];
   const SITE_NAV_STRIP =
     /(لطفا|لطفاً|می\u200Cخوام|میخوام|برام|برای\s*من|وارد\s*شو\s*به|وارد\s*شو|وارد\s*کن|وارد|برو\s*به|برو\s*تو|برو|باز\s*کن|باز\s*بکن|بکن|کن\s*باز|رفتن|بریم|بساز)/gi;
@@ -1942,10 +1961,20 @@
     let s = String(cmd || '');
     s = s.replace(SITE_NAV_STRIP, ' ').replace(/[\s\u200C]+/g, ' ').trim(); /* v0.28.1: تریم قبل از ریشهٔ «سایت» */
     s = s.replace(SITE_WORD_STRIP, ' ');
+    /* v0.36 — بند وابستهٔ «که …» جزو اسم سایت نیست («سافت 98 که خیلی خوبه» → «سافت 98») */
+    s = s.replace(/\s+که\s+[\s\S]*$/i, ' ');
     s = s.replace(/\s*(از|در|تو|توی)\s+(سایت|وب\s?سایت)\s*/gi, ' ');
     s = s.replace(/(سایت|وب\s?سایت)\s*(رو|را)?\s*$/gi, ' ');
     s = s.replace(/[\s\u200C]+/g, ' ').trim();
     s = s.replace(/^(رو|را|به|تو|ی)\s+/i, '').replace(/\s+(رو|را)$/i, '');
+    return s.length >= 2 ? s.slice(0, 60) : '';
+  }
+  /* v0.36 — استخراج مستقیم اسم سایت از الگوی «سایت X رو باز کن» —
+     «سایت سافت 98 که خیلی خوبه رو باز کن» → «سافت 98» */
+  function siteTargetOf(cmd) {
+    const m = String(cmd || '').match(/(?:سایت|وب\s?سایت|صفحه)\s+(?:از\s+)?(.+?)\s*(?:رو|را)\s*باز/i);
+    let s = m && m[1] ? m[1] : '';
+    s = s.replace(/\s+که\s+[\s\S]*$/i, '').replace(/[\s\u200C]+/g, ' ').trim();
     return s.length >= 2 ? s.slice(0, 60) : '';
   }
   /* v0.28 — دروازهٔ فرمان‌های دیسکورد: «تماس/کال/call» هم بدون اسم دیسکورد
@@ -2381,21 +2410,21 @@
     },
     {
       k: /(سایت|وب\s?سایت)|https?:\/\//i, t: 'باز کردن سایت', i: '#i-globe',
-      run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : (knownSiteOf(c) || siteDomainOf(c) ? 'web_open' : 'web_search')),
+      run: (c) => (/https?:\/\//i.test(c) ? 'web_open' : (knownSiteOf(c) || knownSiteOf(siteTargetOf(c)) || siteDomainOf(c) || siteDomainOf(siteTargetOf(c)) ? 'web_open' : 'web_search')),
       arg: (c) => {
         const m = c.match(/https?:\/\/\S+/);
         if (m) return m[0];
         /* v0.28 — «برو به سایت دیجی کالا» باید خودِ سایت را باز کند، نه اینکه
            «برو به» را در گوگل سرچ کند: اول دیکشنری سایت‌های معروف، بعد دامنهٔ
            خام (x.com/x.ir)، در آخر فقط «اسم تمیزِ سایت» برای جستجو */
-        const ks = knownSiteOf(c);
+        const ks = knownSiteOf(c) || knownSiteOf(siteTargetOf(c));
         if (ks) return ks;
-        const dom = siteDomainOf(c);
+        const dom = siteDomainOf(c) || siteDomainOf(siteTargetOf(c));
         if (dom) return 'https://' + dom;
         return cleanSiteQuery(c) || 'گوگل';
       },
       r: (c) => {
-        if (/https?:\/\//i.test(c) || knownSiteOf(c) || siteDomainOf(c)) return LANG === 'en' ? 'The website is open.' : 'سایت موردنظر باز شد.';
+        if (/https?:\/\//i.test(c) || knownSiteOf(c) || knownSiteOf(siteTargetOf(c)) || siteDomainOf(c)) return LANG === 'en' ? 'The website is open.' : 'سایت موردنظر باز شد.';
         return LANG === 'en' ? `I searched "${cleanSiteQuery(c) || 'it'}" on Google; the first result is usually the site.` : `«${cleanSiteQuery(c) || 'آن'}» را در گوگل جستجویش کردم؛ نتیجهٔ اول معمولاً همان سایت است.`;
       },
     },
@@ -2466,7 +2495,12 @@
     { k: /مدیا[^.]{0,10}(بعدی|بعد)|پلیر[^.]{0,10}(بعدی|بعد)|آهنگ بعدی پلیر|media next|next (track|media)/i, t: 'مدیای بعدی', i: '#i-music', run: 'media_next', r: () => (LANG === 'en' ? 'Next track on the system player.' : 'آهنگ بعدی در پلیر سیستم.') },
     { k: /مدیا[^.]{0,10}(قبلی|قبل)|پلیر[^.]{0,10}(قبلی|قبل)|آهنگ قبلی پلیر|media prev|previous (track|media)/i, t: 'مدیای قبلی', i: '#i-music', run: 'media_prev', r: () => (LANG === 'en' ? 'Previous track on the system player.' : 'آهنگ قبلی در پلیر سیستم.') },
     { k: /مدیا[^.]{0,12}(پاز|توقف|پخش|نگه دار)|(پاز|پخش).{0,6}مدیا|media (play|pause)|play pause media/i, t: 'پخش/توقف مدیا', i: '#i-music', run: 'media_toggle', r: () => (LANG === 'en' ? 'Toggled the system player.' : 'پلیر سیستم را پخش/توقف کردم.') },
-    { k: /جوک|بخندون|شوخی|tell me a joke|make me laugh|joke/i, t: 'جوک', i: '#i-smile', r: () => joke() },
+    {
+      /* v0.36 — «بابا یه جوک خفن بگو ولی از تو» دیگر سرچ نمی‌شود: جک/جوک/لطیفه
+         اول به هوش مصنوعی می‌رود (جوکِ تازه از خودِ آوا)، بدون اتصال هم جوکِ محلی هست */
+      k: /جوک|جک|لطیفه|بخندون|شوخی|tell me a joke|make me laugh|joke/i, t: 'جوک', i: '#i-smile',
+      r: async () => { if (aiConnected()) return AI_FALLBACK; return joke(); },
+    },
 
     /* --- تعامل --- */
     { k: /سلام|درود|خوبی|hello|hi ava|hey ava|good (morning|evening|afternoon)/i, t: 'سلام', i: '#i-wave', r: () => LANG === 'en' ? 'Hello! I am great, thanks. What can I do for you?' : 'سلام! من خوبم، ممنون. چه کاری برات انجام بدم؟' },
@@ -3121,6 +3155,8 @@
       .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
       .replace(/\u200C/g, ' ')
       .replace(/[\u00AB\u00BB]/g, '')
+      /* v0.36 — آلودگیِ نویسهٔ تشخیص گفتار مثل «:\» یا «|» در قواعد مزاحمت ایجاد می‌کند */
+      .replace(/[\\|\u0060^~]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -3922,7 +3958,24 @@
   let wakeSessUntil = 0;
   let wakeSessTimer = 0;
   const WAKE_SESS_MS = 90000;
-  const WAKE_WORD_RE = /^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|ava)[\s،,:-]*(.*)$/i;
+  /* v0.36 — «آبا/اوا» هم بیدارباش است (خواستهٔ کاربر: کلماتی مثل آبا هم فعال کند) */
+  const WAKE_WORD_RE = /^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|آبا|ابا|ava|awa)[\s،,:-]*(.*)$/i;
+  /* v0.36 — تطبیق فازی بیدارباش: whisper گاهی «آوا» را «آبا/آوه/آو/اوها» می‌شنود؛
+     موتور قبلی فقط زیررشتهٔ «اوا/آوا» را می‌دید و به‌سختی فعال می‌شد (گزارش کاربر:
+     «به سختی کلمه ava یا اوا رو تشخیص میده...ولی خود دستیار بهتره»).
+     «او» و «اوهِ» تنها عمداً فعال نمی‌شوند (واژهٔ خیلی رایج = بیدارباش کاذب). */
+  const WAKE_ACCEPT = new Set(['آوا', 'اوا', 'آوای', 'اوای', 'آبا', 'ابا', 'آوه', 'اوها', 'آو', 'اوب', 'اواو', 'اووا', 'آووا', 'اواا', 'اوبا']);
+  function wakeHitText(txt) {
+    const s = normFaFull(txt).replace(/[\\|`^~]+/g, ' ');
+    if (/ava|awa/i.test(s)) return true;
+    const toks = s.split(/[\s،,:؛;!?.\-]+/).filter(Boolean);
+    for (const w of toks) {
+      if (w.length < 2) continue;
+      if (/^(اوا|آوا)/.test(w)) return true; /* آوا، اوای، آواجون، آوایی… */
+      if (WAKE_ACCEPT.has(w)) return true;   /* آبا، آوه، آو، اوها… */
+    }
+    return false;
+  }
   const wakeSessActive = () => Date.now() < wakeSessUntil;
   function wakeSessOpen() {
     wakeSessUntil = Date.now() + WAKE_SESS_MS;
@@ -4075,7 +4128,7 @@
        v0.32 — wakeTtsBusy اضافه شد (ریشهٔ بیدارباشِ کاذب بعد از هر پاسخ بلند) */
     if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }
     wakeLoop.chunks.push(new Float32Array(f));
-    if (wakeLoop.chunks.length > 47) wakeLoop.chunks.shift(); /* v0.32 — سقف ۲.۶→~۴ ثانیه: «آوا + فرمان» در یک نفس جا شود */
+    if (wakeLoop.chunks.length > 70) wakeLoop.chunks.shift(); /* v0.36 — سقف ~۶ ثانیه: پنجرهٔ بزرگ‌تر = «آوا»ی بریده‌تازه کمتر */
     let sum = 0, n = 0;
     for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
     const rms = Math.sqrt(sum / Math.max(1, n));
@@ -4114,10 +4167,20 @@
     L.coolUntil = Date.now() + 800;
     try {
       if (buf.length < 5) return; /* خیلی کوتاه */
+      /* v0.36 — حذف سکوتِ سرِ صدا: whisper روی «آوا»ی بریده‌تازه خیلی دقیق‌تر است
+         (اولین فریمِ صوتی پیدا و تا یک چانک قبلش نگه داشته می‌شود) */
+      let s0 = 0;
+      const thrT = Math.max(0.004, L.floor * 1.8 + 0.0025);
+      for (let i = 0; i < buf.length; i++) {
+        const c = buf[i]; let sm = 0, nn = 0;
+        for (let j = 0; j < c.length; j += 8) { sm += c[j] * c[j]; nn++; }
+        if (Math.sqrt(sm / Math.max(1, nn)) > thrT) { s0 = Math.max(0, i - 1); break; }
+      }
+      const buf2 = s0 > 0 ? buf.slice(s0) : buf;
       const rate = (audioCtx && audioCtx.sampleRate) || 48000;
-      const merged = new Float32Array(buf.reduce((a, c) => a + c.length, 0));
+      const merged = new Float32Array(buf2.reduce((a, c) => a + c.length, 0));
       let off = 0;
-      for (const c of buf) { merged.set(c, off); off += c.length; }
+      for (const c of buf2) { merged.set(c, off); off += c.length; }
       const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
       if (pcm16.length < 4000) return;
       /* v0.34 — موتور تشخیص: بستهٔ آفلاین اگر هست محلی، وگرنه ابری (stt:google با
@@ -4132,6 +4195,14 @@
           await new Promise((res) => setTimeout(res, 1200));
           r = await tryStt().catch(() => null);
         }
+        /* v0.36 — فرصت دوم ابری: اگر آفلاین هیچ‌چیز نشنید (موتور ضعیف روی «آوا»ی
+           کوتاه) همان برش به گوگل هم می‌رود — سقف یک‌بار در ۱۰ ثانیه برای مصرف */
+        let txtL = String((r && r.text) || '').trim();
+        if (!txtL && bridge && bridge.stt && bridge.stt.google && Date.now() - (L.lastCloudTry || 0) > 10000) {
+          L.lastCloudTry = Date.now();
+          const r2 = await bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' }).catch(() => null);
+          if (r2 && r2.ok && String(r2.text || '').trim()) { r = r2; actLog('wake-always: cloud 2nd chance used'); }
+        }
       } else if (bridge && bridge.stt && bridge.stt.google) {
         r = await bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' }).catch(() => null);
         if (r && r.ok === false) actLog('wake-always cloud check fail: ' + String(r.error || '').slice(0, 60));
@@ -4141,11 +4212,11 @@
       /* v0.34 — وضعیت سلامت: آخرین شنیده همیشه دیده می‌شود؛ در حالت تست نتیجه صریح است */
       if (txt) {
         const heardTxt = t('wake.healthLast', { x: txt.slice(0, 30) });
-        const isWake = /(آوا|اوا|ava)/i.test(normFaFull(txt));
+        const isWake = wakeHitText(txt);
         if (Date.now() < wakeTestUntil) wakeHealthNote((isWake ? t('wake.testOk') : t('wake.testMiss', { x: txt.slice(0, 30) })));
         else if (wakeLoop) wakeHealthNote((wakeLoop.engine === 'local' ? t('wake.healthLocal') : t('wake.healthCloud')) + ' — ' + heardTxt);
       }
-      if (txt && /(آوا|اوا|ava)/i.test(normFaFull(txt))) {
+      if (txt && wakeHitText(txt)) {
         playWakeChime();
         wakeSessOpen();
         toast(t('wake.woke'), '#i-wave');
@@ -5045,6 +5116,26 @@
     });
   })();
 
+  /* v0.36 — تایپ‌پنجرهٔ بزرگ برای هوش مصنوعی: input تک‌خطی قبلی «کوچیکه» (گزارش کاربر)
+     textarea با رشد خودکار؛ Enter = ارسال، Shift+Enter = خط جدید */
+  function autoGrow(el, maxPx) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(maxPx, el.scrollHeight) + 'px';
+  }
+  function wireMultilineInput(el, form, maxPx) {
+    if (!el) return;
+    el.addEventListener('input', () => autoGrow(el, maxPx));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        if (form) form.requestSubmit();
+      }
+    });
+  }
+  wireMultilineInput(cmdInput, cmdBar, 220);
+  wireMultilineInput(chatInput, chatBar, 220);
+
   /* ---------- پیشنهاد شانسی — هر چند ثانیه یک فرمان (نسخه ۰.۱۰) ---------- */
   const BASE_SUGGESTIONS = [
     { cmd: 'کروم را باز کن', en: 'open Chrome', icon: '#i-globe' },
@@ -5351,12 +5442,14 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.35.0';
+  let appVersion = '0.36.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
   const setPanes = [...document.querySelectorAll('.set-pane')];
   function showSettingsPane(id) {
+    /* v0.36 — پنل ذخیره‌شدهٔ نامعتبر (مثل پنل حذف‌شده) هرگز صفحهٔ خالی نگذارد */
+    if (!setPanes.some((p) => p.dataset.pane === id)) id = 'mic';
     let hit = false;
     setNavItems.forEach((b) => {
       const on = b.dataset.pane === id;
@@ -6367,6 +6460,10 @@
   const AI_SYSTEM_FA =
     'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود و به فرمان‌های کاربر گوش می‌دهی.\n' +
     'همیشه فارسی، کوتاه (حداکثر ۳ جمله)، دوستانه و مفید جواب بده.\n' +
+    /* v0.36 — قواعد مسیریابی (گزارش کاربر: «جوک را سرچ کرد» / «سایت را کامل سرچ کرد») */
+    'قانون مهم ۱: اگر کاربر جوک/جک/لطیفه/شوخی خواست (مثل «بابا یه جوک خفن بگو ولی از تو»)، خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن و بلوک DO هم ننویس.\n' +
+    'قانون مهم ۲: اگر کاربر باز کردن سایت/وبسایت خواست (مثل «سایت سافت 98 که خیلی خوبه رو باز کن»)، فقط اسمِ سایت را بردار (بندهای «که …» جزو اسم نیستند) و بلوک DO با open_url بده؛ دامنه را خودت حدس بزن (سافت 98=soft98.ir، دیجی‌کالا=digikala.com). هرگز کل جمله را جستجو نکن.\n' +
+    'قانون مهم ۳: اگر درخواست، سوال یا درخواست گفتگویی است (بگو/چرا/چطور/چیه)، هرگز آن را به جستجوی وب تبدیل نکن — خودت جواب بده.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -6396,6 +6493,10 @@
   const AI_SYSTEM_EN =
     'You are the AI brain of AVA, a Persian/English voice assistant for Windows.\n' +
     'Reply in the user\'s language, short (max 3 sentences), friendly and helpful.\n' +
+    /* v0.36 — routing rules (user report: joke got web-searched / site name got web-searched) */
+    'Important rule 1: if the user asks for a joke (جوک/جک/لطیفه), tell a short fresh joke yourself — NEVER search the web for it and write no DO block.\n' +
+    'Important rule 2: if the user asks to open a website, extract ONLY the site name (relative clauses like «که …» are not part of it) and emit a DO block with open_url; guess the domain yourself (soft98.ir, digikala.com, zoomit.ir). NEVER web_search the whole sentence.\n' +
+    'Important rule 3: conversational asks (tell me / why / how / what is) must NEVER become web_search — answer them yourself.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +

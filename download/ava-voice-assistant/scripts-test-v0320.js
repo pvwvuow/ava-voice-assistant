@@ -224,7 +224,7 @@ function makeGem(mockFetch, badSeed) {
      wSrc.includes('const wm = normFaFull(txt).match(WAKE_WORD_RE);') && wSrc.includes('wakePickup(tail)'));
   ok('wakePickup waits for idle+no-TTS (dead-wake class killed)',
      wSrc.includes('function wakePickup(cmd)') && /if \(state === 'idle' && !wakeTtsBusy\(\) && !dictation\.active\) \{ run\(\); return; \}/.test(wSrc) && wSrc.includes('if (!wakeSessActive()) return;'));
-  ok('buffer 30→47 frames (~4s) so the one-breath command fits', wSrc.includes('wakeLoop.chunks.length > 47'));
+  ok('buffer 30→47+ frames (~4s+, v0.36: 70 ≈ 6s) so the one-breath command fits', /wakeLoop\.chunks\.length > (47|70)/.test(wSrc));
 
   console.log('\n[11] P1: real pwsh execution (if portable pwsh available)');
   const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';

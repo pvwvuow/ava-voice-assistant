@@ -610,9 +610,19 @@ app.whenReady().then(async () => {
       /* discord pane + contacts add/delete (runtime CRUD) */
       const navOk = await probe(`(() => {
         const b = document.querySelector('.set-nav-item[data-pane="discord"]');
+        const v36dom = {
+          wakePane: !!document.querySelector('.set-pane[data-pane="wake"] #btnWakeTest'),
+          wakeNav: !!document.querySelector('.set-nav-item[data-pane="wake"]'),
+          cmdTextarea: document.querySelector('#cmdInput') && document.querySelector('#cmdInput').tagName === 'TEXTAREA',
+          chatTextarea: document.querySelector('#chatInput') && document.querySelector('#chatInput').tagName === 'TEXTAREA',
+          noOrphan: !document.querySelector('[data-i18n="disc.hint"]'),
+          dcAdv: !!document.querySelector('.set-pane[data-pane="discord"] details.set-adv'),
+        };
         if (b) b.click();
-        return { nav: !!b, pane: !!document.querySelector('.set-pane[data-pane="discord"]') };
+        return { nav: !!b, pane: !!document.querySelector('.set-pane[data-pane="discord"]'), v36: v36dom };
       })()`);
+      ok('v0.36 runtime: wake pane + nav render; cmd/chat are TEXTAREA; orphan note gone',
+         navOk && navOk.v36 && navOk.v36.wakePane && navOk.v36.wakeNav && navOk.v36.cmdTextarea && navOk.v36.chatTextarea && navOk.v36.noOrphan && navOk.v36.dcAdv);
       await new Promise((r) => setTimeout(r, 250));
       const dc = await probe(`(() => {
         const pane = document.querySelector('.set-pane[data-pane="discord"]');
@@ -1292,7 +1302,7 @@ app.whenReady().then(async () => {
         call2: m32.includes('$blindProbe = Scan-DcBtns') && m32.includes("if ($Name) { return 'ERR:NODM' }") && m32.includes("'ERR:CLIP':") && m32.includes("'ERR:NODM':") && m32.includes("runDiscordPs('clickcall', 'fg'") && m32.includes("(A === 'call' ? 'fg' : mode)"),
         wake1: a32.includes('function wakeTtsBusy()') && a32.includes('speechSynthesis.speaking || speechSynthesis.pending') && (a32.match(/wakeTtsBusy\(\)/g) || []).length >= 5,
         wake2: a32.includes('wakeLoop.lastFrame = Date.now()') && a32.includes('Date.now() - wakeLoop.lastFrame > 4000') && a32.includes("audioCtx.state === 'suspended'") && a32.includes('wakeLoop.restarts.length < 3'),
-        wake3: a32.includes('function wakePickup(cmd)') && a32.includes('wakePickup(tail)') && a32.includes('if (wakeLoop.chunks.length > 47)') && /one-breath command/.test(a32),
+        wake3: a32.includes('function wakePickup(cmd)') && a32.includes('wakePickup(tail)') && /wakeLoop\.chunks\.length > (47|70)/.test(a32) && /one-breath command/.test(a32),
         contacts: a32.includes('function dcNameNorm(s)') && a32.includes(".replace(/[-_.]+/g, ' ')") && a32.includes('String(c.userId || \'\').trim() === digits') && a32.includes('const ct = resolveDiscordContact(nm)'),
         ver: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a32) && /^0\.(29|3\d)\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
       };
@@ -1385,7 +1395,7 @@ app.whenReady().then(async () => {
         msgwire: m35.includes("A === 'msgsend' ? String(text || '')") && m35.includes("'ERR:NOTEXT': 'متن پیام پیدا نشد"),
         wakemin: m35.includes("appendSwitch('disable-renderer-backgrounding')") && m35.includes("appendSwitch('disable-backgrounding-occluded-windows')") && m35.includes("ipcMain.handle('wake:psb'") && m35.includes('powerSaveBlocker.start') && a35.includes('bridge.system.wakePsb(true)') && a35.includes('bridge.system.wakePsb(false)'),
         chime: a35.includes('659.25') && a35.includes('1108.73') && a35.includes('createBiquadFilter'),
-        setui: (() => { const dp = h35.indexOf('data-pane="discord"'); return dp > -1 && dp < h35.indexOf('id="extDiscordOpt"') && h35.indexOf('id="extDiscordOpt"') < h35.indexOf('data-pane="perf"') && h35.indexOf('id="settingsPage"') < h35.indexOf('id="dcActions"') && h35.indexOf('id="dcActions"') < h35.indexOf('id="extPage"') && h35.indexOf('id="extPage"') < h35.indexOf('id="btnDcSettingsPage"') && (h35.match(/<details class="set-adv">/g) || []).length === 2; })(),
+        setui: (() => { const dp = h35.indexOf('data-pane="discord"'); return dp > -1 && dp < h35.indexOf('id="extDiscordOpt"') && h35.indexOf('id="extDiscordOpt"') < h35.indexOf('data-pane="perf"') && h35.indexOf('id="settingsPage"') < h35.indexOf('id="dcActions"') && h35.indexOf('id="dcActions"') < h35.indexOf('id="extPage"') && h35.indexOf('id="extPage"') < h35.indexOf('id="btnDcSettingsPage"') && (h35.match(/<details class="set-adv">/g) || []).length >= 3; })(), /* v0.36: discord adv joined */
         ver: /^0\.3[5-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[5-9]\.\d+';/.test(a35),
       };
       ok('v0.35 crash: async pack extraction (no spawnSync in download handler) + crash net', v35.nofreeze && v35.stab);
@@ -1397,6 +1407,37 @@ app.whenReady().then(async () => {
       ok('v0.35 settings: discord hub in settings + stripped extPage card + adv details', v35.setui);
       ok('v0.35 version markers (0.35.x/0.3x)', v35.ver);
     } catch (e) { console.log('SKIP | v0.35 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98963 v0.36.0 — (۱) «دیسکورد دیگه اصلاً کار نمی‌کنه»: دیسکوردِ در try با
+    // EnumWindows پیدا می‌شود + کلید سراسری بدون نیاز به فوکوس (HOTKEY-VERIFIED).
+    // (۲) بیدارباش فازی: آبا/آوه/آو هم فعال می‌کند + حذف سکوتِ سر + فرصت دوم ابری.
+    // (۳) جوک → هوش مصنوعی، هرگز سرچ. (۴) سافت 98 و بند «که …». (۵) پنل بیدارباش +
+    // حذف یادداشت یتیم + ترتیب جدید. (۶) تایپ‌پنجرهٔ textarea + اسم مدل خوانا.
+    try {
+      const m36 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a36 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h36 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const c36 = fs.readFileSync(path.join(__dirname, 'renderer/css/styles.css'), 'utf8');
+      const b36 = (m36.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/) || ['', ''])[1];
+      const v36 = {
+        tray: b36.includes('function Find-DcHwndByPid') && b36.includes('[AvaDc3.W]::EnumWindows($cb, [IntPtr]::Zero)') && b36.includes("if (-not $dcProcs -or $dcProcs.Count -eq 0) { Write-Output 'ERR:NO_DISCORD'; exit }") && b36.includes('Find-DcHwndByPid }'),
+        hotkey: b36.includes('function Try-HotkeyBg([bool]$preAlive') && b36.includes("if ($flipped -and $preAlive) { return ('OK:' + $label + ':HOTKEY-VERIFIED') }") && b36.indexOf('$hk = Try-HotkeyBg') < b36.indexOf('$bgR = Press-DcBg $doRx $alrRx $label'),
+        switchverbatim: b36.includes("'mute'     { Write-Output (Press-Dc '^Mute$' '^Unmute$' 'MUTE' 'ctrl,shift,m') }") && b36.includes("'deafen'   { Write-Output (Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN' 'ctrl,shift,d') }"),
+        wake: a36.includes('const WAKE_ACCEPT = new Set(') && a36.includes("'آبا', 'ابا'") && a36.includes('function wakeHitText(txt)') && a36.includes('wakeLoop.chunks.length > 70') && a36.includes('wake-always: cloud 2nd chance used') && a36.includes('const buf2 = s0 > 0 ? buf.slice(s0) : buf;'),
+        joke: a36.includes('r: async () => { if (aiConnected()) return AI_FALLBACK; return joke(); },') && a36.includes('خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن'),
+        site: a36.includes("['سافت 98', 'https://soft98.ir']") && a36.includes('function siteTargetOf(cmd)') && (a36.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length === 3,
+        set: h36.includes('<div class="set-pane" data-pane="wake">') && h36.includes('data-i18n="set.nav.wake"') && !h36.includes('data-i18n="disc.hint"') && h36.includes('data-i18n="set.dc.adv"'),
+        type: h36.includes('<textarea id="cmdInput" rows="1"') && h36.includes('<textarea id="chatInput" rows="1"') && a36.includes('function wireMultilineInput(el, form, maxPx)') && c36.includes('width: min(860px, 100%)') && c36.includes('max-width: calc(100% - 34px); white-space: normal;'),
+        ver: /^0\.3[6-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[6-9]\.\d+';/.test(a36) && h36.includes('>v0.36.0<'),
+      };
+      ok('v0.36 discord: tray-proof EnumWindows discovery + NO_DISCORD only without processes', v36.tray);
+      ok('v0.36 discord: hotkey-first bg (no focus) with honest preAlive-gated flip proof', v36.hotkey && v36.switchverbatim);
+      ok('v0.36 wake: fuzzy accept-set (آبا/آوه/آو) + 6s buffer + silence trim + cloud 2nd chance', v36.wake);
+      ok('v0.36 intent: joke → AI (never search) + soft98 dictionary + siteTargetOf clause-strip', v36.joke && v36.site);
+      ok('v0.36 settings: wake pane + nav + orphan note removed + discord adv collapsed', v36.set);
+      ok('v0.36 gemini page: textarea inputs + 860px card + wrapping model tag', v36.type);
+      ok('v0.36 version markers (0.36.x/0.3x)', v36.ver);
+    } catch (e) { console.log('SKIP | v0.36 markers | ' + String(e && e.message).slice(0, 80)); }
 
     try {
       const rt23 = await probe(`(() => ({
