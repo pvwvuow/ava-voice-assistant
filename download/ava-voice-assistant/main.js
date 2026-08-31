@@ -2361,9 +2361,15 @@ ipcMain.handle('stt:transcribe', async (_e, p) => {
       Groq (whisper-large-v3-turbo — سریع‌ترین، پلن رایگان)، OpenAI،
       یا سرور محلی whisper.cpp — کاربر آدرس/کلید/مدل را در تنظیمات می‌گذارد. */
 function geminiModelChain(userModel) {
+  /* v0.32 — نسل ۲.۰ حذف شد (طبق سند رسمی گوگل از ۲۰۲۶/۰۳/۱۲ خاموش است و
+     فقط یک اسلات 404 هدر می‌داد)؛ نسل ۳ + نام مستعار lite اضافه شد؛
+     مدل‌های واقعاً زنده علاوه بر این‌ها با gemDiscoverModels پویا پیدا می‌شوند. */
   return [...new Set([
     String(userModel || '').trim(),
     'gemini-flash-latest',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
   ])].filter(Boolean);
@@ -2388,6 +2394,79 @@ const gemMarkBad = (m) => {
 };
 const gemIsModel404 = (status, msg) =>
   status === 404 || (status === 400 && /not found|not supported|is not a valid model/i.test(String(msg || '')));
+
+/* v0.32 — پشتیبانی از «فکر نکردن» فقط برای نسل ۲.۵ به بعد؛ نسخهٔ قبل یک regex
+   ثابت بود که با آمدن نسل‌های جدید (۳ و بعد) باید هر بار دستی عوض می‌شد.
+   حالا از خودِ شمارهٔ نسل در نام مدل خوانده می‌شود — برای هر نسل آینده کار می‌کند. */
+const gemSupportsThinking = (mdl) => {
+  if (/latest/i.test(String(mdl))) return true; /* نام مستعار همیشه‌سبز = نسل روز */
+  const m = String(mdl || '').match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) >= 2.5 : false;
+};
+
+/* v0.32 — کشف پویای مدل‌های جمنای (ریشه‌ای‌ترین فیکس زنجیرهٔ مدل):
+   درخواست کاربر: «همهٔ مدل‌های زنجیره 404 می‌دهند» — گوگل نسل‌های قدیمی را
+   بازنشسته می‌کند (طبق سند رسمی: نسل ۲.۰ از ۲۰۲۶/۰۳/۱۲ خاموش شد) و زنجیرهٔ
+   ثابتِ داخل برنامه هر بار با یک آپدیت پیر می‌شود. راه‌حل: خودِ گوگل فهرست
+   مدل‌های سالم هر کلید را با ListModels می‌دهد — هر ۳۰ دقیقه یک‌بار می‌پرسیم،
+   بهترین‌های فلاش را رتبه می‌زنیم و اول زنجیره می‌گذاریم. از این به بعد هر
+   نام/نسلی که گوگل بیاورد (۳.۶، ۳.۵، ۴ و...) بدون آپدیت برنامه پیدا می‌شود.
+   حافظهٔ منفی (gemBadModels) هم برای مدل‌هایی که گوگل زنده اعلام‌شان می‌کند
+   پاک می‌شود — وگرنه یک 404 گذرا برای همیشه مدل خوب را مسدود می‌کرد. */
+const gemDiscoverCache = { at: 0, models: [], inflight: null };
+function gemRankModels(names) {
+  /* امتیازدهی: فلاش سریع‌تر از پرو → اول؛ نسل جدیدتر → اول؛ نام مستعار
+     همیشه‌سبز (latest) بالای همه؛ مدل‌های تصویری/زنده/آزمایشی حذف. */
+  const uniq = [...new Set((names || []).map((n) => String(n).trim()).filter(Boolean))];
+  const usable = uniq.filter((n) =>
+    !/embedding|aqa|imagen|veo|tts|image|native-audio|live|banana|robotics|computer-use|(^|[-.])exp([-._]|$)/i.test(n));
+  const verOf = (n) => { const m = n.match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; };
+  const score = (n) => {
+    let s = 0;
+    if (/flash/i.test(n)) s += 100;
+    if (/latest/i.test(n)) s += 500; /* همیشه‌سبز — هرگز با بازنشستگی نمی‌میرد */
+    if (/lite/i.test(n)) s += 25;
+    if (/preview/i.test(n)) s -= 20; /* پیش‌نمایش = عمر کوتاه */
+    return s + verOf(n) * 10;
+  };
+  return usable.sort((a, b) => score(b) - score(a)).slice(0, 8);
+}
+async function gemDiscoverModels(key, gbase) {
+  const now = Date.now();
+  if (gemDiscoverCache.models.length && now - gemDiscoverCache.at < 30 * 60 * 1000) return gemDiscoverCache.models;
+  if (gemDiscoverCache.inflight) return gemDiscoverCache.inflight;
+  gemDiscoverCache.inflight = (async () => {
+    try {
+      const r = await cloudFetch(
+        `${gbase}/v1beta/models?key=${encodeURIComponent(String(key || '').trim())}&pageSize=200`,
+        { method: 'GET', signal: AbortSignal.timeout(9000) }
+      );
+      const j = await r.json().catch(() => null);
+      if (r.ok && j && Array.isArray(j.models)) {
+        const chat = j.models
+          .filter((m) => m && m.name && Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+          .map((m) => String(m.name).replace(/^models\//, ''));
+        const ranked = gemRankModels(chat);
+        if (ranked.length) {
+          gemDiscoverCache.at = Date.now();
+          gemDiscoverCache.models = ranked;
+          gemDiscoverCache.inflight = null; /* انقضای کش باید دوباره بپرسد — Promise قدیمی نچسبد */
+          for (const n of ranked) gemBadModels.delete(n); /* 404 گذرا مسدودی دائمی نسازد */
+          actLog('gemini discover: ' + ranked.slice(0, 6).join(', ') + (ranked.length > 6 ? ' +' + (ranked.length - 6) : ''));
+          return ranked;
+        }
+        actLog('gemini discover: list ok but no chat-capable model found (' + chat.length + ' raw)');
+      } else {
+        actLog('gemini discover failed: HTTP ' + r.status + ' ' + String((j && j.error && j.error.message) || '').slice(0, 90));
+      }
+    } catch (e) {
+      actLog('gemini discover error: ' + String((e && e.message) || e).slice(0, 90));
+    }
+    gemDiscoverCache.inflight = null;
+    return [];
+  })();
+  return gemDiscoverCache.inflight;
+}
 
 /* v0.28 — پیام‌های سرور جمنای به فارسیِ قابل‌فهم:
    کاربر گزارش کرد «کلید را ثبت کردم ولی می‌گوید ثبت نشده» — ریشه: خطای
@@ -2426,7 +2505,9 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
   let sawNetFail = false; /* v0.26 — اگر همهٔ خطاها شبکه‌ای بود، پیام دقیق‌تر */
   /* v0.21 — مدل کاری اول + کلید خراب → کلید بعدی (نه همهٔ مدل‌ها)
      v0.26 — مدل‌های ۴۰۴شده از حافظهٔ منفی حذف می‌شوند */
-  const models = gemChainPruned([...new Set([gemSttWorkingModel, ...geminiModelChain(model)].filter(Boolean))]);
+  /* v0.32 — اول کشف پویا: هرچه گوگل همین حالا واقعاً برای این کلید دارد */
+  const disc = await gemDiscoverModels(keys[0], gbase);
+  const models = gemChainPruned([...new Set([gemSttWorkingModel, ...disc, ...geminiModelChain(model)].filter(Boolean))].slice(0, 12));
   for (const k of keys) {
     for (const mdl of models) {
       try {
@@ -2434,8 +2515,8 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
           contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: b64 } }] }],
           generationConfig: { temperature: 0, maxOutputTokens: 2048 },
         };
-        /* thinkingConfig فقط برای نسل 2.5/3 معتبر است — بقیه بدونش */
-        if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        /* v0.32 — thinkingConfig فقط نسل ۲.۵ به بعد — از روی نام مدل خوانده می‌شود */
+        if (gemSupportsThinking(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         const r = await cloudFetch(
           `${gbase}/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(k)}`,
           { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) } /* v0.21: ۴۵→۱۵ ثانیه */
@@ -2609,15 +2690,21 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
      مدل بعدی امتحان می‌شود تا «دیگر در دسترس نیست» دیگر به کاربر نرسد.
      v0.21 — مدل کاریِ آخر در اول زنجیره (دومین سوال به بعد = سریع‌ترین مسیر)
      v0.26 — مدل‌های ۴۰۴شده از حافظهٔ منفی حذف می‌شوند (gemBadModels) */
+  /* v0.32 — اول کشف پویا (هرچه گوگل امروز دارد)، بعد نام مستعار همیشه‌سبز،
+     بعد نسل ۳ (بر اساس سند رسمی گوگل نسل ۲.۰ بازنشسته شده)، و در انتها ۲.۵
+     به‌عنوان فالبک خیلی قدیمی — دیگر هیچ مدل مرده‌ای در زنجیره اسلات هدر نمی‌دهد */
+  const disc = await gemDiscoverModels(keys[0], gbase);
   const models = gemChainPruned([...new Set([
     gemWorkingModel,
     String(model || '').trim(),
+    ...disc,
     'gemini-flash-latest',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-  ])].filter(Boolean));
+  ])].filter(Boolean)).slice(0, 12);
   /* چرخش کلید × مدل: کلید محدود/خراب → کلید بعدی؛ مدل نبود → مدل بعدی */
   for (const k of keys) {
     for (const mdl of models) {
@@ -2631,9 +2718,9 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
           contents,
           generationConfig: { temperature: 0.6, maxOutputTokens: 700 },
         };
-        /* v0.18 — سرعت: مدل‌های نسل 2.5/3 بدون «فکر کردن» جواب می‌دهند
-           (thinkingBudget=0 — تا ۵۰-۷۰٪ سریع‌تر) */
-        if (/2\.5|^gemini-3|latest/.test(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        /* v0.18 — سرعت: نسل ۲.۵ به بعد بدون «فکر کردن» جواب می‌دهد
+           (thinkingBudget=0 — تا ۵۰-۷۰٪ سریع‌تر)؛ v0.32 — از روی نام مدل */
+        if (gemSupportsThinking(mdl)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
         if (sys) body.systemInstruction = { parts: [{ text: sys }] };
         /* v0.18 — جستجوی گوگل فقط وقتی سوال واقعاً «سرچی» است وصل می‌شود؛
            ابزار سرچ ۲ تا ۶ ثانیه تأخیر اضافه دارد — سوال‌های معمولی را سریع جواب بده
@@ -2693,7 +2780,9 @@ ipcMain.handle('ai:gemtest', async (_e, p) => {
   const gbase = String(base || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'اول کلید جمنای را در کادر بالا بگذار و صبر کن ذخیره شود' };
-  const models = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+  /* v0.32 — تست اتصال هم از کشف پویا استفاده می‌کند: مدل‌های واقعاً زندهٔ همین کلید */
+  const discT = await gemDiscoverModels(keys[0], gbase);
+  const models = [...new Set([...discT.slice(0, 3), 'gemini-flash-latest', 'gemini-2.5-flash'])].slice(0, 5);
   const badKeys = new Set();
   let lastErr = null;
   for (const mdl of models) {
@@ -3132,8 +3221,17 @@ function Try-CallClick {
     } catch { }
     Start-Sleep -Milliseconds 1100
   }
-  # فالبک مختصات دستی: گوشهٔ بالا-راست پنجره (سرستون DM)
+  # فالبک مختصات دستی — فقط وقتی درخت دسترس‌پذیری کور است (هیچ دکمه‌ای دیده نشد)
+  # v0.32 — اگر دکمه‌ها بودند ولی دکمهٔ تماس نه، یعنی صفحهٔ DM نیست (جستجوی
+  # Quick Switcher به پیج اشتباه رفته) و کلیک کور روی سرستون می‌تواند روی
+  # چیز اشتباهی بخورد — قبلاً همین اتفاق می‌افتاد؛ حالا صادقانه می‌میریم
   Write-Output 'DBG:UIA_MISS'
+  $blindProbe = Scan-DcBtns '' '' $true
+  if ($blindProbe.alive -and $blindProbe.names.Count -gt 0) {
+    Restore-Focus
+    if ($Name) { return 'ERR:NODM' }
+    return 'ERR:NOBTN'
+  }
   $r2 = New-Object AvaDc3.RECT
   [AvaDc3.W]::GetWindowRect($hwnd, [ref]$r2) | Out-Null
   $tx = $r2.Right - $Dx
@@ -3214,22 +3312,23 @@ switch ($Action) {
     foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $name = $name.Replace([string]$cq, '') }
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
     try { Set-Clipboard -Value $name -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
-    if ($bg) {
-      Send-BgCombo @(0x11, 0x4B)
-      Start-Sleep -Milliseconds 1100
-      Send-BgCombo @(0x11, 0x56)
-      Start-Sleep -Milliseconds 900
-      Send-BgCombo @(0x0D)
-      Start-Sleep -Milliseconds 1700
-    } else {
-      Focus-DcHard | Out-Null
-      Send-Combo 'ctrl,k'
-      Start-Sleep -Milliseconds 1000
-      Send-Combo 'ctrl,v'
-      Start-Sleep -Milliseconds 900
-      Send-Combo 'enter'
-      Start-Sleep -Milliseconds 1700
-    }
+    # v0.32 — تایید کلیپ‌بورد: اگر نوشتن شکست خورده بود، Ctrl+V محتوای قدیمی
+    # کلیپ‌بورد کاربر را در Quick Switcher می‌گذاشت → پیج اشتباه → تماس اشتباه
+    $clipOk = $false
+    try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $name) } catch { $clipOk = $false }
+    if (-not $clipOk) { Write-Output 'ERR:CLIP'; exit }
+    # v0.32 — مسیر bg با PostMessage حذف شد: کرومیوم کلیدهای PostMessage را
+    # بی‌صدا می‌بلعد (ریشهٔ «به ali-hk زنگ بزن» که هیچ عملی اعمال نمی‌کرد) —
+    # حالا همیشه فوکوس تاییدشده + کلید اسکن‌کد؛ فوکوس نگرفت = ERR:NOFOCUS صادقانه
+    $fg = Focus-DcHard
+    Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
+    if (-not $fg) { Write-Output 'ERR:NOFOCUS'; exit }
+    Send-Combo 'ctrl,k'
+    Start-Sleep -Milliseconds 1000
+    Send-Combo 'ctrl,v'
+    Start-Sleep -Milliseconds 900
+    Send-Combo 'enter'
+    Start-Sleep -Milliseconds 1700
     Write-Output (Try-CallClick)
   }
   default { Write-Output 'ERR:UNKNOWN' }
@@ -3305,6 +3404,8 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
           'ERR:NONAME': 'نام مخاطب پیدا نشد — در تنظیمات دیسکورد مخاطب بساز یا نام را کامل بگو',
           'ERR:NOSTATE': 'وضعیت دیسکورد خوانده نشد — دیسکورد را باز کن و دوباره امتحان کن',
           'ERR:NOBTN': 'دکمهٔ تماس پیدا نشد — صفحهٔ مخاطب باز شد ولی تماس نگرفت؛ مختصات دستی را با «آزمایش مکان» تنظیم کن یا حالت کمکی را امتحان کن',
+          'ERR:CLIP': 'کلیپ‌بورد در دسترس نیست — یک‌بار دیگر امتحان کن، یا مخاطب را در تنظیمات › دیسکورد ثبت کن تا تماس با دیپ‌لینک مستقیم گرفته شود',
+          'ERR:NODM': 'صفحهٔ گفتگوی مخاطب باز نشد — نام را واضح‌تر بگو، یا مخاطب را در تنظیمات › دیسکورد ثبت کن تا تماس با دیپ‌لینک مستقیم گرفته شود',
         };
         /* v0.30 — خطاهای پسونددار (ERR:NOBTN:LABEL / ERR:NOFOCUS) با پیشوند تطبیق می‌شوند */
         const em = out.trim();
@@ -3342,10 +3443,16 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
     actLog(`discord call userId=${String(userId).trim().slice(0, 4)}… mode=${mode}`, 'discord');
     try { await shell.openExternal(`discord://discord.com/channels/@me/${String(userId).trim()}`); } catch (_) { /* noop */ }
     await new Promise((r) => setTimeout(r, 2600));
-    return runDiscordPs('clickcall', mode, '', dxN, dyN);
+    /* v0.32 — clickcall همیشه fg: فالبک کلیک مختصاتی در bg با PostMessage بود
+       و بلعیده می‌شد؛ مسیر قطعی فقط فوکوس تاییدشده است */
+    return runDiscordPs('clickcall', 'fg', '', dxN, dyN);
   }
+  /* v0.32 — تماس (callswitch) همیشه fg با فوکوس تاییدشده — در حالت bg کلیدهای
+     Quick Switcher قبلاً PostMessage بودند و کرومیوم بی‌صدا بلعیدشان؛ ریشهٔ
+     «به ali-hk زنگ بزن» که هیچ عملی اعمال نمی‌کرد. بقیهٔ اکشن‌ها مثل قبل —
+     خانوادهٔ mute خودش در v0.30 فوکوس را تایید می‌کند. */
   const psAction = A === 'call' ? 'callswitch' : A;
-  return runDiscordPs(psAction, mode, String(name || ''), dxN, dyN);
+  return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN);
 });
 
 /* ---------- لاگ عملکرد (v0.18) — برای عیب‌یابی از راه دور ----------

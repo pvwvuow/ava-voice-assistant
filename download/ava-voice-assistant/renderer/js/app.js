@@ -3871,6 +3871,14 @@
   let wakeDlKicked = false; /* v0.29.1 — فقط یک بار دانلود خودکار بگیرد */
   let wakeDlLastTry = 0; /* v0.29.1 — cooldown دانلود خودکار */
   let wakeMicRetryT = 0;
+  /* v0.32 — گیت چهارم بیدارباش: صدای خودِ آوا. وقتی TTS در حال پخش است
+     حلقه باید کر باشد — قبلاً در این فاصله state=idle بود و حلقه صدای
+     خودش را می‌شنید (VAD انرژی‌محور فرق صدای بلندگو و میکروفون نمی‌فهمد)
+     → بیدارباشِ کاذب/مصرف بی‌دلیل. هر دو مسیر TTS چک می‌شود. */
+  function wakeTtsBusy() {
+    try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) return true; } catch (_) { /* noop */ }
+    return !!ttsAudioBusy();
+  }
   function wakeLoopUsable() {
     return !!settings.wakeAlways && localReady() && !!(navigator.mediaDevices && (window.AudioContext || window.webkitAudioContext));
   }
@@ -3928,10 +3936,12 @@
   }
   function wakeOnFrame(f) {
     if (!wakeLoop) return;
-    /* حین جلسهٔ فعال گوش دادن/پردازش، بیدارباش کاملاً ساکت است */
-    if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }
+    wakeLoop.lastFrame = Date.now(); /* v0.32 — تپش قلب برای واتچ‌داگ خط لوله */
+    /* حین جلسهٔ فعال گوش دادن/پردازش/صدای خود آوا/تایپ صوتی، بیدارباش کاملاً ساکت است
+       v0.32 — wakeTtsBusy اضافه شد (ریشهٔ بیدارباشِ کاذب بعد از هر پاسخ بلند) */
+    if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }
     wakeLoop.chunks.push(new Float32Array(f));
-    if (wakeLoop.chunks.length > 30) wakeLoop.chunks.shift(); /* سقف ~۲.۶ ثانیه */
+    if (wakeLoop.chunks.length > 47) wakeLoop.chunks.shift(); /* v0.32 — سقف ۲.۶→~۴ ثانیه: «آوا + فرمان» در یک نفس جا شود */
     let sum = 0, n = 0;
     for (let i = 0; i < f.length; i += 4) { sum += f[i] * f[i]; n++; }
     const rms = Math.sqrt(sum / Math.max(1, n));
@@ -3941,7 +3951,23 @@
   }
   function wakeVadTick() {
     if (!wakeLoop || wakeLoop.busy) return;
-    if (state === 'listening' || state === 'processing' || dictation.active) return;
+    if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) return;
+    /* v0.32 — کانتکست معلق (خواب ویندوز/تغییر دستگاه) = حلقه زنده ولی کر —
+     بدون resume هیچ فریمی نمی‌آید و کاربر فکر می‌کند بیدارباش کار نمی‌کند */
+    if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
+    /* v0.32 — واتچ‌داگ خط لوله: اگر ۴ ثانیه هیچ فریمی نرسید (مرگ ScriptProcessor
+     یا ری‌ست درایور صدا) حلقه از نو ساخته می‌شود — سقف ۳ بار در دقیقه */
+    if (wakeLoop.lastFrame && Date.now() - wakeLoop.lastFrame > 4000) {
+      if (!wakeLoop.restarts) wakeLoop.restarts = [];
+      wakeLoop.restarts = wakeLoop.restarts.filter((tt) => Date.now() - tt < 60000);
+      if (wakeLoop.restarts.length < 3) {
+        wakeLoop.restarts.push(Date.now());
+        actLog('wake-always: no frames 4s — rebuilding loop (' + wakeLoop.restarts.length + '/3 per min)');
+        wakeLoopStop();
+        wakeLoopStart();
+      }
+      return;
+    }
     const now = Date.now();
     if (now < wakeLoop.coolUntil) return;
     if (wakeLoop.spoke && wakeLoop.lastVoice && now - wakeLoop.lastVoice >= 650) wakeCheck();
@@ -3960,7 +3986,14 @@
       for (const c of buf) { merged.set(c, off); off += c.length; }
       const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
       if (pcm16.length < 4000) return;
-      const r = await bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' });
+      /* v0.32 — مسابقه با موتور محلیِ جلسهٔ گوش دادن: اگر همان لحظه busy بود،
+         قبلاً بیدارباش بی‌صدا گم می‌شد — حالا ۱.۲ ثانیه بعد با همان صدا دوباره */
+      const tryStt = () => bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' });
+      let r = await tryStt().catch(() => null);
+      if ((!r || r.ok === false) && /مشغول/.test(String((r && r.error) || ''))) {
+        await new Promise((res) => setTimeout(res, 1200));
+        r = await tryStt().catch(() => null);
+      }
       const txt = String((r && r.text) || '').trim();
       actLog('wake-always heard: ' + txt.slice(0, 44));
       if (txt && /(آوا|اوا|ava)/i.test(normFaFull(txt))) {
@@ -3968,8 +4001,18 @@
         wakeSessOpen();
         toast(t('wake.woke'), '#i-wave');
         statusText.textContent = t('wake.sessOn');
-        startListening();
         L.coolUntil = Date.now() + 5000;
+        /* v0.32 — سیری‌وار: «آوا به علی زنگ بزن» در یک نفس — فرمان بعد از اسم
+           همان‌جا اجرا می‌شود؛ قبلاً این فرمان دور ریخته می‌شد و کاربر باید
+           دوباره می‌گفت. اگر فقط اسم بود، گوش دادن شروع می‌شود. */
+        const wm = normFaFull(txt).match(WAKE_WORD_RE);
+        const tail = wm && wm[2] ? String(wm[2]).trim() : '';
+        if (tail && tail.length > 3) {
+          actLog('wake-always: one-breath command → ' + tail.slice(0, 60));
+          wakePickup(tail);
+        } else {
+          wakePickup('');
+        }
       }
     } catch (e) {
       actLog('wake-always check fail: ' + String((e && e.message) || e).slice(0, 80));
@@ -3984,6 +4027,27 @@
     try { wakeLoop.proc.disconnect(); wakeLoop.src.disconnect(); wakeLoop.sink.disconnect(); } catch (_) { /* noop */ }
     wakeLoop = null;
     actLog('wake-always loop stopped');
+  }
+  /* v0.32 — برداختن جلسهٔ بیدارباش بدون گم‌شدن: اگر همین حالا فرمان قبلی/
+     پخش صدا/تایپ صوتی در جریان است، شروع گوش دادن تا خلوت شدن صفحه عقب
+     می‌افتد (تا ~۱۷ ثانیه؛ جلسهٔ ۹۰ ثانیه‌ای وقت دارد) — قبلاً «آوا» وقتی
+     آوا مشغول حرف زدن بود شنیده می‌شد، جلسه باز می‌شد، startListening
+     بی‌صدا رد می‌شد و بیدارباشِ مرده به نظر می‌رسید.
+     با فرمان = اجرای همان فرمان در اولین فرصت، بدون فرمان = شروع گوش دادن. */
+  function wakePickup(cmd) {
+    let tries = 0;
+    const run = () => {
+      if (cmd) handleUtterance(cmd, { force: true });
+      else startListening();
+    };
+    if (state === 'idle' && !wakeTtsBusy() && !dictation.active) { run(); return; }
+    const tick = () => {
+      tries++;
+      if (!wakeSessActive()) return; /* جلسه تمام شد — دیگر هیچ */
+      if (state === 'idle' && !wakeTtsBusy() && !dictation.active) { run(); return; }
+      if (tries < 24) setTimeout(tick, 700);
+    };
+    setTimeout(tick, 700);
   }
   /* بوت: بعد از دانلود بستهٔ آفلاین هم اگر روشن باشد، حلقه شروع شود
      v0.29.1 — دیگر منتظر «بستهٔ موجود» نمی‌مانیم؛ wakeLoopStart خودش
@@ -5089,7 +5153,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.31.0';
+  let appVersion = '0.32.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5218,16 +5282,38 @@
     return r;
   }
   /* یافتن مخاطب از نام گفته‌شده — تطبیق دقیق، شروع، و شامل‌بودن دوطرفه */
+  /* v0.32 — نرمال‌سازی نام مخاطب: خط/زیرخط/نقطه → فاصله، ی/ك عربی → فارسی،
+     نیم‌فاصله → فاصله، بزرگ/کوچک — «ali hk» و «ali-hk» و «Ali_HK» یکی می‌شوند.
+     ریشهٔ «به ali-hk زنگ بزن» که مخاطبش پیدا نمی‌شد: STT به‌جای خط تیره فاصله
+     می‌نوشت و مقایسهٔ رشتهٔ خام شکست می‌خورد → مسیر کُندِ Ctrl+K می‌رفت. */
+  function dcNameNorm(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[\u0649\u064A]/g, '\u06CC') /* ى/ي → ی */
+      .replace(/\u0643/g, '\u06A9')         /* ك → ک */
+      .replace(/[\u200C]+/g, ' ')
+      .replace(/[-_.]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
   function resolveDiscordContact(spoken) {
     const list = Array.isArray(settings.discordContacts) ? settings.discordContacts : [];
     if (!spoken) return null;
-    const s = String(spoken).trim().toLowerCase().replace(/[\u200c\s]+/g, ' ');
+    const s = dcNameNorm(spoken);
     if (!s) return null;
-    let hit = list.find((c) => String(c.name).trim().toLowerCase() === s);
+    let hit = list.find((c) => dcNameNorm(c.name) === s);
     if (hit) return hit;
-    hit = list.find((c) => String(c.name).trim().toLowerCase().startsWith(s) || s.startsWith(String(c.name).trim().toLowerCase()));
+    hit = list.find((c) => { const n = dcNameNorm(c.name); return n.startsWith(s) || s.startsWith(n); });
     if (hit) return hit;
-    hit = list.find((c) => s.includes(String(c.name).trim().toLowerCase()) || String(c.name).trim().toLowerCase().includes(s));
+    hit = list.find((c) => { const n = dcNameNorm(c.name); return n.includes(s) || s.includes(n); });
+    if (hit) return hit;
+    /* v0.32 — آی‌دی عددی: اگر در گفتار عددی ≥۵ رقمی آمد که با آی‌دی مخاطبی
+       برابر بود، همان مخاطب است (مسیر دیپ‌لینک قطعی) — ارقام فارسی/عربی هم */
+    const digits = String(spoken)
+      .replace(/[\u06F0-\u06F9]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48))
+      .replace(/[\u0660-\u0669]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+      .replace(/\D/g, '');
+    if (digits.length >= 5) hit = list.find((c) => String(c.userId || '').trim() === digits);
     return hit || null;
   }
   const dcBtn = (id, action, msg) => {

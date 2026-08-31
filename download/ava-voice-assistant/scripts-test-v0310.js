@@ -173,10 +173,10 @@ const pBad = poisonedCore(35.6892, 51.389, new Date(2026, 10, 20), 3.5);
 ok('B: حذف مغرب ۴٫۵° → گپ خارج از بازهٔ مرجع (۸-۳۰ دقیقه) و هارنس آن را می‌بیند',
   !((pBad.maghrib - pBad.sunset) * 60 >= 8 && (pBad.maghrib - pBad.sunset) * 60 <= 30));
 
-console.log('\n[10] versions 0.31.0');
-ok('package.json 0.31.0', pkg.version === '0.31.0', pkg.version);
-ok('about box v0.31.0', appSrc && R('renderer/index.html').includes('>v0.31.0</span>'));
-ok('app.js appVersion 0.31.0', appSrc.includes("let appVersion = '0.31.0';"));
+console.log('\n[10] versions 0.31.0 (forward-regex — نسخه‌های بعدی هم پاس شوند)');
+ok('package.json 0.31+', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
+ok('about box v0.31+', /<span id="abVersion">v0\.(29|3\d)\.\d+<\/span>/.test(R('renderer/index.html')));
+ok('app.js appVersion 0.31+', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
 ok('main.js نسخه در app:info همگام', !mainSrc.includes("'0.30.0'") || mainSrc.includes("'0.31.0'"));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);

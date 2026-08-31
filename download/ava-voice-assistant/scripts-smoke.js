@@ -208,7 +208,7 @@ app.whenReady().then(async () => {
           lightOrbReverted: css.includes('border: 1px solid rgba(38, 22, 92, 0.12)') && !css.includes('border: 0.5px solid rgba(139, 92, 246, 0.22)'),
           scanner: mainjs.includes('discovered_apps.json') && mainjs.includes('steam://rungameid') && mainjs.includes('scanStartMenu'),
           remindersMain: mainjs.includes("ipcMain.handle('reminders:add'") && mainjs.includes("sendUI('reminders:due'"),
-          keyRotation: mainjs.includes('const splitKeys') && mainjs.includes('gemini-2.0-flash-lite'),
+          keyRotation: mainjs.includes('const splitKeys') && mainjs.includes('gemini-flash-lite-latest'),
           mediaKeys: mainjs.includes("media_toggle:") && mainjs.includes("media_next:"),
           bridges: preload.includes("'apps:launch'") && preload.includes("'reminders:due'") && preload.includes("'apps:list'"),
           hovplayGone: !css.includes('.m-hovplay') && !appjs.includes('m-hovplay'),
@@ -1078,7 +1078,7 @@ app.whenReady().then(async () => {
         gemTest: m29.includes("ipcMain.handle('ai:gemtest'") && m29.includes('badKeys.add(k)'),
         gemBase: m29.includes('const gbase = String(base') && a29.includes("gemBase: store.get('gemBase', '')"),
         wakeAlways: a29.includes('async function wakeLoopStart()') && a29.includes('function wakeBootRetry()') && a29.includes("bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000"),
-        wakeIdle: a29.includes("if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"),
+        wakeIdle: a29.includes("if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"),
         doActs: a29.includes("'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline'") && a29.includes("case 'discord_answer':"),
         unmute: a29.includes("action: unmute ? 'unmute' : 'mute'"),
         ui: h29.includes('id="optWakeAlways"') && h29.includes('id="btnGemTest"') && h29.includes('id="optGemBase"'),
@@ -1260,7 +1260,7 @@ app.whenReady().then(async () => {
         noteR: a31.includes('function notesParseOp') && a31.includes('function notesReply') && a31.includes('r: (c) => notesReply(c)') && a31.includes('unshift({ t: Date.now(), x: text.slice(0, 500) })') && a31.includes("notes.save(kept)"),
         i18n: a31.includes("'rates.ask'") && a31.includes("'prayer.city'") && a31.includes("'notes.added'") && a31.includes("'notes.cleared'") && a31.includes("'date.greg'") && a31.includes('fa-IR-u-ca-gregory'),
         cover: a31.includes('function setCoverArt') && a31.includes('im.onerror') && a31.includes('setCoverArt(mCover, tr, true)') && a31.includes('setCoverArt(mwCover, tr, false)'),
-        ver: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a31) && JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version === '0.31.0',
+        ver: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a31) && /^0\.(29|3\d)\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
       };
       ok('v0.31 rates: sys:rates IPC + tgju 3-mirror chain via cloudFetch', v31.rates);
       ok('v0.31 geo: sys:geo + single hoisted IR_CITIES shared dict', v31.geo);
@@ -1273,6 +1273,40 @@ app.whenReady().then(async () => {
       ok('v0.31 music: safe cover art (onerror removes broken blob)', v31.cover);
       ok('v0.31 version markers 0.31.0', v31.ver);
     } catch (e) { console.log('SKIP | v0.31 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98959 v0.32.0 — سه ریشه‌یابی از تحلیل کاربر: (۱) جمنای: کشف پویای
+    // ListModels + حذف نسل مردهٔ ۲.۰ + نسل ۳ در زنجیرهٔ ثابت + gemSupportsThinking
+    // (۲) بیدارباش همیشگی: گیت صدای خود آوا + واتچ‌داگ خط لوله + resume کانتکست +
+    // برداختن جلسه + فرمان یک‌نفس + ریسایکل موتور مشغول
+    // (۳) تماس دیسکورد: حذف کلیدِ PostMessageِ بلعیده‌شده در callswitch،
+    // فوکوس تاییدشده + تایید کلیپ‌بورد + فالبک مختصاتی فقط برای درخت کور
+    // + نرمال‌سازی نام مخاطب («ali hk» == «ali-hk»).
+    try {
+      const m32 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a32 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const v32 = {
+        disc: m32.includes('function gemRankModels') && m32.includes('async function gemDiscoverModels') && m32.includes('supportedGenerationMethods.includes(\'generateContent\')') && m32.includes('gemBadModels.delete(n)') && m32.includes('30 * 60 * 1000'),
+        chain: m32.includes("'gemini-3.6-flash'") && m32.includes("'gemini-3.5-flash'") && m32.includes("'gemini-flash-lite-latest'") && (m32.match(/'gemini-2\.0-flash(?:-lite)?',/g) || []).length === 0,
+        think: m32.includes('const gemSupportsThinking') && (m32.match(/2\\\.5\^gemini-3|latest\/\.test\(mdl\)/g) || []).length === 0 && (m32.match(/gemSupportsThinking\(mdl\)/g) || []).length >= 2,
+        call1: (function () { const i = m32.indexOf("'callswitch' {"); const j = m32.indexOf("'probe'", i); const blk = m32.slice(i, j > i ? j : i + 2600); return !blk.includes('Send-BgCombo') && blk.includes('Focus-DcHard') && blk.includes('ERR:NOFOCUS') && blk.includes('Get-Clipboard -Raw') && blk.includes("'ERR:CLIP'"); })(),
+        call2: m32.includes('$blindProbe = Scan-DcBtns') && m32.includes("if ($Name) { return 'ERR:NODM' }") && m32.includes("'ERR:CLIP':") && m32.includes("'ERR:NODM':") && m32.includes("runDiscordPs('clickcall', 'fg'") && m32.includes("(A === 'call' ? 'fg' : mode)"),
+        wake1: a32.includes('function wakeTtsBusy()') && a32.includes('speechSynthesis.speaking || speechSynthesis.pending') && (a32.match(/wakeTtsBusy\(\)/g) || []).length >= 5,
+        wake2: a32.includes('wakeLoop.lastFrame = Date.now()') && a32.includes('Date.now() - wakeLoop.lastFrame > 4000') && a32.includes("audioCtx.state === 'suspended'") && a32.includes('wakeLoop.restarts.length < 3'),
+        wake3: a32.includes('function wakePickup(cmd)') && a32.includes('wakePickup(tail)') && a32.includes('if (wakeLoop.chunks.length > 47)') && /one-breath command/.test(a32),
+        contacts: a32.includes('function dcNameNorm(s)') && a32.includes(".replace(/[-_.]+/g, ' ')") && a32.includes('String(c.userId || \'\').trim() === digits') && a32.includes('const ct = resolveDiscordContact(nm)'),
+        ver: /let appVersion = '0\.(29|3\d)\.\d+';/.test(a32) && /^0\.(29|3\d)\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
+      };
+      ok('v0.32 gemini: dynamic ListModels discovery + ranking + bad-memory cleansing', v32.disc);
+      ok('v0.32 gemini: dead 2.0 generation out of chains, 3.x + lite alias in', v32.chain);
+      ok('v0.32 gemini: gemSupportsThinking replaces hardcoded regex at both call sites', v32.think);
+      ok('v0.32 discord: callswitch = verified-focus only, no PostMessage combo, clipboard verified', v32.call1);
+      ok('v0.32 discord: blind-tree-only coordinate fallback + ERR:NODM/ERR:CLIP mapped + call forced fg', v32.call2);
+      ok('v0.32 wake: own-voice (TTS) gate guards frame path AND vad tick', v32.wake1);
+      ok('v0.32 wake: frame watchdog 4s + ctx resume + bounded rebuild (3/min)', v32.wake2);
+      ok('v0.32 wake: one-breath command + session pickup + 4s buffer', v32.wake3);
+      ok('v0.32 discord contacts: dcNameNorm normalization + digit-id match', v32.contacts);
+      ok('v0.32 version markers (0.29.x/0.3x)', v32.ver);
+    } catch (e) { console.log('SKIP | v0.32 markers | ' + String(e && e.message).slice(0, 80)); }
 
     try {
       const rt23 = await probe(`(() => ({

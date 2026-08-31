@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۲۹: بیدارباش همیشگی آفلاین (حتی وقتی گوش دادن خاموش است، با گفتن «آوا» فعال می‌شود)، اکشن‌های واقعی دیسکورد با تشخیص وضعیت (میوت/ان‌میوت/دیفن/قطع/جواب/رد)، تست اتصال جمنای + رلهٔ اختیاری، کنترل کامل‌تر دیسکورد از طریق هوش مصنوعی",
   "main": "main.js",
   "license": "MIT",
@@ -66,5 +66,8 @@
       "createDesktopShortcut": true,
       "shortcutName": "آوا"
     }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
   }
 }

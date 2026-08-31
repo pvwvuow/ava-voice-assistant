@@ -42,7 +42,11 @@ ok('PS body: v0.28.1 callswitch fix intact', body.includes("$name = ($Name -repl
 
 /* ---- 2) Gemini test + relay ---- */
 ok('main: ai:gemtest handler exists', mainSrc.includes("ipcMain.handle('ai:gemtest'"));
-ok('main: gemtest tries 3 models + marks bad keys (401/403/429)', mainSrc.includes("const models = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash'];") && mainSrc.includes('badKeys.add(k)'));
+ok('main: gemtest tries discovery+statics + marks bad keys (401/403/429)',
+   mainSrc.includes('const discT = await gemDiscoverModels(keys[0], gbase);') &&
+   mainSrc.includes("'gemini-flash-latest', 'gemini-2.5-flash'") &&
+   mainSrc.includes('badKeys.add(k)') &&
+   !mainSrc.includes("['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash']"));
 ok('main: ai:gemini honors optional relay base', mainSrc.includes("const { key, model, messages, search, base } = p || {};") && mainSrc.includes("${gbase}/v1beta/models/"));
 ok('main: stt:gemini honors optional relay base', mainSrc.includes("const { buf, key, model, lang, base } = p || {};"));
 ok('preload: ai.gemTest bridge', preSrc.includes("gemTest: (payload) => ipcRenderer.invoke('ai:gemtest', payload)"));
@@ -58,8 +62,8 @@ ok('app: wake loop lifecycle (start/stop/boot-retry)', appSrc.includes('async fu
 ok('app: energy VAD with adaptive floor (AVE3 math reused)', appSrc.includes('function wakeOnFrame(f)') && appSrc.includes('wakeLoop.floor * 2.2 + 0.0035'));
 ok('app: silence-gated wake check (650ms) + cooldowns', appSrc.includes('now - wakeLoop.lastVoice >= 650') && appSrc.includes('coolUntil'));
 ok('app: wake check runs local whisper (stt.local) and matches آوا/اوا/ava', appSrc.includes('bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000') && appSrc.includes('/(آوا|اوا|ava)/i.test(normFaFull(txt))'));
-ok('app: wake hit → chime + wake session + auto listening', appSrc.includes('playWakeChime();\n        wakeSessOpen();') && appSrc.includes('startListening();\n        L.coolUntil'));
-ok('app: loop idles during active listening/processing (zero CPU then)', appSrc.includes("if (state === 'listening' || state === 'processing' || dictation.active) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"));
+ok('app: wake hit → chime + wake session + listening (v0.32: via wakePickup, one-breath aware)', appSrc.includes('playWakeChime();\n        wakeSessOpen();') && appSrc.includes('wakePickup(tail)') && appSrc.includes('function wakePickup(cmd)') && appSrc.includes('else startListening();'));
+ok('app: loop idles during active listening/processing/own-TTS (zero CPU then)', appSrc.includes("if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"));
 ok('app: mic change restarts the wake loop with the new device', appSrc.includes('const wakeWas = !!wakeLoop;') && appSrc.includes('if (wakeWas) wakeLoopStart();'));
 ok('app: detachMic keeps the stream alive while the wake loop runs', appSrc.includes('if (isRecording || ave || wakeLoop) return;'));
 ok('app: pack-ready hook starts the loop automatically', appSrc.includes("if (settings.wakeAlways && !wakeLoop) wakeLoopStart();"));
