@@ -3551,6 +3551,186 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
   return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN);
 });
 
+/* ============================================================
+   v0.34 — تایپ صوتی سیستم‌شیرین: «اینجا برام تایپ کن» در هر برنامهٔ ویندوز
+   ریشهٔ «خروجی در برنامهٔ فعال» این بود که bridge.system.typeText اصلاً
+   وجود نداشت — دکمهٔ مرده. حالا موتور واقعی تایپ با SendInput UNICODE:
+   مستقل از layout کیبورد (فارسی/انگلیسی فرقی ندارد)، متن از فایل موقت
+   خوانده می‌شود (محدودیت طول خط فرمان حذف)، فوکوس به پنجرهٔ ثبت‌شده
+   برمی‌گردد و تایپ همان‌جا انجام می‌شود. هیچ کلیدی بدون فوکوسِ تاییدشده.
+   ============================================================ */
+const TYPE_PS_BODY = `param(
+  [string]$Action = 'savefg',
+  [string]$TxtFile = '',
+  [long]$Focus = 0
+)
+$ErrorActionPreference = 'Stop'
+# فقط کامنت # — هیچ اسلش-ستاره، هیچ گیومهٔ کج، هیچ بک‌تیک (قانون بدنه‌های پاورشل آوا)
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace AvaType {
+  [StructLayout(LayoutKind.Sequential)] public struct MOUSEINPUT { public int dx; public int dy; public uint mouseData; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
+  [StructLayout(LayoutKind.Sequential)] public struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
+  [StructLayout(LayoutKind.Explicit)] public struct InputUnion { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
+  [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public InputUnion U; }
+  public static class W {
+    [DllImport("user32.dll", SetLastError = true)] public static extern uint SendInput(uint n, INPUT[] inputs, int size);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint a, uint b, bool f);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+    [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+  }
+}
+'@;
+function Restore-Focus2([long]$h) {
+  # فوکوس تاییدشده — همان زنجیرهٔ قطعی دیسکورد؛ کلید هرگز به پنجرهٔ اشتباه نمی‌رود
+  if ($h -le 0) { return $true }
+  $hw = [IntPtr]$h
+  if ([AvaType.W]::GetForegroundWindow() -eq $hw) { return $true }
+  try {
+    [AvaType.W]::ShowWindow($hw, 9) | Out-Null
+    Start-Sleep -Milliseconds 80
+    [uint32]$fgPid = 0
+    $fg = [AvaType.W]::GetForegroundWindow()
+    $tidF = [AvaType.W]::GetWindowThreadProcessId($fg, [ref]$fgPid)
+    $tidC = [AvaType.W]::GetCurrentThreadId()
+    [AvaType.W]::AttachThreadInput($tidC, $tidF, $true) | Out-Null
+    [AvaType.W]::BringWindowToTop($hw) | Out-Null
+    [AvaType.W]::SetForegroundWindow($hw) | Out-Null
+    [AvaType.W]::AttachThreadInput($tidC, $tidF, $false) | Out-Null
+  } catch { }
+  Start-Sleep -Milliseconds 200
+  if ([AvaType.W]::GetForegroundWindow() -eq $hw) { return $true }
+  return $false
+}
+function New-Ki([int]$wvk, [int]$scan, [int]$flags) {
+  # پاورشل نمی‌تواند فیلد ساختارِ تودرتو را درجا تغییر دهد — ساختار از پایین ساخته می‌شود
+  $ki = New-Object AvaType.KEYBDINPUT
+  $ki.wVk = [uint16]$wvk; $ki.wScan = [uint16]$scan; $ki.dwFlags = [uint32]$flags; $ki.time = 0; $ki.dwExtraInfo = [IntPtr]::Zero
+  $u = New-Object AvaType.InputUnion
+  $u.ki = $ki
+  $inp = New-Object AvaType.INPUT
+  $inp.type = [uint32]1
+  $inp.U = $u
+  return $inp
+}
+switch ($Action) {
+  'savefg' {
+    # پنجرهٔ فعال الان چیست — در لحظهٔ شروع تایپ صوتی ثبت می‌شود
+    try {
+      $fg = [AvaType.W]::GetForegroundWindow()
+      Write-Output ('FG=' + $fg.ToInt64().ToString())
+    } catch { Write-Output 'ERR:NOUSER32' }
+  }
+  'type' {
+    # متن از فایل UTF-8 — محدودیت ۸۱۹۱ کاراکتری خط فرمان اصلاً درگیر نمی‌شود
+    if (-not $TxtFile -or -not (Test-Path -LiteralPath $TxtFile)) { Write-Output 'ERR:NOTEXT'; exit }
+    $text = ''
+    try { $text = [System.IO.File]::ReadAllText($TxtFile) } catch { Write-Output 'ERR:NOTEXT'; exit }
+    if (-not $text.Length) { Write-Output 'ERR:NOTEXT'; exit }
+    if (-not (Restore-Focus2 $Focus)) { Write-Output 'ERR:NOFOCUS'; exit }
+    Start-Sleep -Milliseconds 250
+    $size = [System.Runtime.InteropServices.Marshal]::SizeOf([type][AvaType.INPUT])
+    $batch = New-Object 'System.Collections.Generic.List[AvaType.INPUT]'
+    $typed = 0
+    $flushBatch = {
+      if ($batch.Count -gt 0) {
+        $arr = $batch.ToArray()
+        [void][AvaType.W]::SendInput([uint32]$arr.Length, $arr, $size)
+        $batch.Clear()
+        Start-Sleep -Milliseconds 12
+      }
+    }
+    foreach ($ch in $text.ToCharArray()) {
+      $code = [int]$ch
+      if ($code -eq 13) { continue }
+      if ($code -eq 10) {
+        # خط جدید = کلید Enter واقعی
+        $batch.Add((New-Ki 0x0D 0x1C 0)); $batch.Add((New-Ki 0x0D 0x1C 2)); $typed++
+      } elseif ($code -ge 32) {
+        # KEYEVENTF_UNICODE = 0x4 — تایپ مستقل از layout کیبورد
+        $batch.Add((New-Ki 0 $code 4)); $batch.Add((New-Ki 0 $code 6)); $typed++
+      }
+      if ($batch.Count -ge 32) { & $flushBatch }
+    }
+    & $flushBatch
+    Write-Output ('OK:TYPED:' + $typed)
+  }
+  default { Write-Output 'ERR:UNKNOWN' }
+}`;
+
+function runTypePs(psAction, txtFile, focusArg) {
+  return new Promise((resolve) => {
+    let psFile = '';
+    try {
+      psFile = path.join(app.getPath('userData'), 'ava-type.ps1');
+      fs.writeFileSync(psFile, '\ufeff' + TYPE_PS_BODY, 'utf8');
+    } catch (e) {
+      actLog(`type ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'type');
+      return resolve({ ok: false, error: 'نوشتن اسکریپت تایپ ممکن نشد' });
+    }
+    const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
+      '-Action', psAction, '-TxtFile', String(txtFile || ''), '-Focus', String(focusArg || 0)];
+    const t0 = Date.now();
+    let child = null;
+    try { child = spawn('powershell.exe', args, { windowsHide: true }); }
+    catch (e) { return resolve({ ok: false, error: String((e && e.message) || e).slice(0, 160) }); }
+    let stdout = '', stderr = '', killed = false;
+    const killer = setTimeout(() => { killed = true; try { child.kill(); } catch (_) { /* noop */ } }, 30000);
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr += d; });
+    child.on('error', (e) => { clearTimeout(killer); resolve({ ok: false, error: String((e && e.message) || e).slice(0, 160) }); });
+    child.on('close', () => {
+      clearTimeout(killer);
+      const errTxt = String(stderr || '').trim();
+      if (errTxt) actLog(`type ps stderr: ${errTxt.slice(0, 240)}`, 'type');
+      const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      const out = lines.pop() || '';
+      actLog(`type ${psAction} -> ${out || (killed ? 'TIMEOUT' : 'EMPTY')} (${Date.now() - t0}ms)`, 'type');
+      if (/^FG=/.test(out)) return resolve({ ok: true, hwnd: Number(out.slice(3)) || 0 });
+      if (/^OK:TYPED:/.test(out)) return resolve({ ok: true, typed: Number(out.slice(9)) || 0 });
+      if (/^ERR:NOFOCUS/.test(out)) return resolve({ ok: false, error: 'فوکوس به پنجرهٔ مقصد برنگشت — پنجرهٔ مقصد را یک‌بار فعال کن و دوباره امتحان کن' });
+      if (/^ERR:NOTEXT/.test(out)) return resolve({ ok: false, error: 'متنی برای تایپ وجود ندارد' });
+      if (/^ERR:NOUSER32/.test(out)) return resolve({ ok: false, error: 'این قابلیت فقط داخل ویندوز کار می‌کند' });
+      if (/^ERR:PS:/.test(out) || (!out && errTxt)) {
+        return resolve({ ok: false, error: ('خطای پاورشل تایپ: ' + (out.replace(/^ERR:PS:/, '') || errTxt.split(/\r?\n/)[0])).slice(0, 200) });
+      }
+      if (/^ERR:/.test(out)) return resolve({ ok: false, error: out.replace(/^ERR:/, 'خطا: ') });
+      if (!out) return resolve({ ok: false, error: killed ? 'اسکریپت تایپ بیش از حد طول کشید' : 'PowerShell اجرا نشد' });
+      resolve({ ok: false, error: out.slice(0, 160) });
+    });
+  });
+}
+
+ipcMain.handle('sys:savefg', async () => {
+  if (process.platform !== 'win32') return { ok: false, error: 'تایپ در برنامه‌ها فقط داخل ویندوز کار می‌کند' };
+  return runTypePs('savefg', '', 0);
+});
+
+ipcMain.handle('sys:typeText', async (_e, p) => {
+  const { text, hwnd } = p || {};
+  const t = String(text || '');
+  if (!t.trim()) return { ok: false, error: 'متنی برای تایپ وجود ندارد' };
+  if (process.platform !== 'win32') return { ok: false, error: 'تایپ در برنامه‌ها فقط داخل ویندوز کار می‌کند' };
+  let f = '';
+  try {
+    f = path.join(app.getPath('userData'), `ava-type-${Date.now()}.txt`);
+    /* BOM: ReadAllText کدپیج درست را خودش می‌فهمد */
+    fs.writeFileSync(f, '\ufeff' + t, 'utf8');
+  } catch (e) {
+    return { ok: false, error: 'نوشتن فایل موقت تایپ ممکن نشد' };
+  }
+  const r = await runTypePs('type', f, Number(hwnd) || 0);
+  try { fs.unlinkSync(f); } catch (_) { /* noop */ }
+  return r;
+});
+
+
 /* ---------- لاگ عملکرد (v0.18) — برای عیب‌یابی از راه دور ----------
    واکنش‌های برنامه (فرمان‌ها، موتورها، دیسکورد، به‌روزرسان، خطاها) در
    userData/logs/activity.log ثبت می‌شود؛ کاربر نیازی به دیدنش ندارد.

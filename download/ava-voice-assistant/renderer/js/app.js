@@ -182,6 +182,24 @@
     'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
     'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
     'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
+    /* v0.34 — سلامت و تست بیدارباش + حالت ابری بدون بستهٔ آفلاین */
+    'wake.alwaysCloudOn': ['بیدارباش همیشگی روشن شد — تا نصب بستهٔ آفلاین، تشخیص «آوا» با اینترنت انجام می‌شود', 'Always-on wake is on — until the offline pack installs, "Ava" detection uses the internet'],
+    'wake.healthTitle': ['وضعیت بیدارباش', 'Wake word status'],
+    'wake.healthIdle': ['خاموش — سوییچ «بیدارباش همیشگی» را روشن کن', 'Off — turn on the always-on wake switch'],
+    'wake.healthCloud': ['فعال — تشخیص «آوا» با اینترنت (بستهٔ آفلاین هنوز نصب نشده)', 'Active — "Ava" detection via internet (offline pack not installed yet)'],
+    'wake.healthLocal': ['فعال — تشخیص «آوا» ۱۰۰٪ آفلاین داخل ویندوز', 'Active — "Ava" detection 100% offline on-device'],
+    'wake.healthMic': ['در انتظار میکروفون — ۳۰ ثانیه دیگر دوباره تلاش می‌کنم', 'Waiting for the microphone — retrying in 30s'],
+    'wake.healthFail': ['شروع نشد: {x}', 'Failed to start: {x}'],
+    'wake.healthLast': ['آخرین شنیده: «{x}»', 'Last heard: "{x}"'],
+    'wake.testBtn': ['تست بیدارباش', 'Test wake word'],
+    'wake.testHint': ['الان بگو: «آوا» — نتیجه همین‌جا نشان داده می‌شود', 'Now say: "Ava" — the result shows right here'],
+    'wake.testOk': ['تست موفق — آوا شنید و بیدار شد ✓', 'Test passed — Ava heard you and woke up ✓'],
+    'wake.testMiss': ['شنیدم: «{x}» — ولی «آوا» توش نبود؛ کمی بلندتر و نزدیک‌تر به میکروفون امتحان کن', 'Heard: "{x}" — no "Ava" in it; try louder and closer to the mic'],
+    'wake.testOff': ['اول بیدارباش همیشگی را روشن کن، بعد تست بگیر', 'Turn always-on wake on first, then test'],
+    /* v0.34 — تایپ صوتی در برنامهٔ فعال */
+    'dict.sysOn': ['تایپ در همین برنامه شروع شد — حرف بزن؛ پایان: «آوا تموم»', 'Typing into this app started — speak; say the stop command to finish'],
+    'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
+    'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
     'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود؛ بار اول بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود، بعدش با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود — حتی وقتی گوش دادن خاموش است', 'Keeps the mic open and checks speech 100% on-device; the offline pack (~80MB) auto-downloads the first time, then saying "Ava" plays the chime and starts listening — even when listening is off'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
@@ -427,6 +445,24 @@
     'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
     'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
     'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
+    /* v0.34 — سلامت و تست بیدارباش + حالت ابری بدون بستهٔ آفلاین */
+    'wake.alwaysCloudOn': ['بیدارباش همیشگی روشن شد — تا نصب بستهٔ آفلاین، تشخیص «آوا» با اینترنت انجام می‌شود', 'Always-on wake is on — until the offline pack installs, "Ava" detection uses the internet'],
+    'wake.healthTitle': ['وضعیت بیدارباش', 'Wake word status'],
+    'wake.healthIdle': ['خاموش — سوییچ «بیدارباش همیشگی» را روشن کن', 'Off — turn on the always-on wake switch'],
+    'wake.healthCloud': ['فعال — تشخیص «آوا» با اینترنت (بستهٔ آفلاین هنوز نصب نشده)', 'Active — "Ava" detection via internet (offline pack not installed yet)'],
+    'wake.healthLocal': ['فعال — تشخیص «آوا» ۱۰۰٪ آفلاین داخل ویندوز', 'Active — "Ava" detection 100% offline on-device'],
+    'wake.healthMic': ['در انتظار میکروفون — ۳۰ ثانیه دیگر دوباره تلاش می‌کنم', 'Waiting for the microphone — retrying in 30s'],
+    'wake.healthFail': ['شروع نشد: {x}', 'Failed to start: {x}'],
+    'wake.healthLast': ['آخرین شنیده: «{x}»', 'Last heard: "{x}"'],
+    'wake.testBtn': ['تست بیدارباش', 'Test wake word'],
+    'wake.testHint': ['الان بگو: «آوا» — نتیجه همین‌جا نشان داده می‌شود', 'Now say: "Ava" — the result shows right here'],
+    'wake.testOk': ['تست موفق — آوا شنید و بیدار شد ✓', 'Test passed — Ava heard you and woke up ✓'],
+    'wake.testMiss': ['شنیدم: «{x}» — ولی «آوا» توش نبود؛ کمی بلندتر و نزدیک‌تر به میکروفون امتحان کن', 'Heard: "{x}" — no "Ava" in it; try louder and closer to the mic'],
+    'wake.testOff': ['اول بیدارباش همیشگی را روشن کن، بعد تست بگیر', 'Turn always-on wake on first, then test'],
+    /* v0.34 — تایپ صوتی در برنامهٔ فعال */
+    'dict.sysOn': ['تایپ در همین برنامه شروع شد — حرف بزن؛ پایان: «آوا تموم»', 'Typing into this app started — speak; say the stop command to finish'],
+    'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
+    'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
     'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود؛ بار اول بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود، بعدش با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود — حتی وقتی گوش دادن خاموش است', 'Keeps the mic open and checks speech 100% on-device; the offline pack (~80MB) auto-downloads the first time, then saying "Ava" plays the chime and starts listening — even when listening is off'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
@@ -3030,6 +3066,9 @@
     actLog('cmd: ' + raw.slice(0, 120));
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
     const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ|برام\s*تایپ\s*کن|برایم\s*تایپ\s*کن|این\s*(رو|را)\s*تایپ\s*کن|تایپش\s*کن/i;
+    /* v0.34 — «اینجا برام تایپ کن» = تایپ مستقیم در همین برنامهٔ فعال (سیستم‌شیرین) —
+       اول از همه چک می‌شود تا با تایپ صوتی معمولی قاطی نشود */
+    const SYS_DICT_RE = /(اینجا|همینجا|همین\s*جا)\s*(برام|برایم|هم)?\s*(تایپ|بنویس)|(بنویس|تایپ)\s*(کن)?\s*(اینجا|همینجا)/i;
     const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
     if (dictation.active) {
       if (DICT_STOP_RE.test(raw)) { stopDictation(true); return; }
@@ -3037,6 +3076,8 @@
       dictateHandle(raw);
       return;
     }
+    /* v0.34 — «اینجا برام تایپ کن» قبل از تایپ معمولی: مقصد = همین برنامهٔ فعال */
+    if (SYS_DICT_RE.test(raw)) { startDictation(true); return; }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
     /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد) */
     raw = normFaFull(raw);
@@ -3871,6 +3912,7 @@
   let wakeDlKicked = false; /* v0.29.1 — فقط یک بار دانلود خودکار بگیرد */
   let wakeDlLastTry = 0; /* v0.29.1 — cooldown دانلود خودکار */
   let wakeMicRetryT = 0;
+  let wakeTestUntil = 0; /* v0.34 — پنجرهٔ تست بیدارباش از تنظیمات */
   /* v0.32 — گیت چهارم بیدارباش: صدای خودِ آوا. وقتی TTS در حال پخش است
      حلقه باید کر باشد — قبلاً در این فاصله state=idle بود و حلقه صدای
      خودش را می‌شنید (VAD انرژی‌محور فرق صدای بلندگو و میکروفون نمی‌فهمد)
@@ -3886,35 +3928,17 @@
     if (wakeLoop || !settings.wakeAlways) return;
     /* v0.29.1 — ریشهٔ «اپشن صدا زدن آوا رو روشن کردم ولی کار نمی‌کنه»:
        بستهٔ آفلاین نبود → سوییچ بی‌صدا خاموش می‌شد و هیچ توضیحی نمی‌داد!
-       حالا: بسته نبود = خودکار دانلود می‌شود (همان بستهٔ آفلاین STT)،
-       سوییچ روشن می‌ماند و وقتی بسته آماده شد حلقه خودش شروع می‌شود. */
-    if (!localReady()) {
-      actLog('wake-always: local pack missing → auto-download' + (wakeDlKicked ? ' (already running)' : ''));
-      /* cooldown ۹۰ ثانیه‌ای — دانلودِ خراب باعث چرخهٔ بی‌پایان نشود */
-      if (!wakeDlKicked && !localStat.downloading && Date.now() - (wakeDlLastTry || 0) > 90000
-        && bridge && bridge.stt && bridge.stt.localDownload) {
-        wakeDlLastTry = Date.now();
-        wakeDlKicked = true;
-        try { toast(t('wake.alwaysPreparing'), '#i-wave'); } catch (_) { /* noop */ }
-        try {
-          const r = await bridge.stt.localDownload().catch(() => ({ ok: false }));
-          wakeDlKicked = false;
-          localStat.downloading = false;
-          localStat.installed = !!(r && (r.ok || r.already));
-          localStat.ready = !!(r && r.ready);
-          actLog('wake-always: auto-download finished ok=' + !!(r && r.ok) + ' ready=' + !!(r && r.ready));
-          try { updateOfflineCard(); refreshEngineUI(); } catch (_) { /* noop */ }
-          if (settings.wakeAlways && localReady()) { wakeLoopStart(); return; }
-          if (!r || !r.ok) try { toast(t('set.off.fail'), '#i-info'); } catch (_) { /* noop */ }
-        } catch (_) { wakeDlKicked = false; }
-      }
-      return;
-    }
+       v0.34 — دیگر گره به بسته نیست: بدون بسته هم حلقه با VAD + تشخیص ابری
+       شروع می‌شود؛ دانلود بسته در پس‌زمینه ادامه دارد و وقتی آماده شد
+       موتور بیدارباش خودکار به حالت آفلاین می‌رود. */
+    const engine = localReady() ? 'local' : 'cloud';
+    if (engine === 'cloud') kickWakePackDownload();
     const ok = await attachMic();
     if (!ok) {
       /* v0.29.1 — میکروفون در دسترس نیست (اشغال/قطع) → سوییچ روشن می‌ماند،
          ۳۰ ثانیه بعد خودش دوباره تلاش می‌کند؛ دیگر خاموشی بی‌صدا نداریم */
       actLog('wake-always: mic unavailable — retry in 30s (toggle stays ON)');
+      wakeHealthNote(t('wake.healthMic'));
       if (!wakeMicRetryT) wakeMicRetryT = setTimeout(() => { wakeMicRetryT = 0; if (settings.wakeAlways && !wakeLoop) wakeLoopStart(); }, 30000);
       return;
     }
@@ -3924,15 +3948,47 @@
       const sink = audioCtx.createGain();
       sink.gain.value = 0; /* بی‌صدا — فقط پردازش */
       src.connect(proc); proc.connect(sink); sink.connect(audioCtx.destination);
-      wakeLoop = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, floor: 0.006, busy: false, coolUntil: 0, tVad: 0 };
+      wakeLoop = { src, proc, sink, chunks: [], spoke: false, lastVoice: 0, floor: 0.006, busy: false, coolUntil: 0, tVad: 0, engine };
       proc.onaudioprocess = (e) => wakeOnFrame(e.inputBuffer.getChannelData(0));
       wakeLoop.tVad = setInterval(wakeVadTick, 150);
-      actLog('wake-always loop started');
-      toast(t('toast.wakeAlwaysOn'), '#i-wave');
+      actLog('wake-always loop started engine=' + engine);
+      toast(engine === 'local' ? t('toast.wakeAlwaysOn') : t('wake.alwaysCloudOn'), '#i-wave');
+      wakeHealthNote(engine === 'local' ? t('wake.healthLocal') : t('wake.healthCloud'));
     } catch (e) {
       actLog('wake-always start failed: ' + String((e && e.message) || e).slice(0, 80));
       wakeLoop = null;
+      wakeHealthNote(t('wake.healthFail', { x: String((e && e.message) || e).slice(0, 60) }));
     }
+  }
+  /* v0.34 — دانلود بسته در پس‌زمینه (بدون مسدود کردن حلقهٔ ابری) */
+  function kickWakePackDownload() {
+    if (wakeDlKicked || localStat.downloading) return;
+    if (Date.now() - (wakeDlLastTry || 0) <= 90000) return;
+    if (!(bridge && bridge.stt && bridge.stt.localDownload)) return;
+    wakeDlLastTry = Date.now();
+    wakeDlKicked = true;
+    (async () => {
+      try {
+        toast(t('wake.alwaysPreparing'), '#i-wave');
+        const r = await bridge.stt.localDownload().catch(() => ({ ok: false }));
+        localStat.downloading = false;
+        localStat.installed = !!(r && (r.ok || r.already));
+        localStat.ready = !!(r && r.ready);
+        actLog('wake-always: background pack download finished ok=' + !!(r && r.ok) + ' ready=' + !!(r && r.ready));
+        try { updateOfflineCard(); refreshEngineUI(); } catch (_) { /* noop */ }
+        /* بسته آماده شد → موتور بیدارباش به حالت آفلاین ارتقا می‌یابد */
+        if (settings.wakeAlways && localReady() && wakeLoop && wakeLoop.engine === 'cloud') {
+          wakeLoopStop();
+          wakeLoopStart();
+        }
+      } catch (_) { /* دور بعد */ }
+      finally { wakeDlKicked = false; }
+    })();
+  }
+  /* v0.34 — سلامت بیدارباش: آخرین وضعیت + آخرین شنیده در تنظیمات دیده می‌شود */
+  function wakeHealthNote(txt) {
+    const el = $('#wakeHealth');
+    if (el && txt) el.textContent = txt;
   }
   function wakeOnFrame(f) {
     if (!wakeLoop) return;
@@ -3986,16 +4042,31 @@
       for (const c of buf) { merged.set(c, off); off += c.length; }
       const pcm16 = f32ToI16(downsampleF32(merged, rate, 16000));
       if (pcm16.length < 4000) return;
-      /* v0.32 — مسابقه با موتور محلیِ جلسهٔ گوش دادن: اگر همان لحظه busy بود،
-         قبلاً بیدارباش بی‌صدا گم می‌شد — حالا ۱.۲ ثانیه بعد با همان صدا دوباره */
-      const tryStt = () => bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' });
-      let r = await tryStt().catch(() => null);
-      if ((!r || r.ok === false) && /مشغول/.test(String((r && r.error) || ''))) {
-        await new Promise((res) => setTimeout(res, 1200));
+      /* v0.34 — موتور تشخیص: بستهٔ آفلاین اگر هست محلی، وگرنه ابری (stt:google با
+         همان PCM) — بیدارباش دیگر به دانلود ۸۰ مگی وابسته نیست */
+      let r = null;
+      if (localReady()) {
+        /* v0.32 — مسابقه با موتور محلیِ جلسهٔ گوش دادن: اگر همان لحظه busy بود،
+           قبلاً بیدارباش بی‌صدا گم می‌شد — حالا ۱.۲ ثانیه بعد با همان صدا دوباره */
+        const tryStt = () => bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' });
         r = await tryStt().catch(() => null);
+        if ((!r || r.ok === false) && /مشغول/.test(String((r && r.error) || ''))) {
+          await new Promise((res) => setTimeout(res, 1200));
+          r = await tryStt().catch(() => null);
+        }
+      } else if (bridge && bridge.stt && bridge.stt.google) {
+        r = await bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' }).catch(() => null);
+        if (r && r.ok === false) actLog('wake-always cloud check fail: ' + String(r.error || '').slice(0, 60));
       }
       const txt = String((r && r.text) || '').trim();
       actLog('wake-always heard: ' + txt.slice(0, 44));
+      /* v0.34 — وضعیت سلامت: آخرین شنیده همیشه دیده می‌شود؛ در حالت تست نتیجه صریح است */
+      if (txt) {
+        const heardTxt = t('wake.healthLast', { x: txt.slice(0, 30) });
+        const isWake = /(آوا|اوا|ava)/i.test(normFaFull(txt));
+        if (Date.now() < wakeTestUntil) wakeHealthNote((isWake ? t('wake.testOk') : t('wake.testMiss', { x: txt.slice(0, 30) })));
+        else if (wakeLoop) wakeHealthNote((wakeLoop.engine === 'local' ? t('wake.healthLocal') : t('wake.healthCloud')) + ' — ' + heardTxt);
+      }
       if (txt && /(آوا|اوا|ava)/i.test(normFaFull(txt))) {
         playWakeChime();
         wakeSessOpen();
@@ -4054,7 +4125,8 @@
      بسته را دانلود می‌کند — فقط یک نگاه ملایم در ۵ ثانیه برای اطمینان */
   function wakeBootRetry() {
     if (!settings.wakeAlways || wakeLoop) return;
-    if (!localReady()) { setTimeout(wakeBootRetry, 5000); return; }
+    /* v0.34 — دیگر منتظر بستهٔ آفلاین نمی‌مانیم: حلقه ابری شروع می‌شود،
+       بسته در پس‌زمینه دانلود و بعد خودکار ارتقا می‌یابد */
     wakeLoopStart();
   }
 
@@ -4149,7 +4221,23 @@
      در همان برنامه‌ای که باز است). علائم نگارشی صوتی + فرمان‌های
      سفارشی تعریف‌شدنی در تنظیمات.
      ============================================================ */
-  const dictation = { active: false, busy: false };
+  const dictation = { active: false, busy: false, hwnd: 0, oneShotApps: false };
+  /* v0.34 — پنجرهٔ فعالِ خارج از آوا: هنگام blur ثبت می‌شود تا «تایپ در برنامهٔ فعال»
+     بداند کجا بنویسد؛ فرمان صوتی هم قبل از هر تمرکزگیری دوباره ثبت می‌کند */
+  let lastFgHwnd = 0;
+  let fgProbeBusy = false;
+  async function refreshFg() {
+    if (fgProbeBusy || !bridge || !bridge.system || !bridge.system.saveFg) return;
+    fgProbeBusy = true;
+    try {
+      const r = await bridge.system.saveFg();
+      if (r && r.ok && r.hwnd) lastFgHwnd = Number(r.hwnd) || 0;
+    } catch (_) { /* noop */ }
+    fgProbeBusy = false;
+    return lastFgHwnd;
+  }
+  window.addEventListener('blur', () => { setTimeout(() => { if (!document.hasFocus()) refreshFg(); }, 250); });
+  window.addEventListener('focus', () => { lastFgHwnd = 0; });
 
   /* علائم نگارشی داخلی — کلمه‌ای که گفته شود همان علامت ثبت می‌شود
      زبان گفتار فارسی: علائم فارسی؛ زبان گفتار انگلیسی: علائم انگلیسی */
@@ -4268,20 +4356,41 @@
     applyTypingTokens(raw);
     const delta = dictBox.value.slice(before);
     renderDictation();
-    /* خروجی در برنامه فعال: فقط بخش تازه‌اضافه‌شده در همان پنجره تایپ می‌شود */
-    if (settings.dictTarget === 'apps' && delta.trim() && bridge && bridge.system && bridge.system.typeText) {
-      bridge.system.typeText(delta).catch(() => { /* noop */ });
+    /* خروجی در برنامهٔ فعال: v0.34 — موتور واقعی تایپ (SendInput UNICODE با
+       فوکوس تاییدشده روی پنجرهٔ ثبت‌شده) — قبلی پیست Ctrl+V بود بدون بازیابی
+       فوکوس و در پنجرهٔ اشتباه می‌نشست + کلیپ‌بورد کاربر را نابود می‌کرد */
+    if ((settings.dictTarget === 'apps' || dictation.oneShotApps) && delta.trim() && bridge && bridge.system && bridge.system.typeText) {
+      bridge.system.typeText(delta, dictation.hwnd || 0).then((r) => {
+        if (!r || !r.ok) {
+          actLog('type-into-app failed: ' + String((r && r.error) || 'fail').slice(0, 90));
+          if (!dictation._typeErrAt || Date.now() - dictation._typeErrAt > 10000) {
+            dictation._typeErrAt = Date.now();
+            toast((r && r.error) || t('dict.sysFail'), '#i-info');
+          }
+        }
+      }).catch(() => { /* noop */ });
     }
     rearmDictation();
   }
 
-  function startDictation() {
+  function startDictation(system) {
     dictation.active = true;
+    /* v0.34 — مقصد تایپ: اگر «برنامهٔ فعال» است، پنجرهٔ فعال همین حالا ثبت شود —
+       قبل از هر تمرکزگیری؛ همان‌جایی که کاربر بود و می‌خواهد همان‌جا نوشته شود */
+    dictation.oneShotApps = !!system && settings.dictTarget !== 'apps';
+    dictation.hwnd = 0;
+    if (settings.dictTarget === 'apps' || system) {
+      dictation.hwnd = lastFgHwnd || 0;
+      if (!dictation.hwnd && !(document.hasFocus() && lastFgHwnd)) {
+        refreshFg().then(() => { dictation.hwnd = lastFgHwnd || 0; });
+      }
+    }
     showView('dict');
     updateDictToggleUI();
     renderDictation();
-    toast(t('dict.on'), '#i-note');
-    speak(t('dict.onSpeak'));
+    const sysOn = system || settings.dictTarget === 'apps';
+    toast(sysOn ? t('dict.sysOn') : t('dict.on'), '#i-note');
+    speak(sysOn ? t('dict.sysSpeak') : t('dict.onSpeak'));
     if (state === 'idle') startListening();
     else if (state === 'listening') { stopListening(); setTimeout(() => { if (dictation.active && state === 'idle') startListening(); }, 300); }
     else setTimeout(() => { if (dictation.active && state === 'idle') startListening(); }, 1500);
@@ -4289,6 +4398,8 @@
 
   function stopDictation(voice = false) {
     dictation.active = false;
+    dictation.oneShotApps = false;
+    dictation.hwnd = 0;
     updateDictToggleUI();
     dictInterim.textContent = '';
     dictStatus.textContent = voice ? t('dict.offVoice') : t('dict.offSilent');
@@ -5024,9 +5135,17 @@
       settings.wakeAlways = optWakeAlways.checked;
       store.set('wakeAlways', settings.wakeAlways);
       if (settings.wakeAlways) await wakeLoopStart();
-      else { wakeLoopStop(); toast(t('toast.wakeAlwaysOff'), '#i-wave'); }
+      else { wakeLoopStop(); wakeHealthNote(t('wake.healthIdle')); toast(t('toast.wakeAlwaysOff'), '#i-wave'); }
     });
   }
+  /* v0.34 — تست بیدارباش: ۱۰ ثانیه بگو «آوا» — نتیجه همان‌جا دیده می‌شود */
+  const btnWakeTest = $('#btnWakeTest');
+  if (btnWakeTest) btnWakeTest.addEventListener('click', () => {
+    if (!settings.wakeAlways) { toast(t('wake.testOff'), '#i-info'); return; }
+    wakeTestUntil = Date.now() + 11000;
+    wakeHealthNote(t('wake.testHint'));
+    try { speak(t('wake.testHint')); } catch (_) { /* noop */ }
+  });
   if (bridge && bridge.voice && bridge.voice.onToggleHandsFree) {
     bridge.voice.onToggleHandsFree(() => setHandsFree(!settings.handsFree));
   }
@@ -5153,7 +5272,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.33.0';
+  let appVersion = '0.34.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

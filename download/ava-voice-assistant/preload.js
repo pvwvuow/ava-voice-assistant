@@ -42,8 +42,12 @@ contextBridge.exposeInMainWorld('ava', {
     geo: (city) => ipcRenderer.invoke('sys:geo', city),
     /* v0.31.0 — قیمت لحظه‌ای ارز/طلا/سکه/رمزارز (tgju، بدون کلید) */
     rates: () => ipcRenderer.invoke('sys:rates'),
-    /* تایپ متن در برنامه فعال — حالت تایپ صوتی با خروجی پیست (Ctrl+V) */
-    typeText: (text) => ipcRenderer.invoke('sys:type-text', text),
+    /* v0.34 — تایپ صوتی در هر برنامهٔ ویندوز:
+       saveFg = ثبت پنجرهٔ فعال در لحظهٔ شروع؛ typeText = تایپ SendInput UNICODE
+       در همان پنجره با فوکوس تاییدشده (مستقل از layout کیبورد، بدون دست‌زدن به
+       کلیپ‌بورد — قبلی پیست Ctrl+V بود و در پنجرهٔ اشتباه می‌نشست) */
+    saveFg: () => ipcRenderer.invoke('sys:savefg'),
+    typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText', { text, hwnd }),
   },
 
   /* v0.31.0 — یادداشت‌های صوتی (ava-notes.json در پوشهٔ خود برنامه) */

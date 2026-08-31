@@ -1335,6 +1335,32 @@ app.whenReady().then(async () => {
       ok('v0.33 version markers (0.33.x/0.3x)', v33.ver);
     } catch (e) { console.log('SKIP | v0.33 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.98961 v0.34.0 — (۱) بیدارباش همیشگی دیگر به بستهٔ آفلاین گره نیست: حلقه ابری
+    // (VAD + stt:google با همان PCM) + دانلود پس‌زمینه + ارتقای خودکار + سلامت/تست.
+    // (۲) «اینجا برام تایپ کن»: موتور واقعی SendInput UNICODE با فوکوس تاییدشده —
+    // جایگزین پیست Ctrl+V که در پنجرهٔ اشتباه می‌نشست و کلیپ‌بورد را نابود می‌کرد.
+    try {
+      const m34 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a34 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const p34 = fs.readFileSync(path.join(__dirname, 'preload.js'), 'utf8');
+      const t34m = m34.match(/const TYPE_PS_BODY = `([\s\S]*?)`;/);
+      const t34 = t34m ? t34m[1] : '';
+      const v34 = {
+        wake: a34.includes("const engine = localReady() ? 'local' : 'cloud';") && a34.includes("bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000") && a34.includes('function kickWakePackDownload()') && !/if \(!localReady\(\)\) \{ setTimeout\(wakeBootRetry/.test(a34),
+        health: a34.includes('wakeTestUntil = Date.now() + 11000') && a34.includes("function wakeHealthNote(txt)") && (a34.match(/'wake\.healthCloud':/g) || []).length === 2,
+        type: t34.length > 3000 && t34.includes('SendInput') && t34.includes('Restore-Focus2') && t34.includes('function New-Ki') && !t34.includes('`') && !/[\u2018\u2019\u201C\u201D]/.test(t34) && !t34.includes('/*'),
+        wire: p34.includes("typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText'") && (p34.match(/typeText:/g) || []).length === 1 && p34.includes("saveFg: () => ipcRenderer.invoke('sys:savefg')") && m34.includes("ipcMain.handle('sys:typeText'") && m34.includes("ipcMain.handle('sys:savefg'"),
+        sys: a34.indexOf('const SYS_DICT_RE') > -1 && a34.indexOf('SYS_DICT_RE.test(raw)') < a34.indexOf('DICT_START_RE.test(raw)') && a34.includes('dictation.oneShotApps = !!system'),
+        ver: /^0\.3[4-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[4-9]\.\d+';/.test(a34),
+      };
+      ok('v0.34 wake: cloud fallback loop + background pack download + auto-upgrade', v34.wake);
+      ok('v0.34 wake: health status + test button (both i18n blocks)', v34.health);
+      ok('v0.34 type: SendInput UNICODE body with verified focus (no clipboard paste)', v34.type);
+      ok('v0.34 type: preload typeText(hwnd) single def + saveFg + main IPC handlers', v34.wire);
+      ok('v0.34 type: «اینجا برام تایپ» one-shot system dictation command', v34.sys);
+      ok('v0.34 version markers (0.34.x/0.3x)', v34.ver);
+    } catch (e) { console.log('SKIP | v0.34 markers | ' + String(e && e.message).slice(0, 80)); }
+
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),

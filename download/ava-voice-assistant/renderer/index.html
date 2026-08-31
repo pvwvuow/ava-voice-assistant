@@ -302,6 +302,11 @@
                   <span class="set-info"><b data-i18n="set.stt.wakeAlways">بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)</b><span data-i18n="set.stt.wakeAlwaysHint">میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود</span></span>
                   <span class="sw"><input type="checkbox" id="optWakeAlways"/><i></i></span>
                 </label>
+                <!-- v0.34 — وضعیت سلامت بیدارباش: کاربر دیگر در تاریکی نماند که چرا کار نمی‌کند -->
+                <div class="set-row col" id="wakeHealthRow">
+                  <span class="set-info"><b data-i18n="wake.healthTitle">وضعیت بیدارباش</b><span id="wakeHealth" data-i18n="wake.healthIdle">خاموش — سوییچ بالا را روشن کن</span></span>
+                  <button class="btn ghost" id="btnWakeTest" data-i18n="wake.testBtn">تست بیدارباش</button>
+                </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.stt.gkey">کلید اختصاصی گوگل (اختیاری)</b><span data-i18n="set.stt.gkeyHint">خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی</span></span>
                   <input type="password" id="optGoogleKey" class="set-input" data-i18n-ph="set.stt.gkeyPh" placeholder="خالی = رایگان و بدون کلید" autocomplete="off" dir="ltr" />
@@ -954,7 +959,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.33.0</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.34.0</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

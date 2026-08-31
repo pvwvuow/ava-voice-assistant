@@ -90,7 +90,7 @@ if (hasPwsh && body) {
 /* ---- 3) wake-always: silent toggle-off is gone; auto-download in ---- */
 console.log('\n[3] wake-always loop fixes');
 ok('silent uncheck REMOVED from wakeLoopStart', !appSrc.includes("settings.wakeAlways = false; store.set('wakeAlways', false);"));
-ok('wakeLoopStart auto-downloads the offline pack', appSrc.includes('wake-always: local pack missing → auto-download') && appSrc.includes('bridge.stt.localDownload()'));
+ok('wakeLoopStart auto-downloads the offline pack (v0.34: background kick, not blocking)', appSrc.includes('bridge.stt.localDownload()') && appSrc.includes('function kickWakePackDownload()'));
 ok('download retry cooldown (90s) present', appSrc.includes('wakeDlLastTry'));
 ok('mic-unavailable keeps toggle ON + 30s retry', appSrc.includes('wake-always: mic unavailable — retry in 30s (toggle stays ON)') && appSrc.includes('30000'));
 ok('pack-done event starts the loop', appSrc.includes("s.stage === 'done' && settings.wakeAlways && !wakeLoop"));
