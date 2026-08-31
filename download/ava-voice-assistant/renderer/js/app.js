@@ -2455,9 +2455,9 @@
            «برو به» را در گوگل سرچ کند: اول دیکشنری سایت‌های معروف، بعد دامنهٔ
            خام (x.com/x.ir)، در آخر فقط «اسم تمیزِ سایت» برای جستجو */
         const ks = knownSiteOf(c) || knownSiteOf(siteTargetOf(c));
-        if (ks) return ks;
+        if (ks) { store.set('lastSite', ks); return ks; }
         const dom = siteDomainOf(c) || siteDomainOf(siteTargetOf(c));
-        if (dom) return 'https://' + dom;
+        if (dom) { const u = 'https://' + dom; store.set('lastSite', u); return u; }
         return cleanSiteQuery(c) || 'گوگل';
       },
       r: (c) => {
@@ -2473,7 +2473,10 @@
 
     /* --- پنجره‌ها و سیستم --- */
     { k: /اسکرین\s?شات|اسکرین|عکس.{0,8}(صفحه|نمایشگر)|screenshot|take a screenshot/i, id: 'screenshot', t: 'اسکرین‌شات', i: '#i-camera', run: 'screenshot', r: () => LANG === 'en' ? 'Screenshot taken and saved to your Pictures folder.' : 'اسکرین‌شات گرفته شد و در پوشه Pictures ذخیره شد.' },
-    { k: /مینیمایز|کوچک.{0,8}(کن)|دسکتاپ|پنجره‌ها|minimize|show (the )?desktop/i, id: 'minimize_all', t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => LANG === 'en' ? 'All windows minimized; desktop is clear.' : 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
+    /* v0.40 — «یکم کوچکترش کن» (وقتی پنجرهٔ شناور باز است) باید اندازهٔ PiP شود،
+       نه مینیمایزِ همهٔ پنجره‌ها! (گزارش واقعی activity.log) — «کوچک کن» تنها
+       با لنگرِ پنجره معنی مینیمایز می‌گیرد */
+    { k: /مینیمایز|دسکتاپ|پنجره[^.]{0,10}(کوچک|کوچیک)|همه[^.]{0,8}پنجره|minimize|show (the )?desktop/i, id: 'minimize_all', t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => LANG === 'en' ? 'All windows minimized; desktop is clear.' : 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
     { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین|lock (the )?(pc|computer|screen)/i, id: 'lock', t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => LANG === 'en' ? 'Screen locked; bye!' : 'صفحه قفل شد؛ بدرود!' },
 
     /* --- ضبط صدا (واقعی) --- */
@@ -2600,7 +2603,7 @@
   {
     const pipRules = [
       {
-        k: /چ(?:طور|جور|گونه)[^.]{0,8}(?:میتونم|می\s?تونم|میشه|بشه|بکنم|کنم|بدم|بذارم|بزنم)|how (do|can) i\b|what can you do|چی\s?(?:میتونی|می\s?تونی|بلدی)|چیکار.{0,8}(?:میتونی|بلدی)|چه\s?(?:کارایی|کارهایی|فرمانهایی|فرمان\u200cهایی)|لیست\s?فرمان|توانایی/i,
+        k: /چ(?:طور|جور|گونه)[^.]{0,10}(?:میتونم|می\s?تونم|بکنم|کنم|بذارم|بزنم|بدم|کرد|بکن)|(?:میتونم|می\s?تونم)[^.]{0,16}چ(?:طور|جور|گونه)|how (do|can) i\b|what can you do|چی\s?(?:میتونی|می\s?تونی|بلدی)|چیکار.{0,8}(?:میتونی|بلدی)|چه\s?(?:کارایی|کارهایی|فرمانهایی|فرمان\u200cهایی|فرمانهای?|دستوراتی?)|لیست\s?(?:فرمان|دستور|کامند)|توانایی/i,
         id: 'howto', t: 'راهنمای فرمان‌ها', i: '#i-gear', r: (c) => howToReply(c),
         __aiExtra: AVACapabilities.aiPromptAddon(),
       },
@@ -2635,6 +2638,184 @@
       },
     ];
     RULES.splice(1, 0, ...pipRules);
+  }
+
+  /* ============================================================
+     v0.40 — صفحهٔ کامل فرمان‌ها (درخواست کاربر: «یه صفحهٔ ساده با
+     انیمیشن باز بشه کامندها رو نشون بده») + جستجوی درون-سایتی
+     ------------------------------------------------------------
+     گزارش واقعی activity.log: «می‌خوام دستورات مربوط به یوتیوب و فیلم
+     رو ببینم» → قانون یوتیوب (/یوتیوب|youtube/i) می‌گرفت و یوتیوب باز
+     می‌شد! حالا «دستورات/فرمان‌ها … ببینم» صفحهٔ فرمان‌ها را باز می‌کند.
+     + «توی سایت دیجی کالا دنبال ساعت رولکس بگرد» جستجوی واقعی سایت را
+     باز می‌کند (نه صفحهٔ اصلی) و «توی این سایت» سایت قبلی را یاد می‌ماند.
+     ============================================================ */
+  const CMD_PAGE_DECK = {
+    video: {
+      fa: 'ویدیو و یوتیوب', en: 'Video & YouTube',
+      items: {
+        fa: ['ویدیو رو پین کن', 'ویدیو رو ببر گوشهٔ بالا راست', 'ویدیو رو شیشه‌ای کن', 'ویدیو رو واضح‌تر کن', 'ویدیو رو کوچیکش کن', 'ویدیو رو ببند', 'کلیک روش رو ببند', 'تو یوتیوب آهنگ X رو سرچ کن'],
+        en: ['Pin the video', 'Move it top-right', 'Make it glassy', 'Make it clearer', 'Make it smaller', 'Close the video', 'Click through on', 'Search YouTube for X'],
+      },
+    },
+    music: {
+      fa: 'موزیک و صدا', en: 'Music & Sound',
+      items: {
+        fa: ['آهنگ بعدی', 'آهنگ قبلی', 'آهنگ رو نگه دار', 'آهنگ رو پخش کن', 'پلیر موزیک رو باز کن', 'صدا رو کم کن', 'صدا رو بلند کن'],
+        en: ['Next song', 'Previous song', 'Pause music', 'Play music', 'Open music player', 'Lower the volume', 'Raise the volume'],
+      },
+    },
+    web: {
+      fa: 'سایت‌ها و جستجو', en: 'Sites & Search',
+      items: {
+        fa: ['سایت گوگل رو باز کن', 'برو یوتیوب', 'سایت دیجی کالا رو باز کن', 'توی دیجی کالا دنبال ساعت بگرد', 'سایت آپارات رو باز کن', 'سایت سافت ۹۸ رو باز کن', 'سایت زومیت رو باز کن'],
+        en: ['Open Google', 'Open YouTube', 'Open Digikala', 'Search Digikala for watches', 'Open Aparat', 'Open Soft98', 'Open Zoomit'],
+      },
+    },
+    system: {
+      fa: 'سیستم', en: 'System',
+      items: {
+        fa: ['اسکرین‌شات بگیر', 'همه پنجره‌ها رو کوچک کن', 'وضعیت سیستم چطوره', 'باتری چنده', 'ساعت چنده', 'تایمر ۵ دقیقه', 'یادم بنداز چای دم کن', 'حالت خواب'],
+        en: ['Take a screenshot', 'Minimize all windows', 'System status', 'Battery level', 'What time is it', 'Timer 5 minutes', 'Remind me', 'Sleep mode'],
+      },
+    },
+    discord: {
+      fa: 'دیسکورد', en: 'Discord',
+      items: {
+        fa: ['دیسکورد میوت کن', 'دیسکورد دیفن کن', 'کلا ساکت کن', 'کلا برگردون'],
+        en: ['Discord mute', 'Discord deafen', 'Full silence', 'Bring it all back'],
+      },
+    },
+    tools: {
+      fa: 'ابزارها', en: 'Tools',
+      items: {
+        fa: ['یک جوک بگو', 'هوا چطوره', 'آب و هوای مشهد', 'قیمت دلار چنده', 'اوقات شرعی', 'یادداشت کن: خرید نان', 'اینجا برام تایپ کن'],
+        en: ['Tell me a joke', 'How is the weather', 'Weather in Mashhad', 'Dollar price', 'Prayer times', 'Note: buy bread', 'Type here for me'],
+      },
+    },
+  };
+  function cmdCategoryOf(c) {
+    const s = String(c || '');
+    if (/یوتیوب|ویدیو|فیلم|پین|شناور|youtube|video|movie/i.test(s)) return 'video';
+    if (/موزیک|موسیقی|آهنگ|اهنگ|music|song/i.test(s)) return 'music';
+    if (/دیسکورد|discord/i.test(s)) return 'discord';
+    if (/سایت|گوگل|وب\s?سایت|مرورگر|google|website/i.test(s)) return 'web';
+    return 'video'; /* پرکاربردترین دسته */
+  }
+  let cpCat = 'video';
+  function cpRender() {
+    const L = LANG === 'en';
+    const tabs = $('#cpTabs'), chips = $('#cpChips');
+    if (!tabs || !chips) return;
+    tabs.innerHTML = '';
+    Object.keys(CMD_PAGE_DECK).forEach((id) => {
+      const d = CMD_PAGE_DECK[id];
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cp-tab' + (id === cpCat ? ' on' : '');
+      b.textContent = L ? d.en : d.fa;
+      b.addEventListener('click', () => { cpCat = id; cpRender(); });
+      tabs.appendChild(b);
+    });
+    chips.innerHTML = '';
+    const list = (L ? CMD_PAGE_DECK[cpCat].items.en : CMD_PAGE_DECK[cpCat].items.fa);
+    list.forEach((txt, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cs-chip';
+      b.textContent = txt;
+      b.style.animationDelay = Math.min(i * 0.035, 0.5).toFixed(3) + 's';
+      b.addEventListener('click', () => { closeCmdPage(); runCommand(txt, { wake: false }); });
+      chips.appendChild(b);
+    });
+  }
+  function openCmdPage(cat) {
+    try {
+      const page = $('#cmdPage');
+      if (!page) return false;
+      cpCat = CMD_PAGE_DECK[cat] ? cat : 'video';
+      cpRender();
+      page.hidden = false;
+      page.classList.remove('bye');
+      actLog('commands page open: ' + cpCat);
+      return true;
+    } catch (_) { return false; }
+  }
+  function closeCmdPage() {
+    try {
+      const page = $('#cmdPage');
+      if (!page || page.hidden) return;
+      page.classList.add('bye');
+      setTimeout(() => { page.hidden = true; page.classList.remove('bye'); }, 240);
+    } catch (_) { /* noop */ }
+  }
+  {
+    const cpClose = $('#cpClose'), cpBack = $('#cpBack');
+    if (cpClose) cpClose.addEventListener('click', closeCmdPage);
+    if (cpBack) cpBack.addEventListener('click', closeCmdPage);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCmdPage(); });
+  }
+  {
+    const cmdPageRule = {
+      k: /(دستورات|فرمان[هاات\u200c]{1,4}|کامند[هاات]?)[^.]{0,48}(ببینم|نشون|نشان|لیست|چیه|کدوما|بده|مربوط)|(لیست|فهرست)\s+(دستور|فرمان|کامند)|چه\s+(فرمان|دستور|کارایی)|show\s+(all\s+)?commands|command\s+(list|page)|list\s+(all\s+)?commands/i,
+      id: 'cmdpage', t: 'صفحهٔ فرمان‌ها', i: '#i-gear',
+      r: (c) => {
+        openCmdPage(cmdCategoryOf(c));
+        return LANG === 'en' ? 'Commands page is open — say or click any of them.' : 'صفحهٔ فرمان‌ها باز شد؛ هر کدام را بگو یا رویش کلیک کن.';
+      },
+    };
+    RULES.splice(1, 0, cmdPageRule);
+  }
+
+  /* --- v0.40 — جستجوی درون-سایتی: «توی سایت دیجی کالا دنبال X بگرد» --- */
+  function siteSearchUrlFor(base, q) {
+    const host = String(base || '').replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
+    const enc = encodeURIComponent(q || '');
+    if (/digikala/.test(host)) return 'https://www.digikala.com/search/?q=' + enc;
+    if (/aparat/.test(host)) return 'https://www.aparat.com/result/' + enc;
+    if (/torob/.test(host)) return 'https://torob.com/search/?query=' + enc;
+    return 'https://www.google.com/search?q=' + encodeURIComponent('site:' + host + ' ' + q);
+  }
+  function siteSearchQueryOf(c) {
+    const m = String(c || '').match(/دنبال\s+(.+?)\s*(?:بگرده?|پیدا\s*کن|سرچ\s*کن|جستجو\s*کن)/i);
+    let q = m && m[1] ? m[1] : '';
+    if (!q) return '';
+    q = q.replace(/(برام|برای من|لطفا|لطفاً|خب|دیگه|بابا|حالا)/g, ' ');
+    q = q.replace(/(توی|تو|در)\s+(سایت|وب\s?سایت)/gi, ' ');
+    q = q.replace(/[\s\u200C]+/g, ' ').trim();
+    return q.length >= 2 ? q.slice(0, 80) : '';
+  }
+  async function siteSearchReply(c) {
+    /* یوتیوب مسیر بومی خودش را دارد (yt_search) — نباید سرچ گوگلِ site: شود */
+    if (/یوتیوب|youtube/i.test(c)) return AI_FALLBACK;
+    const q = siteSearchQueryOf(c);
+    if (!q || !bridge || !bridge.system) return AI_FALLBACK;
+    const thisSite = /(توی|تو|در)\s+(این|همین)\s+سایت/i.test(c);
+    let base = '', siteName = '';
+    if (thisSite) {
+      base = String(store.get('lastSite', '') || '');
+      if (!base) {
+        await bridge.system.run('web_search', q).catch(() => null);
+        return LANG === 'en' ? `I searched the web for "${q}" — no site was opened before.` : `سایتی قبلاً باز نشده بود؛ «${q}» را در وب جستجو کردم.`;
+      }
+      siteName = base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    } else {
+      base = knownSiteOf(c) || knownSiteOf(siteTargetOf(c));
+      if (!base) return AI_FALLBACK;
+      const nm = KNOWN_SITES.find(([n, u]) => u === base);
+      siteName = nm ? nm[0] : base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    }
+    store.set('lastSite', base); /* «حالا توی این سایت…» بعدی همین‌جا می‌افتد */
+    await bridge.system.run('web_open', siteSearchUrlFor(base, q)).catch(() => null);
+    return LANG === 'en' ? `I searched "${q}" on ${siteName}.` : `«${q}» را در ${siteName} جستجو کردم.`;
+  }
+  {
+    const siteSearchRule = {
+      k: /دنبال\s+[^.]{0,60}بگرده?|(توی|تو|در)\s+(این|همین)\s+سایت/i,
+      id: 'site_search', t: 'جستجو در سایت', i: '#i-search', r: (c) => siteSearchReply(c),
+    };
+    const yi = RULES.findIndex((r) => r.id === 'yt_search');
+    RULES.splice(yi >= 0 ? yi + 1 : RULES.length, 0, siteSearchRule);
   }
 
   /* ============================================================
@@ -2681,6 +2862,13 @@
         b.addEventListener('click', () => { hideCmdSuggest(); runCommand(txt, { wake: false }); });
         chips.appendChild(b);
       });
+      /* v0.40 — «همهٔ فرمان‌ها» → صفحهٔ کامل فرمان‌ها (خواستهٔ اصلی کاربر) */
+      const all = document.createElement('button');
+      all.type = 'button';
+      all.className = 'cs-all';
+      all.textContent = L ? 'See all commands' : 'همهٔ فرمان‌ها';
+      all.addEventListener('click', () => { hideCmdSuggest(); openCmdPage(cat); });
+      chips.appendChild(all);
       card.hidden = false;
       card.classList.remove('bye');
       clearTimeout(csTimer);
@@ -4073,6 +4261,20 @@
     const raceSettle = (eng, r, ms) => {
       if (won || isDead()) { actLog('stt ' + eng + ' late (' + ms + 'ms) — race already decided'); return; }
       if (r && r.ok && r.text) {
+        const tx0 = String(r.text).trim();
+        /* v0.40 — برندهٔ هذیانی برنده نیست: موتورهای دیرترِ ابری شانس می‌گیرند */
+        if (!dictation.active && isJunkUtterance(tx0)) {
+          actLog('stt ' + eng + ' junk/hallucination result (' + ms + 'ms) — skipped, waiting cloud');
+          fails += 1;
+          sttMarkFail(eng);
+          if (fails >= chain.length && !won && !isDead()) {
+            actLog('stt all engines returned junk/hallucination — nothing dispatched');
+            setState('idle');
+            statusText.innerHTML = IDLE_HINT;
+            sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
+          }
+          return;
+        }
         won = true;
         sttMarkOk(eng);
         actLog('stt race winner=' + eng + ' (' + ms + 'ms)');
@@ -4543,6 +4745,46 @@
     wakeLoopStart();
   }
 
+  /* ============================================================
+     v0.40 — هوش ضد-هذیان STT (گزارش کاربر: «از از از از از…»)
+     ------------------------------------------------------------
+     whisper-base روی سکوت/نویز حلقهٔ تکرار توکن می‌سازد («از از از…»،
+     «این این این…») و نویز را به شکل [صحر] / "Q" می‌نویسد. در لاگ کاربر
+     یک جملهٔ هذیانی برندهٔ مسابقه شد، ۳۶ ثانیه هوش مصنوعی را سوزاند و
+     خطای دروغین داد. این گارد: ۱) تکرار متوالی ≥۳ فرو می‌ریزد،
+     ۲) جملهٔ تک‌واژهٔ بی‌معنی/براکت‌نویز = زباله، ۳) برندهٔ زباله در
+     مسابقهٔ موتورها برنده نیست و منتظر موتور بهتر می‌ماند، ۴) زباله
+     هرگز به هوش مصنوعی نمی‌رود.
+     ============================================================ */
+  function collapseRepeats(s) {
+    const toks = String(s || '').trim().split(/\s+/).filter(Boolean);
+    const out = [];
+    for (const tk of toks) {
+      if (out.length >= 2 && out[out.length - 1] === tk && out[out.length - 2] === tk) continue;
+      out.push(tk);
+    }
+    return out.join(' ');
+  }
+  const STT_JUNK_WORDS = new Set(['از', 'او', 'اوه', 'ایه', 'ای', 'آ', 'اِ', 'هوم', 'ببب', 'مه', 'تن', 'اون', 'این', 'ا', 'ه', 'ی', 'و', 'که', 'aba', 'ava']);
+  const STT_SHORT_OK = new Set(['سلام', 'هوا', 'ساعت', 'بای', 'جوک', 'توقف', 'پخش', 'درست', 'باشه', 'اوکی', 'خاموش', 'صدا', 'آوا', 'اوا', 'خوبی', 'چطوری', 'بردار', 'بشین']);
+  function sttCleanNoise(s) {
+    let t = String(s || '');
+    t = t.replace(/[\[\]"“”«»'']/g, ' ');
+    t = t.replace(/[.،؛!؟?…]+/g, ' ');
+    return t.replace(/[\s\u200C]+/g, ' ').trim();
+  }
+  function isJunkUtterance(s) {
+    let t = sttCleanNoise(s);
+    if (!t) return true;
+    t = collapseRepeats(t);
+    const toks = t.split(' ').filter(Boolean);
+    if (!toks.length) return true;
+    const mean = toks.filter((tk) => !STT_JUNK_WORDS.has(tk.toLowerCase()) && tk.length > 1);
+    if (!mean.length) return true;
+    if (mean.length === 1 && mean[0].length <= 4 && !STT_SHORT_OK.has(mean[0])) return true;
+    return false;
+  }
+
   async function handleUtterance(text, opts) {
     const h0 = Date.now(); /* v0.19 — لاگ تأخیر کل از شنیدن تا اجرا */
     let cmd = text;
@@ -4577,6 +4819,14 @@
       /* داخل حالت گفتگو: اسم لازم نیست — ولی اگر گفت، همان اول برداشته شود */
       const m = text.match(WAKE_WORD_RE);
       if (m && (m[2] || '').trim()) cmd = (m[2] || '').trim();
+    }
+    /* v0.40 — گارد ضد-هذیان: زبالهٔ STT هرگز dispatch نمی‌شود (نه قوانین،
+       نه هوش مصنوعی) — ریشهٔ «۳۶ ثانیه منتظر خطا ماند» در لاگ کاربر */
+    if (!dictation.active && !(opts && opts.force) && isJunkUtterance(cmd)) {
+      actLog('utterance junk dropped (hallucination/noise): ' + String(cmd || '').slice(0, 40));
+      setState('idle');
+      handsFreeRearm(900);
+      return;
     }
     /* بازخورد فوری: متن شنیده‌شده همان لحظه در کارت پاسخ بنشیند */
     if (cmd && !dictation.active) {
@@ -5705,7 +5955,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.39.0-beta';
+  let appVersion = '0.40.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7441,6 +7691,7 @@
     const parsed = AVAVoice.parseVoiceCommand(cmd, {
       pipOpen: !!(st && st.open),
       size: (st && st.size === 'xl') ? 'extra-large' : ((st && st.size) || 'medium'),
+      opacity: (st && typeof st.opacity === 'number') ? st.opacity : undefined, /* v0.40 — پلهٔ نسبی واضح‌تر/شفاف‌تر */
     });
     if (!parsed) {
       /* جملهٔ لنگر‌دار ولی ناشناخته → هوش مصنوعی؛ بدون AI هم صادق می‌مانیم */

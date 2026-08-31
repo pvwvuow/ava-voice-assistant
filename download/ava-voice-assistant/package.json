@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.39.0-beta",
+  "version": "0.40.0-beta",
   "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۳۷: ویدیوی شناور مخصوص گیم (PiP با فرمان صوتی فارسی/انگلیسی، شفافیت، قفل کلیک، ذخیرهٔ وضعیت) + راهنمای هوشمند «چجوری می‌تونم …؟» با فهرست واقعی توانایی‌ها",
   "main": "main.js",
   "license": "MIT",

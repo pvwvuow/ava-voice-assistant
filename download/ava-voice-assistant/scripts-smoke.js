@@ -1162,7 +1162,7 @@ app.whenReady().then(async () => {
         honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
           && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,
         irCities: m292.includes("'بجنورد': [37.4747, 57.329]") && (m292.match(/IR_CITIES/g) || []).length >= 2,
-        ver292: /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(a292),
+        ver292: /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(a292),
       };
       ok('v0.29.2 AI-referral: AI_FALLBACK sentinel defined', v292.sentinel);
       ok('v0.29.2 AI-referral: weather failure returns the sentinel (no dead-end)', v292.weatherRef);
@@ -1230,7 +1230,7 @@ app.whenReady().then(async () => {
         cur: body30.length > 6000 && !/[\u2018\u2019\u201C\u201D]/.test(body30) && !body30.includes('/*') && !body30.includes('NativeWindowHandleProperty'),
         rmap: m30.includes("em.startsWith('ERR:NOBTN:')") && m30.includes("em.startsWith('ERR:NOFOCUS')") && m30.includes('ERR:NOSTATE'),
         vstate: a30.includes("action: 'state'") && a30.includes('disc.stateMuted') && a30.includes('disc.stateFail') && (a30.match(/'disc\.stateOn': \[/g) || []).length === 2,
-        ver: /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(a30),
+        ver: /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(a30),
       };
       ok('v0.30 Discord: hard-focus chain (AttachThreadInput + SwitchToThisWindow + BringWindowToTop)', v30.hard);
       ok('v0.30 Discord: scancode combos (Persian-layout safe) + real keybind sequences', v30.sc);
@@ -1270,7 +1270,7 @@ app.whenReady().then(async () => {
         noteR: a31.includes('function notesParseOp') && a31.includes('function notesReply') && a31.includes('r: (c) => notesReply(c)') && a31.includes('unshift({ t: Date.now(), x: text.slice(0, 500) })') && a31.includes("notes.save(kept)"),
         i18n: a31.includes("'rates.ask'") && a31.includes("'prayer.city'") && a31.includes("'notes.added'") && a31.includes("'notes.cleared'") && a31.includes("'date.greg'") && a31.includes('fa-IR-u-ca-gregory'),
         cover: a31.includes('function setCoverArt') && a31.includes('im.onerror') && a31.includes('setCoverArt(mCover, tr, true)') && a31.includes('setCoverArt(mwCover, tr, false)'),
-        ver: /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(a31) && /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
+        ver: /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(a31) && /^0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
       };
       ok('v0.31 rates: sys:rates IPC + tgju 3-mirror chain via cloudFetch', v31.rates);
       ok('v0.31 geo: sys:geo + single hoisted IR_CITIES shared dict', v31.geo);
@@ -1304,7 +1304,7 @@ app.whenReady().then(async () => {
         wake2: a32.includes('wakeLoop.lastFrame = Date.now()') && a32.includes('Date.now() - wakeLoop.lastFrame > 4000') && a32.includes("audioCtx.state === 'suspended'") && a32.includes('wakeLoop.restarts.length < 3'),
         wake3: a32.includes('function wakePickup(cmd)') && a32.includes('wakePickup(tail)') && /wakeLoop\.chunks\.length > (47|70)/.test(a32) && /one-breath command/.test(a32),
         contacts: a32.includes('function dcNameNorm(s)') && a32.includes(".replace(/[-_.]+/g, ' ')") && a32.includes('String(c.userId || \'\').trim() === digits') && a32.includes('const ct = resolveDiscordContact(nm)'),
-        ver: /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(a32) && /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
+        ver: /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(a32) && /^0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version),
       };
       ok('v0.32 gemini: dynamic ListModels discovery + ranking + bad-memory cleansing', v32.disc);
       ok('v0.32 gemini: dead 2.0 generation out of chains, 3.x + lite alias in', v32.chain);
@@ -1334,7 +1334,7 @@ app.whenReady().then(async () => {
         focus: (function () { const i = b33.indexOf("'clickcall' {"); const j = b33.indexOf("'callswitch' {", i); const blk = b33.slice(i, j > i ? j : i + 4000); return blk.indexOf('Focus-DcHard') > -1 && blk.indexOf('Try-CallClick') > blk.indexOf('Focus-DcHard') && blk.includes("if (-not ($res -like 'OK*'))") && (blk.match(/\$res = Try-CallClick/g) || []).length === 2 && !blk.includes('Send-BgCombo'); })(),
         deep: (m33.match(/runDiscordPs\('clickcall', 'fg', nm, dxN, dyN\)/g) || []).length === 2 && m33.includes('discord://discord.com/channels/@me/${uid}') && m33.includes('discord://-/channels/@me/${uid}') && m33.includes('if (r1 && r1.ok) return r1;'),
         honest: b33.includes("$blindProbe = Scan-DcBtns '' '' $true") && b33.includes("if ($Name) { return 'ERR:NODM' }") && b33.includes("Write-Output 'DBG:UIA_MISS'"),
-        ver: /^0\.3[3-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[3-9]\.\d+(?:-[\w.]+)?';/.test(a33),
+        ver: /^0\.(3[3-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[3-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a33),
       };
       ok('v0.33 call: Test-CallAlive proof uses ONLY in-call buttons (no Mute/Deafen false-OK)', v33.proof);
       ok('v0.33 call: 4 verification gates + NOFLIP/ALLNAMES debug labels', v33.gates);
@@ -1361,7 +1361,7 @@ app.whenReady().then(async () => {
         type: t34.length > 3000 && t34.includes('SendInput') && t34.includes('Restore-Focus2') && t34.includes('function New-Ki') && !t34.includes('`') && !/[\u2018\u2019\u201C\u201D]/.test(t34) && !t34.includes('/*'),
         wire: p34.includes("typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText'") && (p34.match(/typeText:/g) || []).length === 1 && p34.includes("saveFg: () => ipcRenderer.invoke('sys:savefg')") && m34.includes("ipcMain.handle('sys:typeText'") && m34.includes("ipcMain.handle('sys:savefg'"),
         sys: a34.indexOf('const SYS_DICT_RE') > -1 && a34.indexOf('SYS_DICT_RE.test(raw)') < a34.indexOf('DICT_START_RE.test(raw)') && a34.includes('dictation.oneShotApps = !!system'),
-        ver: /^0\.3[4-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[4-9]\.\d+(?:-[\w.]+)?';/.test(a34),
+        ver: /^0\.(3[4-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[4-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a34),
       };
       ok('v0.34 wake: cloud fallback loop + background pack download + auto-upgrade', v34.wake);
       ok('v0.34 wake: health status + test button (both i18n blocks)', v34.health);
@@ -1396,7 +1396,7 @@ app.whenReady().then(async () => {
         wakemin: m35.includes("appendSwitch('disable-renderer-backgrounding')") && m35.includes("appendSwitch('disable-backgrounding-occluded-windows')") && m35.includes("ipcMain.handle('wake:psb'") && m35.includes('powerSaveBlocker.start') && a35.includes('bridge.system.wakePsb(true)') && a35.includes('bridge.system.wakePsb(false)'),
         chime: a35.includes('659.25') && a35.includes('1108.73') && a35.includes('createBiquadFilter'),
         setui: (() => { const dp = h35.indexOf('data-pane="discord"'); return dp > -1 && dp < h35.indexOf('id="extDiscordOpt"') && h35.indexOf('id="extDiscordOpt"') < h35.indexOf('data-pane="perf"') && h35.indexOf('id="settingsPage"') < h35.indexOf('id="dcActions"') && h35.indexOf('id="dcActions"') < h35.indexOf('id="extPage"') && h35.indexOf('id="extPage"') < h35.indexOf('id="btnDcSettingsPage"') && (h35.match(/<details class="set-adv">/g) || []).length >= 3; })(), /* v0.36: discord adv joined */
-        ver: /^0\.3[5-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[5-9]\.\d+(?:-[\w.]+)?';/.test(a35),
+        ver: /^0\.(3[5-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[5-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a35),
       };
       ok('v0.35 crash: async pack extraction (no spawnSync in download handler) + crash net', v35.nofreeze && v35.stab);
       ok('v0.35 discord: Press-DcBg = UIA-only background path (no keys/focus inside)', v35.bgengine && v35.bgnoroute);
@@ -1425,10 +1425,10 @@ app.whenReady().then(async () => {
         switchverbatim: b36.includes("'mute'     { Write-Output (Press-Dc '^Mute$' '^Unmute$' 'MUTE' 'ctrl,shift,m') }") && b36.includes("'deafen'   { Write-Output (Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN' 'ctrl,shift,d') }"),
         wake: a36.includes('const WAKE_ACCEPT = new Set(') && a36.includes("'آبا', 'ابا'") && a36.includes('function wakeHitText(txt)') && a36.includes('wakeLoop.chunks.length > 70') && a36.includes('wake-always: cloud 2nd chance used') && a36.includes('const buf2 = s0 > 0 ? buf.slice(s0) : buf;'),
         joke: a36.includes('r: async () => { if (aiConnected()) return AI_FALLBACK; return joke(); },') && a36.includes('خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن'),
-        site: a36.includes("['سافت 98', 'https://soft98.ir']") && a36.includes('function siteTargetOf(cmd)') && (a36.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length === 3,
+        site: a36.includes("['سافت 98', 'https://soft98.ir']") && a36.includes('function siteTargetOf(cmd)') && (a36.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length >= 3,
         set: h36.includes('<div class="set-pane" data-pane="wake">') && h36.includes('data-i18n="set.nav.wake"') && !h36.includes('data-i18n="disc.hint"') && h36.includes('data-i18n="set.dc.adv"'),
         type: h36.includes('<textarea id="cmdInput" rows="1"') && h36.includes('<textarea id="chatInput" rows="1"') && a36.includes('function wireMultilineInput(el, form, maxPx)') && c36.includes('width: min(860px, 100%)') && c36.includes('max-width: calc(100% - 34px); white-space: normal;'),
-        ver: /^0\.3[6-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[6-9]\.\d+(?:-[\w.]+)?';/.test(a36) && />v0\.3[6-9]\.\d+(?:-[\w.]+)?</.test(h36),
+        ver: /^0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a36) && />v0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?</.test(h36),
       };
       ok('v0.36 discord: tray-proof EnumWindows discovery + NO_DISCORD only without processes', v36.tray);
       ok('v0.36 discord: hotkey-first bg (no focus) with honest preAlive-gated flip proof', v36.hotkey && v36.switchverbatim);
@@ -1462,7 +1462,7 @@ app.whenReady().then(async () => {
         bridge: pl37.includes('pipAPI: {') && ['show', 'hide', 'move', 'resize', 'setOpacity', 'setClickThrough', 'setAlwaysOnTop', 'reset', 'getState'].every((k) => pl37.includes(k)),
         ui: ph37.includes('assets/ava-logo.png') && (ph37.match(/data-ui="1"/g) || []).length >= 6 && pr37.includes('youtube.com/embed/') && pr37.includes('hoverUi'),
         order: h37.indexOf('js/voiceCommandParser.js') > -1 && h37.indexOf('js/voiceCommandParser.js') < h37.indexOf('js/app.js') && h37.indexOf('js/capabilities.js') < h37.indexOf('js/app.js'),
-        ver: /^0\.3[7-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[7-9]\.\d+(?:-[\w.]+)?';/.test(a37) && />v0\.3[7-9]\.\d+(?:-[\w.]+)?</.test(h37),
+        ver: /^0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a37) && />v0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?</.test(h37),
       };
       ok('v0.37 pip manager: screen-saver top + smart click-through + state file + shortcuts + borderless note', v37.mgr);
       ok('v0.37 parser: fa/en intents + anti-hijack guards (ببندش needs pipOpen)', v37.parser);
@@ -1495,7 +1495,7 @@ app.whenReady().then(async () => {
         ui: ph38.includes('id="btnPlay"') && ph38.includes('id="btnMute"') && ph38.includes('id="pipSearch"') && ph38.includes('.pip-search') && pl38.includes('search: (q)'),
         errors: m38.includes('429 سهمیهٔ همین مدل است') && m38.includes('سرویس هوش مصنوعی موقتاً شلوغ است') && m38.includes("actLog('gemini-chat fail: tried models ") && !m38.includes('مدل‌های امتحان‌شده: ') && !m38.includes('هیچ کلید Gemini جواب نداد'), /* v0.39: failover markers refreshed */
         voice: a38.includes('const ytQueryOf') && a38.includes("run: 'pip_youtube'") && a38.includes("run: 'youtube_search'") && a38.indexOf("run: 'pip_youtube'") < a38.indexOf('AVAVoice.PIP_COMMAND_RE'),
-        ver: /^0\.3[8-9]\.[\w.-]+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[8-9]\.[\w.-]+';/.test(a38) && />v0\.3[8-9]\./.test(ih38),
+        ver: /^0\.(3[8-9]|[4-9][0-9])\.[\w.-]+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[8-9]|[4-9][0-9])\.[\w.-]+';/.test(a38) && />v0\.(3[8-9]|[4-9][0-9])\./.test(ih38),
       };
       ok('v0.38 commands: youtube_search + pip_youtube (function cmd + PiP bridge)', v38.cmds);
       ok('v0.38 pip manager: openUrl export + in-PiP search (link→play, text→browser+note)', v38.openUrl);
@@ -1520,7 +1520,7 @@ app.whenReady().then(async () => {
     try {
       const rt24 = await probe(`(() => ({
         netBridge: !!(window.ava && window.ava.net && typeof window.ava.net.onStatus === 'function'),
-        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.(29|3\\d)\\./.test(el.textContent) : false; })(),
+        aboutV26: (() => { const el = document.querySelector('#abVersion'); return el ? /0\\.(29|[3-9]\\d)\\./.test(el.textContent) : false; })(),
         aboutRaw: (() => { const el = document.querySelector('#abVersion'); return el ? el.textContent : 'NULL'; })(),
       }))()`);
       ok('v0.24 ava.net.onStatus bridge exposed to renderer', rt24.netBridge);

@@ -114,9 +114,9 @@ if (hasPwsh && body) {
 /* ---- 4) versions (forward-compatible: 0.29.x / 0.3x) ---- */
 console.log('\n[4] version 0.29+ everywhere');
 const appSrc = read('renderer/js/app.js');
-ok('package.json 0.29+', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
-ok('about box v0.29+', />v0\.(29|3\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
-ok('app.js appVersion 0.29+', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
+ok('package.json 0.29+', /^0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+ok('about box v0.29+', />v0\.(29|[3-9]\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.29+', /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

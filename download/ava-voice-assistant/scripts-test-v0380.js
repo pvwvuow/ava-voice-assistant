@@ -134,7 +134,7 @@ ok('پاسخ نهایی چت بدون جزئیات فنی است', mSrc.includes
 /* ---------- ۸) نسخه ---------- */
 ok('نسخهٔ beta در package.json / app.js / index.html (forward-relaxed)', (() => {
   const v = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
-  return /^0\.(38|39)\.\d+-beta$/.test(v) /* v0.39 forward */ && new RegExp("let appVersion = '" + v + "';").test(aSrc) && new RegExp('v' + v + '</span>').test(ihSrc);
+  return /^0\.(38|39|[4-9][0-9])\.\d+-beta$/.test(v) /* v0.39 forward */ && new RegExp("let appVersion = '" + v + "';").test(aSrc) && new RegExp('v' + v + '</span>').test(ihSrc);
 })());
 ok('پارسر v0370 سالم مانده (رگرسیون رفتاری سریع)', (() => {
   const vp = require('./renderer/js/voiceCommandParser.js');

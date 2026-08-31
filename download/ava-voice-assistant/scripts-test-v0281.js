@@ -117,8 +117,8 @@ ok('main.js contains the surfacing algorithm', mainSrc.includes("const msgLine =
 /* 5) versions bumped */
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 ok('package.json >= 0.28.1', pkg.version >= '0.28.1', pkg.version);
-ok('index.html abVersion >= 0.28.1', /v0\.(28|29|3\d)\./.test(fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8')));
-ok('app.js appVersion >= 0.28.1', /appVersion[^;]*0\.(28|29|3\d)\./.test(fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8')));
+ok('index.html abVersion >= 0.28.1', /v0\.(28|29|[3-9]\d)\./.test(fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8')));
+ok('app.js appVersion >= 0.28.1', /appVersion[^;]*0\.(28|29|[3-9]\d)\./.test(fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8')));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

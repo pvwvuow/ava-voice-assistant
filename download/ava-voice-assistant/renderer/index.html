@@ -959,6 +959,24 @@
     <div class="cs-chips" id="csChips"></div>
   </div>
 
+  <!-- ============ v0.40 — صفحهٔ کامل فرمان‌ها ============
+       خواستهٔ کاربر: «یه صفحهٔ ساده با انیمیشن باز بشه کامندها رو نشون بده» —
+       با صدا (دستورات رو ببینم) یا از کارت پیشنهاد باز می‌شود؛ هر فرمان را
+       می‌گوید یا کلیک می‌کند و همان لحظه اجرا می‌شود -->
+  <div id="cmdPage" class="cp-wrap" hidden aria-live="polite">
+    <div class="cp-back" id="cpBack"></div>
+    <div class="cp-card glass" role="dialog" aria-label="فرمان‌های آوا">
+      <header class="cs-head">
+        <span class="cs-ico"><svg class="ic"><use href="#i-spark"/></svg></span>
+        <b id="cpTitle">فرمان‌های آوا</b>
+        <button class="cs-x" id="cpClose" aria-label="بستن"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="cp-tabs" id="cpTabs"></div>
+      <div class="cp-chips" id="cpChips"></div>
+      <p class="cp-note">هر فرمان را بگو یا رویش کلیک کن — ESC هم می‌بندد</p>
+    </div>
+  </div>
+
   <!-- ============ فرم شیشه‌ای «DNS جدید» — داخل صفحه اصلی با انیمیشن ============ -->
   <div id="dnsQuick" class="dnsq" hidden>
     <div class="dnsq-backdrop" id="dnsqBackdrop"></div>
@@ -1028,7 +1046,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.39.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.40.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

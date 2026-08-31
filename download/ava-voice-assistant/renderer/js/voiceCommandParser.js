@@ -50,11 +50,15 @@
   /* واژهٔ لنگر: حاضر بودن موضوع «ویدیوی شناور» در جمله */
   const ANCHOR_RE = /پین|شناور|فیپ|پی\s?ای\s?پی|پی\s?اِی\s?پی|picture\s?in\s?picture|ویدیو|فیلم|کلیپ|clip|video|movie|float|\bpip\b/i;
 
+  /* v0.40 — واژه‌های تنظیمی: جمله‌ای که آن‌ها را دارد فرمانِ «پین کردن» نیست
+     («پین رو واضح‌ترش کن» دیگر PIN_VIDEO نمی‌خورد — گزارش واقعی کاربر) */
+  const TUNE_RE = /واضح|شفاف|کم\s?رنگ|تار|محو|اپسیتی|اوپسیتی|شیشه|روشن\s?تر|بزرگ|کوچک|متوسط|opacity/i;
+
   /* فعلِ تنظیم/جابجایی صریح */
-  const VERB_RE = /ببر|بذار|بزار|بیار|تنظیم|بچسبون|جابجا|move|put|set|place|bring|pin|float/i;
+  const VERB_RE = /ببرش?|بذار|بزار|بیارش?|بنداز|تنظیم|بچسبون|جابجا|move|put|set|place|bring|pin|float/i;
 
   /* v0.38.1 — «پینگ» دیگر پین حساب نمی‌شود: «پینگ گوگل چنده» پنجرهٔ شناور باز نمی‌کرد */
-  const UNPIN_RE = /بردار|ببند|بنده?ش|قطعش? کن|جدا کن|خاموشش? کن از صفحه|unpin|close pip|hide pip|remove (the )?(pip|pin)/i;
+  const UNPIN_RE = /بردار|ببند|بنده?ش|قطعش? کن|جدا کن|درش بیار|بندازش بیرون|خاموشش? کن از صفحه|unpin|close pip|hide pip|remove (the )?(pip|pin)|close (the )?(video|pip|pin)/i;
   const PIN_RE = /پین(?!گ)|شناور|فیپ|پی\s?ای\s?پی|picture\s?in\s?picture|\bpip\b|float (it|video)|pin (the )?(video|youtube|movie|clip)/i;
 
   const POS_WORDS = {
@@ -81,25 +85,48 @@
     return null;
   }
 
-  /* شفافیت: اعداد + واژه‌ها (پنجاه=50، هفتاد=70، سی=30، صد=100) */
-  function opacityOf(n) {
-    if (/(کامل|بدون شفافیت|غیر\s?شفاف|کاملا)/.test(n) && /شفاف|نشون|نمایش/.test(n)) return 1;
-    if (/نیمه|نصف|half/.test(n) && /شفاف/.test(n)) return 0.5;
-    if (/(شفافش|کم\s?رنگش|شفاف\s?تر)|شفاف کن|کم\s?رنگ کن|transparent/.test(n)) return 0.5;
-    const words = { 'سی': 30, 'پنجاه': 50, 'هفتاد': 70, 'صد': 100, 'fifty': 50, 'seventy': 70, 'thirty': 30, 'hundred': 100 };
+  /* شفافیت: اعداد + واژه‌ها (پنجاه=50، هفتاد=70، سی=30، صد=100)
+     v0.40 — گزارش کاربر (activity.log): «پین رو واضح‌ترش کن» و «اپسیتی فیفتی»
+     هیچ‌کدام شفافیت نمی‌شد و «پین…» حتی PINVIDEO می‌خورد! خانوادهٔ «واضح»
+     (شفاف‌تر شدن = opaquer) و «اپسیتی» (تلفظ opacity) و «فیفتی» اضافه شد؛
+     حالت‌های «تر» نسبی‌اند و به ctx.opacity پله می‌خورند. */
+  const OP_STEPS = [0.3, 0.5, 0.7, 1];
+  function stepFrom(cur, dir) {
+    const i = OP_STEPS.indexOf(Number(cur) || 1);
+    const j = OP_STEPS.indexOf(Number(cur) || 1) >= 0 ? i : OP_STEPS.length - 1; /* نامعلوم = کامل */
+    return OP_STEPS[Math.max(0, Math.min(OP_STEPS.length - 1, j + dir))];
+  }
+  function opacityOf(n, c) {
+    const ctx = c || {};
+    if (/(کامل|بدون شفافیت|غیر\s?شفاف|کاملا)/.test(n) && /شفاف|نشون|نمایش|واضح/.test(n)) return 1;
+    if (/نیمه|نصف|half/.test(n) && /شفاف|اپسیتی/.test(n)) return 0.5;
+    /* واضح‌تر/روشن‌تر = رو به کامل (بالا)؛ شفاف‌تر/کم‌رنگ‌تر/محو = رو به محو (پایین) */
+    if (/(واضح\s?ترش?|واضح\s?تر|روشن\s?ترش?|روشن\s?تر|clearer|more solid)/i.test(n)) return stepFrom(ctx.opacity, +1);
+    if (/(شفافش|کم\s?رنگش|شیشه\s?ایش?|شفاف کن|کم\s?رنگ کن|transparent)/.test(n)) return 0.5;
+    if (/(شفاف\s?ترش?|کم\s?رنگ\s?ترش?|محو\s?ترش?|تار\s?ترش?)/.test(n)) return stepFrom(ctx.opacity, -1);
+    if (/شیشه\s?ای|شیشه‌ای/.test(n)) return 0.5;
+    /* «اپسیتی/اوپسیتی» بدون مقدار = یک پله واضح‌تر (درخواست واقعی کاربر:
+        «اپسیتی رو تغییر بده» — هر تغییری از هیچ بهتر است؛ اگر روی کامل
+        باشد یک پله محو می‌کنیم تا تغییری واقعاً دیده شود) */
+    const opWord = '(?:شفافیت|شفاف|اپسیتی|اوپسیتی|اوپاسیتی|opacity)';
+    if (new RegExp(opWord + '[^.]{0,10}(تغییر|عوض)').test(n)) {
+      let nv = stepFrom(ctx.opacity, +1);
+      if (nv >= 1 && (ctx.opacity == null || Number(ctx.opacity) >= 1)) nv = 0.7;
+      return nv;
+    }
+    const words = { 'سی': 30, 'پنجاه': 50, 'فیفتی': 50, 'فتی': 50, 'هفتاد': 70, 'سونتی': 70, 'صد': 100, 'هانرد': 100, 'fifty': 50, 'seventy': 70, 'thirty': 30, 'hundred': 100 };
     for (const w of Object.keys(words)) {
-      if (new RegExp('(شفافیت|opacity|شفاف)[^.]{0,12}' + w + '|' + w + '[^.]{0,10}(درصد|percent)|opacity\\s*' + w, 'i').test(n)) {
+      if (new RegExp(opWord + '[^.]{0,12}' + w + '|' + w + '[^.]{0,10}(درصد|percent)|opacity\\s*' + w, 'i').test(n)) {
         return words[w] / 100;
       }
     }
     /* [^.\d] تا عددِ آخر جمله بلعیده نشود («opacity 50» → 50 نه 0) */
-    const dm = n.match(/(?:شفافیت|opacity)[^.\d]{0,12}(\d{1,3})|(\d{1,3})[^.]{0,10}(?:درصد|percent)/i);
+    const dm = n.match(new RegExp(opWord + '[^.\\d]{0,12}(\\d{1,3})|(\\d{1,3})[^.]{0,10}(?:درصد|percent)', 'i'));
     if (dm) {
       const v = parseInt(dm[1] || dm[2], 10);
       if (v >= 0 && v <= 100) {
-        const steps = [0.3, 0.5, 0.7, 1];
         let best = 1, bestD = Infinity;
-        for (const s of steps) { const d = Math.abs(v - s * 100); if (d < bestD) { bestD = d; best = s; } }
+        for (const s of OP_STEPS) { const d = Math.abs(v - s * 100); if (d < bestD) { bestD = d; best = s; } }
         return best;
       }
     }
@@ -107,6 +134,10 @@
     if (/opacity (30|50|70|100)/i.test(n)) return parseInt(n.match(/opacity (30|50|70|100)/i)[1], 10) / 100;
     return null;
   }
+
+  /* v0.40 — سوالِ «چجوری/چطور می‌تونم…؟» هرگز اقدام مستقیم نیست:
+     «چجوری ویدیو رو پین کنم؟» باید راهنما/AI شود، نه اینکه همین الان پین شود */
+  const HOW_Q_RE = /چ(?:جور|طور|گونه)|چطوری|چگونه|how (do|can|to) i?\b/i;
 
   /* اندازه: مطلق یا نسبی (بزرگش/کوچیکش) */
   function sizeOf(n) {
@@ -128,6 +159,7 @@
     const c = ctx || {};
     const anchored = ANCHOR_RE.test(n);
     const verb = VERB_RE.test(n);
+    if (HOW_Q_RE.test(n)) return null; /* v0.40 — سوال روش، نه فرمان */
 
     /* ۱) ریست */
     if (/ریستش? کن|ریست پیک|حالت پیش\s?فرض|برگردون حالت|reset pip|back to default/.test(n) && (anchored || verb || c.pipOpen)) {
@@ -157,9 +189,11 @@
       return { intent: INTENTS.UNPIN, entities: {} };
     }
 
-    /* ۵) شفافیت — «شفافش/کم‌رنگش» خودش کافی است (به غیر از PiP معنای دیگری ندارد) */
-    const op = opacityOf(n);
-    if (op !== null && (anchored || c.pipOpen || /شفافیت|شفافش|کم\s?رنگش|opacity/.test(n))) {
+    /* ۵) شفافیت — «شفافش/کم‌رنگش/واضح‌ترش/اپسیتی» خودش کافی است
+          (به غیر از PiP معنای دیگری ندارد — ریشهٔ «پین رو واضح‌ترش کن»
+          که PIN اشتباه می‌خورد) */
+    const op = opacityOf(n, c);
+    if (op !== null && (anchored || c.pipOpen || /شفافیت|شفافش|کم\s?رنگش|واضح|اپسیتی|اوپسیتی|شیشه|opacity/.test(n))) {
       return { intent: INTENTS.OPACITY, entities: { opacity: op } };
     }
 
@@ -188,8 +222,8 @@
       return { intent: INTENTS.MOVE, entities: { position: pos } };
     }
 
-    /* ۸) پین کردن */
-    if (PIN_RE.test(n) && !UNPIN_RE.test(n)) {
+    /* ۸) پین کردن — v0.40: جملهٔ تنظیمی («پین رو واضح‌ترش کن») دیگر پین نیست */
+    if (PIN_RE.test(n) && !UNPIN_RE.test(n) && !TUNE_RE.test(n)) {
       return { intent: INTENTS.PIN, entities: pos ? { position: pos } : {} };
     }
 
@@ -197,8 +231,12 @@
   }
 
   /* دروازهٔ قانون در RULES — کمی بازتر است تا جمله به پارسر برسد؛
-     اگر پارسر null داد، قانون به هوش مصنوعی fallback می‌کند */
-  const PIP_COMMAND_RE = /پین(?!گ)|شناور|فیپ|پی\s?ای\s?پی|\bpip\b|picture|شفاف|کلیک|همیشه|بردار|ببندش|کوچیکش|بزرگش|متوسطش|ریستش کن|opacity|pin video|float video/i;
+     اگر پارسر null داد، قانون به هوش مصنوعی fallback می‌کند.
+     v0.40 — گزارش واقعی activity.log که هیچ‌کدام به پارسر نمی‌رسیدند:
+     «فیلم یا ویدیو رو ببند» / «ببرش بالا سمت راست» / «یکم کوچکترش کن» /
+     «اپسیتی فیفتی» → واژه‌های ویدیو/فیلم/ببرش/بیارش/کوچکترش/بزرگترش/
+     اپسیتی/واضح اضافه شد (پارسر خودش گارد ضد-ربایش دارد) */
+  const PIP_COMMAND_RE = /پین(?!گ)|شناور|فیپ|پی\s?ای\s?پی|\bpip\b|picture|شفاف|کلیک|همیشه|بردار|ببندش|ببند\s|کوچیکش|کوچکترش|بزرگش|بزرگترش|متوسطش|ریستش کن|opacity|اپسیتی|اوپسیتی|واضح|شیشه|ویدیو|فیلم|کلیپ|ببرش|بیارش|pin video|float video/i;
 
   const api = { parseVoiceCommand, normFa, PIP_COMMAND_RE, INTENTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

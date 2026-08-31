@@ -153,9 +153,9 @@ if (hasPwsh && body) {
 
 console.log('\n[8] versions 0.30+ (v0.31: forward-compatible)');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.30+', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
-ok('about box 0.30+', />v0\.(29|3\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
-ok('app.js appVersion 0.30+', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
+ok('package.json 0.30+', /^0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+ok('about box 0.30+', />v0\.(29|[3-9]\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.30+', /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

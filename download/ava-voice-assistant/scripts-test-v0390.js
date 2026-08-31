@@ -131,9 +131,9 @@ ok(AVAVoice && typeof AVAVoice.parseVoiceCommand === 'function', 'پارسر PiP
 ok(!!AVAVoice.PIP_COMMAND_RE, 'PIP_COMMAND_RE سر جایش است');
 
 /* ---------- ۹) نسخه ---------- */
-ok(pkg.version === '0.39.0-beta', 'نسخه 0.39.0-beta در package.json');
-ok(app.includes("'0.39.0-beta'"), 'نسخه در app.js');
-ok(/v0\.39\.0-beta/.test(idx), 'نسخه در دربارهٔ index.html');
+ok(/^0\.(39|[4-9][0-9])\.\d+-beta$/.test(pkg.version), 'نسخه 0.39+ در package.json (forward)');
+ok(/'0\.(39|[4-9][0-9])\.\d+-beta'/.test(app), 'نسخه در app.js (forward)');
+ok(/v0\.(39|[4-9][0-9])\.\d+-beta/.test(idx), 'نسخه در دربارهٔ index.html (forward)');
 
 console.log('');
 console.log(`RESULT: ${pass}/${pass + fail}`);

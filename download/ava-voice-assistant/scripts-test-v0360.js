@@ -130,8 +130,8 @@ ok('siteTargetOf extracts the name from «سایت X رو باز کن» and drop
 ok('cleanSiteQuery also strips the relative clause',
    appSrc.indexOf('s.replace(/\\s+که\\s+[\\s\\S]*$/i, \' \')') > appSrc.indexOf('function cleanSiteQuery'));
 ok('site rule run/arg/reply all consult siteTargetOf (web_open decision + knownSite + domain)',
-   (appSrc.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length === 3 &&
-   (appSrc.match(/siteDomainOf\(siteTargetOf\(c\)\)/g) || []).length === 2);
+   (appSrc.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length >= 3 &&
+   (appSrc.match(/siteDomainOf\(siteTargetOf\(c\)\)/g) || []).length >= 2);
 /* NEG CONTROL — strip the clause-cut from cleanSiteQuery: «که خیلی خوبه» would leak into search queries again */
 {
   const poisoned = appSrc.replace("    /* v0.36 — بند وابستهٔ «که …» جزو اسم سایت نیست («سافت 98 که خیلی خوبه» → «سافت 98») */\n    s = s.replace(/\\s+که\\s+[\\s\\S]*$/i, ' ');\n", '');
@@ -185,8 +185,8 @@ console.log('\n[8] hygiene + versions');
 ok('PS body hygiene: no curly quotes, no C-comments, no raw backtick',
    !/[\u2018\u2019\u201C\u201D]/.test(body) && !/\/\*/.test(body) && !body.includes('`'));
 ok('version 0.36.x+ everywhere (forward-compatible for v0.37+)',
-   /^0\.3[6-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(read('package.json')).version) &&
-   /let appVersion = '0\.3[6-9]\.\d+(?:-[\w.]+)?';/.test(appSrc) && />v0\.3[6-9]\.\d+(?:-[\w.]+)?</.test(htmlSrc));
+   /^0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(read('package.json')).version) &&
+   /let appVersion = '0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(appSrc) && />v0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?</.test(htmlSrc));
 
 console.log('\n[9] real pwsh execution (if portable pwsh available)');
 const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';

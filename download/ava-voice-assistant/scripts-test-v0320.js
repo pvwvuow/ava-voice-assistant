@@ -249,9 +249,9 @@ function makeGem(mockFetch, badSeed) {
 
   console.log('\n[12] versions 0.32+ (forward-regex: 0.32 and any later 0.3x)');
   const pkg = JSON.parse(read('package.json'));
-  ok('package.json 0.32+', /^0\.3[2-9]\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
-  ok('about box v0.32+', />v0\.3[2-9]\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
-  ok('app.js appVersion 0.32+', /let appVersion = '0\.3[2-9]\.\d+(?:-[\w.]+)?';/.test(appSrc));
+  ok('package.json 0.32+', /^0\.(3[2-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+  ok('about box v0.32+', />v0\.(3[2-9]|[4-9][0-9])\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
+  ok('app.js appVersion 0.32+', /let appVersion = '0\.(3[2-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(appSrc));
   ok('no stray 0.31.0 version asserts (older suites forward-regex)', !read('scripts-test-v0310.js').includes("pkg.version === '0.31.0'"));
 
   console.log(`\nRESULT: ${pass}/${pass + fail}`);

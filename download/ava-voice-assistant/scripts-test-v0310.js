@@ -174,9 +174,9 @@ ok('B: حذف مغرب ۴٫۵° → گپ خارج از بازهٔ مرجع (۸-�
   !((pBad.maghrib - pBad.sunset) * 60 >= 8 && (pBad.maghrib - pBad.sunset) * 60 <= 30));
 
 console.log('\n[10] versions 0.31.0 (forward-regex — نسخه‌های بعدی هم پاس شوند)');
-ok('package.json 0.31+', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
-ok('about box v0.31+', /<span id="abVersion">v0\.(29|3\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(R('renderer/index.html')));
-ok('app.js appVersion 0.31+', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
+ok('package.json 0.31+', /^0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+ok('about box v0.31+', /<span id="abVersion">v0\.(29|[3-9]\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(R('renderer/index.html')));
+ok('app.js appVersion 0.31+', /let appVersion = '0\.(29|[3-9]\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 ok('main.js نسخه در app:info همگام', !mainSrc.includes("'0.30.0'") || mainSrc.includes("'0.31.0'"));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);

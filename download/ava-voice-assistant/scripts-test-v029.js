@@ -82,7 +82,7 @@ ok('voice: ALREADY results reported honestly', appSrc.includes("if (r && r.ok &&
 const pkg = JSON.parse(read('package.json'));
 ok('package.json >= 0.29.0', pkg.version >= '0.29.0', pkg.version);
 ok('index.html abVersion >= 0.29.0', /v0\.(29|3\d)\./.test(htmlSrc));
-ok('app.js appVersion >= 0.29.0', /let appVersion = '0\.(29|3\d)/.test(appSrc));
+ok('app.js appVersion >= 0.29.0', /let appVersion = '0\.(29|[3-9]\d)/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

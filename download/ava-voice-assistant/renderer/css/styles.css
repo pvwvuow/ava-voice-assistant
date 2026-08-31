@@ -2573,3 +2573,58 @@ details.set-adv[open] > summary { color: var(--text); }
 .cs-chip:nth-child(7) { animation-delay: 0.3s; }
 @keyframes csChipIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .cs-chip:hover { border-color: rgba(52, 211, 153, 0.45); color: var(--acc2); background: rgba(16, 185, 129, 0.12); }
+.cs-all {
+  flex: 1 1 100%; margin-top: 2px; font: inherit; font-size: 11.5px; cursor: pointer;
+  border: 1px dashed rgba(52, 211, 153, 0.35); background: transparent; color: var(--acc2);
+  padding: 6px 10px; border-radius: 10px; animation: csChipIn 0.35s ease both; animation-delay: 0.34s;
+}
+.cs-all:hover { background: rgba(16, 185, 129, 0.14); border-style: solid; }
+
+/* ============================================================
+   v0.40 — صفحهٔ کامل فرمان‌ها (خواستهٔ کاربر: «یه صفحهٔ ساده با
+   انیمیشن باز بشه کامندها رو نشون بده») — شیشه‌ای، مرکز صفحه،
+   تب دسته‌ها + چیپ‌های پلکانی؛ کلیک/گفتار = اجرای واقعی
+   ============================================================ */
+.cp-wrap { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; }
+.cp-wrap.bye { animation: cpOut 0.24s ease both; }
+@keyframes cpIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cpOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.cp-back { position: absolute; inset: 0; background: rgba(4, 8, 7, 0.55); backdrop-filter: blur(6px); animation: cpBackIn 0.25s ease both; }
+@keyframes cpBackIn { from { opacity: 0; } to { opacity: 1; } }
+.cp-card {
+  position: relative; z-index: 1; width: min(560px, calc(100vw - 40px));
+  max-height: min(78vh, 620px); display: flex; flex-direction: column;
+  padding: 16px 18px 12px; border-radius: 18px;
+  background: rgba(10, 16, 14, 0.96);
+  border: 1px solid rgba(52, 211, 153, 0.24);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(16, 185, 129, 0.07);
+  animation: cpIn 0.38s cubic-bezier(0.2, 0.9, 0.25, 1.12) both;
+}
+.cp-wrap.bye .cp-back { animation: cpOut 0.24s ease both; }
+.cp-wrap.bye .cp-card { animation: cpOut 0.24s ease both; }
+.cp-card .cs-head b { font-size: 15px; }
+.cp-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.cp-tab {
+  font: inherit; font-size: 11.5px; cursor: pointer; padding: 5px 12px;
+  border-radius: 999px; border: 1px solid var(--stroke);
+  background: var(--panel); color: var(--text2);
+  animation: csChipIn 0.3s ease both;
+}
+.cp-tab:hover { color: var(--text); border-color: rgba(52, 211, 153, 0.4); }
+.cp-tab.on {
+  background: rgba(16, 185, 129, 0.16); color: var(--acc2);
+  border-color: rgba(52, 211, 153, 0.5); font-weight: 700;
+}
+.cp-chips {
+  display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px;
+  overflow-y: auto; align-content: flex-start; padding-bottom: 6px;
+  scrollbar-width: thin; min-height: 120px;
+}
+.cp-chips .cs-chip { font-size: 12.5px; padding: 7px 13px; }
+.cp-note { margin: 8px 0 0; font-size: 10.5px; color: var(--text3); text-align: center; }
