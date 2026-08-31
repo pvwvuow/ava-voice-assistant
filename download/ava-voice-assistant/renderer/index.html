@@ -371,6 +371,13 @@
                   </select>
                 </div>
                 <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.voice.eVoice">صدای اِج</b><span data-i18n="set.voice.eVoiceHint">مؤنث (دلارا) یا مذکر (فرید) — با تغییر، نمونهٔ صدا پخش می‌شود</span></span>
+                  <select id="optEdgeVoice" class="set-select">
+                    <option value="dilara">دلارا — مؤنث</option>
+                    <option value="farid">فرید — مذکر</option>
+                  </select>
+                </div>
+                <div class="set-row">
                   <span class="set-info"><b data-i18n="set.voice.sel">صدای گوینده (فقط موتور ویندوز)</b><span data-i18n="set.voice.selHint">اگر صدای فارسی نصب نباشد، از Settings › Time &amp; Language › Speech اضافه کن</span></span>
                   <select id="optVoice" class="set-select"></select>
                 </div>
@@ -1047,7 +1054,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.42.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.43.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و
@@ -1067,6 +1074,7 @@
 
   <!-- v0.37 — پارسر فرمان‌های صوتی PiP + رجیستری «چجوری می‌تونم …؟» — قبل از app.js -->
   <script src="js/voiceCommandParser.js"></script>
+  <script src="js/voiceIntent.js"></script>
   <script src="js/capabilities.js"></script>
   <script src="js/types.js"></script>
   <script src="js/app.js"></script>

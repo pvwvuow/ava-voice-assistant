@@ -87,8 +87,8 @@ if (yqMatch) {
 const pipStart = aSrc.indexOf('const pipRules = [');
 const prBlock = aSrc.slice(pipStart, aSrc.indexOf('RULES.splice', pipStart));
 const ruleRes = [...prBlock.matchAll(/k: \/(.*?)\/i[,\n]/g)].map((m) => m[1]);
-ok('بلوک pipRules: سه regex literal (HOW + ۲ قانون جدید) پیدا شد', ruleRes.length === 3);
-if (ruleRes.length === 3) {
+ok('بلوک pipRules: حداقل سه regex literal (HOW + ۲ قانون جدید) پیدا شد (v0.43: +۵ قانون مدیا)', ruleRes.length >= 3);
+if (ruleRes.length >= 3) {
   const pipYt = new RegExp(ruleRes[1], 'i');
   const ytSearch = new RegExp(ruleRes[2], 'i');
   const T1 = [

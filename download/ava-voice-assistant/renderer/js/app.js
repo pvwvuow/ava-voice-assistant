@@ -966,6 +966,8 @@
     'set.voice.eEng': ['اِج — صدای عصبی مایکروسافت (پیشنهادی)', 'Edge — Microsoft neural voice (recommended)'],
     'set.voice.gEng': ['گوگل — صدای زن', 'Google — female voice'],
     'set.voice.wEng': ['ویندوز — آفلاین', 'Windows — offline'],
+    'set.voice.eVoice': ['صدای اِج', 'Edge voice'],
+    'set.voice.eVoiceHint': ['مؤنث (دلارا) یا مذکر (فرید) — با تغییر، نمونهٔ صدا پخش می‌شود', 'Female (Dilara) or male (Farid) — a sample plays on change'],
     'set.ai.provider': ['موتور هوش مصنوعی', 'AI engine'],
     'set.ai.providerHint': ['«خودکار»: اول کلید Gemini (با سرچ زنده گوگل)، بعد حساب GLM، کلید GLM و در آخر OpenAI — یا یکی را ثابت انتخاب کن', '"Auto": Gemini key first (with live Google Search), then GLM account, GLM key, and OpenAI last — or fix one'],
     'set.ai.pAuto': ['خودکار (پیشنهادی)', 'Auto (recommended)'],
@@ -1168,6 +1170,7 @@
   const btnUpdBadge = $('#btnUpdBadge');
   const updBadgeTxt = $('#updBadgeTxt');
   const optTtsEngine = $('#optTtsEngine');
+  const optEdgeVoice = $('#optEdgeVoice');
   const optAiProvider = $('#optAiProvider');
   const optGeminiKey = $('#optGeminiKey');
   const optOpenaiKey = $('#optOpenaiKey');
@@ -1287,6 +1290,7 @@
     tts: store.get('tts', true),
     voiceURI: store.get('voiceURI', ''),
     ttsEngine: store.get('ttsEngine', 'edge'), /* v0.42 — اِج پیش‌فرض */
+    edgeVoice: store.get('edgeVoice', 'dilara'), /* v0.43 — صدای اِج: دلارا/فرید */
     autoUpdate: store.get('autoUpdate', true),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
@@ -1490,8 +1494,13 @@
   async function speakEdge(text) {
     if (!bridge || !bridge.tts || !bridge.tts.edge) return false;
     const lang = settings.sttLang === 'en-US' ? 'en' : 'fa';
+    /* v0.43 — صدای مذکر/مؤنث انتخابی کاربر (تغییر TTS دیگر فقط اسم نیست —
+       واقعاً صدا عوض می‌شود) */
+    const voice = settings.edgeVoice === 'farid'
+      ? (lang === 'en' ? 'en-US-GuyNeural' : 'fa-IR-FaridNeural')
+      : '';
     try {
-      const r = await bridge.tts.edge({ text: String(text).slice(0, 3000), lang });
+      const r = await bridge.tts.edge({ text: String(text).slice(0, 3000), lang, voice });
       if (!(r && r.ok && Array.isArray(r.chunks) && r.chunks.length)) return false;
       stopGoogleSpeak();
       gTtsQueue = r.chunks.slice();
@@ -1521,28 +1530,48 @@
     } catch (_) { /* noop */ }
   }
 
+  /* v0.43 — «TTS رو تغییر میدم ولی هیچی تغییر نمیکنه» — ریشه: اِج روی شبکهٔ
+     کاربر بلاک است و بی‌سروصدا گوگل جایگزین می‌شد → همهٔ موتورها یک صدا
+     شنیده می‌شدند. حالا موتورِ واقعاً پخش‌شده ثبت و یک‌بار اعلام می‌شود. */
+  let ttsLastEngine = '';
+  let ttsEdgeFailTold = false;
   async function speak(text) {
-    if (!settings.tts || !text) return;
+    if (!settings.tts || !text) return false;
     const txt = String(text).replace(/[«»]/g, '').trim();
-    if (!txt) return;
+    if (!txt) return false;
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
     stopGoogleSpeak();
     /* v0.42 — زنجیره: اِج → گوگل → ویندوز (اِج پیش‌فرض جدید؛ هر حلقه اگر
        جواب نداد خودکار به بعدی می‌رود تا صدا هیچ‌وقت خاموش نماند) */
     if (settings.ttsEngine === 'edge') {
-      if (await speakEdge(txt)) return;
-      if (await speakGoogle(txt)) return;
+      if (await speakEdge(txt)) { ttsLastEngine = 'edge'; return true; }
+      if (await speakGoogle(txt)) {
+        ttsLastEngine = 'google';
+        if (!ttsEdgeFailTold) {
+          ttsEdgeFailTold = true;
+          try {
+            toast(LANG === 'en'
+              ? 'Edge voice is blocked on your network — Google voice is used (VPN enables Edge)'
+              : 'صدای اِج روی شبکهٔ شما در دسترس نیست (بلاک مایکروسافت) — فعلاً با صدای گوگل حرف می‌زنم؛ برای صدای اِج VPN لازم است', '#i-info');
+          } catch (_) { /* noop */ }
+        }
+        return true;
+      }
+      ttsLastEngine = 'windows';
       speakWindows(txt);
-      return;
+      return true;
     }
     if (settings.ttsEngine === 'google') {
       const ok = await speakGoogle(txt);
-      if (ok) return;
+      if (ok) { ttsLastEngine = 'google'; return true; }
       /* گوگل جواب نداد (آفلاین/فیلتر) → صدای ویندوز */
+      ttsLastEngine = 'windows';
       speakWindows(txt);
-      return;
+      return true;
     }
+    ttsLastEngine = 'windows';
     speakWindows(txt);
+    return true;
   }
 
   /* ---------- ابزار ---------- */
@@ -1959,7 +1988,8 @@
     s = s.replace(/(یوتیوب|youtube)/gi, ' ');
     s = s.replace(/\bsearch( for|ing)?\b/gi, ' ');
     s = s.replace(/(جستجو|جستجوش|سرچش?|سیرچ)\s*(کن|بکن|بزن|می?کنی)?/gi, ' ');
-    s = s.replace(/(بگرد|بگرده|دنبال|پیدا\s?کن|بذار|بزار|پخش\s?کن|باز\s?کن|بگیر)\s*/gi, ' ');
+    /* v0.43 — فعل‌های پخش هم از عبارت حذف می‌شوند («توی یوتیوب آهنگ شادمهر پلی کن» → «آهنگ شادمهر») */
+    s = s.replace(/(بگرد|بگرده|دنبال|پیدا\s?کن|بذار|بزار|پخش\s?کن|پلی\s?کن|باز\s?کن|بگیر|بزن)\s*/gi, ' ');
     s = s.replace(/(شناور|فیپ|پی\s?ای\s?پی|پینش?)\s*/gi, ' ');
     s = s.replace(/(^|\s)(لطفا|لطفاً|بابا|دیگه|خب|خوب|ممنون|مرسی|برام|واسه|الان)(?=\s|$)/gi, '$1');
     s = s.replace(/\s*(رو|را)\s*$/i, ' ');
@@ -2124,6 +2154,8 @@
      نمی‌تواند انجامش دهد (شهر پیدا نشد / شبکه / پارس ریاضی) دیگر بن‌بست نیست؛
      runCommand این نشانه را می‌بیند و درخواست را به تحلیل هوش مصنوعی می‌دهد */
   const AI_FALLBACK = Object.freeze({ __aiFallback: true });
+  /* v0.43 — نامزدهای داوری نیتِ همان جمله (برای پیام AI) */
+  let _intentCands = '';
 
   function wxExtractCity(c) {
     let city = String(c || '')
@@ -2512,7 +2544,7 @@
       r: () => runPower('shutdown_abort'),
     },
     { k: /(بخواب|خواب.{0,6}ببر|حالت.{0,6}خواب|به\s*خواب|sleep( now)?|go to sleep)/i, id: 'sleep', t: 'حالت خواب', i: '#i-moon', run: 'sys_sleep', r: () => runPower('sys_sleep') },
-    { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, id: 'monitor_off', t: 'خاموش کردن مانیتور', i: '#i-monitor', run: 'monitor_off', r: () => runPower('monitor_off') },
+    { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|صفحه\s?(نمایشگر)?\s?(رو|را)?\s?خاموش\s?(کن|شه)|نور.{0,6}خاموش|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, id: 'monitor_off', t: 'خاموش کردن مانیتور', i: '#i-monitor', run: 'monitor_off', r: () => runPower('monitor_off') },
     { k: /ری\s?استارت|ریستارت|راه\s?اندازی.{0,4}مجدد|restart|reboot/i, id: 'restart', t: 'راه‌اندازی مجدد', i: '#i-refresh', run: 'sys_restart', confirm: 'restart', r: () => runPower('sys_restart') },
     {
       /* v0.38.1 — «صدا رو خاموش کن» دیگر دیالوگ خاموشی PC باز نمی‌کرد!
@@ -2591,6 +2623,8 @@
        با لنگرِ پنجره معنی مینیمایز می‌گیرد */
     { k: /مینیمایز|دسکتاپ|پنجره[^.]{0,10}(کوچک|کوچیک)|همه[^.]{0,8}پنجره|minimize|show (the )?desktop/i, id: 'minimize_all', t: 'نمایش دسکتاپ', i: '#i-window', run: 'minimize_all', r: () => LANG === 'en' ? 'All windows minimized; desktop is clear.' : 'همه پنجره‌ها کوچک شدند؛ دسکتاپ آزاد است.' },
     { k: /قفل.{0,8}(کن|صفحه)|لاک\s?اسکرین|lock (the )?(pc|computer|screen)/i, id: 'lock', t: 'قفل صفحه', i: '#i-lock', run: 'lock', r: () => LANG === 'en' ? 'Screen locked; bye!' : 'صفحه قفل شد؛ بدرود!' },
+    /* v0.43 — خروج از حساب ویندوز («اقدامات این چنینی») */
+    { k: /(از\s*)?(حساب|اکانت)(م)?\s*(خارج|برو\s?بیرون|بسته\s?شه)|لاگ\s?آف|لاگ\s?اف|logoff|log off|sign out/i, id: 'logoff', t: 'خروج از حساب', i: '#i-lock', run: 'sys_logoff', r: () => LANG === 'en' ? 'Signing out of Windows.' : 'از حساب کاربری ویندوز خارج می‌شوم.' },
 
     /* --- ضبط صدا (واقعی) --- */
     { k: /(شروع|بگیر).{0,8}ضبط|ضبط.{0,8}(صدا|شروع)|start recording|record (my )?(voice|audio)/i, id: 'rec_start', t: 'شروع ضبط صدا', i: '#i-mic', r: () => startAudioRec() },
@@ -2701,7 +2735,10 @@
         id: 'music_pause', t: 'توقف موزیک', i: '#i-music', r: () => voiceMusicPause(),
       },
       {
-        k: new RegExp(`(?:پخش|بزن|پلی|شروع|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|play|کن)`, 'i'),
+        /* v0.43 — «کن» تنهایی از الگوی دوم حذف شد: «موزیک رو باز کن» را هم
+           پخشِ موزیکِ محلی می‌گرفت (ریشهٔ بخشی از «الکی انجام میده»؛ باز کردن
+           پلیر موزیک الان مسیر درست خودش را دارد) */
+        k: new RegExp(`(?:پخش|بزن|پلی|شروع|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|play)`, 'i'),
         id: 'music_play', t: 'پخش موزیک', i: '#i-music', r: () => voiceMusicPlay(),
       },
       {
@@ -2751,7 +2788,10 @@
       /* --- v0.38 — جستجوی مستقیم یوتیوب: «تو یوتیوب آهنگ X رو سرچ کن» ---
          قبل از قانونِ یوتیوبِ ساده (که هر جملهٔ یوتیوب‌دار را می‌بلعد) */
       {
-        k: /(یوتیوب|youtube)[^.]{0,20}(جستجو|سرچ|سیرچ|بگرد)|(جستجو|سرچ|سیرچ)[^.]{0,14}(یوتیوب|youtube)|youtube\s+search|search\s+youtube/i,
+        /* v0.43 — «توی یوتیوب برام آهنگ شادمهر پلی کن» الان واقعاً در یوتیوب
+           پخش می‌شود (لاگ کاربر: به موزیکِ محلی می‌رفت!) — فعل پخش/پلی/بزن
+           هم به فعل‌های جستجو پیوست؛ انتخاب نهایی با داوری AVAIntent است */
+        k: /(?=.*(یوتیوب|youtube))(?=.*(جستجو|سرچ|سیرچ|بگرد|پخش|پلی\s?کن|بزن|بذار|آهنگ|ترانه|ویدیو|فیلم|search|find))/i,
         id: 'yt_search', t: 'جستجوی یوتیوب', i: '#i-search', run: 'youtube_search',
         arg: (c) => ytQueryOf(c),
         r: (c) => {
@@ -2759,6 +2799,150 @@
           return q
             ? (LANG === 'en' ? `I searched "${q}" on YouTube.` : `«${q}» را در یوتیوب جستجو کردم.`)
             : (LANG === 'en' ? 'YouTube search is open.' : 'جستجوی یوتیوب باز شد.');
+        },
+      },
+      /* --- v0.43 — «چی داره پخش میشه؟» — SMTC ویندوز (هر مرورگر/پلیری) --- */
+      {
+        k: /چی\s?(داره\s?)?پخش|چه\s?(آهنگی|ویدیویی|چیزی)\s?(داره\s?)?پخش|الان\s?چی\s?پخشه|چی\s?در\s?حال\s?پخش|whats?\s+playing|now\s+playing/i,
+        id: 'now_playing', t: 'در حال پخش', i: '#i-music',
+        r: async () => {
+          if (!bridge || !bridge.media || !bridge.media.now) return LANG === 'en' ? 'Media status is only available inside the app.' : 'وضعیت پخش فقط داخل خود نرم‌افزار در دسترس است.';
+          const n = await bridge.media.now();
+          if (!n || !n.ok) return LANG === 'en' ? 'Nothing is playing right now.' : 'الان هیچ چیزی در حال پخش نیست.';
+          const what = [n.title, n.artist].filter(Boolean).join(' — ') || 'نامشخص';
+          return (LANG === 'en'
+            ? `Playing in ${n.app || 'unknown app'}: ${what}`
+            : `در حال پخش در ${n.app || 'برنامهٔ نامشخص'}: «${what}»${n.playing ? '' : ' (مکث شده)'}`);
+        },
+      },
+      /* --- v0.43 — «همین ویدیو رو بیار» — ویدیوی در حال پخشِ مرورگر، بدون کپی لینک
+         (خواستهٔ کاربر: «کاربر خودش کپی نکنه لینکو») --- */
+      {
+        k: /همین\s?(ویدیو|فیلم|کلیپ)|ویدیو(یی)?\s?که\s?(داره|در\s?حال)\s?پخش|ویدیو\s?در\s?حال\s?پخش|همینو?\s?(بیار|پین\s?کن|باز\s?کن)|برام\s?همون\s?ویدیو|bring (the )?current video|this video/i,
+        id: 'yt_bring', t: 'ویدیوی در حال پخش', i: '#i-music',
+        r: async (c) => {
+          const cleanTitle = (s) => String(s || '').replace(/\s*[-–—]\s*(YouTube|یوتیوب)\s*$/i, '').trim();
+          let q = '';
+          try {
+            if (bridge && bridge.media && bridge.media.now) {
+              const n = await bridge.media.now();
+              if (n && n.ok && n.title) {
+                const t1 = cleanTitle(n.title);
+                const ar = cleanTitle(n.artist);
+                q = t1 + (ar && !t1.toLowerCase().includes(ar.toLowerCase()) ? ' ' + ar : '');
+              }
+            }
+          } catch (_) { /* noop */ }
+          if (!q) q = ytQueryOf(c);
+          if (!q) return LANG === 'en'
+            ? 'I could not detect what is playing — start the video first or copy its link.'
+            : 'نتوانستم بفهمم چه ویدیویی در حال پخش است — اول ویدیو را پخش کن یا لینکش را کپی کن.';
+          try {
+            const res = (bridge.yt && bridge.yt.resolve) ? await bridge.yt.resolve(q) : null;
+            if (res && res.ok && res.videoId) {
+              const op = await bridge.yt.watch({ videoId: res.videoId });
+              if (op && op.ok) return (LANG === 'en'
+                ? `Brought "${res.title || q}" into AVA's own player.`
+                : `«${res.title || q}» را آوردم داخل پخش‌کنندهٔ خودم.`);
+            }
+            const w2 = (bridge.yt && bridge.yt.watch) ? await bridge.yt.watch({ query: q }) : null;
+            if (w2 && w2.ok) return (LANG === 'en'
+              ? `Opened YouTube results for "${q}" in AVA's player.`
+              : `نتیجه‌های «${q}» را در پخش‌کنندهٔ خودم باز کردم.`);
+          } catch (_) { /* noop */ }
+          return LANG === 'en' ? 'Could not open the video.' : 'باز کردن ویدیو ممکن نشد.';
+        },
+      },
+      /* --- v0.43 — «تو خودت بازش کن / لینکی که کپی کردم رو نشونم بده» ---
+         ریشهٔ گزارش کاربر: امبد یوتیوب می‌گفت «برو توی خودت یوتیوب ببین»؛
+         حالا پخش‌کنندهٔ واقعی یوتیوبِ آوا (صفحهٔ کامل) باز می‌شود --- */
+      {
+        k: /(تو|توی|داخل)\s?(خودت|خودتت|خودم)|همینجا\s?(باز|نمایش|پخش|ببین)|لینک(ی)?\s?که\s?کپی|کپی\s?کردم|این\s?لینک\s?رو|لینک\s?یوتیوب\s?(رو|را)?\s?(باز|نشون|ببین)|open (it|the link) (in|here)|show me (the )?link/i,
+        id: 'yt_watch', t: 'پخش در خود آوا', i: '#i-music',
+        r: async (c) => {
+          let clip = '';
+          try {
+            const cb = (bridge && bridge.pipAPI && bridge.pipAPI.clipboard) ? await bridge.pipAPI.clipboard() : null;
+            clip = String((cb && (cb.url || cb.text || cb)) || '').trim();
+          } catch (_) { /* noop */ }
+          const mUrl = clip.match(/https?:\/\/\S+/);
+          const url = mUrl ? mUrl[0] : '';
+          try {
+            if (url) {
+              const op = await bridge.yt.watch({ url });
+              if (op && op.ok) return (LANG === 'en' ? 'Opened the link in AVA\'s player.' : 'لینک را داخل پخش‌کنندهٔ خودم باز کردم.');
+            }
+            /* بدون لینک: اگر چیزی در حال پخش است همان بیاید، وگرنه یوتیوب */
+            const op2 = await bridge.yt.watch({ url: 'https://www.youtube.com' });
+            if (op2 && op2.ok) return (LANG === 'en'
+              ? 'Opened YouTube inside AVA — paste or search there.'
+              : 'یوتیوب را داخل خودم باز کردم؛ از همین‌جا ببین و جستجو کن.');
+          } catch (_) { /* noop */ }
+          return LANG === 'en' ? 'Could not open the player window.' : 'پنجرهٔ پخش باز نشد.';
+        },
+      },
+      /* --- v0.43 — کنترل پلیرها: «با وی ال سی پخش کن…» / «برو جلو ۳۰ ثانیه» --- */
+      {
+        k: /(با|توی|تو|توسط)\s*(وی\s?ال\s?سی|\bvlc\b|ام\s?پی\s?وی|\bmpv\b|پت\s?پلیر|potplayer|ام\s?پی\s?سی|\bmpc\b)|(پخش|پلی\s?کن|بذار|اجرا)[^.]{0,12}(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|potplayer|ام\s?پی\s?سی|mpc)/i,
+        id: 'player_open', t: 'پخش در پلیر', i: '#i-music',
+        r: async (c) => {
+          const pidOf = (s) => (/وی\s?ال\s?سی|vlc/i.test(s) ? 'vlc' : /ام\s?پی\s?وی|mpv/i.test(s) ? 'mpv' : /پت\s?پلیر|potplayer/i.test(s) ? 'potplayer' : /ام\s?پی\s?سی|mpc/i.test(s) ? 'mpc' : '');
+          const player = pidOf(c);
+          let src = ytQueryOf(c)
+            .replace(/(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|potplayer|ام\s?پی\s?سی|mpc)/gi, ' ')
+            .replace(/\s+/g, ' ').trim();
+          let kind = src ? 'query' : 'url';
+          if (!src) {
+            try {
+              const cb = (bridge && bridge.pipAPI && bridge.pipAPI.clipboard) ? await bridge.pipAPI.clipboard() : null;
+              const clip = String((cb && (cb.url || cb.text || cb)) || '').trim();
+              const mUrl = clip.match(/https?:\/\/\S+/);
+              if (mUrl) src = mUrl[0];
+            } catch (_) { /* noop */ }
+          }
+          if (!src) return LANG === 'en'
+            ? 'Tell me what to play, e.g. "play Shahram in VLC" — or copy the video link first.'
+            : 'بگو چی پخش کنم — مثل «با وی‌ال‌سی آهنگ شادمهر رو پخش کن» — یا اول لینک ویدیو را کپی کن.';
+          try {
+            const res = await bridge.player.open({ player, kind, src });
+            if (res && res.ok) {
+              return (LANG === 'en'
+                ? `Playing in ${res.fa}${res.controlled ? ' — now I fully control it (pause/seek/fullscreen).' : '.'}`
+                : `در ${res.fa} پخش شد${res.controlled ? ' — از الان پاز/جلو/عقب/فول‌اسکرینش هم دست خودمه.' : '.'}`);
+            }
+            if (res && res.noYtdl) return (LANG === 'en'
+              ? `YouTube in ${res.player === 'vlc' ? 'VLC' : 'mpv'} needs yt-dlp. Say "play it in PotPlayer" instead.`
+              : `پخش یوتیوب در ${res.player === 'vlc' ? 'وی‌ال‌سی' : 'mpv'} به yt-dlp نیاز دارد — بگو «با پت‌پلیر پخش کن» یا بگو «تو خودت بازش کن».`);
+            return (LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
+          } catch (_) { return LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'; }
+        },
+      },
+      {
+        /* دقت: «ویدیو/فیلم رو ببند» عمداً اینجا نیست — مال پنجرهٔ شناور است
+           (فیکس v0.40). کنترل پلیر: پلیر/مدیا با هر فعل + ویدیو/فیلم فقط با
+           فول‌اسکرین/جلو/عقب + «برو جلو/عقب» مستقل */
+        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی)|(ویدیو|فیلم)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ)\s*(پلیر|مدیا)/i,
+        id: 'player_ctl', t: 'کنترل پلیر', i: '#i-music',
+        r: async (c) => {
+          if (!bridge || !bridge.player || !bridge.player.ctl) return LANG === 'en' ? 'Player control is only available inside the app.' : 'کنترل پلیر فقط داخل خود نرم‌افزار کار می‌کند.';
+          const num = (() => { const m = faToEn(c).match(/\d+/); return m ? Math.min(600, parseInt(m[0], 10) || 0) : 0; })();
+          let action = '', arg = 0;
+          if (/جلو|فوروارد/.test(c)) { action = 'seek'; arg = num || 10; }
+          else if (/عقب|ریویند|به\s?عقب/.test(c)) { action = 'seek'; arg = -(num || 10); }
+          else if (/بعدی/.test(c)) action = 'next';
+          else if (/قبلی|قبل/.test(c)) action = 'prev';
+          else if (/فول\s?اسکرین|تمام\s?صفحه/.test(c)) action = 'fullscreen';
+          else if (/ببند/.test(c)) action = 'close';
+          else if (/صدا|ولوم/ .test(c)) action = /زیاد|بلند|بالا/.test(c) ? 'volume_up' : 'volume_down';
+          else action = 'play_pause'; /* پاز/توقف/استاپ/بی‌فعل */
+          try {
+            const res = await bridge.player.ctl({ action, arg });
+            if (res && res.ok) {
+              const fa = { play_pause: 'پخش/توقف', seek: arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', next: 'بعدی', prev: 'قبلی', fullscreen: 'فول‌اسکرین', close: 'بستن', volume_up: 'صدا بیشتر', volume_down: 'صدا کمتر', stop: 'توقف' };
+              return (LANG === 'en' ? `Done (${action}).` : `انجام شد: ${fa[action] || action}${action === 'seek' ? ' ' + Math.abs(arg) + ' ثانیه' : ''}.`);
+            }
+            return (LANG === 'en' ? `Could not: ${res && res.error || ''}` : `انجام نشد: ${res && res.error || ''}`);
+          } catch (_) { return LANG === 'en' ? 'Control failed.' : 'کنترل پلیر ممکن نشد.'; }
         },
       },
       {
@@ -2975,7 +3159,7 @@
      = اجرا؛ بعد از ۱۶ ثانیه خودش می‌رود. هر دسته حداکثر هر ۱۲ ساعت یک‌بار
      تا اذیت نکند — و در وسط کار هرگز جلوی فرمان بعدی را نمی‌گیرد.
      ============================================================ */
-  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'pip_youtube', 'pip', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
+  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'yt_bring', 'yt_watch', 'now_playing', 'player_open', 'player_ctl', 'pip_youtube', 'pip', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
   const SUGGEST_DECK = {
     video: {
       title: { fa: 'درگیر یوتیوب و ویدیویی؟', en: 'Working with YouTube/video?' },
@@ -3049,7 +3233,12 @@
   const CATALOG_HINTS = {
     web_search: 'سرچ کن، جستجو کن، گوگل کن، پیداش کن — کل وب',
     site_search: 'جستجو داخل یک سایت مشخص: توی سایت X اینو/دنبال … سرچ کن/بگرد/پیدا کن',
-    yt_search: 'جستجو داخل یوتیوب: تو یوتیوب X رو سرچ کن',
+    yt_search: 'جستجو یا پخش داخل یوتیوب: تو یوتیوب X رو سرچ کن / پلی کن',
+    yt_bring: 'ویدیویی که الان در مرورگر/سیستم پخش میشه رو بیار داخل آوا: همین ویدیو رو بیار',
+    yt_watch: 'باز کردن لینک کپی‌شده یا یوتیوب داخل پخش‌کنندهٔ خود آوا: تو خودت بازش کن',
+    now_playing: 'چی داره پخش میشه؟ — وضعیت پخش سیستم',
+    player_open: 'پخش در پلیر ویندوز: با وی‌ال‌سی/پت‌پلیر/mpv آهنگ X رو پخش کن',
+    player_ctl: 'کنترل پلیر: پلیر رو پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند',
     web_open: 'فقط باز کردن سایت — بدون هیچ جستجویی',
     open_youtube: 'باز کردن خود یوتیوب',
     open_music: 'پخش موزیک/آهنگ',
@@ -3156,9 +3345,11 @@
         '\n(اگر سوال کاربر دربارهٔ همین وضعیت بود — چند تایمر دارد، یادداشتش چی بود، یادآوری فعال دارد یا نه — خودت از همین اطلاعات کوتاه جواب بده و هیچ بلوکی ننویس. اگر کاربر خواست یک یادداشت را دوباره ببیند/بخواند، بلوک DO با act=note_show بده: value=بخشی از متن همان یادداشت، یا value خالی برای آخرین یادداشت.)';
     } catch (_) { return ''; }
   }
-  /* v0.42 — بستهٔ کامل زمینه برای فالبک AI: کاتالوگ + وضعیت + extra قانون */
+  /* v0.42 — بستهٔ کامل زمینه برای فالبک AI: کاتالوگ + وضعیت + extra قانون
+     v0.43 — + نامزدهای داوری نیت (وقتی دو نیت نزدیک بودند) */
   async function aiFallbackCtx(rule) {
     const parts = [aiCmdCatalogCtx(), await avaStateCtx()];
+    if (_intentCands) parts.push(_intentCands);
     if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
     return parts.filter(Boolean).join('\n');
   }
@@ -4049,7 +4240,18 @@
     rcReply.textContent = '';
     rcTag.textContent = t('tag.working');
 
-    const rule = RULES.find((r) => r.k.test(cmd)) || findCustomRule(cmd);
+    /* v0.43 — داوری نیت: همهٔ قوانین منطبق امتیاز می‌گیرند (لنگر/ممنوعه/
+       تقویت‌کننده) و برندهٔ قاطع اجرا می‌شود؛ جملهٔ مبهم با نامزدها به AI
+       می‌رود. ریشهٔ «دونه‌دونه فیکس کردن کامندها» همین‌جا حذف شد. */
+    const _arbit = (typeof AVAIntent !== 'undefined') ? AVAIntent.arbitrate(cmd, RULES) : null;
+    let rule = _arbit ? _arbit.rule : null;
+    if (!rule) rule = findCustomRule(cmd);
+    _intentCands = (typeof AVAIntent !== 'undefined') ? (AVAIntent.candidatesText(_arbit) || '') : '';
+    /* نیت مبهم + AI در دسترس → اقدام حدسی ممنوع، داوری با AI */
+    if (rule && _arbit && !_arbit.decisive && aiConnected()) {
+      try { actLog('intent ambiguous → AI arbitration: ' + _arbit.ranked.slice(0, 3).map((x) => x.rule.id + '=' + Math.round(x.score)).join(',')); } catch (_) { /* noop */ }
+      rule = null;
+    }
     if (!rule) {
       /* مرحله ۳ پایپ‌لاین: تطبیق فازی برنامه‌های سیستم («تلگرام رو اجرا کن»)
          اگر نیت باز کردن نبود یا برنامه پیدا نشد → هوش مصنوعی (مرحله ۴) */
@@ -6283,7 +6485,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.42.0-beta';
+  let appVersion = '0.43.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -6660,6 +6862,8 @@
     optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
     if (optTtsEngine) optTtsEngine.value = settings.ttsEngine || 'edge';
+    /* v0.43 — صدای اِج: مؤنث (Dilara) یا مذکر (Farid) */
+    if (optEdgeVoice) optEdgeVoice.value = settings.edgeVoice === 'farid' ? 'farid' : 'dilara';
     if (optAiProvider) optAiProvider.value = settings.aiProvider || 'auto';
     if (optGeminiKey) optGeminiKey.value = settings.geminiKey || '';
     const ogb2 = $('#optGemBase'); if (ogb2) ogb2.value = settings.gemBase || '';
@@ -6700,13 +6904,40 @@
 
   const needApp = () => toast(t('toast.onlyApp'), '#i-info');
 
-  if (optTtsEngine) optTtsEngine.addEventListener('change', () => {
+  /* v0.43 — نام فارسی موتورِ واقعاً پخش‌شده (اعلام صادقانه بعد از نمونهٔ صدا) */
+  const ttsEngineName = (e) => (e === 'edge'
+    ? (LANG === 'en' ? 'Edge neural' : 'اِج عصبی')
+    : e === 'google' ? (LANG === 'en' ? 'Google' : 'گوگل') : (LANG === 'en' ? 'Windows offline' : 'ویندوز'));
+  if (optTtsEngine) optTtsEngine.addEventListener('change', async () => {
     /* v0.42 — سه موتور: اِج / گوگل / ویندوز */
     settings.ttsEngine = ['edge', 'google', 'windows'].includes(optTtsEngine.value) ? optTtsEngine.value : 'edge';
     store.set('ttsEngine', settings.ttsEngine);
     stopGoogleSpeak();
     if (window.speechSynthesis) speechSynthesis.cancel();
-    speak(t(settings.ttsEngine === 'edge' ? 'voice.eEng' : settings.ttsEngine === 'google' ? 'voice.gEng' : 'voice.wEng'));
+    /* v0.43 — ریشهٔ «TTS رو تغییر میدم ولی هیچی تغییر نمیکنه»: اِج روی شبکهٔ
+       کاربر بلاک بود و بی‌سروصدا گوگل حرف می‌زد. حالا موتور واقعی اعلام می‌شود */
+    const wanted = settings.ttsEngine;
+    const sample = t(wanted === 'edge' ? 'voice.eEng' : wanted === 'google' ? 'voice.gEng' : 'voice.wEng');
+    const okS = await speak(sample);
+    if (okS && ttsLastEngine && ttsLastEngine !== wanted) {
+      toast(LANG === 'en'
+        ? `${ttsEngineName(wanted)} is unavailable — played with ${ttsEngineName(ttsLastEngine)}`
+        : `موتور «${ttsEngineName(wanted)}» در دسترس نیست — با صدای ${ttsEngineName(ttsLastEngine)} پخش شد`, '#i-info');
+    } else if (okS) {
+      toast(LANG === 'en' ? 'Sample played with ' + ttsEngineName(ttsLastEngine) : 'نمونهٔ صدا با موتور ' + ttsEngineName(ttsLastEngine) + ' پخش شد', '#i-check');
+    } else {
+      toast(LANG === 'en' ? 'No speech engine is available' : 'هیچ موتور صدایی در دسترس نیست', '#i-warn');
+    }
+  });
+  if (optEdgeVoice) optEdgeVoice.addEventListener('change', () => {
+    /* v0.43 — تغییر صدای اِج: مذکر/مؤنث واقعاً در لحظه عوض می‌شود */
+    settings.edgeVoice = optEdgeVoice.value === 'farid' ? 'farid' : 'dilara';
+    store.set('edgeVoice', settings.edgeVoice);
+    stopGoogleSpeak();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    speak(LANG === 'en'
+      ? (settings.edgeVoice === 'farid' ? 'This is the male Edge voice.' : 'This is the female Edge voice.')
+      : (settings.edgeVoice === 'farid' ? 'سلام، من فرید هستم؛ صدای مذکر آوا.' : 'سلام، من دلارا هستم؛ صدای مؤنث آوا.'));
   });
   if (optAiProvider) optAiProvider.addEventListener('change', () => {
     settings.aiProvider = optAiProvider.value || 'auto';

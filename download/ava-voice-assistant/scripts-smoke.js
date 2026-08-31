@@ -251,7 +251,7 @@ app.whenReady().then(async () => {
         tooltipGone: !css.includes('rail-item::after'),
         widgetDrag: appjs.includes('widgetDismissedFor') && appjs.includes('pointerdown'),
         micBusyGuard: appjs.includes("t('mic.busy')") && css.includes('orbShake'),
-        monitorFix: mainjs.includes('SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l)') && mainjs.includes("'monitor_off', 'lock'"),
+        monitorFix: mainjs.includes('PostMessageW(IntPtr h, uint m, IntPtr w, IntPtr l)') && mainjs.includes('SendMessageTimeoutW(IntPtr h, uint m, IntPtr w, IntPtr l, uint f, uint t, ref IntPtr r)') && mainjs.includes("'sys_logoff', 'monitor_off', 'lock'"),
       };
       ok('dns ping IPC chain', v13.pingIpc);
       ok('dns ping overlay + voice', v13.pingOverlay && v13.pingVoice);

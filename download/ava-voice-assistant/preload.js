@@ -144,6 +144,23 @@ contextBridge.exposeInMainWorld('ava', {
     edge: (payload) => ipcRenderer.invoke('tts:edge', payload),
   },
 
+  /* v0.43 — مدیای سیستم: وضعیت پخش (SMTC)، پخش‌کنندهٔ یوتیوب آوا، کنترل پلیرها */
+  media: {
+    /* چی همین حالا در سیستم/مرورگر پخش می‌شود؟ (System Media Transport Controls) */
+    now: () => ipcRenderer.invoke('media:now'),
+  },
+  yt: {
+    /* عبارت → ویدیوی یوتیوب (اولین نتیجه) */
+    resolve: (query) => ipcRenderer.invoke('yt:resolve', { query }),
+    /* باز کردن ویدیو/لینک/جستجو در پخش‌کنندهٔ یوتیوب خود آوا */
+    watch: (p) => ipcRenderer.invoke('yt:watch', p),
+  },
+  player: {
+    scan: () => ipcRenderer.invoke('player:scan'),
+    open: (p) => ipcRenderer.invoke('player:open', p),
+    ctl: (p) => ipcRenderer.invoke('player:ctl', p),
+  },
+
   /* تشخیص گفتار: GLM-ASR (کلید‌دار) + موتور رایگان گوگل (بدون کلید)
      v0.17: موتورهای کلاس AI — جمنای (با کلید جمنای خودت) و Whisper سازگار
      با OpenAI (Groq/OpenAI/سرور محلی) — همان الگوی سایت‌های تایپ صوتی حرفه‌ای

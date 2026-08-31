@@ -107,11 +107,13 @@ function ruleK(src, id) {
     eq(parts.join(' ').replace(/\s+/g, ' ').length, long.replace(/\s+/g, ' ').length, 'splitEdgeChunks: هیچ متنی گم نشد');
   }
 
-  /* زنجیرهٔ صدا در رندرر: اِج → گوگل → ویندوز */
+  /* زنجیرهٔ صدا در رندرر: اِج → گوگل → ویندوز (v0.43: + ثبت موتور واقعی) */
   ok(app.includes('if (settings.ttsEngine === \'edge\')'), 'app: شاخهٔ موتور اِج در speak()');
-  ok(/speakEdge\(txt\)[\s\S]{0,120}speakGoogle\(txt\)[\s\S]{0,80}speakWindows\(txt\)/.test(app), 'app: زنجیرهٔ اِج→گوگل→ویندوز');
+  ok(/speakEdge\(txt\)[\s\S]{0,220}speakGoogle\(txt\)[\s\S]{0,700}speakWindows\(txt\)/.test(app), 'app: زنجیرهٔ اِج→گوگل→ویندوز');
   ok(app.includes('async function speakEdge('), 'app: speakEdge تعریف شده');
-  ok(app.includes("bridge.tts.edge({ text: String(text).slice(0, 3000), lang })"), 'app: speakEdge از پل preload با سقف ۳۰۰۰');
+  ok(app.includes("bridge.tts.edge({ text: String(text).slice(0, 3000), lang, voice })"), 'app: speakEdge از پل preload با سقف ۳۰۰۰ + صدای انتخابی');
+  ok(app.includes("ttsLastEngine = 'edge'") && app.includes("ttsLastEngine = 'google'") && app.includes("ttsLastEngine = 'windows'"), 'app: ثبت موتور واقعاً پخش‌شده (v0.43)');
+  ok(app.includes('edgeVoice') && app.includes('fa-IR-FaridNeural'), 'app: صدای مذکر اِج (فرید) در دسترس است');
 
   /* مهاجرت یک‌بارهٔ موتور صدا */
   ok(app.includes("store.get('migV42')") && app.includes("migration v0.42 applied"), 'app: مهاجرت یک‌بارهٔ migV42');
@@ -261,9 +263,9 @@ function ruleK(src, id) {
    ۶) نسخه و README
    ============================================================ */
 {
-  eq(pkg.version, '0.42.0-beta', 'نسخه: package.json');
-  ok(app.includes("let appVersion = '0.42.0-beta'"), 'نسخه: app.js');
-  ok(idx.includes('v0.42.0-beta'), 'نسخه: index.html');
+  ok(/^0\.4[2-9]\./.test(pkg.version), 'نسخه: package.json (0.4x به جلو)');
+  ok(/let appVersion = '0\.4[2-9]\./.test(app), 'نسخه: app.js (0.4x به جلو)');
+  ok(/v0\.4[2-9]\./.test(idx), 'نسخه: index.html (0.4x به جلو)');
   ok(readme.includes('v0.42-beta') && readme.includes('openai-edge-tts'), 'README: بلوک v0.42 + اشارهٔ openai-edge-tts');
   ok(pkg.dependencies && pkg.dependencies.ws, 'package: وابستگی ws ثبت شده');
 }

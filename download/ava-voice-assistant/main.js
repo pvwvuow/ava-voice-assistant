@@ -393,6 +393,8 @@ const CHROME_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
 const CHROME_SEC_CH_UA = '"Chromium";v="136", "Google Chrome";v="136", "Not:A-Brand";v="24"';
 app.userAgentFallback = CHROME_UA;
+/* v0.43 — پخش خودکار ویدیوی یوتیوب داخل خود آوا (پنجرهٔ Watch) */
+try { app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required'); } catch (_) { /* noop */ }
 
 let win = null;
 
@@ -611,19 +613,23 @@ const COMMANDS = {
   sys_restart:  { cmd: 'shutdown /r /t 10 /c "AVA"', fa: 'راه‌اندازی مجدد' },
   shutdown_abort: { cmd: 'shutdown /a', fa: 'لغو خاموش شدن' },
   monitor_off: {
-    /* فیکس v0.13: امضای درست SendMessageW با IntPtr (در x64 امضای int قابل اعتماد نیست)
-       + ارسال دوبار با فاصله (بعضی درایورها فقط یک بروکست را می‌گیرند)
-       + تاخیر اولیه تا رندرر فرصت کند جوابش را آماده کند */
+    /* فیکس v0.43 — گزارش کاربر: «مانیتور خاموش نمیشه». SendMessageW به
+       HWND_BROADCAST تا هر پنجرهٔ هنگ‌شده‌ای گیر می‌کرد (تایم‌اوت کل فرمان).
+       حالا: PostMessageW (بدون انتظار) + SendMessageTimeoutW (۵۰۰ms،
+       SMTO_ABORTIFHUNG) — دو روش مکمل با امضای درست IntPtr در x64 */
     cmd:
       'powershell -NoProfile -Command "' +
       'Start-Sleep -m 350; ' +
-      'Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport(\"user32.dll\")] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);\'; ' +
-      '[W.N]::SendMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2); ' +
-      'Start-Sleep -m 450; ' +
-      '[W.N]::SendMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2); ' +
+      'Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport(\"user32.dll\")] public static extern IntPtr PostMessageW(IntPtr h, uint m, IntPtr w, IntPtr l); [DllImport(\"user32.dll\")] public static extern IntPtr SendMessageTimeoutW(IntPtr h, uint m, IntPtr w, IntPtr l, uint f, uint t, ref IntPtr r);\'; ' +
+      '$r = [IntPtr]::Zero; ' +
+      '[W.N]::PostMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2) | Out-Null; ' +
+      'Start-Sleep -m 250; ' +
+      '[W.N]::SendMessageTimeoutW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2,2,500,[ref]$r) | Out-Null; ' +
       'Write-Output ok"',
     fa: 'خاموش کردن مانیتور',
   },
+  /* v0.43 — خروج از حساب ویندوز («اقدامات این چنینی») */
+  sys_logoff: { cmd: 'shutdown /l /f', fa: 'خروج از حساب کاربری' },
 
   /* کلیدهای مدیای سیستم — پخش/توقف/بعدی/قبلی هر پلیری (Spotify، مرورگر و…)
      معادل keybd_event در system_actions.py — بدون هیچ کتابخانه سنگین */
@@ -659,7 +665,7 @@ ipcMain.handle('sys:run', (_e, id, arg) => {
   if (!cmdStr) return { ok: false, error: 'ورودی نامعتبر است' };
   /* فرمان‌های پاور: سیستم می‌خوابد/خاموش می‌شود و پروسه exec ممکن است
      timeout بخورد یا با کد غیرصفر بسته شود — ولی خودِ فرمان درست اجرا شده */
-  const fireAndForget = ['sys_sleep', 'sys_shutdown', 'sys_restart', 'monitor_off', 'lock'].includes(id);
+  const fireAndForget = ['sys_sleep', 'sys_shutdown', 'sys_restart', 'sys_logoff', 'monitor_off', 'lock'].includes(id);
   return new Promise((resolve) => {
     exec(cmdStr, { windowsHide: true, timeout: 20000 }, (err, stdout) => {
       if (err && !fireAndForget) {
@@ -800,19 +806,72 @@ const normAppName = (s) =>
     .replace(/[^a-z0-9\u0600-\u06FF ]/g, '')
     .replace(/\s+/g, ' ').trim();
 
+/* v0.43 — اسکن اپ‌های UWP/Store (Get-StartApps) — «باز کن کالکولیتور» بدون
+   شورتکات Start Menu هم جواب می‌دهد */
+function scanUwpApps() {
+  return new Promise((resolve) => {
+    exec(
+      'powershell -NoProfile -Command "Get-StartApps | ForEach-Object { $_.Name + \u0027|\u0027 + $_.AppID }"',
+      { windowsHide: true, timeout: 20000, maxBuffer: 1024 * 1024 },
+      (err, stdout) => {
+        const out = [];
+        if (!err && stdout) {
+          for (const line of String(stdout).split(/\r?\n/)) {
+            const s = line.trim();
+            const ix = s.lastIndexOf('|');
+            if (ix < 1) continue;
+            const name = s.slice(0, ix).trim();
+            const appid = s.slice(ix + 1).trim();
+            if (!name || !appid || !appid.includes('!') || APP_NAME_JUNK.test(name)) continue;
+            out.push({ name, exe: 'shell:appsFolder\\' + appid, lnk: '', kind: 'uwp', appId: appid });
+          }
+        }
+        resolve(out);
+      }
+    );
+  });
+}
+
+/* v0.43 — اسکن اپ‌های UWP/Store (Get-StartApps) — «باز کن ماشین‌حساب» بدون
+   شورتکات Start Menu هم جواب می‌دهد؛ اجرا با shell:appsFolder\<AppID> */
+function scanUwpApps() {
+  return new Promise((resolve) => {
+    exec(
+      "powershell -NoProfile -Command \"Get-StartApps | ForEach-Object { $_.Name + '|' + $_.AppID }\"",
+      { windowsHide: true, timeout: 20000, maxBuffer: 1024 * 1024 },
+      (err, stdout) => {
+        const out = [];
+        if (!err && stdout) {
+          for (const line of String(stdout).split(/\r?\n/)) {
+            const s = line.trim();
+            const ix = s.lastIndexOf('|');
+            if (ix < 1) continue;
+            const name = s.slice(0, ix).trim();
+            const appId = s.slice(ix + 1).trim();
+            if (!name || !appId || !appId.includes('!') || APP_NAME_JUNK.test(name)) continue;
+            out.push({ name, exe: 'shell:appsFolder\\' + appId, lnk: '', kind: 'uwp', appId });
+          }
+        }
+        resolve(out);
+      }
+    );
+  });
+}
+
 async function scanAllApps(force = false) {
   const cache = readAppsCache();
   if (!force && cache && cache.at && Date.now() - cache.at < APPS_TTL && Array.isArray(cache.apps)) return cache.apps;
   if (appsScanning) return appsScanning;
   appsScanning = (async () => {
-    const [menu, steam] = await Promise.all([scanStartMenu(), scanSteam()]);
+    /* v0.43 — + UWP (Get-StartApps) */
+    const [menu, steam, uwp] = await Promise.all([scanStartMenu(), scanSteam(), scanUwpApps()]);
     /* حذف تکراری بر اساس نام نرمال‌شده — اولویت با .exe واقعی */
     const seen = new Map();
-    for (const a of [...menu, ...steam]) {
+    for (const a of [...menu, ...uwp, ...steam]) {
       const k = normAppName(a.name);
       if (!k) continue;
       const prev = seen.get(k);
-      if (!prev || (prev.kind === 'steam' && a.kind === 'app')) seen.set(k, a);
+      if (!prev || (prev.kind === 'steam' && a.kind === 'app') || (prev.kind === 'uwp' && a.kind === 'app')) seen.set(k, a);
     }
     const apps = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
     appsCache = { at: Date.now(), apps };
@@ -2814,6 +2873,10 @@ const EDGE_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
   'Chrome/130.0.0.0 Safari/537.36 Edg/130.0.2849.68';
 const EDGE_VOICES = { fa: 'fa-IR-DilaraNeural', en: 'en-US-AriaNeural' };
+/* v0.43 — صدای مذکر هم اضافه شد تا «تغییر TTS در تنظیمات» واقعاً شنیده شود
+   (گزارش کاربر: «TTS رو تغییر میدم ولی هیچی تغییر نمیکنه» — چون فالبک گوگل
+   همیشه جای اِج حرف می‌زد، دو موتور یک صدا شنیده می‌شد) */
+const EDGE_VOICE_ALT = { fa: 'fa-IR-FaridNeural', en: 'en-US-GuyNeural' };
 
 /* توکن DRM رایگان اِج: SHA-256(تیک‌های ویندوز در واحد ۱۰۰ نانوثانیه،
    رُند به پایین نزدیک‌ترین ۵ دقیقه + توکن ثابت) به حروف بزرگ — همان
@@ -2859,12 +2922,14 @@ function splitEdgeChunks(text) {
 }
 
 /* یک تکه → یک اتصال WebSocket کوتاه به endpoint عصبی اِج → MP3 کامل همان تکه */
-function edgeSynthChunk(text, lang) {
+function edgeSynthChunk(text, lang, voiceOverride) {
   return new Promise((resolve) => {
     let WebSocketCtor;
     try { WebSocketCtor = require('ws'); } catch (e) { return resolve({ error: 'ws module missing' }); }
     const isEn = String(lang) === 'en';
-    const voice = EDGE_VOICES[isEn ? 'en' : 'fa'];
+    /* v0.43 — صدای انتخابی کاربر (dilara=مؤنث پیش‌فرض / farid=مذکر) */
+    const voice = String(voiceOverride || '').trim() || EDGE_VOICES[isEn ? 'en' : 'fa'];
+    const vLang = /^fa/i.test(voice) ? 'fa-IR' : 'en-US';
     const reqId = crypto.randomBytes(16).toString('hex');
     const ts = new Date().toISOString();
     const url =
@@ -2903,7 +2968,7 @@ function edgeSynthChunk(text, lang) {
         ws.send(cfg);
         const ssml =
           "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='" +
-          (isEn ? 'en-US' : 'fa-IR') + "'><voice name='" + voice +
+          vLang + "'><voice name='" + voice +
           "'><prosody pitch='+0Hz' rate='+0%' volume='+0%'>" + edgeEscaped(text) + '</prosody></voice></speak>';
         ws.send('X-RequestId:' + reqId + '\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:' + ts + 'Z\r\nPath:ssml\r\n\r\n' + ssml);
       } catch (e) { done({ error: netErr(e) }); }
@@ -2933,13 +2998,13 @@ function edgeSynthChunk(text, lang) {
 const edgeHealth = { fails: 0, until: 0 };
 
 ipcMain.handle('tts:edge', async (_e, p) => {
-  const { text, lang } = p || {};
+  const { text, lang, voice } = p || {};
   if (Date.now() < edgeHealth.until) return { ok: false, error: 'edge cooling down' };
   const chunks = splitEdgeChunks(String(text || '').slice(0, 24000));
   if (!chunks.length) return { ok: false, error: 'متنی برای خواندن نیست' };
   try {
     /* تکه‌ها موازی (هر تکه یک اتصال کوتاه) — ترتیب حفظ می‌شود */
-    const res = await Promise.all(chunks.map((c) => edgeSynthChunk(c, lang)));
+    const res = await Promise.all(chunks.map((c) => edgeSynthChunk(c, lang, voice)));
     const parts = [];
     for (const r of res) {
       if (!(r && r.ok)) {
@@ -2952,6 +3017,358 @@ ipcMain.handle('tts:edge', async (_e, p) => {
     if (!parts.length) return { ok: false, error: 'صدایی از اِج نرسید' };
     edgeHealth.fails = 0; edgeHealth.until = 0;
     return { ok: true, mime: 'audio/mpeg', chunks: parts.map((b) => b.toString('base64')) };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+});
+
+/* ============================================================
+   v0.43 — مدیای ویندوز: «ویدیویی که همین حالا پخش می‌شود»، پخش‌کنندهٔ
+   یوتیوب داخل خود آوا، و سیستم کنترل حرفه‌ای پلیرها
+   ------------------------------------------------------------
+   درخواست‌های کاربر:
+   • «کاربر خودش کپی نکنه؛ اگه ویدیویی در حال پلی بود همونو بیار — توی هر
+     مرورگری» → SMTC ویندوز (System Media Transport Controls) — همهٔ
+     مرورگرها/پلیرها وضعیت پخش خود را آنجا اعلام می‌کنند.
+   • «با نرم‌افزار ما نمیشه دید؛ میگه برو توی خودت یوتیوب ببین» → پنجرهٔ
+     Watch واقعی آوا (صفحهٔ کامل یوتیوب، نه iframe امبدِ «Watch on YouTube»).
+   • «سیستم کنترل خیلی قوی برای همهٔ video player های معروف با هر کامندی»
+     → کنترل مستقیم VLC (HTTP API) و mpv (IPC pipe) + کلیدهای مدیای جهانی
+     + کلیدهای جلو/عقب روی پنجرهٔ فعال + پخش یوتیوب داخل خود پلیرها.
+   ============================================================ */
+
+/* ---------- ۱) وضعیت پخش سیستم (SMTC) ---------- */
+let smtcFile = null;
+function smtcScriptFile() {
+  if (smtcFile) return smtcFile;
+  try {
+    const ps = [
+      "$ErrorActionPreference = 'SilentlyContinue'",
+      "Add-Type -AssemblyName System.Runtime.WindowsRuntime",
+      "$null = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType = WindowsRuntime]",
+      "$asTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]",
+      "function Await($op, $t) { $task = $asTask.MakeGenericMethod($t).Invoke($null, @($op)); $task.Wait(-1) | Out-Null; return $task.Result }",
+      "$mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])",
+      "$rows = @()",
+      "foreach ($s in $mgr.GetSessions()) {",
+      "  try {",
+      "    $mp = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])",
+      "    $rows += [PSCustomObject]@{ app = [string]$s.SourceAppUserModelId; title = [string]$mp.Title; artist = [string]$mp.Artist; status = [string]$s.GetPlaybackInfo().PlaybackStatus }",
+      "  } catch {}",
+      "}",
+      "$rows | ConvertTo-Json -Compress",
+    ].join('\r\n');
+    smtcFile = path.join(os.tmpdir(), 'ava-smtc.ps1');
+    fs.writeFileSync(smtcFile, ps, 'utf8');
+  } catch (_) { smtcFile = null; }
+  return smtcFile;
+}
+/* انتخاب جلسهٔ در حال پخش — مرورگرها اولویت دارند (خواستهٔ کاربر: یوتیوب در
+   هر مرورگری) */
+const SMTC_BROWSER_RE = /chrome|msedge|edge|firefox|brave|opera|vivaldi|youtube|ytdl|potplayer|vlc|mpv/i;
+function parseSmtcOutput(stdout) {
+  let rows = [];
+  try {
+    const j = JSON.parse(String(stdout || '').trim() || '[]');
+    rows = Array.isArray(j) ? j : [j];
+  } catch (_) { return null; }
+  rows = rows.filter((r) => r && (r.title || r.artist));
+  if (!rows.length) return null;
+  const playing = rows.filter((r) => /playing/i.test(String(r.status || '')));
+  const pool = playing.length ? playing : rows;
+  pool.sort((a, b) => {
+    const ab = SMTC_BROWSER_RE.test(String(a.app || '')) ? 0 : 1;
+    const bb = SMTC_BROWSER_RE.test(String(b.app || '')) ? 0 : 1;
+    return ab - bb;
+  });
+  const s = pool[0];
+  let app = String(s.app || '');
+  /* نام کوتاه و خوانا: UWP (Microsoft.ZuneMusic_8wekyb3d8bbwe!X) و مسیر .exe */
+  app = app.split('!')[0];
+  app = app.replace(/\.exe$/i, '');
+  app = app.replace(/_[0-9a-z]{8,13}$/i, '');
+  app = app.split(/[\\/.]/).pop() || app;
+  return { ok: true, title: String(s.title || ''), artist: String(s.artist || ''), app, playing: playing.length > 0 };
+}
+function smtcNowPlaying() {
+  return new Promise((resolve) => {
+    const f = smtcScriptFile();
+    if (!f) return resolve({ ok: false, error: 'اسکریپت SMTC ساخته نشد' });
+    exec(
+      `powershell -NoProfile -ExecutionPolicy Bypass -File "${f}"`,
+      { windowsHide: true, timeout: 9000, maxBuffer: 1024 * 512 },
+      (err, stdout) => {
+        if (err || !stdout) return resolve({ ok: false, error: 'هیچ منبع پخشی فعال نیست' });
+        const parsed = parseSmtcOutput(stdout);
+        resolve(parsed || { ok: false, error: 'هیچ منبع پخشی فعال نیست' });
+      }
+    );
+  });
+}
+ipcMain.handle('media:now', () => smtcNowPlaying());
+
+/* ---------- ۲) حل عبارت → ویدیوی یوتیوب ---------- */
+async function ytResolve(query) {
+  const q = String(query || '').trim();
+  if (!q) return { ok: false, error: 'عبارت خالی است' };
+  try {
+    const r = await cloudFetch(
+      'https://www.youtube.com/results?search_query=' + encodeURIComponent(q.slice(0, 120)),
+      { headers: { 'User-Agent': CHROME_UA, 'Accept-Language': 'fa,en;q=0.8' }, signal: AbortSignal.timeout(9000) }
+    );
+    const html = await r.text();
+    const m = html.match(/"videoId":"([A-Za-z0-9_-]{11})"/);
+    if (!m) return { ok: false, error: 'ویدیویی پیدا نشد' };
+    let title = '';
+    const tm = html.slice(m.index).match(/"title":\{"runs":\[\{"text":"((?:[^"\\]|\\.)*)"/);
+    if (tm) { try { title = JSON.parse('"' + tm[1] + '"'); } catch (_) { title = tm[1]; } }
+    return { ok: true, videoId: m[1], title: String(title).slice(0, 140) };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+}
+ipcMain.handle('yt:resolve', (_e, p) => ytResolve(p && p.query));
+
+/* ---------- ۳) پخش‌کنندهٔ یوتیوب آوا (صفحهٔ کامل — نه امبد) ---------- */
+let ytWin = null;
+function ytNormalizeUrl(raw) {
+  let u = String(raw || '').trim();
+  if (!u) return null;
+  const idm = u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/))([A-Za-z0-9_-]{11})/);
+  if (idm) {
+    let extra = '';
+    try { const q = new URL(u); const t = q.searchParams.get('t') || q.searchParams.get('start'); if (t) extra = '&t=' + encodeURIComponent(t); } catch (_) { /* noop */ }
+    return 'https://www.youtube.com/watch?v=' + idm[1] + '&autoplay=1' + extra;
+  }
+  return /^https?:\/\/([a-z0-9-]+\.)*youtube\.com\//i.test(u) ? u : null;
+}
+function ytWatchWindow(p) {
+  const q = p || {};
+  let url = null;
+  if (q.videoId && /^[A-Za-z0-9_-]{11}$/.test(q.videoId)) url = 'https://www.youtube.com/watch?v=' + q.videoId + '&autoplay=1';
+  else if (q.url) url = ytNormalizeUrl(q.url) || (/^https?:\/\//i.test(q.url) ? q.url : null); /* v0.43 — هر لینکی در خود آوا باز می‌شود */
+  else if (q.query) url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(String(q.query).slice(0, 120));
+  if (!url) return { ok: false, error: 'لینک یا عبارت یوتیوب معتبر نیست' };
+  try {
+    if (ytWin && !ytWin.isDestroyed()) { ytWin.loadURL(url).catch(() => {}); ytWin.show(); ytWin.focus(); return { ok: true, reused: true, url }; }
+    ytWin = new BrowserWindow({
+      width: 1180, height: 700, minWidth: 460, minHeight: 300, show: true,
+      title: 'آوا — یوتیوب', backgroundColor: '#0b0f14', autoHideMenuBar: true,
+      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    ytWin.setMenuBarVisibility(false);
+    ytWin.on('closed', () => { ytWin = null; });
+    ytWin.loadURL(url).catch(() => {});
+    return { ok: true, url };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+}
+ipcMain.handle('yt:watch', (_e, p) => Promise.resolve(ytWatchWindow(p)));
+
+/* ---------- ۴) اسکن پلیرهای نصب‌شده ---------- */
+const PF = () => process.env.ProgramFiles || 'C:\\Program Files';
+const PF86 = () => process.env['ProgramFiles(x86)'] || PF();
+const PLAYER_DEFS = [
+  { id: 'vlc', fa: 'وی‌ال‌سی', paths: ['VideoLAN/VLC/vlc.exe'] },
+  { id: 'mpv', fa: 'mpv', paths: ['mpv/mpv.exe', 'mpv.net/mpv.exe'] },
+  { id: 'potplayer', fa: 'پت‌پلیر', paths: ['DAUM/PotPlayer/PotPlayerMini64.exe', 'DAUM/PotPlayer/PotPlayerMini.exe', 'DAUM/PotPlayer64/PotPlayerMini64.exe'] },
+  { id: 'mpc', fa: 'ام‌پی‌سی', paths: ['MPC-HC/mpc-hc64.exe', 'MPC-HC/mpc-hc.exe', 'MPC-BE/mpc-be64.exe'] },
+  { id: 'wmplayer', fa: 'ویندوز مدیا پلیر', paths: ['Windows Media Player/wmplayer.exe'] },
+];
+let playerScanCache = { at: 0, list: null, ytdl: false };
+function execWhere(name) {
+  return new Promise((resolve) => {
+    exec(`where ${name}`, { windowsHide: true, timeout: 4000 }, (err, stdout) => {
+      if (err || !stdout) return resolve('');
+      const first = String(stdout).split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0] || '';
+      resolve(first);
+    });
+  });
+}
+async function playersScan(force = false) {
+  if (!force && playerScanCache.list && Date.now() - playerScanCache.at < 10 * 60 * 1000) return playerScanCache;
+  const list = [];
+  for (const d of PLAYER_DEFS) {
+    let exe = '';
+    for (const rel of d.paths) {
+      const cand = path.join(PF(), rel);
+      if (fs.existsSync(cand)) { exe = cand; break; }
+      const cand86 = path.join(PF86(), rel);
+      if (fs.existsSync(cand86)) { exe = cand86; break; }
+    }
+    if (!exe && d.id === 'mpv') exe = await execWhere('mpv.exe');
+    if (exe) list.push({ id: d.id, fa: d.fa, exe });
+  }
+  const ytdl = await execWhere('yt-dlp');
+  playerScanCache = { at: Date.now(), list, ytdl };
+  return playerScanCache;
+}
+ipcMain.handle('player:scan', () => playersScan());
+
+/* ---------- ۵) کنترل پلیرها ---------- */
+const playerCtl = { player: null, vlcPort: 0, vlcPass: '', vlcBase: '', mpvPipe: '\\\\.\\pipe\\ava-mpv', ytUrl: '', exe: '' };
+function vlcHttp(command) {
+  const url = `${playerCtl.vlcBase}/requests/status.xml?command=${command}`;
+  const auth = Buffer.from(':' + playerCtl.vlcPass).toString('base64');
+  return cloudFetch(url, { headers: { Authorization: 'Basic ' + auth }, signal: AbortSignal.timeout(1500) })
+    .then((r) => r.ok).catch(() => false);
+}
+function vlcSeek(delta) {
+  return cloudFetch('requests/status.xml', {}).then(async (r) => {
+    let cur = 0;
+    try {
+      const txt = await r.text();
+      const m = txt.match(/<time>(\d+)<\/time>/);
+      if (m) cur = parseInt(m[1], 10) || 0;
+    } catch (_) { /* noop */ }
+    return vlcHttp('seek&val=' + Math.max(0, cur + delta));
+  }).catch(() => false);
+}
+function mpvSend(cmdObj) {
+  return new Promise((resolve) => {
+    try {
+      const sock = net.connect(playerCtl.mpvPipe);
+      let settled = false;
+      const fin = (v) => { if (!settled) { settled = true; try { sock.destroy(); } catch (_) { /* noop */ } resolve(v); } };
+      sock.on('connect', () => {
+        try { sock.write(JSON.stringify(cmdObj) + '\n'); } catch (_) { return fin(false); }
+        setTimeout(() => fin(true), 350);
+      });
+      sock.on('error', () => fin(false));
+      setTimeout(() => fin(false), 1800);
+    } catch (_) { resolve(false); }
+  });
+}
+/* کلیدهای مدیای جهانی — برای هر پلیر/مرورگری که زیر کنترل مستقیم نیست */
+const MEDIA_KEYS = { play_pause: 'B3', next: 'B0', prev: 'B1', stop: 'B7' };
+const VK = { left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0x46, f11: 0x7A };
+function fgKeys(seq) {
+  /* کلیدها به «پنجرهٔ فعال» می‌روند — کاربر پلیر را جلوی چشمش دارد */
+  const body = seq.map((k) => `[W.N]::keybd_event(${k},0,0,0); [W.N]::keybd_event(${k},0,2,0);`).join(' ');
+  return exec(
+    `powershell -NoProfile -Command "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\\"user32.dll\\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; ${body}"`,
+    { windowsHide: true, timeout: 6000 },
+    () => {}
+  );
+}
+ipcMain.handle('player:ctl', async (_e, p) => {
+  const a = p && p.action ? String(p.action) : '';
+  if (!a) return { ok: false, error: 'اقدام نامشخص' };
+  /* ۱) VLC زیر کنترل آوا */
+  if (playerCtl.player === 'vlc' && playerCtl.vlcBase) {
+    const map = {
+      play_pause: 'pl_pause', next: 'pl_next', prev: 'pl_previous', stop: 'pl_stop', fullscreen: 'fullscreen',
+    };
+    if (map[a]) { const ok = await vlcHttp(map[a]); if (ok) return { ok: true, via: 'vlc-http' }; }
+    if (a === 'seek') { const ok = await vlcSeek(Math.round(Number(p.arg) || 10)); if (ok) return { ok: true, via: 'vlc-http' }; }
+    if (a === 'volume_up') { const ok = await vlcHttp('volume&val=+25'); if (ok) return { ok: true, via: 'vlc-http' }; }
+    if (a === 'volume_down') { const ok = await vlcHttp('volume&val=-25'); if (ok) return { ok: true, via: 'vlc-http' }; }
+  }
+  /* ۲) mpv زیر کنترل آوا */
+  if (playerCtl.player === 'mpv') {
+    const mpvMap = {
+      play_pause: { command: ['cycle', 'pause'] },
+      next: { command: ['playlist-next'] },
+      prev: { command: ['playlist-prev'] },
+      stop: { command: ['stop'] },
+      fullscreen: { command: ['cycle', 'fullscreen'] },
+      close: { command: ['quit'] },
+      seek: { command: ['seek', Number(p.arg) || 10, 'relative'] },
+      volume_up: { command: ['add', 'volume', 5] },
+      volume_down: { command: ['add', 'volume', -5] },
+    };
+    if (mpvMap[a]) { const ok = await mpvSend(mpvMap[a]); if (ok) { if (a === 'close') playerCtl.player = null; return { ok: true, via: 'mpv-ipc' }; } }
+  }
+  /* ۳) کلیدهای مدیای جهانی / کلیدهای پنجرهٔ فعال */
+  if (MEDIA_KEYS[a]) { fgKeys([`0x${MEDIA_KEYS[a]}`]); return { ok: true, via: 'media-keys' }; }
+  if (a === 'seek') {
+    /* هر فشار فلش ≈ ۵ ثانیه در بیشتر پلیرها — تا ۸ فشار در یک سیشل */
+    const d = Math.round(Number(p.arg) || 10);
+    const n = Math.max(1, Math.min(8, Math.round(Math.abs(d) / 5)));
+    fgKeys(Array.from({ length: n }, () => (d > 0 ? VK.right : VK.left)));
+    return { ok: true, via: 'fg-keys' };
+  }
+  if (a === 'fullscreen') { fgKeys([VK.f11, VK.f]); return { ok: true, via: 'fg-keys' }; }
+  if (a === 'volume_up') { fgKeys(['0xAF']); return { ok: true, via: 'media-keys' }; }
+  if (a === 'volume_down') { fgKeys(['0xAE']); return { ok: true, via: 'media-keys' }; }
+  if (a === 'play_pause') { fgKeys([`0x${MEDIA_KEYS.play_pause}`]); return { ok: true, via: 'media-keys' }; }
+  if (a === 'stop') { fgKeys([`0x${MEDIA_KEYS.stop}`]); return { ok: true, via: 'media-keys' }; }
+  if (a === 'close') {
+    if (playerCtl.exe) {
+      const nm = path.basename(playerCtl.exe);
+      exec(`taskkill /IM "${nm}" /F`, { windowsHide: true, timeout: 5000 }, () => {});
+      playerCtl.player = null;
+      return { ok: true, via: 'taskkill' };
+    }
+    return { ok: false, error: 'پلیری زیر کنترل آوا باز نیست' };
+  }
+  return { ok: false, error: 'این اقدام برای پلیر فعلی ممکن نیست' };
+});
+
+/* ---------- ۶) باز کردن در پلیر (حتی یوتیوب) ---------- */
+ipcMain.handle('player:open', async (_e, p) => {
+  const q = p || {};
+  const scan = await playersScan();
+  let player = String(q.player || '').toLowerCase();
+  if (!scan.list.some((x) => x.id === player)) {
+    /* پلیر خواسته‌شده نصب نیست → اولین گزینهٔ موجود */
+    player = (scan.list.find((x) => x.id !== 'wmplayer') || scan.list[0] || {}).id || '';
+    if (!player) return { ok: false, error: 'هیچ پلیری (VLC/mpv/PotPlayer/MPC) روی سیستم نصب نیست' };
+  }
+  const entry = scan.list.find((x) => x.id === player);
+  /* منبع: عبارت یوتیوب → حل ویدیو؛ لینک → نرمال؛ فایل محلی → همان */
+  let src = String(q.src || '').trim();
+  if (q.kind === 'query' && src) {
+    const res = await ytResolve(src);
+    if (!res.ok) return { ok: false, error: res.error };
+    src = 'https://www.youtube.com/watch?v=' + res.videoId;
+    playerCtl.ytUrl = src;
+  } else {
+    const n = ytNormalizeUrl(src);
+    playerCtl.ytUrl = n || '';
+    src = n || src;
+  }
+  const isYt = /youtube\.com|youtu\.be/i.test(src);
+  let feed = src;
+  /* یوتیوب در VLC/mpv → استریم مستقیم با yt-dlp (PotPlayer خودش یوتیوب را می‌فهمد) */
+  if (isYt && (player === 'vlc' || player === 'mpv') && !scan.ytdl) {
+    return { ok: false, noYtdl: true, player, error: 'برای پخش یوتیوب در ' + entry.fa + ' باید yt-dlp روی سیستم نصب باشد' };
+  }
+  if (isYt && (player === 'vlc' || player === 'mpv') && scan.ytdl) {
+    try {
+      const g = await new Promise((resolve) => {
+        exec(`yt-dlp -f "best" -g --no-warnings "${src}"`, { windowsHide: true, timeout: 25000 }, (err, stdout) => {
+          if (err || !stdout) return resolve('');
+          resolve(String(stdout).split(/\r?\n/).filter(Boolean)[0] || '');
+        });
+      });
+      if (!g) return { ok: false, player, error: 'استریم یوتیوب استخراج نشد (yt-dlp قدیمی است؟) — بگو «با پت‌پلیر پخش کن»' };
+      feed = g;
+    } catch (_) { return { ok: false, player, error: 'استریم یوتیوب استخراج نشد' }; }
+  }
+  try {
+    if (player === 'vlc') {
+      const port = 8907 + Math.floor(Math.random() * 80);
+      const pass = crypto.randomBytes(8).toString('hex');
+      spawn(entry.exe, ['--extraintf', 'http', '--http-host', '127.0.0.1', '--http-port', String(port), '--http-password', pass, '--no-video-title-show', feed], { detached: true, stdio: 'ignore' }).unref();
+      playerCtl.player = 'vlc'; playerCtl.vlcPort = port; playerCtl.vlcPass = pass; playerCtl.vlcBase = `http://127.0.0.1:${port}`; playerCtl.exe = entry.exe;
+      await new Promise((r) => setTimeout(r, 900)); /* فرصت بالا آمدن رابط HTTP */
+      return { ok: true, player, fa: entry.fa, controlled: true };
+    }
+    if (player === 'mpv') {
+      spawn(entry.exe, ['--input-ipc-server=' + playerCtl.mpvPipe, '--force-window=yes', feed], { detached: true, stdio: 'ignore' }).unref();
+      playerCtl.player = 'mpv'; playerCtl.exe = entry.exe;
+      return { ok: true, player, fa: entry.fa, controlled: true };
+    }
+    if (player === 'potplayer') {
+      spawn(entry.exe, [feed], { detached: true, stdio: 'ignore' }).unref();
+      playerCtl.player = 'potplayer'; playerCtl.exe = entry.exe; playerCtl.vlcBase = '';
+      return { ok: true, player, fa: entry.fa, controlled: false };
+    }
+    spawn(entry.exe, [feed], { detached: true, stdio: 'ignore' }).unref();
+    playerCtl.player = player; playerCtl.exe = entry.exe; playerCtl.vlcBase = '';
+    return { ok: true, player, fa: entry.fa, controlled: false };
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }
@@ -4385,6 +4802,11 @@ app.whenReady().then(() => {
     : DNS_BOOT.applied
       ? DNS_BOOT.count + ' hosts pinned' + (DNS_BOOT.cached ? ' (cache)' : ' via shekan/electro') + ' — web engine + cloud fetches bypass filtered system DNS'
       : 'unavailable — system DNS in use (shekan/electro unreachable)'));
+  /* v0.43 — اسکن نرم‌افزارهای سیستم هنگام شروع (خواستهٔ کاربر: «یک اسکن بکنه
+     اول نرم افزارای سیستمو … اگه چیزی رو خواست باز کنه دیگه اماده باشه»):
+     ۶ ثانیه بعد از بوت، کش کهنه/خالی → اسکن پس‌زمینه (Start Menu + UWP + Steam)
+     تا اولین «فلان رو باز کن» فوری و طبق نرم‌افزارهای واقعی کاربر جواب بدهد */
+  setTimeout(() => { try { scanAllApps().catch(() => {}); } catch (_) { /* noop */ } }, 6000);
   /* سرو کردن رابط کاربری و مدل‌ها از ava://app + فایل‌های موزیک از ava-media:// */
   try { protocol.handle('ava', (req) => { try { console.log('AVA_REQ:' + req.url); } catch (_) {} return serveAvaFile(req.url); }); } catch (e) { console.error('ava protocol:', e); }
   try { protocol.handle('ava-media', (req) => serveMediaFile(req.url, req)); } catch (e) { console.error('ava-media protocol:', e); }
