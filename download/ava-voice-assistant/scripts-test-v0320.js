@@ -171,7 +171,7 @@ function makeGem(mockFetch, badSeed) {
      mainSrc.includes("'ERR:CLIP':") && mainSrc.includes("'ERR:NODM':"));
 
   console.log('\n[8] D3: call forced to the verified-foreground path');
-  ok('clickcall always fg', mainSrc.includes("return runDiscordPs('clickcall', 'fg', '', dxN, dyN);"));
+  ok('clickcall always fg', mainSrc.includes("runDiscordPs('clickcall', 'fg'"));
   ok('callswitch fg when action==call (user bg preference cannot kill the call)',
      mainSrc.includes("return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN);"));
 
@@ -244,11 +244,11 @@ function makeGem(mockFetch, badSeed) {
     try { fs.unlinkSync(tmp); } catch (_) { /* noop */ }
   }
 
-  console.log('\n[12] versions 0.32+');
+  console.log('\n[12] versions 0.32+ (forward-regex: 0.32 and any later 0.3x)');
   const pkg = JSON.parse(read('package.json'));
-  ok('package.json 0.32.0', pkg.version === '0.32.0', pkg.version);
-  ok('about box v0.32.0', htmlSrc.includes('>v0.32.0</span>'));
-  ok('app.js appVersion 0.32.0', appSrc.includes("let appVersion = '0.32.0';"));
+  ok('package.json 0.32+', /^0\.3[2-9]\.\d+$/.test(pkg.version), pkg.version);
+  ok('about box v0.32+', />v0\.3[2-9]\.\d+<\/span>/.test(htmlSrc));
+  ok('app.js appVersion 0.32+', /let appVersion = '0\.3[2-9]\.\d+';/.test(appSrc));
   ok('no stray 0.31.0 version asserts (older suites forward-regex)', !read('scripts-test-v0310.js').includes("pkg.version === '0.31.0'"));
 
   console.log(`\nRESULT: ${pass}/${pass + fail}`);

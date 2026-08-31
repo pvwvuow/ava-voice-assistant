@@ -3186,9 +3186,20 @@ function Press-Dc([string]$doRx, [string]$alrRx, [string]$label, [string]$combo 
   # UIA کور + فوکوس هم نگرفتیم — هیچ عملی انجام نشد، صادقانه می‌گوییم
   return 'ERR:NOFOCUS'
 }
+function Test-CallAlive {
+  # v0.33 — اثبات واقعیِ برقراری تماس: در صفحهٔ DM پیش از تماس هیچ‌کدام از این
+  # دکمه‌ها وجود ندارند (دکمه‌های Mute/Deafen پنل پایین همیشه هستند، ولی
+  # Disconnect/Leave Call فقط داخل تماس) — این همان «تایید فلِیپ» مسیر تماس است
+  $s = Scan-DcBtns '^(Disconnect|Leave Call|Leave|End Call)$' '' $true
+  return ($s.alive -and ($null -ne $s.hit))
+}
 function Try-CallClick {
-  # دکمهٔ تماس: اول UIA (بدون فوکوس هم کار می‌کند)، بعد مختصات دستی
+  # دکمهٔ تماس: UIA دکمه‌ای (نام دقیق) → UIA درخت کامل (هر نوع کنترل) → مختصات دستی
   # چند بار تلاش می‌شود (بارگذاری DM ممکن است چند ثانیه طول بکشد)
+  # v0.33 — چرخهٔ بسته: بعد از Invoke/کلیک، Test-CallAlive اثبات می‌کند تماس واقعاً
+  # برقرار شده؛ بدون اثبات OK دروغین برنمی‌گردد (ریشهٔ «مخاطب را پیدا می‌کند ولی
+  # زنگ نمی‌زند»: Invoke بی‌اثر بود ولی بدون هیچ اثباتی OK:CALLING می‌گفتیم)
+  if (Test-CallAlive) { return 'OK:CALLING' } # همین حالا در تماس است
   for ($tryN = 1; $tryN -le $Retries; $tryN++) {
     try {
       $win = if ($hwnd -ne [IntPtr]::Zero) { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd) } else { $null }
@@ -3196,26 +3207,68 @@ function Try-CallClick {
         $btnCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
         $btns = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $btnCond)
         Write-Output "DBG:TRY=$tryN BTNS=$($btns.Count)"
-        foreach ($pass in 1, 2) {
-          foreach ($b in $btns) {
+        # دور ۳ — درخت کامل بدون فیلتر نوع کنترل: بعضی نسخه‌های دیسکورد دکمهٔ تماس
+        # را با ControlType دیگری منتشر می‌کنند — فقط دورهای ۱ و ۶ (گران‌ترین اسکن)
+        $fullTree = $null
+        if ($tryN -eq 1 -or $tryN -eq 6) {
+          try { $fullTree = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) } catch { }
+        }
+        foreach ($pass in 1, 2, 3) {
+          if ($pass -eq 3 -and (-not $fullTree)) { continue }
+          $scan = $btns
+          if ($pass -eq 3) { $scan = $fullTree }
+          $seen = 0
+          foreach ($b in $scan) {
+            $seen++
+            if ($pass -eq 3 -and $seen -gt 600) { break }
             $bn = ''
             try { $bn = $b.Current.Name } catch { }
             if (-not $bn) { continue }
             if ($bn -match 'Video|ویدیو|دوربین|End|قطع|Screen|اشتراک') { continue }
             $ok = $false
             if ($pass -eq 1) { $ok = ($bn -match 'Start Voice Call|Voice Call|Voice|تماس صوتی|شروع تماس|صوتی') }
-            else { $ok = ($bn -match 'Call|تماس') }
+            elseif ($pass -eq 2) { $ok = ($bn -match 'Call|تماس') }
+            else { $ok = ($bn -match 'Start Voice Call|Voice Call|Voice|تماس صوتی|شروع تماس|Call|تماس') }
             if (-not $ok) { continue }
             Write-Output "DBG:HIT=$bn PASS=$pass"
-            try { ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke(); Restore-Focus; return 'OK:CALLING' } catch { }
+            try {
+              ($b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke()
+              Start-Sleep -Milliseconds 900
+              if (Test-CallAlive) { Restore-Focus; return 'OK:CALLING' }
+              Start-Sleep -Milliseconds 700
+              if (Test-CallAlive) { Restore-Focus; return 'OK:CALLING' }
+              Write-Output 'DBG:INVOKE_NOFLIP'
+            } catch { }
             try {
               $r = $b.Current.BoundingRectangle
-              $cx = [int]($r.X + $r.Width / 2); $cy = [int]($r.Y + $r.Height / 2)
-              Click-At $cx $cy
-              Restore-Focus
-              return 'OK:CALLING'
+              if ([int]$r.Width -gt 0 -and [int]$r.Height -gt 0) {
+                Click-At ([int]($r.X + $r.Width / 2)) ([int]($r.Y + $r.Height / 2))
+                Start-Sleep -Milliseconds 900
+                if (Test-CallAlive) { Restore-Focus; return 'OK:CALLING' }
+                Write-Output 'DBG:CLICK_NOFLIP'
+              }
             } catch { }
           }
+        }
+        # v0.33 — اگر درخت زنده بود ولی دکمهٔ تماس در هیچ پاس پیدا نشد، یک‌بار
+        # نام عناصر را لاگ کن تا دیباگِ دور بعدی دقیق ممکن باشد
+        if ($btns.Count -gt 0 -and $tryN -eq 1) {
+          try {
+            $dump = @(); $k = 0
+            $all2 = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+            foreach ($e in $all2) {
+              $k++
+              if ($k -gt 400) { break }
+              $en2 = ''
+              try { $en2 = $e.Current.Name } catch { }
+              if ($en2 -and $dump.Count -lt 40) { $dump += $en2 }
+            }
+            if ($dump.Count -gt 0) {
+              $d = ($dump -join '|')
+              if ($d.Length -gt 300) { $d = $d.Substring(0, 300) }
+              Write-Output ('DBG:ALLNAMES=' + $d)
+            }
+          } catch { }
         }
       }
     } catch { }
@@ -3238,6 +3291,8 @@ function Try-CallClick {
   $ty = $r2.Top + $Dy
   if ($tx -gt $r2.Left -and $ty -gt $r2.Top) {
     Click-At $tx $ty
+    Start-Sleep -Milliseconds 900
+    if (Test-CallAlive) { Restore-Focus; return 'OK:CALLING' }
     Restore-Focus
     return 'OK:CALL_CLICKED'
   }
@@ -3304,7 +3359,37 @@ switch ($Action) {
   'clickcall' {
     # DM از قبل با دیپ‌لینک باز شده — فقط دکمهٔ تماس را بزن
     Start-Sleep -Milliseconds 900
-    Write-Output (Try-CallClick)
+    # v0.33 — فوکوس تاییدشده قبل از هر اسکنی: اگر دیسکورد مینیمایز/تری باشد درخت
+    # UIA کور و مختصات بی‌اعتبار است — یکی از ریشه‌های «پیدا می‌کند ولی زنگ نمی‌زند»
+    $fg = Focus-DcHard
+    Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
+    $res = Try-CallClick
+    if (-not ($res -like 'OK*')) {
+      # v0.33 — دیپ‌لینک صفحهٔ DM را باز نکرده؟ همان مسیر Quick Switcher داخل همین
+      # اجرا امتحان می‌شود — به‌جای خطای خالی، تماس واقعاً گرفته می‌شود
+      Write-Output ('DBG:SW_FALLBACK=' + $res)
+      $nm = ($Name -replace '[''"]', '')
+      foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $nm = $nm.Replace([string]$cq, '') }
+      if ($nm) {
+        try { Set-Clipboard -Value $nm -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+        $clipOk = $false
+        try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $nm) } catch { $clipOk = $false }
+        if ($clipOk) {
+          $fg2 = Focus-DcHard
+          Write-Output ('DBG:FG2=' + $(if ($fg2) { '1' } else { '0' }))
+          if ($fg2) {
+            Send-Combo 'ctrl,k'
+            Start-Sleep -Milliseconds 1000
+            Send-Combo 'ctrl,v'
+            Start-Sleep -Milliseconds 900
+            Send-Combo 'enter'
+            Start-Sleep -Milliseconds 1700
+            $res = Try-CallClick
+          } else { $res = 'ERR:NOFOCUS' }
+        } else { $res = 'ERR:CLIP' }
+      }
+    }
+    Write-Output $res
   }
   'callswitch' {
     # v0.28.1 — در این فایل فقط گیومهٔ ASCII مجاز است؛ کاراکتر کج در زمان اجرا با [char] حذف می‌شود
@@ -3440,12 +3525,23 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
   /* تماس با مخاطب ثبت‌شده: دیپ‌لینک مستقیم DM را باز می‌کند (بدون Ctrl+K)،
      بعد دکمهٔ «شروع تماس» کلیک می‌شود — فیکس «به صفحه می‌رود ولی زنگ نمی‌زند» */
   if (A === 'call' && userId && /^\d{5,25}$/.test(String(userId).trim())) {
-    actLog(`discord call userId=${String(userId).trim().slice(0, 4)}… mode=${mode}`, 'discord');
-    try { await shell.openExternal(`discord://discord.com/channels/@me/${String(userId).trim()}`); } catch (_) { /* noop */ }
+    const uid = String(userId).trim();
+    const nm = String(name || '');
+    actLog(`discord call userId=${uid.slice(0, 4)}… mode=${mode}`, 'discord');
+    try { await shell.openExternal(`discord://discord.com/channels/@me/${uid}`); } catch (_) { /* noop */ }
     await new Promise((r) => setTimeout(r, 2600));
     /* v0.32 — clickcall همیشه fg: فالبک کلیک مختصاتی در bg با PostMessage بود
-       و بلعیده می‌شد؛ مسیر قطعی فقط فوکوس تاییدشده است */
-    return runDiscordPs('clickcall', 'fg', '', dxN, dyN);
+       و بلعیده می‌شد؛ مسیر قطعی فقط فوکوس تاییدشده است.
+       v0.33 — نام مخاطب هم پاس می‌شود تا اگر دیپ‌لینک صفحهٔ DM را باز نکرد،
+       اسکریپت داخل همان اجرا با Quick Switcher خودش را ترمیم کند */
+    const r1 = await runDiscordPs('clickcall', 'fg', nm, dxN, dyN);
+    if (r1 && r1.ok) return r1;
+    /* v0.33 — قالب دوم دیپ‌لینک: نسخه‌هایی از دیسکورد فقط شکل discord://-/ را
+       می‌شناسند؛ فقط روی شکستِ تلاش اول، تماس با قالب دوم دوباره تلاش می‌شود */
+    actLog(`discord call alt deep-link retry (${String((r1 && r1.error) || '').slice(0, 60)})`, 'discord');
+    try { await shell.openExternal(`discord://-/channels/@me/${uid}`); } catch (_) { /* noop */ }
+    await new Promise((r) => setTimeout(r, 2600));
+    return runDiscordPs('clickcall', 'fg', nm, dxN, dyN);
   }
   /* v0.32 — تماس (callswitch) همیشه fg با فوکوس تاییدشده — در حالت bg کلیدهای
      Quick Switcher قبلاً PostMessage بودند و کرومیوم بی‌صدا بلعیدشان؛ ریشهٔ

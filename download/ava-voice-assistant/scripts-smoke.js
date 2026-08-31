@@ -1308,6 +1308,33 @@ app.whenReady().then(async () => {
       ok('v0.32 version markers (0.29.x/0.3x)', v32.ver);
     } catch (e) { console.log('SKIP | v0.32 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.98960 v0.33.0 — حلقهٔ بستهٔ تماس دیسکورد («پیدا می‌کند ولی زنگ نمی‌زند»):
+    // clickcall فوکوس تاییدشده می‌گیرد، بعد از Invoke/کلیک با Test-CallAlive اثبات
+    // می‌شود (Mute/Deafen پنل پایین هرگز در اثبات نیستند)، دور ۳ درخت کامل،
+    // فالبک Quick Switcher داخل clickcall، دو قالب دیپ‌لینک در main.js.
+    try {
+      const m33 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a33 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const b33m = m33.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/);
+      const b33 = b33m ? b33m[1] : '';
+      const v33 = {
+        proof: b33.includes('function Test-CallAlive') && b33.includes("Scan-DcBtns '^(Disconnect|Leave Call|Leave|End Call)$' '' $true") && !/Test-CallAlive\{[\s\S]{0,300}Mute\}\)/.test(b33),
+        gates: (b33.match(/if \(Test-CallAlive\) \{ Restore-Focus; return 'OK:CALLING' \}/g) || []).length === 4 && b33.includes('DBG:INVOKE_NOFLIP') && b33.includes('DBG:CLICK_NOFLIP') && b33.includes('DBG:ALLNAMES='),
+        tree: b33.includes('[System.Windows.Automation.Condition]::TrueCondition') && b33.includes('$seen -gt 600') && b33.includes('$tryN -eq 1 -or $tryN -eq 6'),
+        focus: (function () { const i = b33.indexOf("'clickcall' {"); const j = b33.indexOf("'callswitch' {", i); const blk = b33.slice(i, j > i ? j : i + 4000); return blk.indexOf('Focus-DcHard') > -1 && blk.indexOf('Try-CallClick') > blk.indexOf('Focus-DcHard') && blk.includes("if (-not ($res -like 'OK*'))") && (blk.match(/\$res = Try-CallClick/g) || []).length === 2 && !blk.includes('Send-BgCombo'); })(),
+        deep: (m33.match(/runDiscordPs\('clickcall', 'fg', nm, dxN, dyN\)/g) || []).length === 2 && m33.includes('discord://discord.com/channels/@me/${uid}') && m33.includes('discord://-/channels/@me/${uid}') && m33.includes('if (r1 && r1.ok) return r1;'),
+        honest: b33.includes("$blindProbe = Scan-DcBtns '' '' $true") && b33.includes("if ($Name) { return 'ERR:NODM' }") && b33.includes("Write-Output 'DBG:UIA_MISS'"),
+        ver: /^0\.3[3-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[3-9]\.\d+';/.test(a33),
+      };
+      ok('v0.33 call: Test-CallAlive proof uses ONLY in-call buttons (no Mute/Deafen false-OK)', v33.proof);
+      ok('v0.33 call: 4 verification gates + NOFLIP/ALLNAMES debug labels', v33.gates);
+      ok('v0.33 call: full-tree pass 3 (TrueCondition, 600 cap, rounds 1&6)', v33.tree);
+      ok('v0.33 call: clickcall = verified focus + Quick-Switcher self-heal (second Try-CallClick)', v33.focus);
+      ok('v0.33 call: name passed to clickcall ×2 + dual deep-link formats + gated retry', v33.deep);
+      ok('v0.33 call: v0.32 honest words survive (blindProbe/ERR:NODM/DBG:UIA_MISS)', v33.honest);
+      ok('v0.33 version markers (0.33.x/0.3x)', v33.ver);
+    } catch (e) { console.log('SKIP | v0.33 markers | ' + String(e && e.message).slice(0, 80)); }
+
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),
