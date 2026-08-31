@@ -2541,6 +2541,36 @@
   }
 
   /* ============================================================
+     v0.37 — Smart Gaming PiP + راهنمای فرمان‌ها (دو قانونِ اولویت‌دار)
+     ------------------------------------------------------------
+     (الف) HOW — «چجوری می‌تونم فلان کارو بکنم؟»:
+          اول در رجیستری توانایی‌های آوا (capabilities.js) می‌گردد؛
+          اگر پیدا شد دقیق می‌گوید «چه بگویی»، وگرنه همان سوال همراه
+          فهرست واقعی توانایی‌های آوا (__aiExtra) به هوش مصنوعی می‌رود
+          تا یا روشِ درست را بگوید یا صادقانه بگوید آوا این کار را ندارد.
+          گارد لازم: «چطور/چجوری/چگونه» فقط وقتی سوالِ روش است که
+          «میتونم/کنم/بکنم» یا «چی میتونی» هم در جمله باشد — وگرنه
+          «هوا چطوره؟» هم راهنما می‌شد!
+     (ب) PIP — فرمان‌های ویدیوی شناور (پین/بردار/جابجایی/اندازه/
+          شفافیت/قفل کلیک/همیشه‌رو/ریست) با پارسر فارسی+انگلیسی.
+          پارسر null بدهد → به AI می‌رود (نه اقدام اشتباه).
+     ترتیب مهم است: «چجوری ویدیو رو پین کنم؟» باید HOW شود نه پین!
+     ============================================================ */
+  {
+    const pipRules = [
+      {
+        k: /چ(?:طور|جور|گونه)[^.]{0,8}(?:میتونم|می\s?تونم|میشه|بشه|بکنم|کنم|بدم|بذارم|بزنم)|how (do|can) i\b|what can you do|چی\s?(?:میتونی|می\s?تونی|بلدی)|چیکار.{0,8}(?:میتونی|بلدی)|چه\s?(?:کارایی|کارهایی|فرمانهایی|فرمان\u200cهایی)|لیست\s?فرمان|توانایی/i,
+        t: 'راهنمای فرمان‌ها', i: '#i-gear', r: (c) => howToReply(c),
+        __aiExtra: AVACapabilities.aiPromptAddon(),
+      },
+      {
+        k: AVAVoice.PIP_COMMAND_RE, t: 'ویدیوی شناور', i: '#i-window', r: (c) => pipVoiceReply(c),
+      },
+    ];
+    RULES.splice(1, 0, ...pipRules);
+  }
+
+  /* ============================================================
      باز کردن برنامه‌های سیستم (v0.12) — معادل phonetic_dictionary.json
      کاربر نام‌ها را فارسی می‌گوید اما فایل‌ها انگلیسی‌اند؛ پس:
      ۱) دیکشنری تلفظ صوتی: «کروم» → chrome ، «فتوشاپ» → photoshop
@@ -3320,7 +3350,8 @@
        هوش مصنوعی می‌رود (گزارش کاربر: «ارجاع نمیده به ای آی») */
     if (reply && typeof reply === 'object' && reply.__aiFallback) {
       actLog('rule "' + ((rule && rule.t) || '?') + '" could not fulfill → AI fallback');
-      if (aiConnected()) { await aiHandleCommand(cmd); return; }
+      /* v0.37 — __aiExtra: قانون راهنما فهرست توانایی‌های آوا را به AI می‌چسباند */
+      if (aiConnected()) { await aiHandleCommand(cmd, rule && rule.__aiExtra); return; }
       reply = t('weather.fail'); /* AI هم در دسترس نیست → پیام صادقانهٔ از پیش تعریف‌شده */
       rcTag.textContent = t('tag.reply');
     }
@@ -5442,7 +5473,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.36.0';
+  let appVersion = '0.37.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -6747,9 +6778,12 @@
   /* --- ارسال پیام: زنجیره پرووایدرها (v0.13) ---
      «خودکار»: اول Gemini (با سرچ زنده گوگل) → حساب GLM (z.ai) → کلید GLM → OpenAI
      یا پرووایدر ثابت از تنظیمات. اولین جواب موفق برگردانده می‌شود. */
-  async function aiAsk(text) {
+  /* v0.37 — extraCtx: پیوستِ اختیاری (مثل فهرست توانایی‌های آوا برای
+     سوال‌های «چجوری می‌تونم …؟») — داخل پیام کاربر سوار می‌شود */
+  async function aiAsk(text, extraCtx) {
     const t0 = Date.now();
-    const msgs = [{ role: 'system', content: aiSystem() }, ...chatHist.slice(-8), { role: 'user', content: text }];
+    const userText = extraCtx ? String(text) + '\n\n' + extraCtx : String(text);
+    const msgs = [{ role: 'system', content: aiSystem() }, ...chatHist.slice(-8), { role: 'user', content: userText }];
     const prov = settings.aiProvider || 'auto';
     let lastErr = null;
 
@@ -6912,7 +6946,7 @@
   /* ---------- مسیریابی سوالات پیچیده به هوش مصنوعی ----------
      اگر متن، فرمان شناخته‌شده نبود و اتصال AI برقرار بود،
      آوا خودش از GLM می‌پرسد، جواب را می‌گوید و فرمان جدید پیشنهادی را با تأیید اضافه می‌کند. */
-  async function aiHandleCommand(cmd) {
+  async function aiHandleCommand(cmd, extraCtx) {
     setState('processing');
     statusText.textContent = t('ai.asking');
     body.classList.add('has-card');
@@ -6924,7 +6958,7 @@
     rcReply.textContent = '';
     rcTag.textContent = t('tag.ai');
     try {
-      const r = await aiAsk(cmd);
+      const r = await aiAsk(cmd, extraCtx);
       if (r && r.ok) {
         /* v0.20 — اول پروتکل اجرای عملی (Function Calling): اگر AI تصمیم گرفت
            کاری انجام شود، اجرای واقعی با کد محلی و مسیرهای امن آوا است */
@@ -6990,6 +7024,188 @@
         statusText.innerHTML = IDLE_HINT;
       }
     }, 3000);
+  }
+
+  /* ============================================================
+     v0.37 — Smart Gaming PiP: اتصال فرمان صوتی به پنجرهٔ شناور
+     ------------------------------------------------------------
+     • detectActiveVideo(): تشخیص ویدیوی فعال در سه مسیر:
+         ۱) <video> در حال پخشِ خودِ صفحهٔ آوا (src مستقیم https →
+            انتقال با volume/rate/time؛ blob/MediaSource → قابل
+            انتقال نیست، صادقانه گزارش می‌شود)
+         ۲) webview چت z.ai — اگر کاربر داخلش یوتیوب باز کرده باشد
+            (videoId + ثانیهٔ جاری → ?start=)
+         ۳) کلیپ‌بورد — رایج‌ترین مسیر گیمر: لینک یوتیوب را کپی
+            می‌کند و می‌گوید «ویدیو رو پین کن»
+     • pipVoiceReply(): پارسر فارسی/انگلیسی → فرمان واقعی پنجره
+     • howToReply(): «چجوری می‌تونم …؟» → رجیستری توانایی‌ها یا AI
+     محدودیت‌های شناخته‌شده: sync کامل با ویدیوی اصلی (مخصوصاً
+     یوتیوب) و کنترل موقعیت در native requestPictureInPicture
+     ممکن نیست — به همین دلیل پنجرهٔ اختصاصی آوا ساخته شد.
+     ============================================================ */
+  function ytIdFromUrl(u) {
+    const m = String(u || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/|v\/))([A-Za-z0-9_-]{6,})/i);
+    return m ? m[1] : null;
+  }
+  function ytStartFromUrl(u) {
+    const m = String(u || '').match(/[?&](?:t|start)=([0-9hms]+)/i);
+    if (!m) return 0;
+    if (/^\d+$/.test(m[1])) return parseInt(m[1], 10);
+    const hm = m[1].match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+    if (!hm) return 0;
+    return (parseInt(hm[1] || '0', 10) * 3600) + (parseInt(hm[2] || '0', 10) * 60) + parseInt(hm[3] || '0', 10);
+  }
+
+  async function detectActiveVideo() {
+    /* الف) ویدیوی در حال پخش داخل خود صفحهٔ آوا */
+    try {
+      const vs = [...document.querySelectorAll('video')].filter((v) => !v.paused && !v.ended && v.readyState >= 2);
+      if (vs.length) {
+        const v = vs[0];
+        const src = v.currentSrc || v.src || '';
+        if (/^https?:/i.test(src)) {
+          return { kind: 'src', url: src, volume: v.volume, rate: v.playbackRate, time: v.currentTime, muted: v.muted };
+        }
+        /* blob:/mediasource — انتقال مستقیم ممکن نیست */
+        return { kind: 'blob' };
+      }
+    } catch (_) { /* noop */ }
+    /* ب) webview چت z.ai — یوتیوبِ بازِ داخل آن */
+    try {
+      const wv = document.querySelector('webview');
+      if (wv && typeof wv.executeJavaScript === 'function') {
+        const info = await wv.executeJavaScript(
+          'JSON.stringify((function(){var p=[].slice.call(document.querySelectorAll("video")).filter(function(v){return !v.paused})[0];return {u:location.href,t:p?p.currentTime:0}})())',
+          false
+        );
+        const obj = JSON.parse(info || '{}');
+        const id = ytIdFromUrl(obj.u);
+        if (id) return { kind: 'youtube', videoId: id, start: Math.floor(obj.t || 0) };
+      }
+    } catch (_) { /* noop */ }
+    /* ج) کلیپ‌بورد — لینک کپی‌شدهٔ یوتیوب یا ویدیوی مستقیم */
+    try {
+      const clip = await bridge.pipAPI.clipboard();
+      const id = ytIdFromUrl(clip);
+      if (id) return { kind: 'youtube', videoId: id, start: ytStartFromUrl(clip) };
+      const dm = String(clip || '').match(/https?:\/\/\S+\.(?:mp4|webm|mov)(?:\?\S*)?/i);
+      if (dm) return { kind: 'src', url: dm[0] };
+    } catch (_) { /* noop */ }
+    return { kind: 'none' };
+  }
+
+  const PIP_POS_FA = {
+    'top-right': 'بالا-راست', 'top-left': 'بالا-چپ', 'bottom-right': 'پایین-راست',
+    'bottom-left': 'پایین-چپ', 'center': 'وسط صفحه', 'top-center': 'بالا-وسط', 'bottom-center': 'پایین-وسط',
+  };
+  const PIP_POS_EN = {
+    'top-right': 'top-right', 'top-left': 'top-left', 'bottom-right': 'bottom-right',
+    'bottom-left': 'bottom-left', 'center': 'center', 'top-center': 'top-center', 'bottom-center': 'bottom-center',
+  };
+  const PIP_SIZE_KEY = { 'small': 'small', 'medium': 'medium', 'large': 'large', 'extra-large': 'xl' };
+  const PIP_SIZE_FA = { small: 'کوچک', medium: 'متوسط', large: 'بزرگ', 'extra-large': 'خیلی بزرگ' };
+
+  async function pipVoiceReply(cmd) {
+    let st = null;
+    try { st = await bridge.pipAPI.getState(); } catch (_) { st = { open: false, size: 'medium' }; }
+    const parsed = AVAVoice.parseVoiceCommand(cmd, {
+      pipOpen: !!(st && st.open),
+      size: (st && st.size === 'xl') ? 'extra-large' : ((st && st.size) || 'medium'),
+    });
+    if (!parsed) {
+      /* جملهٔ لنگر‌دار ولی ناشناخته → هوش مصنوعی؛ بدون AI هم صادق می‌مانیم */
+      if (aiConnected()) return AI_FALLBACK;
+      return LANG === 'en'
+        ? 'I could not map that to a floating-video command. First pin one: say "pin the video".'
+        : 'این را به فرمان ویدیوی شناور تبدیل نکردم. اول یه ویدیو پین کن: بگو «ویدیو رو پین کن».';
+    }
+    const P = parsed.intent;
+    const E = parsed.entities || {};
+    actLog('pip intent ' + P + ' ' + JSON.stringify(E));
+    try {
+      if (P === 'PIN_VIDEO') {
+        const src = await detectActiveVideo();
+        await bridge.pipAPI.show(src);
+        if (E.position) await bridge.pipAPI.move(E.position);
+        const posTxt = E.position ? (LANG === 'en' ? PIP_POS_EN[E.position] : PIP_POS_FA[E.position]) : '';
+        if (src.kind === 'youtube') {
+          return (LANG === 'en' ? 'YouTube video pinned' : 'ویدیوی یوتیوب پین شد') + (posTxt ? ' — ' + posTxt : '') +
+            (LANG === 'en' ? '. Tune it: "make it smaller", "opacity fifty", "click through on".' : '. با «کوچیکش کن»، «شفافش کن» و «کلیک روش رو ببند» تنظیمش کن.');
+        }
+        if (src.kind === 'src') {
+          return (LANG === 'en' ? 'Video pinned' : 'ویدیو پین شد') + (posTxt ? ' — ' + posTxt : '') + '.';
+        }
+        if (src.kind === 'blob') {
+          return LANG === 'en'
+            ? 'This in-page video plays via blob/MediaSource and cannot be transferred. Copy its YouTube link and say "pin the video".'
+            : 'این ویدیو داخل صفحه با blob پخش می‌شود و انتقال مستقیم ممکن نیست. لینک یوتیوبش را کپی کن و بگو «ویدیو رو پین کن».';
+        }
+        return LANG === 'en'
+          ? 'No playing video found. Copy a YouTube link and say "pin the video" again.'
+          : 'ویدیوی در حال پخشی پیدا نکردم. لینک یوتیوب موردنظرت را کپی کن و دوباره بگو «ویدیو رو پین کن».';
+      }
+      if (P === 'UNPIN_VIDEO') {
+        await bridge.pipAPI.hide();
+        return LANG === 'en' ? 'Floating video removed.' : 'ویدیو از صفحه برداشته شد.';
+      }
+      if (P === 'MOVE_PIP') {
+        if (E.size) await bridge.pipAPI.resize(PIP_SIZE_KEY[E.size] || 'medium');
+        await bridge.pipAPI.move(E.position);
+        return LANG === 'en' ? 'Moved to ' + PIP_POS_EN[E.position] + '.' : 'رفت ' + PIP_POS_FA[E.position] + '.';
+      }
+      if (P === 'RESIZE_PIP') {
+        await bridge.pipAPI.resize(PIP_SIZE_KEY[E.size] || 'medium');
+        return LANG === 'en' ? 'Size: ' + E.size + '.' : 'اندازه شد: ' + (PIP_SIZE_FA[E.size] || E.size) + '.';
+      }
+      if (P === 'OPACITY_PIP') {
+        await bridge.pipAPI.setOpacity(E.opacity);
+        return LANG === 'en'
+          ? 'Opacity set to ' + Math.round(E.opacity * 100) + '%.'
+          : 'شفافیت شد ' + Math.round(E.opacity * 100) + '٪.';
+      }
+      if (P === 'CLICK_THROUGH_ON') {
+        await bridge.pipAPI.setClickThrough(true);
+        return LANG === 'en'
+          ? 'Click-lock on — clicks pass through to your game. Say "click through off" to unlock.'
+          : 'قفل کلیک فعال شد؛ کلیک‌ها از روی پنجره رد می‌شوند و به بازی می‌رسند. برای باز کردن بگو «کلیک روش فعال باشه».';
+      }
+      if (P === 'CLICK_THROUGH_OFF') {
+        await bridge.pipAPI.setClickThrough(false);
+        return LANG === 'en' ? 'Window is clickable again.' : 'کلیک روی پنجره دوباره فعال شد.';
+      }
+      if (P === 'ALWAYS_ON_TOP_ON') {
+        await bridge.pipAPI.setAlwaysOnTop(true);
+        return LANG === 'en' ? 'Stays on top of everything now.' : 'خودش را همیشه رو صفحه نگه می‌دارد.';
+      }
+      if (P === 'ALWAYS_ON_TOP_OFF') {
+        await bridge.pipAPI.setAlwaysOnTop(false);
+        return LANG === 'en' ? 'No longer always on top.' : 'دیگه همیشه رو صفحه نمی‌ماند.';
+      }
+      if (P === 'RESET_PIP') {
+        await bridge.pipAPI.reset();
+        return LANG === 'en' ? 'Floating video reset to defaults.' : 'ویدیوی شناور به حالت پیش‌فرض برگشت.';
+      }
+    } catch (e) {
+      actLog('pip error: ' + ((e && e.message) || e));
+      return LANG === 'en'
+        ? 'Floating video failed: ' + ((e && e.message) || 'unknown')
+        : 'ویدیوی شناور انجام نشد: ' + ((e && e.message) || 'نامشخص');
+    }
+    if (aiConnected()) return AI_FALLBACK;
+    return t('default.reply');
+  }
+
+  /* «چجوری می‌تونم …؟» — اول رجیستری محلی (آفلاین و فوری)، بعد AI با مانیفست */
+  async function howToReply(cmd) {
+    const hit = AVACapabilities.search(cmd);
+    if (hit) {
+      actLog('how-to local hit: ' + hit.cap.id);
+      return AVACapabilities.howReply(hit, LANG);
+    }
+    if (aiConnected()) return AI_FALLBACK; /* با __aiExtra فهرست توانایی‌ها به AI می‌چسبد */
+    return LANG === 'en'
+      ? 'I am offline right now — sign in on the GLM chat tab and ask again. Meanwhile I can pin videos ("pin the video"), control Discord (mute/deafen/call/message), dictate into any app ("type here for me"), play music, read rates/weather, set timers and reminders, and open apps or sites.'
+      : 'الان به هوش مصنوعی وصل نیستم که جواب کامل بدهم (تب «صفحه چت GLM» وارد حسابت شو). فعلاً این‌ها را بلدم: ویدیوی شناور («ویدیو رو پین کن»)، دیسکورد (میوت/دیفن/تماس/پیام)، تایپ صوتی در هر برنامه («اینجا برام تایپ کن»)، موزیک، آب‌وهوا، قیمت ارز و طلا، اوقات شرعی، تایمر، یادآوری، یادداشت، خاموش/ریستارت و باز کردن برنامه‌ها و سایت‌ها.';
   }
 
   /* ============================================================

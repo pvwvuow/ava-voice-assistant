@@ -168,6 +168,25 @@ contextBridge.exposeInMainWorld('ava', {
     onStatus: (cb) => ipcRenderer.on('ava:net-status', (_e, s) => cb(s)),
   },
 
+  /* v0.37 — پنجرهٔ ویدیوی شناور (Smart Gaming PiP)
+     پنجرهٔ شیشه‌ای مخصوص گیم: همیشه‌رو، شفافیت، click-through، ذخیرهٔ وضعیت */
+  pipAPI: {
+    show: (source) => ipcRenderer.invoke('pip:show', source),
+    hide: () => ipcRenderer.invoke('pip:hide'),
+    toggle: (source) => ipcRenderer.invoke('pip:toggle', source),
+    move: (position) => ipcRenderer.invoke('pip:move', position),
+    resize: (size) => ipcRenderer.invoke('pip:resize', size),
+    setOpacity: (value) => ipcRenderer.invoke('pip:opacity', value),
+    setClickThrough: (enabled) => ipcRenderer.invoke('pip:click-through', !!enabled),
+    setAlwaysOnTop: (enabled) => ipcRenderer.invoke('pip:always-on-top', !!enabled),
+    reset: () => ipcRenderer.invoke('pip:reset'),
+    getState: () => ipcRenderer.invoke('pip:get-state'),
+    /* لینک کپی‌شدهٔ کلیپ‌بورد از پروسهٔ اصلی (برای «لینک یوتیوب رو پین کن») */
+    clipboard: () => ipcRenderer.invoke('pip:clip'),
+    /* تغییر وضعیت از صدا/میانبر/دکمه‌های خود پنجره */
+    onState: (cb) => ipcRenderer.on('pip:state', (_e, s) => cb(s)),
+  },
+
   /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */
   custom: {
     run: (script) => ipcRenderer.invoke('custom:run', script),

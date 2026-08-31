@@ -89,9 +89,9 @@ ok('calcReply returns AI_FALLBACK when parseMath fails',
 ok('runCommand intercepts the sentinel',
    appSrc.includes('reply && typeof reply === \'object\' && reply.__aiFallback'));
 ok('sentinel → aiHandleCommand(cmd) with same utterance',
-   /reply\.__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd\); return; \}/.test(appSrc));
+   /reply\.__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd(, rule && rule\.__aiExtra)?\); return; \}/.test(appSrc));
 ok('honest pre-set reply when AI itself is unreachable',
-   /__aiFallback[\s\S]{0,240}t\('weather\.fail'\)/.test(appSrc));
+   /__aiFallback[\s\S]{0,420}t\('weather\.fail'\)/.test(appSrc));
 ok('unknown-command → AI path intact (v0.20 regression)',
    appSrc.includes('if (aiConnected()) {\n        /* فرمان شناخته نشد → هوش مصنوعی تحلیل و جواب می‌دهد */\n        await aiHandleCommand(cmd);'));
 

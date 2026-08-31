@@ -1157,7 +1157,7 @@ app.whenReady().then(async () => {
         weatherRef: /const r = await bridge\.system\.weather\(city \|\| 'تهران'\);[\s\S]{0,600}return AI_FALLBACK;/.test(a292),
         calcRef: /if \(!m\) \{[\s\S]{0,200}return AI_FALLBACK;/.test(a292),
         dispatch: a292.includes("reply && typeof reply === 'object' && reply.__aiFallback")
-          && /__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd\); return; \}/.test(a292),
+          && /__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd(, rule && rule\.__aiExtra)?\); return; \}/.test(a292),
         edgeCity: a292.includes('wxExtractCity') && a292.includes('نشونم') && a292.includes('نشانم'),
         honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
           && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,
@@ -1428,7 +1428,7 @@ app.whenReady().then(async () => {
         site: a36.includes("['سافت 98', 'https://soft98.ir']") && a36.includes('function siteTargetOf(cmd)') && (a36.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length === 3,
         set: h36.includes('<div class="set-pane" data-pane="wake">') && h36.includes('data-i18n="set.nav.wake"') && !h36.includes('data-i18n="disc.hint"') && h36.includes('data-i18n="set.dc.adv"'),
         type: h36.includes('<textarea id="cmdInput" rows="1"') && h36.includes('<textarea id="chatInput" rows="1"') && a36.includes('function wireMultilineInput(el, form, maxPx)') && c36.includes('width: min(860px, 100%)') && c36.includes('max-width: calc(100% - 34px); white-space: normal;'),
-        ver: /^0\.3[6-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[6-9]\.\d+';/.test(a36) && h36.includes('>v0.36.0<'),
+        ver: /^0\.3[6-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[6-9]\.\d+';/.test(a36) && />v0\.3[6-9]\.\d+</.test(h36),
       };
       ok('v0.36 discord: tray-proof EnumWindows discovery + NO_DISCORD only without processes', v36.tray);
       ok('v0.36 discord: hotkey-first bg (no focus) with honest preAlive-gated flip proof', v36.hotkey && v36.switchverbatim);
@@ -1438,6 +1438,41 @@ app.whenReady().then(async () => {
       ok('v0.36 gemini page: textarea inputs + 860px card + wrapping model tag', v36.type);
       ok('v0.36 version markers (0.36.x/0.3x)', v36.ver);
     } catch (e) { console.log('SKIP | v0.36 markers | ' + String(e && e.message).slice(0, 80)); }
+
+    // 8.98971 v0.37.0 — Smart Gaming PiP + راهنمای «چجوری می‌تونم …؟»
+    // (۱) پنجرهٔ شیشه‌ای مخصوص گیم: screen-saver + click-through هوشمند + ذخیرهٔ وضعیت + میانبرها
+    // (۲) پارسر فارسی/انگلیسی با گارد ضد-ربایش (ببندش/بالا راست/کوچیکش کن فقط با لنگر/PiP-باز/فعل)
+    // (۳) detectActiveVideo سه‌مسیره: صفحهٔ آوا → webview → کلیپ‌بورد (blob صادقانه)
+    // (۴) HOW: رجیستری توانایی‌ها (آفلاین) → AI با مانیفست __aiExtra
+    // (۵) لوگوی آوا در پنجرهٔ PiP (واترمارک + آیکون + حالت خالی)
+    try {
+      const a37 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h37 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const m37 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const pm37 = fs.readFileSync(path.join(__dirname, 'pipWindowManager.js'), 'utf8');
+      const ph37 = fs.readFileSync(path.join(__dirname, 'renderer/pip.html'), 'utf8');
+      const pr37 = fs.readFileSync(path.join(__dirname, 'renderer/js/pipRenderer.js'), 'utf8');
+      const pl37 = fs.readFileSync(path.join(__dirname, 'preload.js'), 'utf8');
+      const vp37 = require(path.join(__dirname, 'renderer/js/voiceCommandParser.js'));
+      const v37 = {
+        mgr: m37.includes("require('./pipWindowManager')") && pm37.includes("'screen-saver'") && pm37.includes('forward: true') && pm37.includes('pip-state.json') && pm37.includes('CommandOrControl+Shift+P') && pm37.includes('Borderless Windowed'),
+        parser: vp37.parseVoiceCommand('ویدیو رو پین کن', { pipOpen: false }).intent === 'PIN_VIDEO' && vp37.parseVoiceCommand('ببندش', { pipOpen: false }) === null && vp37.parseVoiceCommand('ببندش', { pipOpen: true }).intent === 'UNPIN_VIDEO' && vp37.parseVoiceCommand('ببرش بالا سمت راست', { pipOpen: false }).entities.position === 'top-right' && vp37.parseVoiceCommand('شفافیت هفتاد درصد', { pipOpen: true }).entities.opacity === 0.7,
+        detect: a37.includes('async function detectActiveVideo') && a37.includes("kind: 'blob'") && a37.includes('bridge.pipAPI.clipboard()'),
+        how: a37.includes('__aiExtra: AVACapabilities.aiPromptAddon()') && a37.includes('aiHandleCommand(cmd, rule && rule.__aiExtra)') && fs.existsSync(path.join(__dirname, 'renderer/js/capabilities.js')),
+        bridge: pl37.includes('pipAPI: {') && ['show', 'hide', 'move', 'resize', 'setOpacity', 'setClickThrough', 'setAlwaysOnTop', 'reset', 'getState'].every((k) => pl37.includes(k)),
+        ui: ph37.includes('assets/ava-logo.png') && (ph37.match(/data-ui="1"/g) || []).length >= 6 && pr37.includes('youtube.com/embed/') && pr37.includes('hoverUi'),
+        order: h37.indexOf('js/voiceCommandParser.js') > -1 && h37.indexOf('js/voiceCommandParser.js') < h37.indexOf('js/app.js') && h37.indexOf('js/capabilities.js') < h37.indexOf('js/app.js'),
+        ver: /^0\.3[7-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[7-9]\.\d+';/.test(a37) && />v0\.3[7-9]\.\d+</.test(h37),
+      };
+      ok('v0.37 pip manager: screen-saver top + smart click-through + state file + shortcuts + borderless note', v37.mgr);
+      ok('v0.37 parser: fa/en intents + anti-hijack guards (ببندش needs pipOpen)', v37.parser);
+      ok('v0.37 detectActiveVideo: in-page → webview → clipboard, honest blob', v37.detect);
+      ok('v0.37 how-to: local capability registry + AI manifest via __aiExtra', v37.how);
+      ok('v0.37 preload: full pipAPI bridge', v37.bridge);
+      ok('v0.37 pip UI: logo watermark + data-ui controls + youtube embed + hover', v37.ui);
+      ok('v0.37 script order: parser/capabilities before app.js', v37.order);
+      ok('v0.37 version markers (0.37.x/0.3x+)', v37.ver);
+    } catch (e) { console.log('SKIP | v0.37 markers | ' + String(e && e.message).slice(0, 80)); }
 
     try {
       const rt23 = await probe(`(() => ({

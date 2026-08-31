@@ -11,6 +11,9 @@ const path = require('path');
 const os = require('os');
 const { Readable } = require('stream');
 
+/* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
+const pipManager = require('./pipWindowManager');
+
 /* ---------- پروتکل امن ava:// ----------
    رابط کاربری از ava://app بارگذاری می‌شود تا فایل‌های برنامه
    با MIME درست و بدون مجوز اضافه سرو شوند.
@@ -4089,6 +4092,11 @@ app.whenReady().then(() => {
   setupMicPermission();
   createWindow();
   setupAutoUpdater();
+
+  /* v0.37 — راه‌اندازی پنجرهٔ ویدیوی شناور:
+     وضعیت از pip-state.json (userData) بازیابی و IPC + میانبرهای سراسری ثبت می‌شود
+     Ctrl+Shift+P روشن/خاموش PiP — Ctrl+Shift+جهت‌ها جابجایی — Plus/Minus اندازه */
+  try { pipManager.init({ win }); } catch (e) { console.error('pip init:', e); }
 
   /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود)
      v0.29.1 — + تشخیص عمیق: پراکسی سیستم + https واقعی به generativelanguage */

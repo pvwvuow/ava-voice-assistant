@@ -1,0 +1,149 @@
+'use strict';
+/* ============================================================
+   آوا — pipRenderer (v0.37) — منطقِ داخل پنجرهٔ ویدیوی شناور
+   ------------------------------------------------------------
+   • دریافت منبع ویدیو از پروسهٔ اصلی:
+       {kind:'youtube', videoId, start}  → iframe امبد یوتیوب
+       {kind:'src', url, volume, rate, time, muted} → <video> مستقیم
+       {kind:'blob'} → انتقال مستقیم ممکن نیست (blob/MediaSource قابل
+         ریپلیکیشن به پنجرهٔ دیگر نیست) → پیام صادقانه + راهنما
+       {kind:'none'} → حالت خالی با راهنمای صوتی
+   • click-through هوشمند: وقتی قفلِ کلیک فعال است، همه‌جا از ماوس
+     عبور می‌کند به‌جز نوار کنترل (hover روی نوار → کلیک‌پذیر موقت)
+   • درگ دستی: mousedown روی grip → پروسهٔ اصلی با مختصات واقعی ماوس
+     پنجره را جابجا می‌کند (پنجره focusable:false است)
+   • همگام‌سازی با ویدیوی اصلی محدود است (مخصوصاً یوتیوب — embed
+     اجازهٔ sync کامل نمی‌دهد؛ از ?start= برای زمان شروع استفاده کردیم)
+   ============================================================ */
+(function () {
+  const root = document.getElementById('root');
+  const mediaWrap = document.getElementById('mediaWrap');
+  const vid = document.getElementById('vid');
+  const ytWrap = document.getElementById('ytWrap');
+  const yt = document.getElementById('yt');
+  const empty = document.getElementById('empty');
+  const btnClose = document.getElementById('btnClose');
+  const btnLock = document.getElementById('btnLock');
+  const btnOpacity = document.getElementById('btnOpacity');
+  const btnSize = document.getElementById('btnSize');
+  const grip = document.getElementById('grip');
+
+  let uiTimer = null;
+  let dragging = false;
+
+  function showUI() {
+    root.classList.add('show-ui');
+    if (uiTimer) clearTimeout(uiTimer);
+    uiTimer = setTimeout(() => root.classList.remove('show-ui'), 2600);
+  }
+
+  /* ---------- منبع ویدیو ---------- */
+  function showEmpty(msg) {
+    mediaWrap.classList.add('hidden');
+    empty.classList.remove('hidden');
+    if (msg) empty.querySelector('p').textContent = msg;
+  }
+
+  function loadSource(src) {
+    try {
+      if (!src || src.kind === 'none') { showEmpty(); return; }
+      if (src.kind === 'youtube' && src.videoId) {
+        /* امبد رسمی یوتیوب — sync کامل با پخش‌کنندهٔ اصلی محدود است؛
+           فقط زمان شروع (?start=) منتقل می‌شود */
+        const s = Math.max(0, Math.floor(src.start || 0));
+        ytWrap.style.display = 'block';
+        vid.removeAttribute('src');
+        vid.load();
+        yt.src = 'https://www.youtube.com/embed/' + encodeURIComponent(src.videoId) +
+          '?autoplay=1&playsinline=1&rel=0&modestbranding=1' + (s ? '&start=' + s : '');
+        empty.classList.add('hidden');
+        mediaWrap.classList.remove('hidden');
+        return;
+      }
+      if (src.kind === 'src' && src.url && /^https?:/i.test(src.url)) {
+        ytWrap.style.display = 'none';
+        yt.src = 'about:blank';
+        vid.src = src.url;
+        if (typeof src.volume === 'number') { try { vid.volume = Math.max(0, Math.min(1, src.volume)); } catch (_) {} }
+        if (typeof src.rate === 'number') { try { vid.playbackRate = src.rate; } catch (_) {} }
+        if (typeof src.muted === 'boolean') { try { vid.muted = src.muted; } catch (_) {} }
+        const t0 = Math.max(0, Number(src.time) || 0);
+        const onMeta = () => {
+          try { if (t0 > 0 && t0 < (vid.duration || Infinity)) vid.currentTime = t0; } catch (_) {}
+          vid.play().catch(() => { /* autoplay با صدا ممکن است بلاک شود */ });
+        };
+        if (vid.readyState >= 1) onMeta(); else vid.addEventListener('loadedmetadata', onMeta, { once: true });
+        empty.classList.add('hidden');
+        mediaWrap.classList.remove('hidden');
+        return;
+      }
+      if (src.kind === 'blob') {
+        /* محدودیت واقعی: src از نوع blob/MediaSource در پنجرهٔ دیگر قابل پخش نیست */
+        showEmpty('این ویدیو داخل صفحه با blob/MediaSource پخش می‌شود و انتقال مستقیم ممکن نیست. لینک یوتیوب را کپی کن و بگو «ویدیو رو پین کن».');
+        return;
+      }
+      showEmpty();
+    } catch (e) {
+      showEmpty();
+    }
+  }
+
+  /* ---------- وضعیت (شفافیت/قفل/اندازه از صدا یا میانبر تغییر کرد) ---------- */
+  function applyState(st) {
+    if (!st) return;
+    if (typeof st.clickThrough === 'boolean') {
+      root.classList.toggle('ct', st.clickThrough);
+      btnLock.textContent = st.clickThrough ? '🔒' : '🔓';
+      btnLock.classList.toggle('on', st.clickThrough);
+      btnLock.title = st.clickThrough
+        ? 'کلیک قفل است — بگو «کلیک روش فعال باشه» تا باز شود'
+        : 'قفل کلیک — کلیک از روی پنجره رد شود (مناسب بازی)';
+    }
+    if (typeof st.opacity === 'number') btnOpacity.textContent = '◐ ' + Math.round(st.opacity * 100);
+  }
+
+  /* ---------- click-through هوشمند ---------- */
+  /* با forward:true حتی وقتی پنجره mouse-ignore است، mousemove به همین صفحه
+     می‌رسد؛ پس می‌فهمیم ماوس روی نوار کنترل است و موقتاً کلیک‌پذیری برمی‌گردد */
+  document.addEventListener('mousemove', (e) => {
+    showUI();
+    const overUi = !!(e.target && e.target.closest && e.target.closest('[data-ui]'));
+    try { window.pipHost.hoverUi(overUi); } catch (_) { /* noop */ }
+  });
+  document.addEventListener('mouseleave', () => {
+    try { window.pipHost.hoverUi(false); } catch (_) { /* noop */ }
+    if (uiTimer) clearTimeout(uiTimer);
+    root.classList.remove('show-ui');
+  });
+
+  /* ---------- دکمه‌ها ---------- */
+  btnClose.addEventListener('click', () => { try { window.pipHost.close(); } catch (_) {} });
+  btnLock.addEventListener('click', () => { try { window.pipHost.ctl('clickthrough'); } catch (_) {} });
+  btnOpacity.addEventListener('click', () => { try { window.pipHost.ctl('opacity'); } catch (_) {} });
+  btnSize.addEventListener('click', () => { try { window.pipHost.ctl('size'); } catch (_) {} });
+
+  /* ---------- درگ دستی ---------- */
+  grip.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    dragging = true;
+    root.classList.add('dragging');
+    try { window.pipHost.dragStart(); } catch (_) {}
+    e.preventDefault();
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    root.classList.remove('dragging');
+    try { window.pipHost.dragEnd(); } catch (_) {}
+  });
+
+  /* ---------- پل‌ها ---------- */
+  try {
+    window.pipHost.onSource(loadSource);
+    window.pipHost.onState(applyState);
+    window.pipHost.ready();
+  } catch (_) { /* در پیش‌نمایش وب pipHost وجود ندارد */ }
+
+  showEmpty();
+  showUI();
+})();
