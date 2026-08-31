@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('pipHost', {
   dragEnd: () => ipcRenderer.send('pip:host:drag-end'),
   /* دکمه‌های کنترل: close | clickthrough | opacity | size */
   ctl: (type) => ipcRenderer.send('pip:host:ctl', String(type || '')),
+  /* v0.38 — جستجوی سریع یوتیوب از داخل پنجرهٔ PiP */
+  search: (q) => ipcRenderer.send('pip:host:search', String(q || '')),
   /* منبع ویدیو از پروسهٔ اصلی */
   onSource: (cb) => ipcRenderer.on('pip:source', (_e, s) => cb(s)),
   /* تغییر وضعیت (شفافیت/قفل/اندازه از صدا یا میانبر) */

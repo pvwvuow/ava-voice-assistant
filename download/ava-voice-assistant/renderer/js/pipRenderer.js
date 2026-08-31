@@ -27,9 +27,15 @@
   const btnOpacity = document.getElementById('btnOpacity');
   const btnSize = document.getElementById('btnSize');
   const grip = document.getElementById('grip');
+  /* v0.38 — کنترل پلیر + جستجوی سریع */
+  const btnPlay = document.getElementById('btnPlay');
+  const btnMute = document.getElementById('btnMute');
+  const pipSearch = document.getElementById('pipSearch');
 
   let uiTimer = null;
   let dragging = false;
+  let isPaused = false;
+  let isMuted = false;
 
   function showUI() {
     root.classList.add('show-ui');
@@ -37,11 +43,45 @@
     uiTimer = setTimeout(() => root.classList.remove('show-ui'), 2600);
   }
 
-  /* ---------- منبع ویدیو ---------- */
+  /* ---------- منبع ویدیو + کنترل پلیر ---------- */
+  /* v0.38 — کنترل پلیر (پخش/توقف و قطع صدا) ----------
+     یوتیوب: دستور از طریق postMessage به iframe رسمی می‌رود (enablejsapi=1
+     در آدرس امبد فعال شده تا این پیام‌ها پذیرفته شوند). ویدیوی مستقیم:
+     مستقیم روی عنصر <video> */
+  function ytCommand(func) {
+    try { yt.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), '*'); } catch (_) { /* noop */ }
+  }
+  function togglePlay() {
+    isPaused = !isPaused;
+    btnPlay.textContent = isPaused ? '▶' : '⏸';
+    btnPlay.title = isPaused ? 'پخش' : 'توقف';
+    if (ytWrap.style.display === 'block') ytCommand(isPaused ? 'pauseVideo' : 'playVideo');
+    else { try { isPaused ? vid.pause() : vid.play().catch(() => {}); } catch (_) { /* noop */ } }
+  }
+  function toggleMute() {
+    isMuted = !isMuted;
+    btnMute.textContent = isMuted ? '🔇' : '🔊';
+    btnMute.title = isMuted ? 'بازگرداندن صدا' : 'قطع صدا';
+    if (ytWrap.style.display === 'block') ytCommand(isMuted ? 'mute' : 'unMute');
+    else { try { vid.muted = isMuted; } catch (_) { /* noop */ } }
+  }
+
+  /* ---------- v0.38 — جستجوی سریع داخل PiP ----------
+     Enter → به پروسهٔ اصلی: لینک/شناسه = پخش همان‌جا؛ متن = نتایج در مرورگر */
+  pipSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && pipSearch.value.trim()) {
+      const q = pipSearch.value.trim();
+      try { window.pipHost.search(q); } catch (_) { /* noop */ }
+      pipSearch.value = '';
+      try { pipSearch.blur(); } catch (_) { /* noop */ }
+    }
+  });
+
+  const emptyDefault = empty.querySelector('p').textContent; /* v0.38 — متن پیش‌فرض برای بازنشانی */
   function showEmpty(msg) {
     mediaWrap.classList.add('hidden');
     empty.classList.remove('hidden');
-    if (msg) empty.querySelector('p').textContent = msg;
+    empty.querySelector('p').textContent = msg || emptyDefault; /* پیام قبلی نماند */
   }
 
   function loadSource(src) {
@@ -55,7 +95,7 @@
         vid.removeAttribute('src');
         vid.load();
         yt.src = 'https://www.youtube.com/embed/' + encodeURIComponent(src.videoId) +
-          '?autoplay=1&playsinline=1&rel=0&modestbranding=1' + (s ? '&start=' + s : '');
+          '?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1' + (s ? '&start=' + s : '');
         empty.classList.add('hidden');
         mediaWrap.classList.remove('hidden');
         return;
@@ -75,6 +115,11 @@
         if (vid.readyState >= 1) onMeta(); else vid.addEventListener('loadedmetadata', onMeta, { once: true });
         empty.classList.add('hidden');
         mediaWrap.classList.remove('hidden');
+        return;
+      }
+      if (src.kind === 'note') {
+        /* v0.38 — پیام راهنما (مثلاً بعد از جستجوی متنی که نتایجش به مرورگر رفت) */
+        showEmpty(src.message || '');
         return;
       }
       if (src.kind === 'blob') {

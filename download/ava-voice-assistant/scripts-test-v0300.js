@@ -112,7 +112,7 @@ ok('ALREADY honest mapping kept (mute family + deaf family)',
 console.log('\n[7] real pwsh EXECUTION of the shipped body (I4)');
 const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';
 const hasPwsh = fs.existsSync(PWSH);
-ok('portable pwsh present', hasPwsh);
+if (hasPwsh) ok('portable pwsh present', true); else console.log('SKIP | portable pwsh (باینری فقط روی ماشین ساخت ویندوز)');
 if (hasPwsh && body) {
   const tmp = '/home/z/my-project/scripts/ava-dc-v0300-exec.ps1';
   fs.writeFileSync(tmp, '\ufeff' + body, 'utf8');
@@ -153,9 +153,9 @@ if (hasPwsh && body) {
 
 console.log('\n[8] versions 0.30+ (v0.31: forward-compatible)');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.30+', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
-ok('about box 0.30+', />v0\.(29|3\d)\.\d+<\/span>/.test(htmlSrc));
-ok('app.js appVersion 0.30+', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
+ok('package.json 0.30+', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+ok('about box 0.30+', />v0\.(29|3\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.30+', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

@@ -19,6 +19,7 @@
    ============================================================ */
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process'); /* v0.38 — باز کردن نتایج جستجو در مرورگر پیش‌فرض */
 const { app, BrowserWindow, ipcMain, screen, clipboard, globalShortcut } = require('electron');
 const core = require('./pipCore');
 
@@ -209,6 +210,20 @@ function togglePiP(source) {
   return open ? hidePiP() : showPiP(source);
 }
 
+/* v0.38 — باز کردن مستقیم یک URL/شناسهٔ یوتیوب در پنجرهٔ شناور
+   (دستور صوتی «یوتیوب شناور …» و نوار جستجوی داخل PiP)
+   خروجی: true اگر ویدیوی یوتیوب بود و پخش شد؛ false = فراخواننده فالبک کند */
+function openUrl(u) {
+  const s = String(u || '').trim();
+  if (!s) return false;
+  const id = core.ytIdFromUrl(s) || (/^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null);
+  if (!id) return false; /* لینک/شناسهٔ ویدیوی یوتیوب نیست */
+  let start = 0;
+  try { start = core.ytStartFromUrl(s) || 0; } catch (_) { start = 0; }
+  showPiP({ kind: 'youtube', videoId: id, start });
+  return true;
+}
+
 function movePiP(position) {
   if (!core.PIP_POSITIONS.includes(position)) return getState();
   state.position = position;
@@ -366,6 +381,20 @@ function registerIpc() {
     });
     ipcMain.on('pip:host:drag-start', () => startDrag());
     ipcMain.on('pip:host:drag-end', () => stopDrag());
+    /* v0.38 — جستجوی سریع داخل پنجرهٔ PiP:
+     • لینک/شناسهٔ یوتیوب → همان‌جا پخش می‌شود
+     • متن معمولی → صفحهٔ نتایج یوتیوب iframe نمی‌شود (X-Frame-Options گوگل)؛
+       پس نتیجه‌ها در مرورگر پیش‌فرض باز و در PiP پیام راهنما نشان داده می‌شود */
+    ipcMain.on('pip:host:search', (_e, q) => {
+      const s = String(q || '').trim().slice(0, 200);
+      if (!s) return;
+      const id = core.ytIdFromUrl(s) || (/^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null);
+      if (id) { showPiP({ kind: 'youtube', videoId: id }); return; }
+      try {
+        exec(`start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(s)}"`, { windowsHide: true, timeout: 15000 }, () => {});
+      } catch (_) { /* noop */ }
+      showPiP({ kind: 'note', message: 'نتیجه‌ها در مرورگر باز شد. لینک ویدیو را کپی کن و بگو «ویدیو رو پین کن» تا همین‌جا پخش شود.' });
+    });
     ipcMain.on('pip:host:ctl', (_e, type) => {
       switch (String(type || '')) {
         case 'close': hidePiP(); break;
@@ -404,4 +433,5 @@ module.exports = {
   loadPiPState,
   resetPiP,
   getState,
+  openUrl, /* v0.38 — لینک/شناسهٔ یوتیوب → پخش شناور */
 };

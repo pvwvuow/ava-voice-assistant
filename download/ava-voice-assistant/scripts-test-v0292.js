@@ -120,9 +120,9 @@ ok('Arabic ی/ك normalization in city matching', mainSrc.includes(".replace(/ي
 
 /* ---- 4) versions ---- */
 console.log('\n[4] version 0.29.2 everywhere');
-ok('package.json >= 0.29.2 (relaxed after v0.29.3)', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
+ok('package.json >= 0.29.2 (relaxed after v0.29.3)', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
 ok('about box v0.29.2+ (relaxed)', /v0\.(29|3\d)\.\d+/.test(htmlSrc));
-ok('app.js appVersion 0.29.2+ (relaxed)', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
+ok('app.js appVersion 0.29.2+ (relaxed)', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

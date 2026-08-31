@@ -564,6 +564,20 @@ const COMMANDS = {
   open_paint:    { cmd: 'start mspaint',               fa: 'پینت' },
   open_music:    { cmd: 'start https://music.youtube.com', fa: 'یوتیوب موزیک' },
   open_youtube:  { cmd: 'start https://www.youtube.com',   fa: 'یوتیوب' },
+  /* v0.38 — جستجوی مستقیم یوتیوب: «تو یوتیوب آهنگ X رو سرچ کن» */
+  youtube_search: { cmd: (a) => `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}"`, fa: 'جستجوی یوتیوب' },
+  /* v0.38 — یوتیوب شناور: اگر عبارت/لینک، ویدیوی یوتیوب بود همان‌جا در پنجرهٔ شناور
+     پخش می‌شود؛ وگرنه نتیجه‌ها در مرورگر باز می‌شود (صفحهٔ نتایج iframe نمی‌شود) */
+  pip_youtube:   { cmd: (a) => {
+    const q = String(a || '').trim();
+    if (q && pipManager && typeof pipManager.openUrl === 'function') {
+      const ok = pipManager.openUrl(q);
+      if (ok) return 'powershell -NoProfile -Command "Write-Output pip_started"';
+    }
+    return q
+      ? `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(q.slice(0, 120))}"`
+      : 'start "" "https://www.youtube.com"';
+  }, fa: 'یوتیوب شناور' },
   open_downloads: { cmd: 'start "" "shell:Downloads"',  fa: 'پوشه دانلودها' },
   open_documents: { cmd: 'start "" "shell:Personal"',     fa: 'پوشه اسناد' },
 
@@ -2519,7 +2533,8 @@ const gemErrHuman = (status, raw) => {
     return 'گوگل جمنای را برای سرزمین تو محدود کرده — موتورهای دیگر آوا همین حالا جواب می‌دهند (خودکار/گوگل/بستهٔ آفلاین)';
   }
   if (status === 429 || /quota|RESOURCE_EXHAUSTED|rate limit/i.test(s)) {
-    return 'سهمیهٔ رایگان کلید جمنای این لحظه تمام شده — چند دقیقه بعد یا با کلید دوم (با ویرگول جدا کن) امتحان کن';
+    /* v0.38 — پیام محترمانه و راهنما به‌جای «سهمیه تمام شده» */
+    return 'سرویس هوش مصنوعی موقتاً شلوغ است یا سهمیهٔ این کلید به سقف مجاز رسیده — چند دقیقه دیگر دوباره تلاش کن یا کلید اختصاصی خودت را در تنظیمات وارد کن.';
   }
   if (status === 403) {
     return 'کلید جمنای به این سرویس اجازهٔ کار نداد — در گوگل کلاود «Generative Language API» را برای همین کلید فعال کن';
@@ -2566,7 +2581,9 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
           if (gemIsModel404(r.status, msg)) gemMarkBad(mdl); /* v0.26 */
           if (isNetFail(String(msg))) sawNetFail = true;
           /* v0.28 — پیام فارسیِ قابل‌فهم برای خطاهای کلید/سرزمین/سهمیه */
-          if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; break; }
+          /* v0.38 — فیلور بی‌صدا: خطای کلید/سهمیه = ادامه به مدل بعدی؛
+             حلقه‌ها به‌طور طبیعی تا آخرین کلید/مدل می‌روند و پیام انسانی فقط آخرِ کار برمی‌گردد */
+          if ([401, 403, 429].includes(r.status)) { lastErr = gemErrHuman(r.status, msg) || lastErr; continue; }
           const hum = gemErrHuman(r.status, msg);
           if (hum) lastErr = 'Gemini-ASR: ' + hum;
           continue;
@@ -2807,7 +2824,9 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   }
   /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ صریح بنویس (تشخیص آسان کاربر) */
   if (sawNetFail) actLog('gemini-chat: all attempts failed at NETWORK level (DNS/فیلترینگ) — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
-  return { ok: false, error: (lastErr || 'هیچ کلید Gemini جواب نداد') + ` (مدل‌های امتحان‌شده: ${models.join('، ')})` };
+  /* v0.38 — لیست فنی مدل‌های امتحان‌شده فقط در activity.log می‌ماند، نه در پیام کاربر */
+  try { actLog('gemini-chat fail: tried models ' + models.join(', ')); } catch (_) { /* noop */ }
+  return { ok: false, error: (lastErr || 'سرویس Gemini در حال حاضر پاسخگو نیست — چند لحظه بعد دوباره امتحان کن') };
 });
 
 /* v0.29 — تست اتصال جمنای از تنظیمات: یک درخواست واقعیِ کوچک با کلید ذخیره‌شده؛

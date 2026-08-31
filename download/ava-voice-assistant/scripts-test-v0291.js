@@ -49,7 +49,7 @@ ok('switch dispatch intact (mute..decline)', body.includes("'mute'") && body.inc
 console.log('\n[2] real PowerShell EXECUTION (not just parse) of the shipped body');
 const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';
 const hasPwsh = fs.existsSync(PWSH);
-ok('portable pwsh 7.4.6 present', hasPwsh);
+if (hasPwsh) ok('portable pwsh 7.4.6 present', true); else console.log('SKIP | portable pwsh (باینری فقط روی ماشین ساخت ویندوز)');
 if (hasPwsh && body) {
   const tmp = '/home/z/my-project/scripts/ava-dc-v0291-exec.ps1';
   fs.writeFileSync(tmp, '\ufeff' + body, 'utf8'); /* exactly like runDiscordPs */
@@ -163,9 +163,9 @@ ok('app.js gate accepts alef variant', appSrc.includes('(ا|آ)ن\\s?میوت'))
 /* ---- 7) versions ---- */
 console.log('\n[7] versions');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json >= 0.29.1 (relaxed after v0.29.2)', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
+ok('package.json >= 0.29.1 (relaxed after v0.29.2)', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
 ok('index.html abVersion 0.29.1+ (relaxed)', /v0\.(29|3\d)\.\d+/.test(htmlSrc));
-ok('app.js appVersion 0.29.1+ (relaxed)', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
+ok('app.js appVersion 0.29.1+ (relaxed)', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 
 setTimeout(() => {
   console.log(`\nRESULT: ${pass}/${pass + fail}`);

@@ -96,6 +96,16 @@
   .bar button:hover { background: rgba(16,185,129,.28); color: #fff; }
   .bar button.on { background: rgba(52,211,153,.85); color: #04231a; }
   .bar .x { border-color: rgba(248,113,113,.4); background: rgba(239,68,68,.12); color: #fecaca; }
+  /* v0.38 — جستجوی سریع داخل PiP */
+  .bar .pip-search {
+    flex: 1; min-width: 70px; height: 24px; padding: 0 8px;
+    border-radius: 8px; border: 1px solid rgba(52,211,153,.3);
+    background: rgba(4,35,26,.55); color: #eafff6;
+    font-family: inherit; font-size: 10.5px; outline: none;
+    direction: rtl; text-align: right;
+  }
+  .bar .pip-search::placeholder { color: rgba(127,216,180,.55); }
+  .bar .pip-search:focus { border-color: rgba(52,211,153,.75); background: rgba(4,35,26,.8); }
   .bar .x:hover { background: rgba(239,68,68,.4); color: #fff; }
 </style>
 </head>
@@ -129,10 +139,14 @@
     <!-- نوار کنترل — data-ui = ناحیهٔ کلیک‌پذیر در حالت click-through -->
     <div class="bar" id="bar" data-ui="1">
       <button class="x" id="btnClose" title="بستن (بگو: بردارش)" data-ui="1">✕</button>
+      <button id="btnPlay" title="پخش/توقف" data-ui="1">⏸</button>
+      <button id="btnMute" title="قطع/وصل صدا" data-ui="1">🔊</button>
       <button id="btnLock" title="قفل کلیک (کلیک از روی پنجره رد شود)" data-ui="1">🔓</button>
       <button id="btnOpacity" title="شفافیت (چرخه: ۱۰۰→۷۰→۵۰→۳۰)" data-ui="1">◐</button>
       <button id="btnSize" title="اندازه (چرخه)" data-ui="1">⤢</button>
-      <div class="grip" id="grip" title="برای جابجایی بگیرید و بکشید" data-ui="1">⋮⋮ جابجایی ⋮⋮</div>
+      <div class="grip" id="grip" title="برای جابجایی بگیرید و بکشید" data-ui="1">⋮⋮</div>
+      <!-- v0.38 — جستجوی سریع: لینک/شناسهٔ یوتیوب = پخش همان‌جا؛ متن = نتایج در مرورگر -->
+      <input type="text" id="pipSearch" class="pip-search" placeholder="جستجو یا لینک…" data-ui="1" autocomplete="off" spellcheck="false">
     </div>
   </div>
   <script src="js/pipRenderer.js"></script>

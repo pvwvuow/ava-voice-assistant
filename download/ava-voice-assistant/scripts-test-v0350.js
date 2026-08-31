@@ -183,9 +183,9 @@ if (hasPwsh && body) {
 
 console.log('\n[11] V: versions 0.35');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.35.x+ (v0.36 forward-regex)', /^0\.3[5-9]\.\d+$/.test(pkg.version), pkg.version);
-ok('about box v0.35.x+', />v0\.3[5-9]\.\d+<\/span>/.test(htmlSrc));
-ok('app.js appVersion 0.35.x+', /let appVersion = '0\.3[5-9]\.\d+';/.test(appSrc));
+ok('package.json 0.35.x+ (v0.36 forward-regex)', /^0\.3[5-9]\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+ok('about box v0.35.x+', />v0\.3[5-9]\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.35.x+', /let appVersion = '0\.3[5-9]\.\d+(?:-[\w.]+)?';/.test(appSrc));
 ok('older suites stay forward-regex', !read('scripts-test-v0320.js').includes("pkg.version === '0.32.0'") && !read('scripts-test-v0330.js').includes("pkg.version === '0.33.0'"));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);

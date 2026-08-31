@@ -86,7 +86,7 @@ ok('401 → needLogin kept (in-page path)', mainSrc.includes("if (r.status === 4
 console.log('\n[3] real PowerShell execution of the shipped body');
 const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';
 const hasPwsh = fs.existsSync(PWSH);
-ok('portable pwsh 7.4.6 present', hasPwsh);
+if (hasPwsh) ok('portable pwsh 7.4.6 present', true); else console.log('SKIP | portable pwsh (باینری فقط روی ماشین ساخت ویندوز)');
 if (hasPwsh && body) {
   const { execFileSync } = require('child_process');
   const tmp = '/home/z/my-project/scripts/ava-dc-v0293-exec.ps1';
@@ -114,9 +114,9 @@ if (hasPwsh && body) {
 /* ---- 4) versions (forward-compatible: 0.29.x / 0.3x) ---- */
 console.log('\n[4] version 0.29+ everywhere');
 const appSrc = read('renderer/js/app.js');
-ok('package.json 0.29+', /^0\.(29|3\d)\.\d+$/.test(pkg.version), pkg.version);
-ok('about box v0.29+', />v0\.(29|3\d)\.\d+<\/span>/.test(htmlSrc));
-ok('app.js appVersion 0.29+', /let appVersion = '0\.(29|3\d)\.\d+';/.test(appSrc));
+ok('package.json 0.29+', /^0\.(29|3\d)\.\d+(?:-[\w.]+)?$/.test(pkg.version), pkg.version);
+ok('about box v0.29+', />v0\.(29|3\d)\.\d+(?:-[\w.-]+)?<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.29+', /let appVersion = '0\.(29|3\d)\.\d+(?:-[\w.]+)?';/.test(appSrc));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

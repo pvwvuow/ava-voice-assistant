@@ -185,8 +185,8 @@ console.log('\n[8] hygiene + versions');
 ok('PS body hygiene: no curly quotes, no C-comments, no raw backtick',
    !/[\u2018\u2019\u201C\u201D]/.test(body) && !/\/\*/.test(body) && !body.includes('`'));
 ok('version 0.36.x+ everywhere (forward-compatible for v0.37+)',
-   /^0\.3[6-9]\.\d+$/.test(JSON.parse(read('package.json')).version) &&
-   /let appVersion = '0\.3[6-9]\.\d+';/.test(appSrc) && />v0\.3[6-9]\.\d+</.test(htmlSrc));
+   /^0\.3[6-9]\.\d+(?:-[\w.]+)?$/.test(JSON.parse(read('package.json')).version) &&
+   /let appVersion = '0\.3[6-9]\.\d+(?:-[\w.]+)?';/.test(appSrc) && />v0\.3[6-9]\.\d+(?:-[\w.]+)?</.test(htmlSrc));
 
 console.log('\n[9] real pwsh execution (if portable pwsh available)');
 const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';

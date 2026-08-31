@@ -168,7 +168,7 @@ ok('pipRenderer: زمان شروع یوتیوب با ?start= منتقل می‌�
 /* ============ ۵) لوگو + اسکریپت‌ها + نسخه ============ */
 ok('لوگو: renderer/assets/ava-logo.png موجود (512px → >50KB)', (() => { try { const st = fs.statSync(path.join(__dirname, 'renderer/assets/ava-logo.png')); return st.size > 50 * 1024; } catch (_) { return false; } })());
 ok('index.html: اسکریپت‌های parser/capabilities قبل از app.js', htmlSrc.indexOf('js/voiceCommandParser.js') > -1 && htmlSrc.indexOf('js/capabilities.js') > -1 && htmlSrc.indexOf('js/voiceCommandParser.js') < htmlSrc.indexOf('js/app.js') && htmlSrc.indexOf('js/capabilities.js') < htmlSrc.indexOf('js/app.js'));
-ok('نسخه 0.37.0 در هر سه فایل', require('./package.json').version === '0.37.0' && /let appVersion = '0\.37\.0';/.test(appSrc) && htmlSrc.includes('>v0.37.0</span>'));
+ok('نسخه 0.37+ در هر سه فایل (forward)', /^0\.3[7-9]\.[\w.-]+$/.test(require('./package.json').version) && /let appVersion = '0\.3[7-9]\.[\w.-]+';/.test(appSrc) && />v0\.3[7-9]\./.test(htmlSrc));
 
 console.log('\nRESULT: ' + pass + '/' + (pass + fail));
 if (fail) { console.log('FAILED:\n - ' + fails.join('\n - ')); process.exit(1); }
