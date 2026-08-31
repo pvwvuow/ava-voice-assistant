@@ -49,25 +49,61 @@
      در آدرس امبد فعال شده تا این پیام‌ها پذیرفته شوند). ویدیوی مستقیم:
      مستقیم روی عنصر <video> */
   function ytCommand(func) {
-    try { yt.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), '*'); } catch (_) { /* noop */ }
+    /* v0.38.1 — origin مقصد مشخص شد (قبلاً wildcard '*') */
+    try { yt.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), 'https://www.youtube.com'); } catch (_) { /* noop */ }
   }
-  function togglePlay() {
-    isPaused = !isPaused;
+  /* v0.38.1 — همگام‌سازی آیکون‌ها با وضعیت واقعی پلیر: قبلاً isPaused/isMuted
+     کورکورانه flip می‌شدند و بعد از یک ویدیوی جدید اولین فشار دکمه مرده به‌نظر می‌رسید */
+  function setPlayIcon(paused) {
+    isPaused = !!paused;
     btnPlay.textContent = isPaused ? '▶' : '⏸';
     btnPlay.title = isPaused ? 'پخش' : 'توقف';
-    if (ytWrap.style.display === 'block') ytCommand(isPaused ? 'pauseVideo' : 'playVideo');
-    else { try { isPaused ? vid.pause() : vid.play().catch(() => {}); } catch (_) { /* noop */ } }
   }
-  function toggleMute() {
-    isMuted = !isMuted;
+  function setMuteIcon(muted) {
+    isMuted = !!muted;
     btnMute.textContent = isMuted ? '🔇' : '🔊';
     btnMute.title = isMuted ? 'بازگرداندن صدا' : 'قطع صدا';
-    if (ytWrap.style.display === 'block') ytCommand(isMuted ? 'mute' : 'unMute');
-    else { try { vid.muted = isMuted; } catch (_) { /* noop */ } }
   }
+  function ytPause() { try { ytCommand('pauseVideo'); } catch (_) { /* noop */ } try { vid.pause(); } catch (_) { /* noop */ } }
+  function togglePlay() {
+    const wantPause = !isPaused;
+    setPlayIcon(wantPause);
+    if (ytWrap.style.display === 'block') ytCommand(wantPause ? 'pauseVideo' : 'playVideo');
+    else { try { wantPause ? vid.pause() : vid.play().catch(() => {}); } catch (_) { /* noop */ } }
+  }
+  function toggleMute() {
+    const wantMute = !isMuted;
+    setMuteIcon(wantMute);
+    if (ytWrap.style.display === 'block') ytCommand(wantMute ? 'mute' : 'unMute');
+    else { try { vid.muted = wantMute; } catch (_) { /* noop */ } }
+  }
+  /* رویدادهای واقعی <video> */
+  try {
+    vid.addEventListener('play', () => setPlayIcon(false));
+    vid.addEventListener('pause', () => setPlayIcon(true));
+    vid.addEventListener('volumechange', () => setMuteIcon(!!vid.muted));
+  } catch (_) { /* noop */ }
+  /* رویدادهای واقعی پلیر یوتیوب (infoDelivery → playerState: 1=play, 2=pause) */
+  try {
+    window.addEventListener('message', (e) => {
+      try {
+        if (!/^https:\/\/(www\.)?youtube(-nocookie)?\.com$/.test(e.origin)) return;
+        const d = JSON.parse(e.data);
+        const ps = d && ((d.info && d.info.playerState) !== undefined ? d.info.playerState : (d.playerState !== undefined ? d.playerState : undefined));
+        if (ps === 1) setPlayIcon(false);
+        else if (ps === 2) setPlayIcon(true);
+        const muted = d && d.info && d.info.muted;
+        if (typeof muted === 'boolean') setMuteIcon(muted);
+      } catch (_) { /* پیام غیر-JSON یوتیوب — نادیده */ }
+    });
+  } catch (_) { /* noop */ }
 
   /* ---------- v0.38 — جستجوی سریع داخل PiP ----------
-     Enter → به پروسهٔ اصلی: لینک/شناسه = پخش همان‌جا؛ متن = نتایج در مرورگر */
+     Enter → به پروسهٔ اصلی: لینک/شناسه = پخش همان‌جا؛ متن = نتایج در مرورگر
+     v0.38.1 — فوکوس/بلور به پروسهٔ اصلی خبر داده می‌شود تا پنجره (که
+     focusable:false است) فقط هنگام تایپ فوکوس‌پذیر شود و کیبورد از بازی نرود */
+  pipSearch.addEventListener('focus', () => { try { window.pipHost.focusInput(); } catch (_) { /* noop */ } });
+  pipSearch.addEventListener('blur', () => { try { window.pipHost.blurInput(); } catch (_) { /* noop */ } });
   pipSearch.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && pipSearch.value.trim()) {
       const q = pipSearch.value.trim();
@@ -79,6 +115,10 @@
 
   const emptyDefault = empty.querySelector('p').textContent; /* v0.38 — متن پیش‌فرض برای بازنشانی */
   function showEmpty(msg) {
+    /* v0.38.1 — مخفی کردن صفحه نباید صدا را زنده بگذارد: پخش واقعاً متوقف
+       و iframe خالی می‌شود (قبلاً ویدیوی پنهان در بازی ادامه می‌داد) */
+    try { vid.pause(); } catch (_) { /* noop */ }
+    try { if (yt.getAttribute('src')) { yt.src = 'about:blank'; } } catch (_) { /* noop */ }
     mediaWrap.classList.add('hidden');
     empty.classList.remove('hidden');
     empty.querySelector('p').textContent = msg || emptyDefault; /* پیام قبلی نماند */
@@ -86,6 +126,9 @@
 
   function loadSource(src) {
     try {
+      /* v0.38.1 — وضعیت دکمه‌ها با هر منبع جدید ریست شود تا با پلیر واقعی همگام بماند */
+      setPlayIcon(false);
+      setMuteIcon(false);
       if (!src || src.kind === 'none') { showEmpty(); return; }
       if (src.kind === 'youtube' && src.videoId) {
         /* امبد رسمی یوتیوب — sync کامل با پخش‌کنندهٔ اصلی محدود است؛
@@ -160,6 +203,12 @@
     if (uiTimer) clearTimeout(uiTimer);
     root.classList.remove('show-ui');
   });
+  /* v0.38.1 — خروج ماوس از نوار کنترل هم کلیک‌پذیری را پس بدهد: روی iframe
+     یوتیوب (OOPIF) mousemove به سند والد نمی‌رسد و قبلاً نوار کلیک‌پذیر می‌ماند */
+  const barEl = document.getElementById('bar');
+  if (barEl) barEl.addEventListener('mouseleave', () => {
+    try { window.pipHost.hoverUi(false); } catch (_) { /* noop */ }
+  });
 
   /* ---------- دکمه‌ها ---------- */
   btnClose.addEventListener('click', () => { try { window.pipHost.close(); } catch (_) {} });
@@ -186,6 +235,8 @@
   try {
     window.pipHost.onSource(loadSource);
     window.pipHost.onState(applyState);
+    /* v0.38.1 — پنجره مخفی شد → صدا بلافاصله بایستد */
+    window.pipHost.onPause(() => { try { ytPause(); } catch (_) { /* noop */ } });
     window.pipHost.ready();
   } catch (_) { /* در پیش‌نمایش وب pipHost وجود ندارد */ }
 

@@ -75,13 +75,13 @@ ok('v0.35 invariants intact: Press-DcBg untouched, Test-Flip proof, FromHandle x
    (body.match(/FromHandle\(\[IntPtr\]\$hwnd\)/g) || []).length === 3);
 
 console.log('\n[3] C2: wake word — fuzzy matcher (آوا/اوا/آبا/ava…)');
-ok('WAKE_WORD_RE accepts آبا/ابا/awa',
-   appSrc.includes("const WAKE_WORD_RE = /^\\s*(هی\\s+آوا|آوا\\s?جان|آوا|اوا|آوای|اوای|آبا|ابا|ava|awa)[\\s،,:-]*(.*)$/i;"));
+ok('WAKE_WORD_RE accepts آبا/ابا/awa (v0.38.1: + variantهای فازی و دنبالهٔ یک‌نفس)',
+   /const WAKE_WORD_RE = \/[^\n]*آبا[^\n]*ava[^\n]*\/i;/.test(appSrc));
 ok('WAKE_ACCEPT set includes the user-requested variants (آبا، آوه، آو، اوها…)',
    appSrc.includes("const WAKE_ACCEPT = new Set(['آوا', 'اوا', 'آوای', 'اوای', 'آبا', 'ابا', 'آوه', 'اوها', 'آو', 'اوب', 'اواو', 'اووا', 'آووا', 'اواا', 'اوبا']);"));
-ok('wakeHitText uses tokens + prefix + accept set; latin ava/awa; stray STT chars stripped',
-   appSrc.includes('function wakeHitText(txt)') && appSrc.includes("if (/^(اوا|آوا)/.test(w)) return true;") &&
-   appSrc.includes('if (/ava|awa/i.test(s)) return true;'));
+ok('wakeHitText uses tokens + accept set; latin ava/awa token-anchored; آواز/java rejected (v0.38.1)',
+   appSrc.includes('function wakeHitText(txt)') && appSrc.includes('WAKE_ACCEPT.has(w)') &&
+   appSrc.includes('/\\b(?:ava|awa)\\b/i') && appSrc.includes("/^(اوا|آوا)(ی|یی|ی\\s?جان|ی\\s?جون|جان|جون)?$/"));
 ok('wakeCheck trigger + test path both use wakeHitText (old substring matcher gone)',
    (appSrc.match(/wakeHitText\(txt\)/g) || []).length === 3 && !appSrc.includes('/(آوا|اوا|ava)/i.test(normFaFull(txt))'));
 /* NEG CONTROL — اگر تطبیق به زیررشتهٔ ساده برگردد، «آبا» از دست می‌رود: هارنس باید بگیرد */

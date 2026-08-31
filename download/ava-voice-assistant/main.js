@@ -549,7 +549,9 @@ const SCREENSHOT_PS =
 
 const safeUrl = (u) => {
   const s = String(u || '').trim();
-  return /^https?:\/\//i.test(s) ? s.replace(/["^&|<>]/g, '') : null;
+  /* v0.38.1 — «&» حذف نمی‌شود: لینک‌های یوتیوب با پارامتر (?v=X&list=Y)
+     قبلاً خراب می‌شدند؛ در openExternal و داخل کوتیشنِ cmd هر دو امن است */
+  return /^https?:\/\//i.test(s) ? s.replace(/["^|<>]/g, '') : null;
 };
 
 const COMMANDS = {
@@ -685,10 +687,7 @@ function readAppsCache() {
 function saveAppsCache() {
   const f = APPS_FILE();
   if (!f || !appsCache) return;
-  try {
-    fs.mkdirSync(path.dirname(f), { recursive: true });
-    fs.writeFileSync(f, JSON.stringify(appsCache, 'utf8'));
-  } catch (_) { /* noop */ }
+  writeJsonAtomic(f, appsCache); /* v0.38.1 — اتمیک */
 }
 
 /* اسکن Start Menu با یک فایل ps1 موقت — بدون وابستگی خارجی */
@@ -875,10 +874,7 @@ function loadReminders() {
 function saveReminders() {
   const f = REM_FILE();
   if (!f) return;
-  try {
-    fs.mkdirSync(path.dirname(f), { recursive: true });
-    fs.writeFileSync(f, JSON.stringify(reminders, null, 2));
-  } catch (_) { /* noop */ }
+  writeJsonAtomic(f, reminders); /* v0.38.1 — اتمیک */
 }
 loadReminders();
 setInterval(() => {
@@ -1221,6 +1217,9 @@ function ghDownloadToFile(url, file, onPercent, cancelFlag) {
     let total = 0;
     let lastPct = -1;
     const ws = fs.createWriteStream(file);
+    /* v0.38.1 — خطای دیسک (پر شدن/IO) قبلاً promise را معلق می‌گذاشت و UI در
+       «در حال دانلود» گیر می‌کرد */
+    ws.on('error', (e) => finish(e));
     const finish = (err) => {
       if (done) return;
       done = true;
@@ -1288,7 +1287,20 @@ ipcMain.handle('updater:install', () => {
   /* اگر نصّاب به‌صورت مستقیم دانلود شده، همان را اجرا کن */
   if (manualDl && manualDl.file && fs.existsSync(manualDl.file)) {
     updLog(`install via manually downloaded installer: ${manualDl.file}`);
-    shell.openPath(manualDl.file).then(() => setTimeout(() => app.quit(), 1500));
+    /* v0.38.1 — openPath خطا را به‌صورت رشته resolve می‌کند؛ قبلاً در هر حال
+       ۱.۵ ثانیه بعد quit می‌شد — حتی وقتی نصّاب بلاک شده بود */
+    shell.openPath(manualDl.file).then((res) => {
+      const errStr = String(res || '');
+      if (errStr) {
+        updLog('installer open failed: ' + errStr.slice(0, 120));
+        actLog('updater: installer open failed: ' + errStr.slice(0, 120));
+        if (win && !win.isDestroyed()) {
+          try { win.show(); win.webContents.send('updater:status', { state: 'error', message: 'اجرای نصّاب ناموفق بود: ' + errStr.slice(0, 90) }); } catch (_) { /* noop */ }
+        }
+      } else {
+        setTimeout(() => app.quit(), 1500);
+      }
+    });
     return true;
   }
   if (autoUpdater && app.isPackaged) autoUpdater.quitAndInstall(false, true);
@@ -1361,14 +1373,22 @@ ipcMain.handle('settings:load', () => {
   if (!f) return {};
   try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return {}; }
 });
+/* v0.38.1 — نوشتن اتمیک JSON: قطع برق/کرش وسط نوشتن فایل settings را نیمه‌کاره
+   نمی‌گذارد (قبلاً ava-settings.json خراب می‌شد و همهٔ کلیدها/تنظیمات می‌پرید) */
+function writeJsonAtomic(file, obj) {
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = file + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(obj, null, 2), 'utf8');
+    fs.renameSync(tmp, file);
+    return true;
+  } catch (_) { return false; }
+}
+
 ipcMain.handle('settings:save', (_e, obj) => {
   const f = settingsFile();
   if (!f || !obj || typeof obj !== 'object') return false;
-  try {
-    fs.mkdirSync(path.dirname(f), { recursive: true });
-    fs.writeFileSync(f, JSON.stringify(obj, null, 2));
-    return true;
-  } catch (_) { return false; }
+  return writeJsonAtomic(f, obj);
 });
 
 /* v0.31.0 — یادداشت‌های صوتی: فایل مستقل ava-notes.json (جدای settings تا
@@ -1387,11 +1407,7 @@ ipcMain.handle('notes:load', () => {
 ipcMain.handle('notes:save', (_e, arr) => {
   const f = notesFile();
   if (!f || !Array.isArray(arr)) return false;
-  try {
-    fs.mkdirSync(path.dirname(f), { recursive: true });
-    fs.writeFileSync(f, JSON.stringify(arr.slice(0, 200), null, 2));
-    return true;
-  } catch (_) { return false; }
+  return writeJsonAtomic(f, arr.slice(0, 200)); /* v0.38.1 — اتمیک */
 });
 
 /* ============================================================
@@ -2293,11 +2309,15 @@ async function offlineDownloadFile(url, dest, onPct, absFrom, absTo) {
   const total = Number(r.headers.get('content-length')) || 0;
   const tmp = dest + '.part';
   const ws = fs.createWriteStream(tmp);
+  /* v0.38.1 — خطای نوشتن نباید حلقهٔ خواندن را معلق کند */
+  let wsErr = null;
+  ws.on('error', (e) => { wsErr = e; try { reader.cancel(); } catch (_) { /* noop */ } });
   const reader = r.body.getReader();
   let got = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
+    if (wsErr) throw wsErr;
     got += value.length;
     ws.write(Buffer.from(value));
     if (total && onPct) onPct(absFrom + (got / total) * (absTo - absFrom));
@@ -2465,7 +2485,7 @@ const gemSupportsThinking = (mdl) => {
    نام/نسلی که گوگل بیاورد (۳.۶، ۳.۵، ۴ و...) بدون آپدیت برنامه پیدا می‌شود.
    حافظهٔ منفی (gemBadModels) هم برای مدل‌هایی که گوگل زنده اعلام‌شان می‌کند
    پاک می‌شود — وگرنه یک 404 گذرا برای همیشه مدل خوب را مسدود می‌کرد. */
-const gemDiscoverCache = { at: 0, models: [], inflight: null };
+const gemDiscoverCache = { at: 0, models: [], inflight: null, failAt: 0 };
 function gemRankModels(names) {
   /* امتیازدهی: فلاش سریع‌تر از پرو → اول؛ نسل جدیدتر → اول؛ نام مستعار
      همیشه‌سبز (latest) بالای همه؛ مدل‌های تصویری/زنده/آزمایشی حذف. */
@@ -2486,6 +2506,9 @@ function gemRankModels(names) {
 async function gemDiscoverModels(key, gbase) {
   const now = Date.now();
   if (gemDiscoverCache.models.length && now - gemDiscoverCache.at < 30 * 60 * 1000) return gemDiscoverCache.models;
+  /* v0.38.1 — کش منفی: وقتی discovery شکست خورده (فیلترینگ/شبکه)، هر فرمان
+     یک تلاش ۹ ثانیه‌ای بیهوده پشت خود نداشته باشد — ۳ دقیقه صبر */
+  if (gemDiscoverCache.failAt && now - gemDiscoverCache.failAt < 3 * 60 * 1000) return [];
   if (gemDiscoverCache.inflight) return gemDiscoverCache.inflight;
   gemDiscoverCache.inflight = (async () => {
     try {
@@ -2514,6 +2537,7 @@ async function gemDiscoverModels(key, gbase) {
     } catch (e) {
       actLog('gemini discover error: ' + String((e && e.message) || e).slice(0, 90));
     }
+    gemDiscoverCache.failAt = Date.now(); /* v0.38.1 — کش منفی ۳ دقیقه‌ای */
     gemDiscoverCache.inflight = null;
     return [];
   })();
@@ -2929,7 +2953,10 @@ ipcMain.handle('custom:run', (_e, script) => {
     .replace(/\r?\n/g, '; ')
     .slice(0, 2000);
   if (!s.trim()) return { ok: false, error: 'اسکریپت خالی است' };
-  const cmdStr = `powershell -NoProfile -NonInteractive -Command "${s.replace(/"/g, '\\\\"')}"`;
+  /* v0.38.1 — -EncodedCommand (UTF-16LE base64): قبلاً escaping دستی کوتیشن
+     دو-بک‌اسلش تولید می‌کرد و هر اسکریپت دارای " با «missing the terminator»
+     می‌مرد (گزارش کاربر: «دستور هوش مصنوعی کاری نمی‌کند») */
+  const cmdStr = `powershell -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(s, 'utf16le').toString('base64')}`;
   return new Promise((resolve) => {
     exec(cmdStr, { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 512 }, (err, stdout, stderr) => {
       if (err && !stdout) {
@@ -4090,10 +4117,13 @@ app.whenReady().then(() => {
   process.on('uncaughtException', (err) => {
     try { actLog('uncaughtException: ' + String((err && err.stack) || err).slice(0, 220)); } catch (_) { /* noop */ }
   });
-  app.on('render-process-gone', (_ev, _wc, details) => {
+  app.on('render-process-gone', (_ev, wc, details) => {
     try { actLog('renderer gone: ' + JSON.stringify(details).slice(0, 160)); } catch (_) { /* noop */ }
     try {
-      if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed() && details && details.reason !== 'clean-exit') {
+      if (!wc || wc.isDestroyed() || !details || details.reason === 'clean-exit') return;
+      /* v0.38.1 — فقط همان پنجره‌ای که مرد ریکاور می‌شود؛ قبلاً همیشه UI اصلی
+         reload می‌شد (حتی وقتی PiP کرش کرده بود) */
+      if (win && !win.isDestroyed() && wc === win.webContents) {
         win.webContents.reload();
       }
     } catch (_) { /* noop */ }
@@ -4124,21 +4154,25 @@ app.whenReady().then(() => {
 
   // میانبر سراسری گوش دادن (Push-to-talk)
   try {
-    globalShortcut.register('CommandOrControl+Shift+Space', () => {
+    /* v0.38.1 — برگشت register چک می‌شود: اگر برنامهٔ دیگری صاحب کلید است،
+       در activity.log صادقانه می‌رود (دیگر «میانبر ساکت» نداریم) */
+    const okPtt = globalShortcut.register('CommandOrControl+Shift+Space', () => {
       if (win) {
         if (win.isMinimized()) win.restore();
         win.show();
         win.webContents.send('ava:toggle-listen');
       }
     });
+    if (!okPtt) actLog('shortcut register FAILED: Ctrl+Shift+Space (occupied by another app)');
     // میانبر سراسری حالت بی‌دست (گوش دائمی + کلمه بیدارباش)
-    globalShortcut.register('CommandOrControl+Alt+A', () => {
+    const okHf = globalShortcut.register('CommandOrControl+Alt+A', () => {
       if (win) {
         if (win.isMinimized()) win.restore();
         win.show();
         win.webContents.send('ava:toggle-handsfree');
       }
     });
+    if (!okHf) actLog('shortcut register FAILED: Ctrl+Alt+A (occupied by another app)');
   } catch (e) {
     /* noop */
   }
@@ -4172,4 +4206,5 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  try { pipManager.flushPiPState(); } catch (_) { /* noop */ } /* v0.38.1 — آخرین ≤۳۰۰ms وضعیت PiP از دست نمی‌رود */
 });

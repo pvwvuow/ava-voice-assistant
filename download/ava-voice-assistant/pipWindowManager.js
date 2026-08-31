@@ -47,11 +47,26 @@ function savePiPState() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    try {
-      if (!statePath) return;
-      fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
-    } catch (e) { log('SAVE_ERR:' + (e && e.message)); }
+    writeStateFile();
   }, 300);
+}
+
+/* v0.38.1 — نوشتن اتمیک (tmp+rename): کرش وسط نوشتن pip-state را خراب نمی‌کند */
+function writeStateFile() {
+  try {
+    if (!statePath || !state) return;
+    const tmp = statePath + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
+    fs.renameSync(tmp, statePath);
+  } catch (e) { log('SAVE_ERR:' + (e && e.message)); }
+}
+
+/* v0.38.1 — فلش فوری (در will-quit): آخرین ≤۳۰۰ms حرکت‌ها از دست نمی‌رود */
+function flushPiPState() {
+  if (!saveTimer) return;
+  try { clearTimeout(saveTimer); } catch (_) { /* noop */ }
+  saveTimer = null;
+  writeStateFile();
 }
 
 function loadPiPState() {
@@ -102,13 +117,26 @@ function sendState() {
 /* ---------- ساخت پنجره ---------- */
 function createPiPWindow(options) {
   const opts = options || {};
+  /* v0.38.1 — بازیابی موقعیت ذخیره‌شده حالا واقعاً انجام می‌شود؛ قبلاً هیچ
+     فراخوانی‌ای restore نمی‌داد و جای دستی کاربر هر بار دور ریخته می‌شد */
+  if (opts.restore === undefined) opts.restore = true;
   if (pipWin && !pipWin.isDestroyed()) { try { pipWin.destroy(); } catch (_) {} }
   pipWin = null;
 
   const wa = activeWorkArea();
-  /* اگر جای ذخیره‌شده روی مانیتور فعلی معقول بود همان، وگرنه موقعیت اسمی */
+  /* اگر جای ذخیره‌شده روی یکی از مانیتورها دیده می‌شود همان، وگرنه موقعیت اسمی */
   let b = null;
-  if (opts.restore && state.lastBounds) b = Object.assign({}, state.lastBounds);
+  if (opts.restore && state.lastBounds) {
+    const lb = state.lastBounds;
+    try {
+      const visible = screen.getAllDisplays().some((d) => {
+        const a = d.workArea;
+        return lb.x + lb.width > a.x + 40 && lb.x < a.x + a.width - 40 &&
+               lb.y + lb.height > a.y + 40 && lb.y < a.y + a.height - 40;
+      });
+      if (visible) b = Object.assign({}, lb);
+    } catch (_) { b = null; }
+  }
   if (!b) b = core.pipBounds(wa, state.size, state.position);
 
   pipWin = new BrowserWindow({
@@ -193,13 +221,21 @@ function showPiP(source) {
   if (source !== undefined) pendingSource = source && source.kind ? source : null;
   const w = ensureWindow();
   try { if (!pipWin.isVisible()) pipWin.showInactive(); } catch (_) { try { pipWin.show(); } catch (_) {} }
+  /* v0.38.1 — میانبرهای جابجایی بعد از هر show دوباره بسته شوند؛ قبلاً فقط
+     در ready-to-show (یک بارِ اول) بسته می‌شدند و بعد از hide→show مرده بودند */
+  bindMoveKeys(true);
   /* اگر صفحه از قبل بالا آمده، منبعِ در انتظار همین حالا بفرست */
   try { pipWin.webContents.send('pip:source', pendingSource); } catch (_) { /* noop */ }
   return getState();
 }
 
 function hidePiP() {
-  if (pipWin && !pipWin.isDestroyed()) { try { pipWin.hide(); } catch (_) {} }
+  /* v0.38.1 — قبل از مخفی شدن صدا متوقف شود؛ قبلاً یوتیوب در بازی ادامه می‌داد
+     و کاربر «بستن پنجره» را معادل «قطع صدا» می‌دانست */
+  if (pipWin && !pipWin.isDestroyed()) {
+    try { pipWin.webContents.send('pip:pause'); } catch (_) { /* noop */ }
+    try { pipWin.hide(); } catch (_) {}
+  }
   bindMoveKeys(false);
   sendState();
   return getState();
@@ -213,10 +249,17 @@ function togglePiP(source) {
 /* v0.38 — باز کردن مستقیم یک URL/شناسهٔ یوتیوب در پنجرهٔ شناور
    (دستور صوتی «یوتیوب شناور …» و نوار جستجوی داخل PiP)
    خروجی: true اگر ویدیوی یوتیوب بود و پخش شد؛ false = فراخواننده فالبک کند */
+/* v0.38.1 — شناسهٔ خام ۱۱ نویسه‌ای فقط وقتی پذیرفته می‌شود که شبیه Video ID
+   باشد (داشتن رقم یا ترکیب بزرگ/کوچک) — «hello-world» یوتیوب باز نمی‌کرد */
+function looksLikeVideoId(s) {
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(s)) return false;
+  return /\d/.test(s) || (/[a-z]/.test(s) && /[A-Z]/.test(s));
+}
 function openUrl(u) {
   const s = String(u || '').trim();
   if (!s) return false;
-  const id = core.ytIdFromUrl(s) || (/^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null);
+  const urlId = core.ytIdFromUrl(s);
+  const id = urlId || (looksLikeVideoId(s) ? s : null);
   if (!id) return false; /* لینک/شناسهٔ ویدیوی یوتیوب نیست */
   let start = 0;
   try { start = core.ytStartFromUrl(s) || 0; } catch (_) { start = 0; }
@@ -242,13 +285,19 @@ function resizePiP(sizeKey) {
   const w = ensureWindow();
   /* وقتی جای دستی داریم، از همان گوشه/لبه حفظ کنیم؛ وگرنه موقعیت اسمی */
   let anchor;
+  const s = core.PIP_SIZES[sizeKey];
   if (state.lastBounds) {
-    anchor = { x: state.lastBounds.x, y: state.lastBounds.y };
+    /* v0.38.1 — انکر به workArea مهار می‌شود؛ بزرگ کردن در گوشهٔ پایین-راست
+       بخشی از پنجره را بیرون صفحه نمی‌برد */
+    const wa = activeWorkArea();
+    anchor = {
+      x: Math.max(wa.x, Math.min(state.lastBounds.x, wa.x + wa.width - s.w)),
+      y: Math.max(wa.y, Math.min(state.lastBounds.y, wa.y + wa.height - s.h)),
+    };
   } else {
     const b = core.pipBounds(activeWorkArea(), sizeKey, state.position);
     anchor = { x: b.x, y: b.y };
   }
-  const s = core.PIP_SIZES[sizeKey];
   try { w.setBounds({ x: anchor.x, y: anchor.y, width: s.w, height: s.h }); } catch (e) { log('RES_ERR:' + e.message); }
   savePiPState();
   sendState();
@@ -346,7 +395,8 @@ function bindMoveKeys(bind) {
 function registerShortcuts() {
   /* Ctrl+Shift+P همیشه فعال است (روشن/خاموش PiP حتی وسط بازی) */
   try {
-    globalShortcut.register('CommandOrControl+Shift+P', () => { togglePiP(); });
+    const ok = globalShortcut.register('CommandOrControl+Shift+P', () => { togglePiP(); });
+    if (!ok) log('KEY_BUSY:Ctrl+Shift+P'); /* v0.38.1 — اشغال توسط برنامهٔ دیگر صادقانه لاگ می‌شود */
   } catch (e) { log('KEY_ERR:' + e.message); }
 }
 
@@ -388,12 +438,24 @@ function registerIpc() {
     ipcMain.on('pip:host:search', (_e, q) => {
       const s = String(q || '').trim().slice(0, 200);
       if (!s) return;
-      const id = core.ytIdFromUrl(s) || (/^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null);
+      const id = core.ytIdFromUrl(s) || (looksLikeVideoId(s) ? s : null);
       if (id) { showPiP({ kind: 'youtube', videoId: id }); return; }
       try {
         exec(`start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(s)}"`, { windowsHide: true, timeout: 15000 }, () => {});
       } catch (_) { /* noop */ }
       showPiP({ kind: 'note', message: 'نتیجه‌ها در مرورگر باز شد. لینک ویدیو را کپی کن و بگو «ویدیو رو پین کن» تا همین‌جا پخش شود.' });
+    });
+    /* v0.38.1 — فوکوس ورودی جستجو: پنجره focusable:false است (WS_EX_NOACTIVATE)
+       و کیبورد به بازی می‌رفت؛ هنگام تایپ موقتاً فوکوس‌پذیر می‌شود */
+    ipcMain.on('pip:host:focus-input', () => {
+      try {
+        if (!pipWin || pipWin.isDestroyed()) return;
+        pipWin.setFocusable(true);
+        pipWin.focus();
+      } catch (e) { log('FOC_ERR:' + e.message); }
+    });
+    ipcMain.on('pip:host:blur-input', () => {
+      try { if (pipWin && !pipWin.isDestroyed()) pipWin.setFocusable(false); } catch (_) { /* noop */ }
     });
     ipcMain.on('pip:host:ctl', (_e, type) => {
       switch (String(type || '')) {
@@ -430,6 +492,7 @@ module.exports = {
   setClickThrough,
   setAlwaysOnTop,
   savePiPState,
+  flushPiPState, /* v0.38.1 — فلش ذخیرهٔ debounce شده هنگام خروج */
   loadPiPState,
   resetPiP,
   getState,

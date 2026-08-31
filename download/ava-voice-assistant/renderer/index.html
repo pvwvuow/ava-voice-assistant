@@ -585,6 +585,15 @@
                   <span class="set-info"><b data-i18n="set.app.errCopy">گزارش خطاها</b><span data-i18n="set.app.errCopyHint">اگر چیزی کار نمی‌کند، این دکمه گزارش کامل خطاها را کپی می‌کند تا بفرستی</span></span>
                   <button class="chip" id="btnCopyErrors"><svg class="ic"><use href="#i-copy"/></svg><span data-i18n="set.app.errCopyBtn">کپی گزارش</span></button>
                 </div>
+                <!-- v0.38.1 — لیست یادآوری‌ها: قبلاً فقط با صدا ثبت می‌شدند و کاربر
+                     هیچ‌جایی فهرست/حذف‌شان را نداشت (handlers بلااستفاده بودند) -->
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="rem.uiTitle">یادآوری‌های فعال</b><span data-i18n="rem.uiHint">با صدا ثبت می‌شوند: «۲۰ دقیقه دیگه یادم بنداز چایی» — سر وقت آوا خبرت می‌کند</span></span>
+                  <div class="dc-list" id="remList"></div>
+                  <div class="set-links">
+                    <button class="chip" id="btnRemClear" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="rem.uiClear">پاک کردن همه</span></button>
+                  </div>
+                </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.app.links">پیوندها</b><span data-i18n="set.app.linksHint">ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود</span></span>
                   <div class="set-links">
@@ -991,7 +1000,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.38.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.38.1-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

@@ -105,11 +105,13 @@ function snapOpacity(v) {
   return best;
 }
 
-/* گام بعدی شفافیت — چرخهٔ UI: 1 → 0.7 → 0.5 → 0.3 → 1 */
+/* گام بعدی شفافیت — چرخهٔ UI: 1 → 0.7 → 0.5 → 0.3 → 1
+   v0.38.1 — چرخه واقعاً می‌چرخد؛ قبلاً clamp در لبه گیر می‌کرد (۳۰٪ می‌ماند) */
 function stepOpacity(v, dir) {
   const cur = snapOpacity(v);
   const i = PIP_OPACITY_STEPS.indexOf(cur);
-  const next = clamp(i + (dir >= 0 ? 1 : -1), 0, PIP_OPACITY_STEPS.length - 1);
+  const n = PIP_OPACITY_STEPS.length;
+  const next = (i + (dir >= 0 ? 1 : -1) + n) % n;
   return PIP_OPACITY_STEPS[next];
 }
 

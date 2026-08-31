@@ -44,7 +44,7 @@ ok('pip_youtube: فالبک مرورگر برای عبارت/بدون عبارت
 ok('sys:run پشتیبانی cmd تابعی را حفظ کرده', mSrc.includes("typeof c.cmd === 'function' ? c.cmd(arg) : c.cmd"));
 
 /* ---------- ۳) openUrl + جستجوی داخل PiP ---------- */
-ok('openUrl: شناسهٔ ۱۱ حرفی و ytIdFromUrl → showPiP youtube', pmSrc.includes('core.ytIdFromUrl(s) || (/^[a-zA-Z0-9_-]{11}$/.test(s) ? s : null)') && pmSrc.includes("showPiP({ kind: 'youtube', videoId: id, start })") && pmSrc.includes('function openUrl(u)'));
+ok('openUrl: شناسهٔ ۱۱ حرفی و ytIdFromUrl → showPiP youtube', pmSrc.includes('core.ytIdFromUrl(s)') && pmSrc.includes('looksLikeVideoId(s)') && pmSrc.includes("showPiP({ kind: 'youtube', videoId: id, start })") && pmSrc.includes('function openUrl(u)'));
 ok('openUrl در module.exports هست', /\bopenUrl,/.test(pmSrc.split('module.exports')[1] || ''));
 ok('pip:host:search: لینک → پخش، متن → مرورگر + پیام note صادقانه', pmSrc.includes("ipcMain.on('pip:host:search'") && pmSrc.includes('results?search_query=${encodeURIComponent(s)}') && pmSrc.includes("showPiP({ kind: 'note'") && pmSrc.includes('X-Frame-Options'));
 ok('جستجوی PiP سقف ۲۰۰ کاراکتر دارد', pmSrc.includes('slice(0, 200)'));
@@ -55,7 +55,7 @@ ok('pipRenderer: emptyDefault — پیام قبلی نمی‌ماند', prSrc.in
 /* ---------- ۴) کنترل پلیر ---------- */
 ok('embed یوتیوب enablejsapi=1 دارد (وگرنه postMessage کار نمی‌کند)', prSrc.includes("'?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1'"));
 ok('بدون bind تکراری btnClose/btnLock (باگ toggle دوبل زیپ)', (prSrc.match(/btnClose\.addEventListener/g) || []).length === 1 && (prSrc.match(/btnLock\.addEventListener/g) || []).length === 1);
-ok('togglePlay/toggleMute: یوتیوب postMessage، ویدیوی مستقیم vid', prSrc.includes("'pauseVideo' : 'playVideo'") && prSrc.includes("'mute' : 'unMute'") && prSrc.includes('vid.muted = isMuted'));
+ok('togglePlay/toggleMute: یوتیوب postMessage، ویدیوی مستقیم vid (v0.38.1: sync با وضعیت واقعی پلیر)', prSrc.includes("'pauseVideo' : 'playVideo'") && prSrc.includes("'mute' : 'unMute'") && prSrc.includes('vid.muted = wantMute') && prSrc.includes('playerState'));
 ok('pip.html: دکمه‌های ⏸ 🔊 و input pip-search با data-ui', phSrc.includes('id="btnPlay"') && phSrc.includes('id="btnMute"') && phSrc.includes('id="pipSearch"') && /id="pipSearch"[^>]*data-ui="1"/.test(phSrc));
 ok('pip.html: استایل .pip-search با راست‌چین', phSrc.includes('.bar .pip-search') && phSrc.includes('direction: rtl'));
 ok('tooltipهای فارسی حفظ شده‌اند (حذف نشده‌اند مثل زیپ)', phSrc.includes('بستن (بگو: بردارش)') && phSrc.includes('قفل کلیک'));
@@ -132,9 +132,9 @@ ok('لیست مدل‌های امتحان‌شده فقط در activity.log می
 ok('پاسخ نهایی چت بدون جزئیات فنی است', mSrc.includes('سرویس Gemini در حال حاضر پاسخگو نیست'));
 
 /* ---------- ۸) نسخه ---------- */
-ok('نسخه 0.38.0-beta در package.json / app.js / index.html', (() => {
+ok('نسخهٔ beta در package.json / app.js / index.html (forward-relaxed)', (() => {
   const v = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
-  return v === '0.38.0-beta' && aSrc.includes("let appVersion = '0.38.0-beta';") && ihSrc.includes('>v0.38.0-beta</span>');
+  return /^0\.38\.\d+-beta$/.test(v) && new RegExp("let appVersion = '" + v + "';").test(aSrc) && new RegExp('v' + v + '</span>').test(ihSrc);
 })());
 ok('پارسر v0370 سالم مانده (رگرسیون رفتاری سریع)', (() => {
   const vp = require('./renderer/js/voiceCommandParser.js');

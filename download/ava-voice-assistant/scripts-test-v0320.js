@@ -105,7 +105,10 @@ function makeGem(mockFetch, badSeed) {
     ok('network death → honest empty list, no crash', Array.isArray(e1) && e1.length === 0);
     boom = false;
     const e2 = await g2.api.gemDiscoverModels('K', 'x');
-    ok('after cache expiry the next call retries and succeeds', e2.length > 0 && fetchCount > f0);
+    ok('negative cache: immediate retry after failure is suppressed (no 9s stall per command)', e2.length === 0 && fetchCount === f0);
+    g2.api.cache.failAt = Date.now() - 4 * 60 * 1000; /* کش منفی ۳ دقیقه‌ای را منقضی کن (v0.38.1) */
+    const e3 = await g2.api.gemDiscoverModels('K', 'x');
+    ok('after negative-cache expiry the next call retries and succeeds', e3.length > 0 && fetchCount > f0);
     /* negative control: cleansing line removed → poison survives */
     const poisoned = gemSrc.replace('for (const n of ranked) gemBadModels.delete(n); /* 404 گذرا مسدودی دائمی نسازد */', '/* cleansing removed */');
     const g3fn = new Function('cloudFetch', 'actLog', 'gemBadModels',

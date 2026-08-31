@@ -53,8 +53,9 @@
   /* فعلِ تنظیم/جابجایی صریح */
   const VERB_RE = /ببر|بذار|بزار|بیار|تنظیم|بچسبون|جابجا|move|put|set|place|bring|pin|float/i;
 
+  /* v0.38.1 — «پینگ» دیگر پین حساب نمی‌شود: «پینگ گوگل چنده» پنجرهٔ شناور باز نمی‌کرد */
   const UNPIN_RE = /بردار|ببند|بنده?ش|قطعش? کن|جدا کن|خاموشش? کن از صفحه|unpin|close pip|hide pip|remove (the )?(pip|pin)/i;
-  const PIN_RE = /پین|شناور|فیپ|پی\s?ای\s?پی|picture\s?in\s?picture|\bpip\b|float (it|video)|pin (the )?(video|youtube|movie|clip)/i;
+  const PIN_RE = /پین(?!گ)|شناور|فیپ|پی\s?ای\s?پی|picture\s?in\s?picture|\bpip\b|float (it|video)|pin (the )?(video|youtube|movie|clip)/i;
 
   const POS_WORDS = {
     top: /بالا|top/i, bottom: /پایین|زیر|bottom|down/i,
@@ -150,8 +151,9 @@
       return { intent: topOff ? INTENTS.TOP_OFF : INTENTS.TOP_ON, entities: {} };
     }
 
-    /* ۴) برداشتن از صفحه — «ببندش»/«بردارش» فقط با لنگر یا PiP باز */
-    if (UNPIN_RE.test(n) && (anchored || c.pipOpen)) {
+    /* ۴) برداشتن از صفحه — «ببندش»/«بردارش» فقط با لنگر یا PiP باز؛
+          v0.38.1: «از پلی‌لیست بردار» نباید پنجرهٔ شناور را بردارد */
+    if (UNPIN_RE.test(n) && (anchored || c.pipOpen) && !/پلی\s?لیست|\bلیست\b|از\s+(سبد|گروه)/.test(n)) {
       return { intent: INTENTS.UNPIN, entities: {} };
     }
 
@@ -196,7 +198,7 @@
 
   /* دروازهٔ قانون در RULES — کمی بازتر است تا جمله به پارسر برسد؛
      اگر پارسر null داد، قانون به هوش مصنوعی fallback می‌کند */
-  const PIP_COMMAND_RE = /پین|شناور|فیپ|پی\s?ای\s?پی|\bpip\b|picture|شفاف|کلیک|همیشه|بردار|ببندش|کوچیکش|بزرگش|متوسطش|ریستش کن|opacity|pin video|float video/i;
+  const PIP_COMMAND_RE = /پین(?!گ)|شناور|فیپ|پی\s?ای\s?پی|\bpip\b|picture|شفاف|کلیک|همیشه|بردار|ببندش|کوچیکش|بزرگش|متوسطش|ریستش کن|opacity|pin video|float video/i;
 
   const api = { parseVoiceCommand, normFa, PIP_COMMAND_RE, INTENTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

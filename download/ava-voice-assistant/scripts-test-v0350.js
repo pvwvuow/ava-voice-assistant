@@ -63,8 +63,8 @@ ok('spawnSync only remains in the pre-ready DNS probe (allowed)',
 }
 
 console.log('\n[2] C2: crash safety net');
-ok('render-process-gone auto-reloads the window (non clean-exit)',
-   mainSrc.includes("app.on('render-process-gone'") && mainSrc.includes('reason !== \'clean-exit\'') && mainSrc.includes('win.webContents.reload()'));
+ok('render-process-gone recovers the crashed window (non clean-exit; v0.38.1: only the dead window)',
+   mainSrc.includes("app.on('render-process-gone'") && mainSrc.includes("details.reason === 'clean-exit'") && mainSrc.includes('win.webContents.reload()') && mainSrc.includes('wc === win.webContents'));
 ok('unhandledRejection + uncaughtException are logged, never silent',
    mainSrc.includes("process.on('unhandledRejection'") && mainSrc.includes("process.on('uncaughtException'") && mainSrc.includes('actLog(\'unhandledRejection:'));
 

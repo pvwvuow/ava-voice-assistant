@@ -20,6 +20,12 @@ contextBridge.exposeInMainWorld('pipHost', {
   ctl: (type) => ipcRenderer.send('pip:host:ctl', String(type || '')),
   /* v0.38 — جستجوی سریع یوتیوب از داخل پنجرهٔ PiP */
   search: (q) => ipcRenderer.send('pip:host:search', String(q || '')),
+  /* v0.38.1 — فوکوس ورودی جستجو: پنجره focusable:false است؛ هنگام تایپ
+     موقتاً focusable می‌شود تا کیبورد از بازی دزدیده نشود ولی به PiP برود */
+  focusInput: () => ipcRenderer.send('pip:host:focus-input'),
+  blurInput: () => ipcRenderer.send('pip:host:blur-input'),
+  /* v0.38.1 — دستور توقف صدا هنگام مخفی شدن پنجره (بدون این، صدا در بازی ادامه داشت!) */
+  onPause: (cb) => ipcRenderer.on('pip:pause', (_e) => cb()),
   /* منبع ویدیو از پروسهٔ اصلی */
   onSource: (cb) => ipcRenderer.on('pip:source', (_e, s) => cb(s)),
   /* تغییر وضعیت (شفافیت/قفل/اندازه از صدا یا میانبر) */

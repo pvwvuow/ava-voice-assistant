@@ -14,8 +14,10 @@
 
 /**
  * اندازهٔ پنجرهٔ PiP (نسبت 16:9)
- * @typedef {'small'|'medium'|'large'|'extra-large'} PipSize
- *small=360×203 medium=480×270 large=640×360 extra-large=854×480
+ * v0.38.1 — قرارداد سیمی واقعی «xl» است (pipCore.PIP_SIZES) نه extra-large؛
+ * قبلاً pipAPI.resize('extra-large') طبق این typedef بی‌صدا no-op می‌شد
+ * @typedef {'small'|'medium'|'large'|'xl'} PipSize
+ * small=360×203 medium=480×270 large=640×360 xl=854×480
  */
 
 /**

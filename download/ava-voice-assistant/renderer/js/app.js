@@ -147,7 +147,7 @@
     'ext.dns': ['DNS Changer', 'DNS Changer'],
     'ext.dnsDesc': ['تغییر سریع DNS با کلیک یا صدا، پروفایل نام‌دار بی‌نهایت، پینگ سرعت و وضعیت لحظه‌ای اتصال', 'Fast DNS switching by click or voice, named profiles, speed ping and live status'],
     'ext.music': ['پلیر موزیک', 'Music player'],
-    'ext.musicDesc': ['پلی‌لیست از پوشهٔ خودت با کاور، ویژوالایزر زنده، ویجت صفحه اصلی و کنترل صوتی', 'Playlist from your own folder with covers, live visualizer, home widget and voice control'],
+    'ext.musicDesc': ['پلی‌لیست از پوشهٔ خودت با کاور، ویجت صفحه اصلی و کنترل صوتی', 'Playlist from your own folder with covers, home widget and voice control'],
     'ext.open': ['باز کردن', 'Open'],
     'ext.soon': ['به‌زودی', 'Soon'],
     'ext.soonWeather': ['آب‌وهوا', 'Weather'],
@@ -425,7 +425,7 @@
     'ext.dns': ['DNS Changer', 'DNS Changer'],
     'ext.dnsDesc': ['تغییر سریع DNS با کلیک یا صدا، پروفایل نام‌دار بی‌نهایت، پینگ سرعت و وضعیت لحظه‌ای اتصال', 'Fast DNS switching by click or voice, named profiles, speed ping and live status'],
     'ext.music': ['پلیر موزیک', 'Music player'],
-    'ext.musicDesc': ['پلی‌لیست از پوشهٔ خودت با کاور، ویژوالایزر زنده، ویجت صفحه اصلی و کنترل صوتی', 'Playlist from your own folder with covers, live visualizer, home widget and voice control'],
+    'ext.musicDesc': ['پلی‌لیست از پوشهٔ خودت با کاور، ویجت صفحه اصلی و کنترل صوتی', 'Playlist from your own folder with covers, home widget and voice control'],
     'ext.open': ['باز کردن', 'Open'],
     'ext.soon': ['به‌زودی', 'Soon'],
     'ext.soonWeather': ['آب‌وهوا', 'Weather'],
@@ -708,6 +708,7 @@
     'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
     'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
     'default.reply': ['این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!', 'I have not learned this command yet. Connect the AI (GLM chat tab › sign in) and I will analyze anything you ask there!'],
+    'cmd.fail': ['یه خطای داخلی موقع اجرای این فرمان پیش آمد؛ دوباره امتحان کن. اگر تکرار شد، از تنظیمات › برنامه › گزارش خطاها بفرست.', 'An internal error happened while running that command; please try again. If it repeats, send the error report from Settings › App.'],
     'suggest.say': ['بگو', 'Say'],
     'toast.welcome': ['آوا آماده است — اجرای واقعی فرمان‌ها فعال است', 'AVA is ready — real command execution is on'],
     'toast.preview': ['آوا آماده است — پیش‌نمایش رابط کاربری', 'AVA is ready — UI preview'],
@@ -785,7 +786,7 @@
     'calc.reply': ['{x} می‌شود {y}؛ حساب کردم!', '{x} equals {y} — calculated!'],
     'calc.fail': ['این محاسبه را متوجه نشدم — مثلاً بگو «پنج ضربدر هفت چند میشه» یا «۱۲ به علاوه ۳۰».', 'I did not understand that calculation — try "12 plus 30" or "five times seven".'],
     'timer.on': ['تایمر {x} {y}‌ای فعال شد؛ به‌محض رسیدن وقت خبرت می‌کنم.', 'A {x} {y} timer is set; I will ping you when time is up.'],
-    'timer.min': ['دقیقه', 'minute(s)'], 'timer.sec': ['ثانیه', 'second(s)'],
+    'timer.min': ['دقیقه', 'minute(s)'], 'timer.sec': ['ثانیه', 'second(s)'], 'timer.hour': ['ساعت', 'hour(s)'],
     'timer.done': ['زمان تایمر تمام شد!', "Time's up!"], 'timer.doneTag': ['تایمر', 'Timer'],
     'timer.doneReply': ['زمان تمام شد؛ خبرت کردم!', "Time is up — I kept my promise!"], 'timer.doneSpeak': ['زمان تایمر تمام شد؛ خبرت کردم!', "Time is up!"],
     'sys.reply': ['پردازنده حدود {cpu}٪ و رم حدود {ram}٪ درگیر است؛ همه‌چیز خوب کار می‌کند.', 'CPU is around {cpu}% and RAM around {ram}%; everything looks healthy.'],
@@ -915,6 +916,11 @@
     'rem.noTime': ['نگفتی کی یادت بندازم — مثلاً بگو «۲۰ دقیقه دیگه یادم بنداز چایی درست کنم» یا «ساعت ۵ عصر یادآوری بذار».', 'You did not say when — try "remind me in 20 minutes to make tea" or "remind me at 5 PM".'],
     'rem.fail': ['یادآوری ثبت نشد — دوباره امتحان کن.', 'The reminder did not save — try again.'],
     'rem.due': ['یادآوری: {x}', 'Reminder: {x}'],
+    'rem.uiTitle': ['یادآوری‌های فعال', 'Active reminders'],
+    'rem.uiHint': ['با صدا ثبت می‌شوند: «۲۰ دقیقه دیگه یادم بنداز چایی» — سر وقت آوا خبرت می‌کند', 'Created by voice: "remind me in 20 minutes…" — AVA pings you on time'],
+    'rem.uiEmpty': ['فعلاً یادآوری‌ای ثبت نشده', 'No reminders yet'],
+    'rem.uiClear': ['پاک کردن همه', 'Clear all'],
+    'rem.uiDel': ['حذف', 'Delete'],
 
     /* --- v0.13: افزونه‌ها + پینگ DNS --- */
     'set.ext.ping': ['پینگ DNSها', 'Ping DNS servers'],
@@ -2121,7 +2127,8 @@
     { id: 'gold18', fa: 'طلای ۱۸ عیار', unit: 'toman', keys: ['geram18'], rx: /طلای?\s*(۱۸|18)|گرم\s*طلا|طلای?\s*عیار|طلا(?!یی)/i },
     { id: 'mesghal', fa: 'مثقال طلا', unit: 'toman', keys: ['mesghal'], rx: /مثقال/i },
     { id: 'dollar', fa: 'دلار', unit: 'toman', keys: ['price_dollar_rl'], rx: /دلار|دولار|dollar/i },
-    { id: 'euro', fa: 'یورو', unit: 'toman', keys: ['price_eur'], rx: /یورو|ارو\b|euro/i },
+    /* v0.38.1 — \b با حروف فارسی کار نمی‌کند؛ lookahead جایگزین شد */
+    { id: 'euro', fa: 'یورو', unit: 'toman', keys: ['price_eur'], rx: /یورو|ارو(?![\u0600-\u06FF])|euro/i },
     { id: 'pound', fa: 'پوند', unit: 'toman', keys: ['price_gbp'], rx: /پوند|pound/i },
     { id: 'dirham', fa: 'درهم', unit: 'toman', keys: ['price_aed'], rx: /درهم|dirham/i },
     { id: 'nim', fa: 'نیم سکه', unit: 'toman', keys: ['nim'], rx: /نیم\s*سکه/i },
@@ -2398,14 +2405,19 @@
     { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, t: 'خاموش کردن مانیتور', i: '#i-monitor', run: 'monitor_off', r: () => runPower('monitor_off') },
     { k: /ری\s?استارت|ریستارت|راه\s?اندازی.{0,4}مجدد|restart|reboot/i, t: 'راه‌اندازی مجدد', i: '#i-refresh', run: 'sys_restart', confirm: 'restart', r: () => runPower('sys_restart') },
     {
-      k: /(خاموش|شات\s?داون|shutdown|shut\s?down|power\s?off|turn\s?off).{0,16}(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)?|کامپیوتر.{0,10}خاموش|سیستم.{0,10}خاموش/i, t: 'خاموش کردن', i: '#i-power', run: 'sys_shutdown', confirm: 'shutdown',
+      /* v0.38.1 — «صدا رو خاموش کن» دیگر دیالوگ خاموشی PC باز نمی‌کرد!
+         قبلاً گروهِ دستگاه اختیاری بود و «خاموش» تنها کافی بود؛ حالا باید
+         دستگاه (کامپیوتر/سیستم/ویندوز/pc) در جمله باشد — در هر دو ترتیب */
+      k: /(خاموش|شات\s?داون|shutdown|shut\s?down|power\s?off|turn\s?off)[^.]{0,16}(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)|(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)[^.]{0,16}(خاموش|شات\s?داون|shutdown|power\s?off)/i, t: 'خاموش کردن', i: '#i-power', run: 'sys_shutdown', confirm: 'shutdown',
       r: () => runPower('sys_shutdown'),
     },
 
     /* --- برنامه‌های ویندوز --- */
     { k: /کروم|مرورگر|chrome|browser/i, t: 'باز کردن کروم', i: '#i-globe', run: 'open_chrome', r: () => LANG === 'en' ? 'Chrome is open. Enjoy!' : 'مرورگر کروم باز شد. خوش بگذره!' },
     { k: /نت[\s\u200C.]?پد|نوت[\s\u200C]?پد|دفترچه|notepad/i, t: 'باز کردن نت‌پد', i: '#i-note', run: 'open_notepad', r: () => LANG === 'en' ? 'Notepad is open.' : 'نت‌پد باز شد.' },
-    { k: /ماشین[\s\u200C]?حساب|calculator|حساب\s?کن/i, t: 'باز کردن ماشین‌حساب', i: '#i-calc', run: 'open_calc', r: () => LANG === 'en' ? 'Calculator is open.' : 'ماشین‌حساب باز شد.' },
+    /* v0.38.1 — «حساب کن» از این قانون حذف شد: «حساب کن پنج ضربدر هفت» باید
+       محاسبهٔ صوتی شود نه باز شدن اپ ماشین‌حساب (قانون محاسبه پایین‌تر است) */
+    { k: /ماشین[\s\u200C]?حساب|calculator/i, t: 'باز کردن ماشین‌حساب', i: '#i-calc', run: 'open_calc', r: () => LANG === 'en' ? 'Calculator is open.' : 'ماشین‌حساب باز شد.' },
     { k: /اکسپلورر|فایل‌?ها|مای\s?کامپیوتر|این\s?کامپیوتر|explorer|file explorer/i, t: 'باز کردن اکسپلورر', i: '#i-window', run: 'open_explorer', r: () => LANG === 'en' ? 'File Explorer is open.' : 'فایل اکسپلورر باز شد.' },
     { k: /وی[\s\u200C]?اس\s?کد|vs\s?code|کدنویس/i, t: 'باز کردن VS Code', i: '#i-note', run: 'open_vscode', r: () => LANG === 'en' ? 'VS Code is open (must be installed).' : 'وی‌اس کد باز شد (باید روی سیستم نصب باشد).' },
     { k: /تسک[\s\u200C]?منیجر|مدیریت[\s\u200C]?فرایند|task\s?manager/i, t: 'باز کردن تسک‌منیجر', i: '#i-pulse', run: 'open_taskmgr', r: () => LANG === 'en' ? 'Task Manager is open.' : 'تسک‌منیجر باز شد.' },
@@ -2464,7 +2476,8 @@
     { k: /توقف.{0,8}ضبط|پایان.{0,8}ضبط|ضبط.{0,8}(تموم|کافی)|قطع.{0,8}ضبط|stop recording/i, t: 'پایان ضبط صدا', i: '#i-mic', r: () => stopAudioRec() },
 
     /* --- صدا --- */
-    { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت)|میوت|mute( the)?( volume| sound)?|بی[\s\u200C]?صدا/i, t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => LANG === 'en' ? 'Sound is muted.' : 'صدا قطع شد.' },
+    /* v0.38.1 — «صدا رو خاموش کن» حالا میوت می‌شود (قبلاً به خاموشی PC می‌رفت) */
+    { k: /(صدا|ولوم).{0,12}(قطع|بی[\s\u200C]?صدا|میوت|خاموش)|میوت|mute( the)?( volume| sound)?|بی[\s\u200C]?صدا/i, t: 'بی‌صدا کردن', i: '#i-volume', run: 'vol_mute', r: () => LANG === 'en' ? 'Sound is muted.' : 'صدا قطع شد.' },
     { k: /(صدا|ولوم|بلندی).{0,12}(بلند|زیاد|بالا|بده)|volume up|louder|turn (it )?up/i, t: 'بلندتر کردن صدا', i: '#i-volume', run: 'vol_up', r: () => LANG === 'en' ? 'Volume raised.' : 'صدای سیستم را بلندتر کردم.' },
     { k: /(صدا|ولوم|بلندی).{0,12}(کم|پایین|آرام)|volume down|quieter|turn (it )?down/i, t: 'کم کردن صدا', i: '#i-volume', run: 'vol_down', r: () => LANG === 'en' ? 'Volume lowered.' : 'صدای سیستم را کمتر کردم.' },
     {
@@ -2480,8 +2493,17 @@
       r: (c) => calcReply(c),
     },
 
+    /* --- ابزار (یادآوری/تایمر قبل از مانیتورینگ/ساعت — v0.38.1) ---
+       «بیدارم کن» زیررشتهٔ «رم» بود و مانیتورینگ می‌ربود؛
+       «ساعت ۵ یادآوری بذار» قانون ساعت می‌ربود. ترتیب درست شد. */
+    {
+      k: /یادآوری|یادم\s?بنداز|یادت\s?بنداز|یادآور|آلارم|بیدارم\s?کن|remind me/i, t: 'یادآوری ثبت شد', i: '#i-timer',
+      r: (c) => reminderReply(c),
+    },
+    { k: /تایمر|هشدار\s?بذار|timer/i, t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
+
     /* --- اطلاعات --- */
-    { k: /وضعیت|سیستم|پردازنده|رم|system status|cpu|ram|how is (the )?system/i, t: 'مانیتورینگ', i: '#i-pulse', r: () => t('sys.reply', { cpu: faNum(lastCpu), ram: faNum(lastRam) }) },
+    { k: /وضعیت|سیستم|پردازنده|(?<![\u0600-\u06FF])رم(?![\u0600-\u06FF])|system status|cpu|\bram\b|how is (the )?system/i, t: 'مانیتورینگ', i: '#i-pulse', r: () => t('sys.reply', { cpu: faNum(lastCpu), ram: faNum(lastRam) }) },
     {
       k: /باتری|شارژ|battery|charge/i, t: 'باتری', i: '#i-pulse',
       r: async () => {
@@ -2502,12 +2524,6 @@
         : t('date.reply', { x: fmtDate() }) },
 
     /* --- ابزار --- */
-    /* --- یادآوری واقعی (v0.12): ساعت مطلق یا مدت + متن --- */
-    {
-      k: /یادآوری|یادم\s?بنداز|یادت\s?بنداز|یادآور|آلارم|بیدارم\s?کن|remind me/i, t: 'یادآوری ثبت شد', i: '#i-timer',
-      r: (c) => reminderReply(c),
-    },
-    { k: /تایمر|هشدار\s?بذار|timer/i, t: 'تایمر فعال شد', i: '#i-timer', r: (c) => startTimer(c) },
     /* v0.31.0 — یادداشت صوتی ماندگار */
     { k: /یادداشت|یادداشتم|note (down|to self)|take a note|my notes/i, t: 'یادداشت', i: '#i-note', r: (c) => notesReply(c) },
 
@@ -3037,13 +3053,56 @@
       return t('rem.noTime');
     }
     if (!bridge || !bridge.reminders) {
-      /* پیش‌نمایش مرورگر — مثل تایمر محلی */
-      return startTimer(new Date(parsed.at - Date.now()) <= new Date(0) ? c : c);
+      /* پیش‌نمایش مرورگر — مثل تایمر محلی (v0.38.1: مدت واقعی، نه حدس) */
+      return startTimer(c, Math.max(5000, parsed.at - Date.now()));
     }
     const r = await bridge.reminders.add({ text: parsed.text, at: parsed.at }).catch(() => null);
-    if (r && r.ok) return t('rem.set', { x: parsed.text, y: fmtClock(parsed.at) });
+    if (r && r.ok) { try { renderRemList(); } catch (_) { /* noop */ } return t('rem.set', { x: parsed.text, y: fmtClock(parsed.at) }); }
     return (r && r.error) || t('rem.fail');
   }
+
+  /* ---------- v0.38.1 — فهرست یادآوری‌ها در تنظیمات › برنامه ----------
+     قبلاً یادآوری فقط با صدا ثبت می‌شد ولی هیچ UI‌ای فهرست/حذفش را نداشت
+     (bridge.reminders.list/remove/clean بلااستفاده بودند) */
+  async function renderRemList() {
+    const remList = $('#remList');
+    if (!remList || !bridge || !bridge.reminders || !bridge.reminders.list) return;
+    try {
+      const r = await bridge.reminders.list();
+      const items = ((r && r.reminders) || []).slice().sort((a, b) => a.at - b.at);
+      remList.innerHTML = '';
+      if (!items.length) {
+        remList.innerHTML = '<div class="dc-empty"></div>';
+        remList.firstChild.textContent = t('rem.uiEmpty');
+        return;
+      }
+      const fmt = new Intl.DateTimeFormat(LANG === 'en' ? 'en-US' : 'fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      items.forEach((rem) => {
+        const row = document.createElement('div');
+        row.className = 'dc-contact';
+        row.innerHTML = `
+          <div class="dc-ct-info"><b></b><span class="num" dir="ltr"></span></div>
+          <div class="dc-ct-actions">
+            <button type="button" class="chip sm danger dc-del"><svg class="ic"><use href="#i-close"/></svg></button>
+          </div>`;
+        row.querySelector('.dc-ct-info b').textContent = rem.text || '—';
+        row.querySelector('.dc-ct-info span').textContent = fmt.format(new Date(rem.at));
+        row.querySelector('.dc-del').addEventListener('click', async () => {
+          try { await bridge.reminders.remove(rem.id); } catch (_) { /* noop */ }
+          renderRemList();
+        });
+        remList.appendChild(row);
+      });
+    } catch (_) { /* noop */ }
+  }
+  const btnRemClear = $('#btnRemClear');
+  if (btnRemClear) btnRemClear.addEventListener('click', async () => {
+    if (bridge && bridge.reminders && bridge.reminders.clear) {
+      try { await bridge.reminders.clear(); } catch (_) { /* noop */ }
+      renderRemList();
+      toast(t('rem.uiEmpty'), '#i-trash');
+    }
+  });
 
   /* اجرای فرمان‌های پاور — خاموش/ریستارت از قبل در resolveReply تأیید گرفته‌اند */
   async function runPower(id) {
@@ -3080,14 +3139,29 @@
       o.start(); o.stop(ac.currentTime + 1);
     } catch (_) { /* noop */ }
   }
-  function startTimer(c) {
+  function startTimer(c, msOverride) {
     const txt = faToEn(c);
-    const m = txt.match(/(\d+(?:\.\d+)?)/);
-    let mins = m ? parseFloat(m[1]) : 5;
-    const secWord = /ثانیه|second/i.test(c);
-    const minWord = /دقیقه|minute/i.test(c);
-    let unit = t('timer.min');
-    if (secWord && !minWord) { mins = mins / 60; unit = t('timer.sec'); }
+    /* v0.38.1 — «تایمر ۲ ساعت» واقعاً ۲ ساعت بود نه ۲ دقیقه؛ ترکیبی هم پشتیبانی
+       می‌شود: «۱ ساعت و ۳۰ دقیقه» = ۹۰ دقیقه. عددِ چسبیده به هر واحد ملاک است. */
+    const unitPairs = [...txt.matchAll(/(\d+(?:\.\d+)?)\s*(ساعت|دقیقه|ثانیه|hours?|hrs?|minutes?|mins?|seconds?|secs?)/gi)];
+    let mins = 0;
+    let firstUnit = '';
+    for (const p of unitPairs) {
+      const n = parseFloat(p[1]);
+      if (!Number.isFinite(n)) continue;
+      const u = p[2].toLowerCase();
+      if (/ساعت|hour|hr/.test(u)) { mins += n * 60; if (!firstUnit) firstUnit = 'h'; }
+      else if (/ثانیه|sec/.test(u)) { mins += n / 60; if (!firstUnit) firstUnit = 's'; }
+      else { mins += n; if (!firstUnit) firstUnit = 'm'; }
+    }
+    if (!mins && /نیم\s*ساعت/.test(txt)) { mins = 30; firstUnit = 'm'; }
+    if (!mins) {
+      const m = txt.match(/(\d+(?:\.\d+)?)/);
+      mins = m ? parseFloat(m[1]) : 5; /* بدون واحد: دقیقه پیش‌فرض */
+      if (/ثانیه|second/i.test(c) && !/دقیقه|minute/i.test(c)) { mins = mins / 60; firstUnit = 's'; }
+    }
+    /* پیش‌نمایش مرورگر: یادآوریِ زمان‌دار دقیق به‌جای حدسِ عدد اول (v0.38.1) */
+    if (Number.isFinite(msOverride) && msOverride > 0) mins = msOverride / 60000;
     mins = Math.max(0.05, Math.min(600, mins));
     if (timerId) clearTimeout(timerId);
     timerId = setTimeout(() => {
@@ -3102,7 +3176,11 @@
       speak(t('timer.doneSpeak'));
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
     }, mins * 60000);
-    const label = secWord && !minWord ? faNum(Math.round(mins * 60)) : faNum(+(mins.toFixed(1)));
+    /* برچسب: ثانیه → ثانیه، ساعت خالص → ساعت، بقیه → دقیقه */
+    let unit = t('timer.min');
+    let label = faNum(+(mins.toFixed(1)));
+    if (firstUnit === 's') { unit = t('timer.sec'); label = faNum(Math.round(mins * 60)); }
+    else if (firstUnit === 'h' && Number.isInteger(mins / 60) && mins / 60 < 24) { unit = t('timer.hour'); label = faNum(mins / 60); }
     return t('timer.on', { x: label, y: unit });
   }
 
@@ -3257,8 +3335,12 @@
     /* v0.34 — «اینجا برام تایپ کن» قبل از تایپ معمولی: مقصد = همین برنامهٔ فعال */
     if (SYS_DICT_RE.test(raw)) { startDictation(true); return; }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
-    /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد) */
+    /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد)
+       v0.38.1 — ریشهٔ «خیلی از فرمان‌ها کاری نمی‌کنند» با whisper: خروجی STT
+       حروف عربی ي/ك و نیم‌فاصله دارد ولی dispatch پایین با cmdِ خام انجام می‌شد؛
+       حالا cmd هم همان متنِ نرمال‌شده است تا همهٔ قوانین/برنامه‌ها/AI یک متن ببینند */
     raw = normFaFull(raw);
+    cmd = raw;
     /* ارسال گزارش عملکرد (v0.18) — «آوا گزارش بفرست» */
     if (/گزارش\s*(بفرست|بده|بگیر)|لاگ\s*(بفرست|بده)|گزارش\s*مشکل|ارسال\s*گزارش|send\s+log\s+report/i.test(raw)) {
       if (cmdBusyGuard()) return;
@@ -3351,6 +3433,7 @@
       if (cand.length >= 3 && findDnsProfile(cand)) { await runDnsCommand(raw); return; }
     }
     cmdBusySet();
+    try {
     if (state === 'listening') stopListening(false);
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
     stopGoogleSpeak(); /* صدای قبلی آوا قطع شود */
@@ -3419,6 +3502,14 @@
         }
       }, 2400);
     }, 500 + Math.random() * 300);
+    } catch (err) {
+      /* v0.38.1 — یک reject در قانون (شبکه/IPC) نباید میکروفن را ۴۵ ثانیه قفل کند */
+      actLog('command fail: ' + String((err && (err.stack || err.message)) || err).slice(0, 200));
+      cmdBusy = false;
+      setState('idle');
+      statusText.innerHTML = IDLE_HINT;
+      try { toast(t('cmd.fail'), '#i-info'); } catch (_) { /* noop */ }
+    }
   }
 
   /* ============================================================
@@ -4035,8 +4126,10 @@
   let wakeSessUntil = 0;
   let wakeSessTimer = 0;
   const WAKE_SESS_MS = 90000;
-  /* v0.36 — «آبا/اوا» هم بیدارباش است (خواستهٔ کاربر: کلماتی مثل آبا هم فعال کند) */
-  const WAKE_WORD_RE = /^\s*(هی\s+آوا|آوا\s?جان|آوا|اوا|آوای|اوای|آبا|ابا|ava|awa)[\s،,:-]*(.*)$/i;
+  /* v0.36 — «آبا/اوا» هم بیدارباش است (خواستهٔ کاربر: کلماتی مثل آبا هم فعال کند)
+     v0.38.1 — variant های فازی هم به این RE اضافه شدند؛ قبلاً «آوه به علی زنگ بزن»
+     بیدار می‌شد ولی دنبالهٔ فرمان دور ریخته می‌شد (WAKE_WORD_RE آن را نمی‌شناخت) */
+  const WAKE_WORD_RE = /^\s*(هی\s+(?:آوا|اوا)|(?:آوا|اوا)(?:ی|یی|ی\s?جان|ی\s?جون|جان|جون)?|آوای|اوای|آبا|ابا|آوه|اوها|اوبا|اوب|آووا|اووا|اواو|اواا|آو|ava|awa)[\s،,:-]*(.*)$/i;
   /* v0.36 — تطبیق فازی بیدارباش: whisper گاهی «آوا» را «آبا/آوه/آو/اوها» می‌شنود؛
      موتور قبلی فقط زیررشتهٔ «اوا/آوا» را می‌دید و به‌سختی فعال می‌شد (گزارش کاربر:
      «به سختی کلمه ava یا اوا رو تشخیص میده...ولی خود دستیار بهتره»).
@@ -4044,12 +4137,15 @@
   const WAKE_ACCEPT = new Set(['آوا', 'اوا', 'آوای', 'اوای', 'آبا', 'ابا', 'آوه', 'اوها', 'آو', 'اوب', 'اواو', 'اووا', 'آووا', 'اواا', 'اوبا']);
   function wakeHitText(txt) {
     const s = normFaFull(txt).replace(/[\\|`^~]+/g, ' ');
-    if (/ava|awa/i.test(s)) return true;
+    /* v0.38.1 — «java/جاوا» بیدارباش کاذب می‌ساخت (زیررشتهٔ ava)؛ اینک توکنِ کامل */
+    if (/\b(?:ava|awa)\b/i.test(s)) return true;
     const toks = s.split(/[\s،,:؛;!?.\-]+/).filter(Boolean);
     for (const w of toks) {
       if (w.length < 2) continue;
-      if (/^(اوا|آوا)/.test(w)) return true; /* آوا، اوای، آواجون، آوایی… */
-      if (WAKE_ACCEPT.has(w)) return true;   /* آبا، آوه، آو، اوها… */
+      if (WAKE_ACCEPT.has(w)) return true;   /* آوا، آبا، آوه، آو، اوها… */
+      /* مشتقات مجاز: آواجون/آوایی/اواجان… ولی «آواز/آوازه/آواری» هرگز!
+         قبلاً پیشوند باز بود و آواز هم بیدار می‌کرد (گزارش کاربر) */
+      if (/^(اوا|آوا)(ی|یی|ی\s?جان|ی\s?جون|جان|جون)?$/.test(w)) return true;
     }
     return false;
   }
@@ -5345,7 +5441,7 @@
       txt.textContent = h.t;
       const tm = document.createElement('span');
       tm.className = 'h-time';
-      try { tm.textContent = fmtTime(); } catch (_) { tm.textContent = ''; }
+      try { tm.textContent = (LANG === 'en' ? timeFmtEn : timeFmt).format(new Date(h.at || Date.now())); } catch (_) { tm.textContent = ''; }
       it.appendChild(dot); it.appendChild(txt); it.appendChild(tm);
       it.addEventListener('click', () => {
         showView('home');
@@ -5519,7 +5615,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.38.0-beta';
+  let appVersion = '0.38.1-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5702,12 +5798,8 @@
     const ct = resolveDiscordContact(nm);
     await runDiscordCmd('call', ct ? ct.name : nm, t('disc.calling', { x: ct ? ct.name : nm }), ct ? ct.userId : '');
   });
-  /* دکمهٔ باز کردن تنظیمات دیسکورد از کارت افزونه */
-  const btnDcSettings = $('#btnDcSettings');
-  if (btnDcSettings) btnDcSettings.addEventListener('click', () => {
-    showView('settings');
-    showSettingsPane('discord');
-  });
+  /* v0.38.1 — بایندینگِ مردهٔ btnDcSettings حذف شد: چنین id در markup نبود و
+     هرگز اجرا نمی‌شد؛ دکمهٔ واقعی کارت افزونه (btnDcSettingsPage) پایین‌تر بایند است */
   /* v0.35 — دکمهٔ کارت دیسکورد در صفحهٔ افزونه‌ها → تنظیمات › دیسکورد */
   const btnDcSettingsPage = $('#btnDcSettingsPage');
   if (btnDcSettingsPage) btnDcSettingsPage.addEventListener('click', () => {
@@ -7500,7 +7592,9 @@
     const tr = music.tracks[music.cur];
     /* v0.22 — آخرین آهنگ برای بازسازی بعد از ری‌استارت یاد می‌ماند */
     if (tr.path) { settings.lastMusicPath = tr.path; store.set('lastMusicPath', tr.path); }
-    try { mAudio.src = tr.url; mAudio.play(); } catch (_) { /* noop */ }
+    /* v0.38.1 — play() یک Promise می‌دهد؛ reject آن (فایل حذف‌شده/404) بدون catch
+       unhandled rejection و گیر کردن UI در حالت «در حال پخش» می‌ساخت */
+    try { mAudio.src = tr.url; mAudio.play().catch(() => { /* noop */ }); } catch (_) { /* noop */ }
     mediaSessionMeta();
     /* v0.23 — کاور/تگِ آهنگِ در حال پخش اولویت می‌گیرد: اگر هنوز enriched نشده
        بود، همین حالا می‌خوانیم تا کاور فوراً روی کارت بزرگ بیاید، نه بعد از
@@ -8050,9 +8144,12 @@
       rcTag.textContent = t('timer.doneTag');
       typeText(rcReply, msg);
       speak(msg);
+      try { renderRemList(); } catch (_) { /* noop */ } /* v0.38.1 — یادآوری رسیده از فهرست برود */
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 5000);
     });
   }
+  /* v0.38.1 — فهرست یادآوری‌ها در شروع هم پر شود */
+  try { renderRemList(); } catch (_) { /* noop */ }
   /* گرم کردن کش برنامه‌های سیستم در پس‌زمینه — اولین «باز کن» سریع باشد */
   setTimeout(() => { ensureAppsList().catch(() => { /* noop */ }); }, 3500);
   setTimeout(() => {
