@@ -48,6 +48,9 @@ contextBridge.exposeInMainWorld('ava', {
        کلیپ‌بورد — قبلی پیست Ctrl+V بود و در پنجرهٔ اشتباه می‌نشست) */
     saveFg: () => ipcRenderer.invoke('sys:savefg'),
     typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText', { text, hwnd }),
+    /* v0.35 — بیدارباش در مینیمایز/بازی: جلوگیری از suspend شدن اپ تا حلقهٔ
+       «آوا» حتی وقتی پنجره مخفی است یا کاربر در بازی است زنده بماند */
+    wakePsb: (on) => ipcRenderer.invoke('wake:psb', !!on),
   },
 
   /* v0.31.0 — یادداشت‌های صوتی (ava-notes.json در پوشهٔ خود برنامه) */

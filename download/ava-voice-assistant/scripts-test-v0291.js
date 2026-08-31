@@ -96,7 +96,7 @@ ok('mic-unavailable keeps toggle ON + 30s retry', appSrc.includes('wake-always: 
 ok('pack-done event starts the loop', appSrc.includes("s.stage === 'done' && settings.wakeAlways && !wakeLoop"));
 ok('boot auto-start no longer requires ready pack', appSrc.includes("if (settings.wakeAlways && !wakeLoop) wakeLoopStart();"));
 ok('i18n wake.alwaysPreparing (fa+en dicts)', (appSrc.match(/'wake\.alwaysPreparing':/g) || []).length === 2);
-ok('hint mentions first-time auto-download', appSrc.includes('بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود'));
+ok('hint promises minimized/game operation (v0.35 hint text)', appSrc.includes('حتی وقتی آوا مینیمایز است'));
 
 /* ---- 4) AI provider chain: {ok:false} can no longer short-circuit ---- */
 console.log('\n[4] AI provider chain honesty');

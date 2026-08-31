@@ -4,7 +4,7 @@
  * فعال می‌شود، فرمان‌های پاور (خواب/خاموش/مانیتور)، فرم «DNS جدید» داخل صفحه
  * اصلی با انیمیشن، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard, dialog, powerSaveBlocker } = require('electron');
 const { exec, spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -128,6 +128,17 @@ try {
   app.commandLine.appendSwitch('google-api-key', GOOGLE_KEY_DEFAULT);
   app.commandLine.appendSwitch('google-default-client-id', GOOGLE_CLIENT_ID_DEFAULT);
   app.commandLine.appendSwitch('google-default-client-secret', GOOGLE_CLIENT_SECRET_DEFAULT);
+} catch (_) { /* noop */ }
+
+/* v0.35 — بیدارباش وقتی آوا مینیمایز است یا کاربر وسط بازی است:
+   کرومیوم به‌طور پیش‌فرض تایمر/صدا پنجرهٔ مخفی و پوشیده‌شده را throttle و
+   suspend می‌کند — دقیقاً همان «گاهی کار میکنه گاهی نه» و «توی بازی گوش نمیده».
+   این سه سوییچ باید قبل از ready ثبت شوند تا حلقهٔ بیدارباش در مینیمایز/
+   فول‌اسکرینِ بازی هم بدون هیچ گسستی فریم بگیرد. */
+try {
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 } catch (_) { /* noop */ }
 
 /* ---------- v0.24 — دور زدن DNS فیلترشدهٔ ایران (شکن/الکترو) بدون UAC ----------
@@ -2279,6 +2290,30 @@ async function offlineDownloadFile(url, dest, onPct, absFrom, absTo) {
   return got;
 }
 
+/* v0.35 — استخراج ناهمگام آرشیو: ریشهٔ واقعی «گاهی اوقات اوا کرش میکنه»
+   (اسکرین‌شات: «Not Responding» و دیالوگ بستن ویندوز). spawnSync داخل هندلر
+   async، حلقهٔ رویداد پروسهٔ اصلی را تا ۳۰۰ ثانیه به ازای هر فایل قفل می‌کرد؛
+   چون v0.34 دانلود بسته را خودکار شروع می‌کند، فریز بی‌دلیل وسط کاربر می‌آمد
+   و ویندوز پیشنهاد Close the program می‌داد = همان «کرش». حالا با spawn
+   ناهمگام: هیچ فریزی، هیچ Not Responding، دانلود/استخراج همزمان با کار عادی. */
+function extractTarFile(archPath, destDir, member) {
+  return new Promise((resolve, reject) => {
+    let child = null;
+    try { child = spawn('tar', ['-xjf', archPath, '-C', destDir, '--strip-components=1', member], { windowsHide: true }); }
+    catch (e) { return reject(e); }
+    let stderr = '', killed = false;
+    const killer = setTimeout(() => { killed = true; try { child.kill(); } catch (_) { /* noop */ } }, 300000);
+    child.stderr.on('data', (d) => { stderr += d; });
+    child.on('error', (e) => { clearTimeout(killer); reject(e); });
+    child.on('close', (code) => {
+      clearTimeout(killer);
+      if (killed) return reject(new Error('extract timeout: ' + member));
+      if (code !== 0) return reject(new Error('extract failed: ' + member + ' ' + String(stderr || '').slice(0, 80)));
+      resolve(true);
+    });
+  });
+}
+
 ipcMain.handle('stt:local:download', async (e) => {
   if (offlineDl && offlineDl.on) return { ok: false, error: 'دانلود از قبل در جریان است' };
   if (offlineInstalled()) { const r = loadOfflineEngine(loadedSettings(), true); return { ok: true, already: true, ready: r.ok }; }
@@ -2293,10 +2328,10 @@ ipcMain.handle('stt:local:download', async (e) => {
     try {
       await offlineDownloadFile(OFFLINE_URLS.archive, archPath, (p) => offlineProgress(win, p * 100, 'dl'), 0, 0.85);
       offlineProgress(win, 86, 'extract');
-      /* فقط فایل‌های int8 استخراج می‌شوند (bsdtar ویندوز ۱۰+/گنوتار لینوکس) */
+      /* فقط فایل‌های int8 استخراج می‌شوند — v0.35: ناهمگام، بدون قفل کردن پروسهٔ اصلی */
       for (const f of OFFLINE_FILES) {
-        const r = spawnSync('tar', ['-xjf', archPath, '-C', d, '--strip-components=1', 'sherpa-onnx-whisper-base/' + f], { encoding: 'utf8', timeout: 300000, windowsHide: true });
-        if (r.status !== 0 || !fs.existsSync(path.join(d, f))) throw new Error('extract failed: ' + f + ' ' + String((r.stderr || '')).slice(0, 80));
+        await extractTarFile(archPath, d, 'sherpa-onnx-whisper-base/' + f);
+        if (!fs.existsSync(path.join(d, f))) throw new Error('extract failed: ' + f);
       }
     } catch (archErr) {
       /* مسیر ۲: فایل‌به‌فایل از HuggingFace */
@@ -2916,7 +2951,8 @@ const DISCORD_PS_BODY = `param(
   [int]$Dx = 46,
   [int]$Dy = 52,
   [int]$WaitMs = 6000,
-  [int]$Retries = 1
+  [int]$Retries = 1,
+  [string]$Text = ''
 )
 $ErrorActionPreference = 'Stop'
 # v0.29.1 — خطاهای ران‌تایم پاورشل به کدپیج کنسول ویندوز می‌روند؛ متن فارسی به
@@ -2931,6 +2967,7 @@ namespace AvaDc3 {
   public class W {
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT r);
@@ -3131,6 +3168,46 @@ function Test-Flip([string]$doRx, [string]$alrRx) {
   $s = Scan-DcBtns $alrRx $doRx $true
   return ($s.alive -and ($null -ne $s.hit))
 }
+function Show-DcQuiet {
+  # v0.35 — پنجرهٔ مینیمایز را «بدون گرفتن فوکوس» نشان بده (SW_SHOWNOACTIVATE=4)
+  # تا درخت دسترس‌پذیری کرومیوم زنده شود؛ خروجی: آیا مینیمایز بود (برای برگرداندن)
+  $was = $false
+  try { $was = [AvaDc3.W]::IsIconic($hwnd) } catch { $was = $false }
+  if ($was) {
+    [AvaDc3.W]::ShowWindow($hwnd, 4) | Out-Null
+    Start-Sleep -Milliseconds 500
+    Write-Output 'DBG:BGSHOW=1'
+  }
+  return $was
+}
+function Re-Minimize-Dc([bool]$was) {
+  # فقط اگر خودمان از مینیمایز بیرون آورده بودیم، بعد از کار دوباره مینیمایز (6)
+  if ($was) { try { [AvaDc3.W]::ShowWindow($hwnd, 6) | Out-Null } catch { } }
+}
+function Press-DcBg([string]$doRx, [string]$alrRx, [string]$label) {
+  # v0.35 — میوت/دیفن «بدون باز کردن صفحهٔ دیسکورد»: درخواست اصلی کاربر.
+  # هیچ فوکوس عوض نمی‌شود، هیچ کلیدی تزریق نمی‌شود؛ فقط UIA دکمهٔ واقعی را
+  # Invoke می‌کند و Test-Flip اثبات می‌کند وضعیت واقعاً چرخیده — بدون اثبات
+  # رشتهٔ OK برنمی‌گردد و مسیر به چرخهٔ فوکوس‌دارِ قبلی (Press-Dc) می‌افتد.
+  $wasIconic = Show-DcQuiet
+  try {
+    for ($pass = 1; $pass -le 2; $pass++) {
+      $st = Scan-DcBtns $doRx $alrRx $true
+      if ($st.alive -and $st.already -and (-not $st.hit)) { return ('OK:' + $label + '-ALREADY') }
+      if ($st.hit) {
+        try { Write-Output ('DBG:BGHIT=' + $st.hit.Current.Name) } catch { }
+        try {
+          ($st.hit.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)).Invoke()
+          Start-Sleep -Milliseconds 450
+          if (Test-Flip $doRx $alrRx) { return ('OK:' + $label + ':BG-UIA-VERIFIED') }
+          Write-Output 'DBG:BGINVOKE_NOFLIP'
+        } catch { Write-Output ('DBG:BGINVERR=' + $_.Exception.Message) }
+      }
+      Start-Sleep -Milliseconds 700
+    }
+  } finally { Re-Minimize-Dc $wasIconic }
+  return ''
+}
 function Try-Keys($st, [string]$doRx, [string]$alrRx, [string]$label, [string]$combo) {
   # کلید فقط بعد از فوکوسِ تاییدشده فرستاده می‌شود — اگر فوکوس نگرفت،
   # هیچ کلیدی جایی فرستاده نمی‌شود (پنجرهٔ اشتباه آلوده نمی‌شود)
@@ -3150,6 +3227,13 @@ function Try-Keys($st, [string]$doRx, [string]$alrRx, [string]$label, [string]$c
 }
 function Press-Dc([string]$doRx, [string]$alrRx, [string]$label, [string]$combo = '', [bool]$keysFirst = $true) {
   # چرخهٔ کامل v0.30: حالت واقعی → عمل لایه‌ای → تایید فلِیپ — هرگز کورکورانه OK نمی‌گوید
+  # v0.35 — حالت bg برای خانوادهٔ mute (فقط مسیرهای کلیددار): اول مسیر کاملاً
+  # بدون‌فوکوس (Press-DcBg)؛ فقط وقتی UIA پس‌زمینه جواب نداد، همان چرخهٔ
+  # فوکوس‌دارِ تاییدشدهٔ قبلی اجرا می‌شود — هیچ مسیر بی‌اثری اضافه نشده
+  if ($bg -and $keysFirst -and $combo) {
+    $bgR = Press-DcBg $doRx $alrRx $label
+    if ($bgR) { return $bgR }
+  }
   $st = Scan-DcBtns $doRx $alrRx $false
   if ($st.alive -and $st.already -and (-not $st.hit)) { return ('OK:' + $label + '-ALREADY') }
   if ($keysFirst -and $combo) {
@@ -3315,7 +3399,11 @@ switch ($Action) {
   'decline'  { Write-Output (Press-Dc '^(Decline|Reject|Deny)$' '' 'DECLINE' 'ctrl,shift,e' $false) }
   'state' {
     # خواندن وضعیت واقعی میکروفون/صدا بدون هیچ کلیکی — برای «وضعیت میکروفون دیسکورد»
+    # v0.35 — حالت bg: پنجرهٔ مینیمایز بدون گرفتن فوکوس نشان داده می‌شود تا
+    # درخت UIA زنده شود و وضعیت واقعاً از دیسکورد مینیمایز هم خوانده شود
+    $wasIconic = Show-DcQuiet
     $st = Scan-DcBtns '' '' $false
+    Re-Minimize-Dc $wasIconic
     if (-not $st.alive) { Write-Output 'ERR:NOSTATE'; exit }
     $muted = $false; $deaf = $false; $known = $false
     foreach ($n in $st.names) {
@@ -3416,17 +3504,77 @@ switch ($Action) {
     Start-Sleep -Milliseconds 1700
     Write-Output (Try-CallClick)
   }
+  'msgsend' {
+    # v0.35 — فرمان جدید: «به علی پیام بده که فردا میام» — مخاطب با Quick Switcher
+    # باز می‌شود (همان مسیر امتحان‌شدهٔ تماس)، بعد متن پیام در کادر پیام پیست و
+    # با Enter واقعی فرستاده می‌شود. هر گام تایید صادقانه دارد:
+    #   کلیپ‌بورد تاییدشده، فوکوس تاییدشده، و بعد از ارسال جستجوی متن پیام در
+    #   درخت UIA — پیدا شد = OK:MSGSENT، نشد = OK:MSGSENT-UNVERIFIED (دروغ نمی‌گوییم)
+    $name = ($Name -replace '[''"]', '')
+    foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $name = $name.Replace([string]$cq, '') }
+    if (-not $name) { Write-Output 'ERR:NONAME'; exit }
+    $msg = ('' + $Text).Trim()
+    if (-not $msg) { Write-Output 'ERR:NOTEXT'; exit }
+    # گام ۱ — باز کردن DM مخاطب با کلیپ‌بوردِ تاییدشده (متن پیام فعلاً نگه داشته می‌شود)
+    try { Set-Clipboard -Value $name -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+    $clipOk = $false
+    try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $name) } catch { $clipOk = $false }
+    if (-not $clipOk) { Write-Output 'ERR:CLIP'; exit }
+    $fg = Focus-DcHard
+    Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
+    if (-not $fg) { Write-Output 'ERR:NOFOCUS'; exit }
+    Send-Combo 'ctrl,k'
+    Start-Sleep -Milliseconds 1000
+    Send-Combo 'ctrl,v'
+    Start-Sleep -Milliseconds 900
+    Send-Combo 'enter'
+    Start-Sleep -Milliseconds 1700
+    # گام ۲ — پیست متن پیام در کادر پیام (بعد از باز شدن DM فوکوس خودکار آنجاست)
+    try { Set-Clipboard -Value $msg -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+    $clipOk2 = $false
+    try { $got2 = Get-Clipboard -Raw; $clipOk2 = ($got2 -eq $msg) } catch { $clipOk2 = $false }
+    if (-not $clipOk2) { Write-Output 'ERR:CLIP'; exit }
+    Send-Combo 'ctrl,v'
+    Start-Sleep -Milliseconds 400
+    Send-Combo 'enter'
+    Start-Sleep -Milliseconds 800
+    # گام ۳ — اثبات ارسال: متن پیام در درخت UIA (تاریخچهٔ چت) جستجو می‌شود
+    $probe = $msg
+    if ($probe.Length -gt 20) { $probe = $probe.Substring(0, 20) }
+    $probeRx = [regex]::Escape($probe)
+    $sent = $false
+    try {
+      $win2 = Get-DcWin
+      if ($win2) {
+        $all = $win2.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+        $k = 0
+        foreach ($el in $all) {
+          $k++
+          if ($k -gt 800) { break }
+          $en = ''
+          try { $en = $el.Current.Name } catch { }
+          if ($en -and ($en -match $probeRx)) { $sent = $true; break }
+        }
+      }
+    } catch { Write-Output ('DBG:MSGVERIFYERR=' + $_.Exception.Message) }
+    Restore-Focus
+    if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }
+  }
   default { Write-Output 'ERR:UNKNOWN' }
 }`;
 
 /* v0.22 — نوشتن اسکریپت در پوشهٔ برنامه (ACL کاربر جاری) و اجرای spawn -File:
    خط فرمان فقط چند ده کاراکتر است — محدودیت ۸۱۹۱ کاراکتری cmd.exe و
    ۳۲۷۶۷ کاراکتری CreateProcess هر دو دیگر اصلاً درگیر نمی‌شوند. */
-function runDiscordPs(psAction, mode, nm, dxN, dyN) {
-  const longRun = psAction === 'clickcall' || psAction === 'callswitch';
+function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
+  /* v0.35 — msgsend هم بلندمدت است (سوییچر + بارگذاری DM + ارسال) */
+  const longRun = psAction === 'clickcall' || psAction === 'callswitch' || psAction === 'msgsend';
   const waitMs = longRun ? 25000 : 6000;
   const retries = longRun ? 12 : 1;
   const safeName = String(nm || '').replace(/['’‘“”`"…]/g, ''); /* v0.28.1 + گیومهٔ کج */
+  /* v0.35 — متن پیام فقط از گیومه‌های خطرناک پاک می‌شود، محتوا دست‌نخورده
+     می‌ماند (از argv می‌آید، نه خط فرمان shell — گیومه امن است) */
+  const safeText = String(msgText || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch]));
   let psFile = '';
   try {
     psFile = path.join(app.getPath('userData'), 'ava-dc.ps1');
@@ -3439,6 +3587,7 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
   const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
     '-Action', psAction, '-Mode', mode, '-Name', safeName,
     '-Dx', String(dxN), '-Dy', String(dyN), '-WaitMs', String(waitMs), '-Retries', String(retries)];
+  if (psAction === 'msgsend') args.push('-Text', safeText);
   const t0 = Date.now();
   return new Promise((resolve) => {
     let stdout = '', stderr = '', killed = false;
@@ -3491,6 +3640,7 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
           'ERR:NOBTN': 'دکمهٔ تماس پیدا نشد — صفحهٔ مخاطب باز شد ولی تماس نگرفت؛ مختصات دستی را با «آزمایش مکان» تنظیم کن یا حالت کمکی را امتحان کن',
           'ERR:CLIP': 'کلیپ‌بورد در دسترس نیست — یک‌بار دیگر امتحان کن، یا مخاطب را در تنظیمات › دیسکورد ثبت کن تا تماس با دیپ‌لینک مستقیم گرفته شود',
           'ERR:NODM': 'صفحهٔ گفتگوی مخاطب باز نشد — نام را واضح‌تر بگو، یا مخاطب را در تنظیمات › دیسکورد ثبت کن تا تماس با دیپ‌لینک مستقیم گرفته شود',
+          'ERR:NOTEXT': 'متن پیام پیدا نشد — دوباره بگو و آخرش متن پیام را واضح اضافه کن',
         };
         /* v0.30 — خطاهای پسونددار (ERR:NOBTN:LABEL / ERR:NOFOCUS) با پیشوند تطبیق می‌شوند */
         const em = out.trim();
@@ -3505,7 +3655,7 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN) {
 }
 
 ipcMain.handle('discord:cmd', async (_e, p) => {
-  const { action, name, userId, bg, dx, dy, assist } = p || {};
+  const { action, name, userId, bg, dx, dy, assist, text } = p || {};
   const A = String(action || '');
   const mode = bg ? 'bg' : 'fg';
   const dxN = Math.max(10, Math.min(320, Number(dx) || 46));
@@ -3548,7 +3698,8 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
      «به ali-hk زنگ بزن» که هیچ عملی اعمال نمی‌کرد. بقیهٔ اکشن‌ها مثل قبل —
      خانوادهٔ mute خودش در v0.30 فوکوس را تایید می‌کند. */
   const psAction = A === 'call' ? 'callswitch' : A;
-  return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN);
+  /* v0.35 — msgsend متن پیام را جدا از نام عبور می‌دهد؛ پاک‌سازی امن فقط روی Name */
+  return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN, A === 'msgsend' ? String(text || '') : '');
 });
 
 /* ============================================================
@@ -3824,6 +3975,24 @@ ipcMain.handle('music:readHead', (_e, p, max) => {
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
+  /* v0.35 — تور ایمنی کرش: رندرر اگر مرد (GPU درایور/OOM وسط بازی) به‌جای
+     پنجرهٔ خالیِ معلق، خودکار یک‌بار ری‌لود می‌شود و علت در لاگ می‌ماند؛
+     پرامیس‌های رهاشده هم دیگر بی‌صدا نیستند — «گاهی اوقات کرش میکنه» دیگر
+     بی‌اثر نمی‌ماند و ردّش در activity.log ثبت می‌شود */
+  process.on('unhandledRejection', (reason) => {
+    try { actLog('unhandledRejection: ' + String((reason && reason.stack) || reason).slice(0, 220)); } catch (_) { /* noop */ }
+  });
+  process.on('uncaughtException', (err) => {
+    try { actLog('uncaughtException: ' + String((err && err.stack) || err).slice(0, 220)); } catch (_) { /* noop */ }
+  });
+  app.on('render-process-gone', (_ev, _wc, details) => {
+    try { actLog('renderer gone: ' + JSON.stringify(details).slice(0, 160)); } catch (_) { /* noop */ }
+    try {
+      if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed() && details && details.reason !== 'clean-exit') {
+        win.webContents.reload();
+      }
+    } catch (_) { /* noop */ }
+  });
   /* v0.24 — گزارش وضعیت دورزدن DNS در لاگ عملکرد */
   actLog('dns bypass: ' + (DNS_BOOT.off
     ? 'off (dnsBypass=false in ava-settings.json — explicit opt-out)'
@@ -3866,6 +4035,24 @@ app.whenReady().then(() => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+
+  /* v0.35 — بیدارباش در مینیمایز/بازی: تایمر و صدا در پنجرهٔ مخفی/پوشیده
+     هرگز throttle و suspend نمی‌شوند (سه سوییچ پایین قبل از ready هم ست شده‌اند)
+     + powerSaveBlocker تا ویندوز Modern Standby میکروفون را نبلعد */
+  let wakePsbId = 0;
+  ipcMain.handle('wake:psb', (_e, on) => {
+    try {
+      if (on) {
+        if (!powerSaveBlocker.isStarted(wakePsbId)) wakePsbId = powerSaveBlocker.start('prevent-app-suspension');
+      } else if (powerSaveBlocker.isStarted(wakePsbId)) {
+        powerSaveBlocker.stop(wakePsbId);
+        wakePsbId = 0;
+      }
+      return { ok: true, active: powerSaveBlocker.isStarted(wakePsbId) };
+    } catch (err) {
+      return { ok: false, error: String((err && err.message) || err).slice(0, 120) };
+    }
   });
 });
 

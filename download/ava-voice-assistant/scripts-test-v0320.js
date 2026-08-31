@@ -173,7 +173,7 @@ function makeGem(mockFetch, badSeed) {
   console.log('\n[8] D3: call forced to the verified-foreground path');
   ok('clickcall always fg', mainSrc.includes("runDiscordPs('clickcall', 'fg'"));
   ok('callswitch fg when action==call (user bg preference cannot kill the call)',
-     mainSrc.includes("return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN);"));
+     mainSrc.includes("return runDiscordPs(psAction, (A === 'call' ? 'fg' : mode), String(name || ''), dxN, dyN"));
 
   console.log('\n[9] C1: contact normalization — real execution of dcNameNorm/resolveDiscordContact');
   const cStart = appSrc.indexOf('function dcNameNorm');

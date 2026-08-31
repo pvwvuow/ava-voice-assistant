@@ -1361,6 +1361,43 @@ app.whenReady().then(async () => {
       ok('v0.34 version markers (0.34.x/0.3x)', v34.ver);
     } catch (e) { console.log('SKIP | v0.34 markers | ' + String(e && e.message).slice(0, 80)); }
 
+    // 8.98962 v0.35.0 — (۱) کرش «Not Responding»: استخراج بستهٔ آفلاین ناهمگام شد
+    // (spawnSync داخل هندلر async حلقهٔ اصلی را تا ۵ دقیقه قفل می‌کرد و ویندوز
+    // پیشنهاد Close the program می‌داد). (۲) میوت/دیفن واقعاً بدون باز کردن
+    // دیسکورد: Press-DcBg فقط UIA Invoke + تایید فلِیپ. (۳) msgsend. (۴) بیدارباش
+    // در مینیمایز/بازی: سوییچ‌ها + powerSaveBlocker. (۵) تنظیمات مرتب.
+    try {
+      const m35 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+      const a35 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
+      const h35 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
+      const d35m = m35.match(/ipcMain\.handle\('stt:local:download'[\s\S]*?\n\}\);/);
+      const d35 = d35m ? d35m[0] : '';
+      const body35m = m35.match(/const DISCORD_PS_BODY = `([\s\S]*?)`;/);
+      const b35 = body35m ? body35m[1] : '';
+      const pdcBg = b35.indexOf('function Press-DcBg');
+      const v35 = {
+        nofreeze: d35.length > 0 && d35.includes('await extractTarFile') && !d35.includes('spawnSync') && m35.includes('function extractTarFile'),
+        stab: m35.includes("app.on('render-process-gone'") && m35.includes("process.on('unhandledRejection'"),
+        bgengine: pdcBg > -1 && b35.includes('function Show-DcQuiet') && b35.includes('::IsIconic(') && b35.includes('ShowWindow($hwnd, 4)') && b35.includes('Re-Minimize-Dc $wasIconic') && b35.includes('OK:\' + $label + \':BG-UIA-VERIFIED'),
+        bgnoroute: (() => { const seg = b35.slice(pdcBg, b35.indexOf('function Try-Keys', pdcBg)); return !seg.includes('Send-Combo') && !seg.includes('Focus-DcHard') && !seg.includes('keybd_event'); })(),
+        bgroute: b35.includes('if ($bg -and $keysFirst -and $combo) {') && b35.includes("Write-Output (Press-Dc '^Mute$' '^Unmute$' 'MUTE' 'ctrl,shift,m') }"),
+        msgsend: b35.includes("'msgsend' {") && b35.includes('[string]$Text = \'\'') && (b35.match(/Get-Clipboard -Raw/g) || []).length >= 3 && b35.includes('OK:MSGSENT-UNVERIFIED') && b35.includes('[regex]::Escape($probe)'),
+        msgwire: m35.includes("A === 'msgsend' ? String(text || '')") && m35.includes("'ERR:NOTEXT': 'متن پیام پیدا نشد"),
+        wakemin: m35.includes("appendSwitch('disable-renderer-backgrounding')") && m35.includes("appendSwitch('disable-backgrounding-occluded-windows')") && m35.includes("ipcMain.handle('wake:psb'") && m35.includes('powerSaveBlocker.start') && a35.includes('bridge.system.wakePsb(true)') && a35.includes('bridge.system.wakePsb(false)'),
+        chime: a35.includes('659.25') && a35.includes('1108.73') && a35.includes('createBiquadFilter'),
+        setui: (() => { const dp = h35.indexOf('data-pane="discord"'); return dp > -1 && dp < h35.indexOf('id="extDiscordOpt"') && h35.indexOf('id="extDiscordOpt"') < h35.indexOf('data-pane="perf"') && h35.indexOf('id="settingsPage"') < h35.indexOf('id="dcActions"') && h35.indexOf('id="dcActions"') < h35.indexOf('id="extPage"') && h35.indexOf('id="extPage"') < h35.indexOf('id="btnDcSettingsPage"') && (h35.match(/<details class="set-adv">/g) || []).length === 2; })(),
+        ver: /^0\.3[5-9]\.\d+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.3[5-9]\.\d+';/.test(a35),
+      };
+      ok('v0.35 crash: async pack extraction (no spawnSync in download handler) + crash net', v35.nofreeze && v35.stab);
+      ok('v0.35 discord: Press-DcBg = UIA-only background path (no keys/focus inside)', v35.bgengine && v35.bgnoroute);
+      ok('v0.35 discord: bg routed inside Press-Dc, switch lines verbatim', v35.bgroute);
+      ok('v0.35 discord: msgsend action + Text param + verified send + wire', v35.msgsend && v35.msgwire);
+      ok('v0.35 wake: throttle switches + powerSaveBlocker wired both sides', v35.wakemin);
+      ok('v0.35 chime: 3-note glass chime with harmonic + filter', v35.chime);
+      ok('v0.35 settings: discord hub in settings + stripped extPage card + adv details', v35.setui);
+      ok('v0.35 version markers (0.35.x/0.3x)', v35.ver);
+    } catch (e) { console.log('SKIP | v0.35 markers | ' + String(e && e.message).slice(0, 80)); }
+
     try {
       const rt23 = await probe(`(() => ({
         eqChip: !!document.querySelector('.np-cover .np-eq'),

@@ -165,6 +165,12 @@
     'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
+    /* v0.35 — پیام خصوصی + قطع/وصل کلاً */
+    'disc.msgSent': ['پیامت برای {x} فرستاده شد ✓', 'Your message was sent to {x} ✓'],
+    'disc.msgSentUnver': ['پیامت برای {x} رفت — نتوانستم ارسال را در صفحه تایید کن؛ یک نگاه به دیسکورد بنداز', 'Message handed to {x} — could not verify on screen; take a quick look at Discord'],
+    'disc.msgNeedText': ['چه پیامی برای {x} بفرستم؟ آخرش بگو «که …» و متن پیام', 'What message should I send to {x}? End with the text'],
+    'disc.comboOff': ['میکروفون و صدای دیسکورد هر دو قطع شدند ✓', 'Discord mic and sound are both off ✓'],
+    'disc.comboOn': ['میکروفون و صدای دیسکورد هر دو وصل شدند ✓', 'Discord mic and sound are both back on ✓'],
     /* v0.29 — نتایج صادقانهٔ UIA + ان‌میوت واقعی */
     'disc.unmuted': ['میکروفون دیسکورد وصل شد ✓', 'Discord mic unmuted ✓'],
     'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
@@ -200,7 +206,7 @@
     'dict.sysOn': ['تایپ در همین برنامه شروع شد — حرف بزن؛ پایان: «آوا تموم»', 'Typing into this app started — speak; say the stop command to finish'],
     'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
     'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
-    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود؛ بار اول بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود، بعدش با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود — حتی وقتی گوش دادن خاموش است', 'Keeps the mic open and checks speech 100% on-device; the offline pack (~80MB) auto-downloads the first time, then saying "Ava" plays the chime and starts listening — even when listening is off'],
+    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود — حتی وقتی آوا مینیمایز است، پشت بازی‌ست یا مانیتور خاموش است (بدون توقف تایمر و صدا). با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود', 'Keeps the mic open and checks speech 100% on-device — even when Ava is minimized, behind a fullscreen game, or the monitor is off (timers and audio never throttle). Saying "Ava" plays the chime and starts listening'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
     'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
@@ -218,6 +224,12 @@
     /* ---------- v0.17 — تنظیمات دیسکورد ---------- */
     'set.nav.discord': ['دیسکورد', 'Discord'],
     'set.dc.open': ['تنظیمات', 'Settings'],
+    'set.dc.openPage': ['تنظیمات و دکمه‌ها', 'Settings & buttons'],
+    'set.dc.quick': ['دکمه‌های سریع دیسکورد', 'Discord quick buttons'],
+    'set.dc.quickHint': ['میوت، بی‌صدای کل، جواب/رد/قطع تماس — حتی وقتی دیسکورد مینیمایز است (بدون باز شدن پنجره)', 'Mute, deafen, answer/decline/hangup — even when Discord is minimized (no window opens)'],
+    'set.adv.stt': ['سرور Whisper، کلید گوگل و دمو (پیشرفته — همان پیش‌فرض‌ها برای اکثر مردم کافی است)', 'Whisper server, Google key and demo (advanced — defaults are fine for most people)'],
+    'set.adv.ai': ['رله، مدل‌ها و کلید OpenAI (پیشرفته)', 'Relay, models and OpenAI key (advanced)'],
+
     'set.dc.contacts': ['مخاطبین دیسکورد', 'Discord contacts'],
     'set.dc.contactsHint': ['برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID', 'Save a simple name for friends with awkward IDs, then say "call …". To get the ID: enable Settings › Advanced › Developer Mode in Discord, right-click the user → Copy User ID'],
     'set.dc.namePh': ['اسم ساده (مثلاً: علی)', 'Simple name (e.g. Ali)'],
@@ -230,8 +242,8 @@
     'set.dc.needBoth': ['هم اسم و هم آی‌دی دیسکورد را وارد کن', 'Enter both a name and the Discord ID'],
     'set.dc.badId': ['آی‌دی دیسکورد فقط عدد است (۱۷ یا ۱۸ رقم)', 'A Discord ID is all digits (17–18 of them)'],
     'set.dc.added': ['مخاطب «{x}» ذخیره شد ✓ — حالا بگو «به {x} زنگ بزن»', 'Contact "{x}" saved ✓ — now say "call {x}"'],
-    'set.dc.bg': ['اجرای بک‌گراند (وسط بازی)', 'Background mode (mid-game)'],
-    'set.dc.bgHint': ['کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود', 'Keys are sent to Discord without activating its window so your game stays intact — turn it off if nothing happens'],
+    'set.dc.bg': ['بدون باز کردن پنجرهٔ دیسکورد', 'No Discord window opening'],
+    'set.dc.bgHint': ['میوت/دیفن حتی وقتی دیسکورد مینیمایز یا بسته به تری است، بدون باز شدن و بدون قاپیدن فوکوس اجرا می‌شود (کلیک مجازی دکمهٔ واقعی + تایید تغییر وضعیت) — اگر روی نسخه‌ای جواب نداد خاموشش کن تا با فوکوس مستقیم اجرا شود', 'Mute/deafen runs even when Discord is minimized or in the tray — no window opens and focus is never stolen (virtual click on the real button + state-flip proof). Turn off only if your Discord build resists it'],
     'set.dc.bgOn': ['حالت بک‌گراند روشن شد — دیسکورد وسط بازی پاپ‌آپ نمی‌شود', 'Background mode on — Discord will not pop up mid-game'],
     'set.dc.bgOff': ['حالت بک‌گراند خاموش شد — اجرا با فوکوس مستقیم', 'Background mode off — commands run with direct focus'],
     'set.dc.cal': ['مکان دکمهٔ تماس (فالبک)', 'Call button position (fallback)'],
@@ -428,6 +440,12 @@
     'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
     'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
     'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
+    /* v0.35 — پیام خصوصی + قطع/وصل کلاً */
+    'disc.msgSent': ['پیامت برای {x} فرستاده شد ✓', 'Your message was sent to {x} ✓'],
+    'disc.msgSentUnver': ['پیامت برای {x} رفت — نتوانستم ارسال را در صفحه تایید کن؛ یک نگاه به دیسکورد بنداز', 'Message handed to {x} — could not verify on screen; take a quick look at Discord'],
+    'disc.msgNeedText': ['چه پیامی برای {x} بفرستم؟ آخرش بگو «که …» و متن پیام', 'What message should I send to {x}? End with the text'],
+    'disc.comboOff': ['میکروفون و صدای دیسکورد هر دو قطع شدند ✓', 'Discord mic and sound are both off ✓'],
+    'disc.comboOn': ['میکروفون و صدای دیسکورد هر دو وصل شدند ✓', 'Discord mic and sound are both back on ✓'],
     /* v0.29 — نتایج صادقانهٔ UIA + ان‌میوت واقعی */
     'disc.unmuted': ['میکروفون دیسکورد وصل شد ✓', 'Discord mic unmuted ✓'],
     'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
@@ -463,7 +481,7 @@
     'dict.sysOn': ['تایپ در همین برنامه شروع شد — حرف بزن؛ پایان: «آوا تموم»', 'Typing into this app started — speak; say the stop command to finish'],
     'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
     'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
-    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود؛ بار اول بستهٔ آفلاین (~۸۰MB) خودکار دانلود می‌شود، بعدش با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود — حتی وقتی گوش دادن خاموش است', 'Keeps the mic open and checks speech 100% on-device; the offline pack (~80MB) auto-downloads the first time, then saying "Ava" plays the chime and starts listening — even when listening is off'],
+    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود — حتی وقتی آوا مینیمایز است، پشت بازی‌ست یا مانیتور خاموش است (بدون توقف تایمر و صدا). با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود', 'Keeps the mic open and checks speech 100% on-device — even when Ava is minimized, behind a fullscreen game, or the monitor is off (timers and audio never throttle). Saying "Ava" plays the chime and starts listening'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
     'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
@@ -487,6 +505,12 @@
     /* ---------- v0.17 — تنظیمات دیسکورد ---------- */
     'set.nav.discord': ['دیسکورد', 'Discord'],
     'set.dc.open': ['تنظیمات', 'Settings'],
+    'set.dc.openPage': ['تنظیمات و دکمه‌ها', 'Settings & buttons'],
+    'set.dc.quick': ['دکمه‌های سریع دیسکورد', 'Discord quick buttons'],
+    'set.dc.quickHint': ['میوت، بی‌صدای کل، جواب/رد/قطع تماس — حتی وقتی دیسکورد مینیمایز است (بدون باز شدن پنجره)', 'Mute, deafen, answer/decline/hangup — even when Discord is minimized (no window opens)'],
+    'set.adv.stt': ['سرور Whisper، کلید گوگل و دمو (پیشرفته — همان پیش‌فرض‌ها برای اکثر مردم کافی است)', 'Whisper server, Google key and demo (advanced — defaults are fine for most people)'],
+    'set.adv.ai': ['رله، مدل‌ها و کلید OpenAI (پیشرفته)', 'Relay, models and OpenAI key (advanced)'],
+
     'set.dc.contacts': ['مخاطبین دیسکورد', 'Discord contacts'],
     'set.dc.contactsHint': ['برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID', 'Save a simple name for friends with awkward IDs, then say "call …". To get the ID: enable Settings › Advanced › Developer Mode in Discord, right-click the user → Copy User ID'],
     'set.dc.namePh': ['اسم ساده (مثلاً: علی)', 'Simple name (e.g. Ali)'],
@@ -499,8 +523,8 @@
     'set.dc.needBoth': ['هم اسم و هم آی‌دی دیسکورد را وارد کن', 'Enter both a name and the Discord ID'],
     'set.dc.badId': ['آی‌دی دیسکورد فقط عدد است (۱۷ یا ۱۸ رقم)', 'A Discord ID is all digits (17–18 of them)'],
     'set.dc.added': ['مخاطب «{x}» ذخیره شد ✓ — حالا بگو «به {x} زنگ بزن»', 'Contact "{x}" saved ✓ — now say "call {x}"'],
-    'set.dc.bg': ['اجرای بک‌گراند (وسط بازی)', 'Background mode (mid-game)'],
-    'set.dc.bgHint': ['کلیدها بدون فعال‌شدن پنجرهٔ دیسکورد فرستاده می‌شوند تا وسط بازی چیزی به‌هم نریزد — اگر اثری نکردی خاموشش کن تا با فوکوس مستقیم اجرا شود', 'Keys are sent to Discord without activating its window so your game stays intact — turn it off if nothing happens'],
+    'set.dc.bg': ['بدون باز کردن پنجرهٔ دیسکورد', 'No Discord window opening'],
+    'set.dc.bgHint': ['میوت/دیفن حتی وقتی دیسکورد مینیمایز یا بسته به تری است، بدون باز شدن و بدون قاپیدن فوکوس اجرا می‌شود (کلیک مجازی دکمهٔ واقعی + تایید تغییر وضعیت) — اگر روی نسخه‌ای جواب نداد خاموشش کن تا با فوکوس مستقیم اجرا شود', 'Mute/deafen runs even when Discord is minimized or in the tray — no window opens and focus is never stolen (virtual click on the real button + state-flip proof). Turn off only if your Discord build resists it'],
     'set.dc.bgOn': ['حالت بک‌گراند روشن شد — دیسکورد وسط بازی پاپ‌آپ نمی‌شود', 'Background mode on — Discord will not pop up mid-game'],
     'set.dc.bgOff': ['حالت بک‌گراند خاموش شد — اجرا با فوکوس مستقیم', 'Background mode off — commands run with direct focus'],
     'set.dc.cal': ['مکان دکمهٔ تماس (فالبک)', 'Call button position (fallback)'],
@@ -2676,6 +2700,22 @@
       const r = await bridge.discord.cmd({ action: 'answer', ...ctx }).catch(() => null);
       return r && r.ok ? t('disc.answer') : ((r && r.error) || t('disc.fail'));
     }
+    /* v0.35 — قطع/وصل «کلاً» هم‌زمان میکروفون + صدا:
+       «دیسکورد رو کلا ساکت کن» / «میکروفون و صدات رو کلا قطع کن» → mute+deafen
+       «کلا برگردون» / «کلا وصل کن» → unmute+undeafen — هر دو عمل تایید فلِیپ دارند
+       و اگر نیمی شکست خورد، صادقانه همان خطا نمایش داده می‌شود */
+    if (fa || en) {
+      const offCombo = /(کلا|تماما|به\s*طور\s?کامل|all)[^.]{0,10}(بی\s?صدا|ساکت|قطع|دی\s?فن|میوت|mute|deafen)/i.test(t0) || /(بی\s?صدا|ساکت|دی\s?فن|میوت)[^.]{0,8}(کلا|تماما)/.test(t0);
+      const onCombo = /(کلا|تماما|همه[^.]{0,4}رو|all)[^.]{0,10}(برگردون|برگردان|وصل|روشن|unmute|undeafen)/i.test(t0) || /(برگردون|وصل)[^.]{0,8}(کلا|همه)/.test(t0);
+      const dcWord = /دیسکورد|دیسبورد|discord|میکروفون|دیفن|میوت/i.test(t0);
+      if ((offCombo || onCombo) && dcWord) {
+        const r1 = await bridge.discord.cmd({ action: offCombo ? 'mute' : 'unmute', ...ctx }).catch(() => null);
+        const r2 = await bridge.discord.cmd({ action: offCombo ? 'deafen' : 'undeafen', ...ctx }).catch(() => null);
+        if (!(r1 && r1.ok)) return (r1 && r1.error) || t('disc.fail');
+        if (!(r2 && r2.ok)) return (r2 && r2.error) || t('disc.fail');
+        return offCombo ? t('disc.comboOff') : t('disc.comboOn');
+      }
+    }
     /* بی‌صدای کل (deafen) — v0.28: «دیفن» هم پذیرفته می‌شود
        «صدای دیسکورد رو قطع/کرافت کن» / «دیسکورد رو دیفن کن» / «deafen» */
     if (/(دیفن|دی\s?فن|کرافت|deafen)/i.test(t0) || (/صدای?[^.]{0,8}(دیسکورد|discord)/.test(t0) && /(قطع|بیصدا|بی صدا|وصل|روشن)/.test(t0))) {
@@ -2695,6 +2735,32 @@
         const r = await bridge.discord.cmd({ action: unmute ? 'unmute' : 'mute', ...ctx }).catch(() => null);
         if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return unmute ? t('disc.alreadyOn') : t('disc.alreadyMuted');
         return r && r.ok ? (unmute ? t('disc.unmuted') : t('disc.muted')) : ((r && r.error) || t('disc.fail'));
+      }
+    }
+    /* v0.35 — فرمان جدید پیام خصوصی: «به علی پیام بده که فردا میام» /
+       «در دیسکورد به علی بگو سلام» / «پیام بده به علی: دیشب گل دیدیم؟»
+       — قبل از قاعدهٔ تماس می‌آید تا «پیام بده» هرگز «زنگ بزن» تفسیر نشود */
+    if (/(پیام|پیغام)\s*(بده|کن|بفرست)|\b(dm|message)\b/i.test(t0) || /به\s+\S[^.]{1,28}?\s+بگو\s+\S/.test(t0)) {
+      let nm = null, tx = null;
+      const pats = [
+        /(?:به|برای)\s+(.+?)\s*(?:پیام|پیغام)\s*(?:بده|کن|بفرست)(?:\s*(?:که|:|،|,)\s*(.+))?$/,
+        /(?:پیام|پیغام)\s*(?:بده|کن|بفرست)\s*(?:به|برای)\s+(.+?)(?:\s+(?:که|:|،|,)\s*(.+))?$/,
+        /(?:به|برای)\s+(.+?)\s+بگو\s+(.+)$/,
+        /\b(?:message|dm)\s+([A-Za-z0-9_\-. ]{2,28})(?:\s+(?:saying|that|:)\s+(.+))?$/i,
+      ];
+      for (const re of pats) { const m = re.exec(t0); if (m && m[1]) { nm = m[1]; tx = m[2] || ''; break; } }
+      if (nm) {
+        nm = nm.replace(/(توی|در|با|و|رو|را|برام|برای|دیسکورد)\s*$/g, '').replace(/["«»]/g, '').trim();
+        const bad = /^(من|خودم|تو|ما|مارو|این|اون|بگو|که)$/i.test(nm) || /(ساعت|هوا|قیمت|شرعی|یادداشت|آهنگ|موزیک|چنده|چند$)/.test(nm);
+        if (bad || !nm) return null; /* اسم مخاطب نیست — برو سر قواعد دیگر */
+        if (!tx) return t('disc.msgNeedText', { x: nm });
+        const ct = resolveDiscordContact(nm);
+        const r = await bridge.discord.cmd({ action: 'msgsend', name: ct ? ct.name : nm, text: tx, ...ctx }).catch(() => null);
+        if (r && r.ok) {
+          actLog('discord msgsend -> ' + String(r.result || '').slice(0, 40));
+          return /UNVERIFIED/.test(String(r.result || '')) ? t('disc.msgSentUnver', { x: ct ? ct.name : nm }) : t('disc.msgSent', { x: ct ? ct.name : nm });
+        }
+        return (r && r.error) || t('disc.fail');
       }
     }
     /* تماس با نام: «به علی زنگ بزن» / «در دیسکورد به علی تماس بگیر» / «کال کن علی»
@@ -3873,8 +3939,9 @@
   function wakeSessExtend() {
     if (wakeSessActive()) wakeSessOpen();
   }
-  /* صدای بانمک فعال‌شدن دستیار — دو نت بالارونده سینتِز‌شده (بدون فایل صوتی،
-     بدون SwiftShader ریسک؛ فقط WebAudio ساده) */
+  /* صدای بانمک فعال‌شدن دستیار — v0.35 «چایم شیشه‌ای» سه‌نتی (می=E5، لا=A5،
+     دوی=C#6) با هارمونیک ظریف و فیلتر ملایم — به‌جای دو بوق سادهٔ قبلی.
+     هنوز هم بدون فایل صوتی و فقط WebAudio ساده (بدون ریسک SwiftShader) */
   function playWakeChime() {
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -3882,16 +3949,24 @@
       const ac = playWakeChime._ac || (playWakeChime._ac = new AC());
       if (ac.state === 'suspended') { ac.resume().catch(() => { /* noop */ }); }
       const t0 = ac.currentTime + 0.03;
-      [[880, 0, 0.12], [1318.51, 0.10, 0.22]].forEach(([f, off, dur]) => {
-        const o = ac.createOscillator();
-        const g = ac.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(f, t0 + off);
-        g.gain.setValueAtTime(0.0001, t0 + off);
-        g.gain.exponentialRampToValueAtTime(0.18, t0 + off + 0.025);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + dur);
-        o.connect(g); g.connect(ac.destination);
-        o.start(t0 + off); o.stop(t0 + off + dur + 0.06);
+      const lp = ac.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 5200; lp.Q.value = 0.4;
+      const master = ac.createGain();
+      master.gain.setValueAtTime(0.9, t0);
+      lp.connect(master); master.connect(ac.destination);
+      /* سه نت بالاروندهٔ پنتاتونیک + هارمونیک اکتاو پایین‌تر برای گرما */
+      [[659.25, 0.0, 0.34], [880.0, 0.09, 0.4], [1108.73, 0.18, 0.62]].forEach(([f, off, dur]) => {
+        [[f, 'sine', 0.14], [f * 2, 'sine', 0.035], [f / 2, 'triangle', 0.05]].forEach(([ff, type, vol]) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(ff, t0 + off);
+          g.gain.setValueAtTime(0.0001, t0 + off);
+          g.gain.exponentialRampToValueAtTime(vol, t0 + off + 0.028);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + dur);
+          o.connect(g); g.connect(lp);
+          o.start(t0 + off); o.stop(t0 + off + dur + 0.08);
+        });
       });
     } catch (_) { /* noop — هیچ‌وقت بوت را نکشد */ }
   }
@@ -3952,6 +4027,9 @@
       proc.onaudioprocess = (e) => wakeOnFrame(e.inputBuffer.getChannelData(0));
       wakeLoop.tVad = setInterval(wakeVadTick, 150);
       actLog('wake-always loop started engine=' + engine);
+      /* v0.35 — بیدارباش در مینیمایز/بازی: جلوگیری از suspend شدن اپ تا میکروفون
+         حتی پشت بازی فول‌اسکرین هم زنده بماند (سوییچ‌های throttle هم در main ست شده‌اند) */
+      try { if (bridge && bridge.system && bridge.system.wakePsb) bridge.system.wakePsb(true).catch(() => { /* noop */ }); } catch (_) { /* noop */ }
       toast(engine === 'local' ? t('toast.wakeAlwaysOn') : t('wake.alwaysCloudOn'), '#i-wave');
       wakeHealthNote(engine === 'local' ? t('wake.healthLocal') : t('wake.healthCloud'));
     } catch (e) {
@@ -4093,6 +4171,7 @@
   }
   function wakeLoopStop() {
     if (wakeMicRetryT) { try { clearTimeout(wakeMicRetryT); } catch (_) { /* noop */ } wakeMicRetryT = 0; }
+    try { if (bridge && bridge.system && bridge.system.wakePsb) bridge.system.wakePsb(false).catch(() => { /* noop */ }); } catch (_) { /* noop */ }
     if (!wakeLoop) return;
     try { clearInterval(wakeLoop.tVad); } catch (_) { /* noop */ }
     try { wakeLoop.proc.disconnect(); wakeLoop.src.disconnect(); wakeLoop.sink.disconnect(); } catch (_) { /* noop */ }
@@ -5272,7 +5351,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.34.0';
+  let appVersion = '0.35.0';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -5456,6 +5535,12 @@
   /* دکمهٔ باز کردن تنظیمات دیسکورد از کارت افزونه */
   const btnDcSettings = $('#btnDcSettings');
   if (btnDcSettings) btnDcSettings.addEventListener('click', () => {
+    showView('settings');
+    showSettingsPane('discord');
+  });
+  /* v0.35 — دکمهٔ کارت دیسکورد در صفحهٔ افزونه‌ها → تنظیمات › دیسکورد */
+  const btnDcSettingsPage = $('#btnDcSettingsPage');
+  if (btnDcSettingsPage) btnDcSettingsPage.addEventListener('click', () => {
     showView('settings');
     showSettingsPane('discord');
   });

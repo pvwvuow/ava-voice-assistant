@@ -66,7 +66,7 @@ ok('Press-Dc: layered signature with combo + keysFirst',
 console.log('\n[3] no-blind-keys invariant (I1)');
 {
   const tkStart = body.indexOf('function Try-Keys');
-  const tkEnd = body.indexOf('function Press-Dc');
+  const tkEnd = body.indexOf('function Press-Dc('); /* v0.35: () تا با Press-DcBg قاطی نشود */
   ok('Try-Keys defined before Press-Dc', tkStart !== -1 && tkEnd > tkStart);
   const tk = body.slice(tkStart, tkEnd);
   ok('inside Try-Keys: Focus-DcHard BEFORE Send-Combo (guard order)',

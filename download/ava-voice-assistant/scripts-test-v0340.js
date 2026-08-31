@@ -124,9 +124,9 @@ ok('Test-CallAlive closed loop still present (v0.33)', dcBody.includes('function
 
 console.log('\n[8] versions 0.34');
 const pkg = JSON.parse(read('package.json'));
-ok('package.json 0.34.0', pkg.version === '0.34.0', pkg.version);
-ok('about box v0.34.0', htmlSrc.includes('>v0.34.0</span>'));
-ok('app.js appVersion 0.34.0', appSrc.includes("let appVersion = '0.34.0';"));
+ok('package.json 0.34+', /^0\.3[4-9]\.\d+$/.test(pkg.version), pkg.version);
+ok('about box v0.34+', />v0\.3[4-9]\.\d+<\/span>/.test(htmlSrc));
+ok('app.js appVersion 0.34+', /let appVersion = '0\.3[4-9]\.\d+';/.test(appSrc));
 ok('older suites stay forward-regex', !read('scripts-test-v0320.js').includes("pkg.version === '0.32.0'"));
 
 console.log(`\nRESULT: ${pass}/${pass + fail}`);
