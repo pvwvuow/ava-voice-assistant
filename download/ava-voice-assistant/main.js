@@ -11,6 +11,11 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto'); /* v0.42 — توکن Sec-MS-GEC برای TTS اِج */
 const { Readable } = require('stream');
+const telemetry = require('./lib/telemetry'); /* v0.48 — ارسال خودکار لاگ به Gist */
+
+/* v0.48 — شناسهٔ نشست: همهٔ خط‌های JSONL یک اجرا با همین b برچسب می‌خورند
+   تا ممیزی «کرش بین boot و quit» دقیق شود (بوت بدون quit قبلی = کرش) */
+const AVA_BOOT_ID = 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 /* v0.44 — سبک‌سازی RAM (خواستهٔ صریح کاربر: «برنامه رم زیادی مصرف می‌کنه…
    باید سبک سازی بشه»): سقف هیپ V8 برای هر پروسهٔ آوا — جلوی رشد بی‌سقف
@@ -4818,16 +4823,32 @@ ipcMain.handle('sys:typeText', async (_e, p) => {
 });
 
 
-/* ---------- لاگ عملکرد (v0.18) — برای عیب‌یابی از راه دور ----------
-   واکنش‌های برنامه (فرمان‌ها، موتورها، دیسکورد، به‌روزرسان، خطاها) در
-   userData/logs/activity.log ثبت می‌شود؛ کاربر نیازی به دیدنش ندارد.
-   فایل خودکار روتِیت می‌شود (بیشینه ~۴۰۰KB → activity.old.log).
-   ارسال به گیت‌هاب: فرمان صوتی «آوا گزارش بفرست» → صفحهٔ GitHub Issues
-   با خلاصهٔ لاگ پیش‌پرشده باز می‌شود (بدون توکن داخل برنامه — امن). */
+/* ---------- لاگ عملکرد (v0.18 — ارتقا v0.48) — برای عیب‌یابی از راه دور ----------
+   دو فایل موازی:
+   1) activity.log (متنِ خوانا، همان قالب همیشه — روتِیت ~۴۰۰KB)
+   2) activity.jsonl (لاگ ساخت‌یافته v0.48 — خواستهٔ کاربر: «ساختار لاگ رو
+      بهتر کنی که بهتر مشکلات رو متوجه بشی») — هر خط یک JSON:
+      {t, v(نسخه), b(شناسهٔ نشست), ch(کانال/تگ), m(پیام), ...extra}
+      + مارکرهای session: boot/quit/crash — بوت بدون quit قبلی = کرش.
+   ارسال خودکار: همین نسخه لاگ را با Gist API به گیت‌هاب می‌فرستد
+   (lib/telemetry.js) تا ممیزی بعدی بدون رفت‌وآمد فایل انجام شود؛
+   توکن فقط scope گیست — از تنظیمات/UI وارد می‌شود، داخل ریپوی عمومی هیچ
+   توکنی جاسازی نمی‌شود. */
 const ACT_MAX = 400 * 1024;
-function actLog(line, tag = 'app') {
+const ACT_JSONL_MAX = 2 * 1024 * 1024;
+function logDirOf() { return path.join(app.getPath('userData'), 'logs'); }
+function logSessionMarker(ev, extra) {
   try {
-    const dir = path.join(app.getPath('userData'), 'logs');
+    const dir = logDirOf();
+    fs.mkdirSync(dir, { recursive: true });
+    const rec = Object.assign({ t: new Date().toISOString(), v: app.getVersion(), b: AVA_BOOT_ID, ch: 'session', ev }, (extra && typeof extra === 'object') ? extra : {});
+    fs.appendFileSync(path.join(dir, 'activity.jsonl'), JSON.stringify(rec) + '\n');
+  } catch (_) { /* لاگ هرگز نباید برنامه را بکشد */ }
+}
+function actLog(line, tag = 'app', extra = null) {
+  /* ۱) متن خوانا — همان رفتار همیشه (کاملاً سازگار با قبلی) */
+  try {
+    const dir = logDirOf();
     fs.mkdirSync(dir, { recursive: true });
     const f = path.join(dir, 'activity.log');
     try {
@@ -4836,14 +4857,93 @@ function actLog(line, tag = 'app') {
     } catch (_) { /* هنوز فایلی نیست */ }
     fs.appendFileSync(f, `[${new Date().toISOString()}] [${tag}] ${String(line).replace(/\s+/g, ' ').slice(0, 400)}\n`);
   } catch (_) { /* لاگ هرگز نباید برنامه را بکشد */ }
+  /* ۲) JSONL ساخت‌یافته — تحلیل ماشینی دقیق (v0.48) */
+  try {
+    const dir = logDirOf();
+    fs.mkdirSync(dir, { recursive: true });
+    const jf = path.join(dir, 'activity.jsonl');
+    try {
+      const st = fs.statSync(jf);
+      if (st.size > ACT_JSONL_MAX) fs.renameSync(jf, path.join(dir, 'activity.old.jsonl'));
+    } catch (_) { /* هنوز فایلی نیست */ }
+    const rec = Object.assign({ t: new Date().toISOString(), v: app.getVersion(), b: AVA_BOOT_ID, ch: String(tag || 'app'), m: String(line).replace(/\s+/g, ' ').slice(0, 400) }, (extra && typeof extra === 'object') ? extra : {});
+    fs.appendFileSync(jf, JSON.stringify(rec) + '\n');
+  } catch (_) { /* noop */ }
+  /* ۳) خطای تازه → شانس ارسال زودتر تله‌متری (تrottle داخلی دارد) */
+  try { if (tag === 'err' && TELE) TELE.notifyErr(); } catch (_) { /* noop */ }
 }
-ipcMain.handle('log:act', (_e, msg) => { actLog(String(msg || ''), 'ui'); return true; });
+var TELE = null; /* v0.48 — نمونهٔ تله‌متری (var تا actLog در بوتِ زودهنگام TDZ نخورد) */
+/* درخواست GitHub با پاسخ کامل {status,text} — برای Gist API (PATCH/POST) */
+function ghFetchFull(url, opts) {
+  return new Promise((resolve, reject) => {
+    try {
+      const req = net.request({ url, redirect: 'follow' });
+      req.setHeader('User-Agent', 'AVA-Voice-Assistant-Telemetry');
+      const h = (opts && opts.headers) || {};
+      Object.keys(h).forEach((k) => { try { req.setHeader(k, h[k]); } catch (_) { /* noop */ } });
+      let done = false;
+      const chunks = [];
+      let size = 0;
+      const finish = (err, data) => { if (done) return; done = true; clearTimeout(timer); try { req.abort(); } catch (_) { /* noop */ } err ? reject(err) : resolve(data); };
+      const timer = setTimeout(() => finish(new Error('timeout')), 25000);
+      req.on('response', (res) => {
+        res.on('data', (c) => { size += c.length; if (size > 4 * 1024 * 1024) return finish(new Error('response too large')); chunks.push(c); });
+        res.on('end', () => finish(null, { status: res.statusCode || 0, text: Buffer.concat(chunks).toString('utf8') }));
+        res.on('error', (e) => finish(e));
+      });
+      req.on('error', (e) => finish(e));
+      if (opts && opts.body) {
+        const buf = Buffer.from(String(opts.body), 'utf8');
+        try { req.setHeader('Content-Length', String(buf.length)); } catch (_) { /* noop */ }
+        req.write(buf);
+      }
+      req.end();
+    } catch (e) { reject(e); }
+  });
+}
+try {
+  const teleStateFile = () => { try { return path.join(app.getPath('userData'), 'ava-telemetry.json'); } catch (_) { return ''; } };
+  let teleInitState = {};
+  try { teleInitState = JSON.parse(fs.readFileSync(teleStateFile(), 'utf8')) || {}; } catch (_) { /* اولین اجرا */ }
+  TELE = telemetry.createTelemetry({
+    fs,
+    version: app.getVersion(),
+    bootId: AVA_BOOT_ID,
+    platform: os.platform() + ' ' + os.release(),
+    env: process.env,
+    readSettings: loadedSettings, /* هر بار از فایل — تغییر توکن از UI بدون ری‌استارت اعمال می‌شود */
+    logDir: logDirOf(),
+    logFiles: () => [path.join(logDirOf(), 'activity.jsonl'), path.join(logDirOf(), 'activity.old.jsonl')],
+    ghFetch: ghFetchFull,
+    log: actLog,
+    initialState: teleInitState,
+    saveState: (s) => { const f2 = teleStateFile(); if (f2) writeJsonAtomic(f2, s); },
+  });
+} catch (e) { try { actLog('telemetry init failed: ' + String((e && e.message) || e), 'err'); } catch (_) { /* noop */ } }
+ipcMain.handle('log:act', (_e, msg, extra) => {
+  /* v0.48 — سازگار با قبلی: رشتهٔ ساده؛ جدید: {m, tag, extra} ساخت‌یافته */
+  if (msg && typeof msg === 'object' && !Array.isArray(msg)) {
+    actLog(String(msg.m || ''), String(msg.tag || 'ui'), (msg.extra && typeof msg.extra === 'object') ? msg.extra : null);
+  } else {
+    actLog(String(msg || ''), 'ui', (extra && typeof extra === 'object') ? extra : null);
+  }
+  return true;
+});
 ipcMain.handle('log:get', () => {
   try {
-    const f = path.join(app.getPath('userData'), 'logs', 'activity.log');
+    const f = path.join(logDirOf(), 'activity.log');
     const lines = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean);
     return { ok: true, lines: lines.slice(-80) };
   } catch (e) { return { ok: false, lines: [], error: netErr(e) }; }
+});
+/* v0.48 — وضعیت/ارسال دستی تله‌متری (تنظیمات › برنامه › گزارش خودکار) */
+ipcMain.handle('logs:status', () => {
+  try { return Object.assign({ ok: true }, TELE ? TELE.status() : { configured: false, auto: true, lastResult: 'init' }); }
+  catch (e) { return { ok: false, error: netErr(e) }; }
+});
+ipcMain.handle('logs:sendNow', async () => {
+  try { if (!TELE) return { ok: false, error: 'init' }; const r = await TELE.tick(true); return Object.assign({ ok: !!r.ok }, r); }
+  catch (e) { return { ok: false, error: netErr(e) }; }
 });
 
 /* ============================================================
@@ -4911,6 +5011,13 @@ ipcMain.handle('music:readHead', (_e, p, max) => {
 /* ---------- App lifecycle ---------- */
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
+  /* v0.48 — مارکر بوت در JSONL + تایمر تله‌متری + بازپخش جلسهٔ قبل */
+  try { logSessionMarker('boot', { electron: process.versions.electron, pid: process.pid }); } catch (_) { /* noop */ }
+  try {
+    TELE.tick().catch(() => { /* noop */ }); /* اگر جلسهٔ قبل چیزی نفرستاده بود، همین اول می‌رود */
+    setInterval(() => { try { TELE.tick().catch(() => { /* noop */ }); } catch (_) { /* noop */ } }, 5 * 60 * 1000);
+  } catch (_) { /* noop */ }
+  app.on('before-quit', () => { try { logSessionMarker('quit', { uptimeS: Math.round(process.uptime()) }); } catch (_) { /* noop */ } });
   /* v0.35 — تور ایمنی کرش: رندرر اگر مرد (GPU درایور/OOM وسط بازی) به‌جای
      پنجرهٔ خالیِ معلق، خودکار یک‌بار ری‌لود می‌شود و علت در لاگ می‌ماند؛
      پرامیس‌های رهاشده هم دیگر بی‌صدا نیستند — «گاهی اوقات کرش میکنه» دیگر
@@ -4920,6 +5027,7 @@ app.whenReady().then(() => {
   });
   process.on('uncaughtException', (err) => {
     try { actLog('uncaughtException: ' + String((err && err.stack) || err).slice(0, 220)); } catch (_) { /* noop */ }
+    try { logSessionMarker('crash', { m: String((err && err.message) || err).slice(0, 160) }); } catch (_) { /* noop */ } /* v0.48 */
   });
   app.on('render-process-gone', (_ev, wc, details) => {
     try { actLog('renderer gone: ' + JSON.stringify(details).slice(0, 160)); } catch (_) { /* noop */ }

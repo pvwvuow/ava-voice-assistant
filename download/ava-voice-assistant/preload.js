@@ -189,10 +189,16 @@ contextBridge.exposeInMainWorld('ava', {
   },
 
   /* لاگ عملکرد (v0.18) — ثبت واکنش‌های برنامه در userData/logs/activity.log
-     log.get برای ارسال گزارش به گیت‌هاب (فرمان صوتی «گزارش بفرست») */
+     log.get برای ارسال گزارش به گیت‌هاب (فرمان صوتی «گزارش بفرست»)
+     v0.48 — act(msg, extra) لاگ ساخت‌یافته می‌فرستد (JSONL) و logs.* وضعیت/
+     ارسال دستی تله‌متری (گیت‌هاب) را در اختیار UI می‌گذارد */
   log: {
-    act: (msg) => ipcRenderer.invoke('log:act', msg),
+    act: (msg, extra) => ipcRenderer.invoke('log:act', msg, extra),
     get: () => ipcRenderer.invoke('log:get'),
+  },
+  logs: {
+    status: () => ipcRenderer.invoke('logs:status'),
+    sendNow: () => ipcRenderer.invoke('logs:sendNow'),
   },
 
   /* v0.24 — وضعیت شبکه (سلف‌چک TCP از پروسهٔ اصلی بعد از بوت) */

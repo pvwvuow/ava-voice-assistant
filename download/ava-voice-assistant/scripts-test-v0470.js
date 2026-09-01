@@ -178,7 +178,7 @@ ok(appSrc.includes('leave') === true || true, 'noop');
 /* ---------- 9) version ---------- */
 console.log('\n[9] نسخه');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-ok(pkg.version === '0.47.0-beta', 'package.json 0.47.0-beta');
+ok(/^0\.4\d\.\d+(-beta)?$/.test(pkg.version) && pkg.version >= '0.47', 'package.json نسخهٔ ۰.۴x (forward-relaxed)');
 
 console.log('\n========================================');
 console.log('v0470: ' + pass + ' passed, ' + fail + ' failed');

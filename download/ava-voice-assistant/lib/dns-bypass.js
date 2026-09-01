@@ -46,6 +46,11 @@ const DEFAULT_HOSTS = [
   'api.groq.com',                          /* Whisper */
   'api.openai.com',                        /* پایهٔ سازگار OpenAI */
   'open.bigmodel.cn',                      /* GLM (پایهٔ جایگزین) */
+  /* v0.48 — گیت‌هاب: تله‌متری (ارسال خودکار لاگ با Gist API) + مسیرهای
+     آپدیتر (api/releases/latest) — قبلاً پین نبودند و در فیلترینگِ DNS
+     ممکن بود ارسال/بررسی نسخه بی‌دلیل رد شود */
+  'api.github.com',                        /* Gist API + releases API */
+  'github.com',                            /* releases/latest (web-json) + atom */
 ];
 
 /* ساخت پکت پرس‌وجوی DNS (کلاس IN، نوع A) */

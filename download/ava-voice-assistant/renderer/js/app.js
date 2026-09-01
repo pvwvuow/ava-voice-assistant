@@ -729,6 +729,21 @@
     'learn.uiUsed': ['اجراشده ({n} بار)', 'used ({n} times)'],
     'learn.uiUnstable': ['ناپایدار — فقط هوش مصنوعی تصمیم می‌گیرد', 'unstable — AI decides every time'],
     'learn.tag': ['⚡ یادگرفته · بدون اینترنت', '⚡ learned · offline'],
+    /* v0.48 — گزارش خودکار به گیت‌هاب (تله‌متری) */
+    'tele.uiTitle': ['گزارش خودکار به گیت‌هاب', 'Auto log report to GitHub'],
+    'tele.uiHint': ['لاگ فنی برنامه هر ۱۵ دقیقه در یک Gist مخفی ذخیره می‌شود تا مشکلات ریشه‌یابی سریع‌تر شود — فقط توکنِ دسترسی گِیست لازم است (نه دسترسی ریپو)', 'The technical log is saved to a secret Gist every 15 minutes so problems get root-caused faster — only a gist-scoped token is needed'],
+    'tele.tokenTitle': ['توکن گیت‌هاب (فقط گِیست)', 'GitHub token (gist only)'],
+    'tele.tokenHint': ['یک بار وارد کن — فقط در فایل تنظیمات خودت روی همین کامپیوتر ذخیره می‌شود، نه در هیچ ریپویی', 'Enter once — stored only in your local settings file on this PC, never in any repo'],
+    'tele.tokenPh': ['ghp_…', 'ghp_…'],
+    'tele.tokenSave': ['ذخیره', 'Save'],
+    'tele.makeToken': ['ساخت توکن (۳۰ ثانیه)', 'Create token (30 seconds)'],
+    'tele.sendNow': ['ارسال الان', 'Send now'],
+    'tele.stConfigured': ['فعال — آخرین ارسال: {x}', 'active — last send: {x}'],
+    'tele.stNoToken': ['برای ارسال خودکار، توکن گِیستی بساز و وارد کن', 'create & paste a gist-scoped token to enable'],
+    'tele.stOff': ['خاموش', 'off'],
+    'tele.sentOk': ['گزارش در گیت‌هاب ذخیره شد — دفعه بعد خودم لاگ را می‌گیرم و ممیزی می‌کنم', 'Report saved to GitHub — I will fetch and review the log myself next time'],
+    'tele.sentFail': ['ارسال به گیت‌هاب نشد — بعداً دوباره خودکار تلاش می‌کنم', 'GitHub upload failed — I will retry automatically later'],
+    'tele.savedToast': ['توکن ذخیره شد — گزارش خودکار فعال شد', 'Token saved — auto report enabled'],
     'suggest.say': ['بگو', 'Say'],
     'toast.welcome': ['آوا آماده است — اجرای واقعی فرمان‌ها فعال است', 'AVA is ready — real command execution is on'],
     'toast.preview': ['آوا آماده است — پیش‌نمایش رابط کاربری', 'AVA is ready — UI preview'],
@@ -1323,6 +1338,9 @@
     ttsEngine: store.get('ttsEngine', 'edge'), /* v0.42 — اِج پیش‌فرض */
     edgeVoice: store.get('edgeVoice', 'dilara'), /* v0.43 — صدای اِج: دلارا/فرید */
     autoUpdate: store.get('autoUpdate', true),
+    /* v0.48 — گزارش خودکار لاگ به گیت‌هاب: {auto, githubToken} — توکن فقط
+       در فایل تنظیمات محلی می‌ماند (هرگز در ریپو/کد جاسازی نمی‌شود) */
+    logs: store.get('logs', { auto: true, githubToken: '' }),
     demoMode: store.get('demoMode', false),
     sttEngine: store.get('sttEngine', 'auto'),
     sttLang: store.get('sttLang', 'fa-IR'),
@@ -1389,7 +1407,9 @@
     }, 600);
   }
   /* لاگ عملکرد (v0.18) — فقط داخل نرم‌افزار؛ هیچ‌وقت نمی‌شکند */
-  const actLog = (msg) => { try { if (bridge && bridge.log && bridge.log.act) bridge.log.act(String(msg)); } catch (_) { /* noop */ } };
+  /* v0.48 — actLog رندرر: حالا لاگ ساخت‌یافته می‌فرستد {m, tag, extra}
+     (فراخوانی‌های قدیمی actLog('متن') دقیقاً مثل قبل tag='ui') */
+  const actLog = (msg, tag, extra) => { try { if (bridge && bridge.log && bridge.log.act) bridge.log.act({ m: String(msg), tag: String(tag || 'ui'), extra: (extra && typeof extra === 'object') ? extra : null }); } catch (_) { /* noop */ } };
   /* v0.24 — وضعیت شبکه از پروسهٔ اصلی (سلف‌چک TCP بعد از بوت):
      اگر گوگل در دسترس نباشد، موتور وب (شنوندهٔ سریع مثل کروم) کار نمی‌کند —
      یک بار در هر اجرا به کاربر با توست شفاف خبر بده */
@@ -4082,6 +4102,52 @@
     } catch (_) { /* noop */ }
   });
 
+  /* ============================================================
+     v0.48 — گزارش خودکار به گیت‌هاب: toggle + توکن + ارسال الان + وضعیت
+     ============================================================ */
+  async function refreshTeleStatus() {
+    const b1 = $('#logStatusText');
+    const b2 = $('#logStatusHint');
+    if (!b1) return;
+    try {
+      if (!bridge || !bridge.logs || !bridge.logs.status) { b1.textContent = '—'; return; }
+      const s = await bridge.logs.status();
+      if (!s || s.ok === false) { b1.textContent = '—'; return; }
+      if (!s.configured) { b1.textContent = t('tele.stNoToken'); b2.textContent = s.auto ? '' : t('tele.stOff'); return; }
+      const last = s.lastSentAt ? new Date(s.lastSentAt).toLocaleString(LANG === 'en' ? 'en-US' : 'fa-IR') : '—';
+      b1.textContent = t('tele.stConfigured', { x: last });
+      b2.textContent = (s.lastResult || '') + (s.failStreak ? (' ×' + s.failStreak) : '');
+    } catch (_) { b1.textContent = '—'; }
+  }
+  const optAutoLog = $('#optAutoLog');
+  if (optAutoLog) optAutoLog.addEventListener('change', () => {
+    settings.logs = Object.assign({ auto: true, githubToken: '' }, settings.logs || {}, { auto: optAutoLog.checked });
+    store.set('logs', settings.logs);
+    toast(optAutoLog.checked ? t('tele.uiTitle') : t('tele.stOff'), '#i-refresh');
+    refreshTeleStatus();
+  });
+  const btnLogTokenSave = $('#btnLogTokenSave');
+  if (btnLogTokenSave) btnLogTokenSave.addEventListener('click', () => {
+    const inp = $('#optLogToken');
+    const v = ((inp && inp.value) || '').trim();
+    settings.logs = Object.assign({ auto: true, githubToken: '' }, settings.logs || {}, { githubToken: v });
+    store.set('logs', settings.logs);
+    if (inp) inp.value = v;
+    toast(v ? t('tele.savedToast') : t('tele.stNoToken'), v ? '#i-check' : '#i-close');
+    refreshTeleStatus();
+  });
+  const btnLogSend = $('#btnLogSend');
+  if (btnLogSend) btnLogSend.addEventListener('click', async () => {
+    if (!bridge || !bridge.logs || !bridge.logs.sendNow) return;
+    btnLogSend.disabled = true;
+    try {
+      const r = await bridge.logs.sendNow();
+      toast(r && r.ok ? t('tele.sentOk') : (t('tele.sentFail') + ' (' + ((r && r.error) || '?') + ')'), r && r.ok ? '#i-globe' : '#i-close');
+      refreshTeleStatus();
+    } catch (_) { toast(t('tele.sentFail'), '#i-close'); }
+    btnLogSend.disabled = false;
+  });
+
   /* اجرای فرمان‌های پاور — خاموش/ریستارت از قبل در resolveReply تأیید گرفته‌اند */
   async function runPower(id) {
     if (!canRun) return t('toast.onlyApp');
@@ -4384,6 +4450,22 @@
 
   /* v0.18 — ارسال لاگ عملکرد به گیت‌هاب (بدون توکن داخل برنامه؛ صفحهٔ Issue پیش‌پر می‌شود) */
   async function sendActivityReport() {
+    /* v0.48 — اگر تله‌متری (توکن گِیست) تنظیم شده: آپلود واقعی و فوری لاگ.
+       بدون توکن: مسیر قدیمی (صفحهٔ Issues با خلاصهٔ لاگ) — همان v0.18. */
+    try {
+      if (bridge && bridge.logs && bridge.logs.status && bridge.logs.sendNow) {
+        const st = await bridge.logs.status();
+        if (st && st.ok !== false && st.configured) {
+          const r = await bridge.logs.sendNow();
+          if (r && r.ok) {
+            actLog('voice report uploaded ' + (r.bytes || 0) + 'B', 'telemetry');
+            return t('tele.sentOk');
+          }
+          actLog('voice report upload failed: ' + ((r && r.error) || '?'), 'err');
+          return t('tele.sentFail') + ' (' + ((r && r.error) || '?') + ')';
+        }
+      }
+    } catch (_) { /* فالبک به مسیر مرورگر */ }
     if (!bridge || !bridge.log || !bridge.log.get) return LANG === 'en' ? 'Log report works only inside the Windows app.' : 'ارسال گزارش فقط داخل نرم‌افزار ویندوزی کار می‌کند';
     let lines = [];
     try { const r = await bridge.log.get(); lines = (r && r.lines) || []; } catch (_) { /* noop */ }
@@ -5894,8 +5976,9 @@
     }
     await runCommand(cmd, { wake: wakeGate });
     wakeSessExtend(); /* هر فرمان اجراشده، مدت گفتگو را تمدید می‌کند */
-    /* v0.47 — B18: نتیجهٔ واقعی dispatch در لاگ می‌آید (rule/ai/busy/junk/…) */
-    actLog(`utterance total ${Date.now() - h0}ms [${_dispatchOutcome || 'done'}]: ${cmd.slice(0, 60)}`);
+    /* v0.47 — B18: نتیجهٔ واقعی dispatch در لاگ می‌آید (rule/ai/busy/junk/…)
+       v0.48 — + لاگ ساخت‌یافته (JSONL): ms و res به‌عنوان فیلد جداگانه */
+    actLog(`utterance total ${Date.now() - h0}ms [${_dispatchOutcome || 'done'}]: ${cmd.slice(0, 60)}`, 'ui', { ev: 'utterance', ms: Date.now() - h0, res: _dispatchOutcome || 'done' });
   }
 
   /* در حالت بی‌دست، بعد از هر فرمان/خطا دوباره گوش می‌دهیم */
@@ -7038,7 +7121,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.47.0-beta';
+  let appVersion = '0.48.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7405,6 +7488,12 @@
     if (osm) osm.checked = !!settings.safeMode;
     optTts.checked = !!settings.tts;
     optAutoUpdate.checked = !!settings.autoUpdate;
+    /* v0.48 — گزارش خودکار به گیت‌هاب: toggle/توکن/وضعیت */
+    const oal = $('#optAutoLog');
+    if (oal) oal.checked = !!(settings.logs && settings.logs.auto !== false);
+    const olt = $('#optLogToken');
+    if (olt) olt.value = (settings.logs && settings.logs.githubToken) || '';
+    try { refreshTeleStatus(); } catch (_) { /* noop */ }
     optDemo.checked = !!settings.demoMode;
     optSttEngine.value = settings.sttEngine || 'auto';
     if (optSttLang) optSttLang.value = settings.sttLang || 'fa-IR';
