@@ -1065,7 +1065,7 @@ body.has-card #wave { height: 0; opacity: 0; }
 
 /* ---------- مودال تأیید فرمان ---------- */
 .confirm {
-  position: fixed; inset: 0; z-index: 120;
+  position: fixed; inset: 0; z-index: 130; /* v0.60 — بالاتر از cp-wrap (120) تا زیر صفحهٔ فرمان‌ها نقاشی نشود */
   margin: auto; width: min(430px, calc(100vw - 48px));
   height: fit-content; max-height: calc(100vh - 80px);
   border-radius: 18px; padding: 18px;
@@ -1603,6 +1603,10 @@ html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, r
 [data-theme="light"] .confirm { background: rgba(255, 255, 255, 0.94); }
 [data-theme="light"] .confirm h3 { color: #6d28d9; }
 [data-theme="light"] .confirm pre { background: rgba(38, 22, 92, 0.06); border: 1px solid rgba(38, 22, 92, 0.12); color: #6d28d9; }
+/* v0.60 — سه پنلِ پس‌زمینهٔ تیرهٔ هاردکد در تم روشن خوانا شدند (همان الگوی .confirm بالای سرشان) */
+[data-theme="light"] .cs-card { background: rgba(255, 255, 255, 0.94); }
+[data-theme="light"] .cp-card { background: rgba(255, 255, 255, 0.94); }
+[data-theme="light"] .gem-panel { background: rgba(255, 255, 255, 0.94); }
 [data-theme="light"] .msg.user { background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(109, 40, 217, 0.16)); border: 1px solid rgba(139, 92, 246, 0.35); color: #3b1d78; }
 [data-theme="light"] .msg.bot { background: rgba(255, 255, 255, 0.75); border: 1px solid rgba(38, 22, 92, 0.12); }
 [data-theme="light"] .msg.err { background: rgba(225, 29, 72, 0.08); border: 1px solid rgba(225, 29, 72, 0.3); color: #be123c; }
@@ -2133,6 +2137,16 @@ body[data-theme="lite"] { background: #eef1ee; color: var(--text); }
 [data-theme="lite"] .orb-glass { opacity: 0.3; }
 [data-theme="lite"] .tb-btn:hover { background: rgba(5, 150, 105, 0.1); color: var(--text); }
 [data-theme="lite"] .rail-item:hover { background: rgba(5, 150, 105, 0.1); }
+
+/* v0.60 — ورودی‌های تم سبک (lite): پیش‌فرضِ تیره روی زمینهٔ روشن ناخوانا بود؛
+   تم تیره و تیرهٔ سبک دست نخورده‌اند (همان ظاهر قبلی دقیقاً) */
+[data-theme="lite"] .set-select,
+[data-theme="lite"] .set-input,
+[data-theme="lite"] .dict-box,
+[data-theme="lite"] .cmd-bar,
+[data-theme="lite"] .chat-bar { background: #ffffff; border: 1px solid var(--stroke); }
+[data-theme="lite"] .set-select option { background: #ffffff; color: var(--text); }
+[data-theme="lite"] kbd { background: rgba(30, 41, 59, 0.06); border-color: rgba(30, 41, 59, 0.16); }
 
 /* ============================================================
    v0.15 — پلی‌لیست بهتر + ویژوالایزر موزیک

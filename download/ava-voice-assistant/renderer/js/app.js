@@ -610,6 +610,10 @@
     'set.ptt.set': ['کلید ذخیره شد:', 'Key saved:'],
     'set.ptt.on': ['دکمهٔ فشاری صحبت روشن شد', 'Push-to-Talk enabled'],
     'set.ptt.off': ['دکمهٔ فشاری صحبت خاموش شد', 'Push-to-Talk disabled'],
+    /* v0.60 — ثبت کلید PTT: فقط کلیدهای لاتین + تایم‌اوت + راهنمای لغو */
+    'set.key.latin': ['کلیدهای لاتین مجازند', 'Only Latin keys are accepted'],
+    'set.key.timeout': ['زمان ثبت کلید تمام شد — دوباره امتحان کن', 'Key capture timed out — try again'],
+    'set.key.escHint': ['در حال شنیدن کلید… ESC = لغو', 'Listening for a key… ESC = cancel'],
     'set.dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
     'set.dict.target': ['خروجی تایپ', 'Typing output'],
     'set.dict.targetHint': ['«کادر آوا»: متن در آوا نوشته و با دکمه کپی برمی‌دارد؛ «برنامه فعال»: همان‌جا که داری کار می‌کنی تایپ می‌شود (پیست خودکار)', '"AVA box": text is written here with a copy button; "Active app": typed directly into whatever app you use (auto paste)'],
@@ -694,11 +698,11 @@
     'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
     'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
     'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۵ — «بازسازی کامل مکالمهٔ صوتی (AVE3)»: هر جلسهٔ گوش‌دادن حالا دو مسیر موازی دارد — شنوندهٔ زندهٔ وب (همان که در کروم عالی بود) + ضبط PCM از لحظهٔ صفر با VAD تطبیقی. اگر موتور وب بمیرد، دیگر «دوباره گوش نمی‌دهیم» — همان صدای ضبط‌شده بی‌درنگ به مسابقهٔ موازی موتورهای ابری (گوگل/Whisper/GLM/Gemini، سقف ۱۲ ثانیه برای هر موتور) می‌رود؛ کاربر هرگز چیزی را تکرار نمی‌کند. پایان جمله با سکوت واقعی (VAD ۱.۲ ثانیه‌ای) تصمیم گرفته می‌شود و teardown تمیز جلسه با شمارش نسل، رفتارهای عجیب استارت/استارت را ریشه‌کن می‌کند.', 'v0.25 — "voice conversation rebuilt from scratch (AVE3)": every listening session now runs two parallel tracks — the live web listener (the one that was great in Chrome) plus a from-zero PCM buffer with adaptive VAD. If the web engine dies, we never re-listen — the already-captured audio instantly enters the parallel cloud race (Google/Whisper/GLM/Gemini, 12s cap each); the user never repeats a command. End-of-utterance is decided by real silence (1.2s VAD) and clean epoch-guarded teardown kills weird start/start behavior.'],
+    'about.desc': ['آوا؛ دستیار صوتی فارسی تو — گفتار، فرمان، موزیک، یادآوری و هوش مصنوعی. کلید پوش-تو-تاک قابل تنظیم در تنظیمات.', 'AVA — your Persian voice assistant: speech, commands, music, reminders and AI. The push-to-talk key is configurable in Settings.'],
     'about.listen': ['گوش دادن', 'Listen'], 'about.cmd': ['کادر فرمان', 'Command box'], 'about.esc': ['بستن / لغو', 'Close / Cancel'],
 
     /* --- دینامیک --- */
-    'status.idle': ['برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>', 'Tap the orb or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd> to start'],
+    'status.idle': ['برای شروع، اورب را لمس کن یا کلید {combo}', 'Tap the orb or press {combo} to start'], /* v0.60 — {combo} = کلید واقعی PTT از تنظیمات (فالبک: Ctrl+Shift+Space) */
     'status.listening': ['در حال گوش دادن… فرمانت را بگو', 'Listening… say your command'],
     'status.googleListen': ['در حال گوش دادن (گوگل)… فرمانت را بگو', 'Listening (Google)… say your command'],
     'status.heard': ['شنیدم: «{x}»', 'Heard: "{x}"'],
@@ -797,6 +801,12 @@
     'toast.cmdAdded': ['فرمان «{x}» به لیست اضافه شد', 'Command "{x}" added to the list'],
     'toast.copied': ['متن کپی شد ✓', 'Text copied ✓'], 'toast.copyFail': ['کپی ممکن نشد — خودت انتخاب و کپی کن', 'Copy failed — select and copy manually'],
     'toast.noCopyText': ['متنی برای کپی نیست', 'Nothing to copy'], 'toast.boxCleared': ['کادر تایپ پاک شد', 'Box cleared'],
+    /* v0.60 — توست‌های فارسیِ هاردکد → دیکشنری (دوزبانه) */
+    'toast.electronOnly': ['این دکمه فقط داخل نرم‌افزار الکترون واقعی کار می‌کند', 'This button only works inside the real Electron app'],
+    'toast.discOnly': ['کنترل دیسکورد فقط داخل نرم‌افزار ویندوزی کار می‌کند', 'Discord control only works inside the Windows app'],
+    'toast.winOnly': ['فقط داخل نرم‌افزار ویندوزی کار می‌کند', 'Only works inside the Windows app'],
+    'toast.updOnlyApp': ['آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', 'Auto update only works inside the Windows app'],
+    'toast.linkFail': ['باز کردن لینک ممکن نشد', 'Could not open the link'],
     'toast.locked': ['این بخش در نسخه بعدی اضافه می‌شود', 'Coming in the next version'],
     'tts.on': ['پاسخ گفتاری فعال شد', 'Spoken replies enabled'],
     'dict.on': ['حالت تایپ شروع شد — حرف بزن! پایان: «آوا تموم» یا «قطع تایپ»', 'Voice typing started — speak! Say the stop command to finish'],
@@ -982,6 +992,7 @@
     'set.ext.pingBtn': ['پینگ بگیر', 'Ping now'],
     'set.ext.note': ['این بخش مخصوص امکانات خاص است؛ اگر لازمشان نداری می‌توانی نادیده‌شان بگیری. مدیریت کامل DNS و ابزارهای خاص این‌جا جمع شده‌اند.', 'This section holds special tools you can safely ignore if you do not need them — full DNS management and extras live here.'],
     'dnsp.title': ['پینگ DNSها', 'Ping DNS servers'],
+    'dnsp.pageTitle': ['تغییرگر DNS', 'DNS Changer'], /* v0.60 — تیتر صفحهٔ DNS؛ dnsp.title دوقلو بود و مقدارِ پاپ‌آپ پینگ برنده می‌شد */
     'dnsp.sub': ['سریع‌ترین‌ها بالا — هر کدام را خواستی فعال کن', 'Fastest first — activate any of them'],
     'dnsp.refresh': ['پینگ دوباره', 'Ping again'],
     'dnsp.note': ['فعال‌سازی هر DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند. «کنسل» بزنی صفحه می‌بندد.', 'Activating a DNS opens the Windows UAC prompt. Cancel just closes this page.'],
@@ -1107,7 +1118,7 @@
       if (e) el.title = LANG === 'en' ? (e[1] !== undefined ? e[1] : e[0]) : e[0];
     });
     /* متن‌های دینامیک که همیشه روی صفحه‌اند */
-    IDLE_HINT = t('status.idle');
+    IDLE_HINT = t('status.idle', { combo: pttHintComboHtml() }); /* v0.60 — راهنمای بیکاری کلید واقعی PTT را نشان می‌دهد */
     greetTitle.textContent = greetingText();
     const sbMicTxt = sbMic.querySelector('span');
     if (sbMicTxt) sbMicTxt.textContent = t('sb.micReady');
@@ -1772,7 +1783,7 @@
   syncPerfUI();
 
   /* ---------- کنترل‌های پنجره ---------- */
-  const browserHint = () => toast('این دکمه فقط داخل نرم‌افزار الکترون واقعی کار می‌کند', '#i-info');
+  const browserHint = () => toast(t('toast.electronOnly'), '#i-info');
   btnMin.addEventListener('click', () => (bridge ? bridge.window.minimize() : browserHint()));
   btnMax.addEventListener('click', () => (bridge ? bridge.window.toggleMaximize() : browserHint()));
   btnClose.addEventListener('click', () => (bridge ? bridge.window.close() : browserHint()));
@@ -4195,13 +4206,15 @@
       const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
       for (const it of items.slice(0, 30)) {
         const row = document.createElement('div');
-        row.className = 'dc-item';
+        row.className = 'dc-contact'; /* v0.60 — کلاس قبلی هیچ قانون CSS نداشت؛ همان کارتِ یادآوری‌ها/مخاطبین */
         const stTxt = it.unstable
           ? t('learn.uiUnstable')
           : ((it.used ? t('learn.uiUsed', { n: faNum(it.used) }) : (Le ? Le.summary(it.acts) : '')) || Le.summary(it.acts));
         row.innerHTML = `
           <div class="dc-ct-info"><b></b><span></span></div>
-          <button type="button" class="chip sm danger dc-del"><svg class="ic"><use href="#i-close"/></svg></button>`;
+          <div class="dc-ct-actions">
+            <button type="button" class="chip sm danger dc-del"><svg class="ic"><use href="#i-close"/></svg></button>
+          </div>`;
         row.querySelector('.dc-ct-info b').textContent = '«' + it.k + '»';
         row.querySelector('.dc-ct-info span').textContent = stTxt;
         row.querySelector('.dc-del').addEventListener('click', async () => {
@@ -7067,8 +7080,8 @@
       e.preventDefault();
       cmdInput.focus();
     } else if (e.key === 'Escape') {
-      if (dnsQuickEl && !dnsQuickEl.hidden) closeDnsQuickOverlay();
-      if (dnsPingEl && !dnsPingEl.hidden) closeDnsPingOverlay();
+      if (dnsQuickEl && !dnsQuickEl.hidden) closeDnsQuickOverlay(); /* v0.60 — زنجیرهٔ else-if: یک Esc فقط یک لایه می‌بندد */
+      else if (dnsPingEl && !dnsPingEl.hidden) closeDnsPingOverlay();
       else if (!confirmBox.hidden) hideConfirm();
       else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
@@ -7189,6 +7202,19 @@
   const optPttMode = $('#optPttMode');
   settings.ptt = (settings.ptt && typeof settings.ptt === 'object') ? settings.ptt : {};
   const pttComboLabel = (acc) => String(acc || 'CommandOrControl+Shift+Space').replace(/CommandOrControl/g, 'Ctrl').trim();
+  /* v0.60 — کلیدِ واقعی PTT برای راهنمای بیکاری (اگر در تنظیمات ثبت شده باشد)؛
+     PTT خاموش/ناشناخته → همان پیش‌فرض Ctrl+Shift+Space */
+  function pttHintComboHtml() {
+    const def = '<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>';
+    try {
+      if (!settings.ptt || settings.ptt.enabled === false) return def;
+      const combo = settings.ptt.combo;
+      if (!combo || typeof combo !== 'string') return def;
+      const parts = pttComboLabel(combo).split('+').filter(Boolean);
+      if (!parts.length) return def;
+      return parts.map((p) => '<kbd>' + p + '</kbd>').join('+');
+    } catch (_) { return def; }
+  }
   function pttRefreshUi() {
     if (optPtt) optPtt.checked = settings.ptt.enabled !== false;
     if (optPttMode) optPttMode.value = settings.ptt.mode === 'toggle' ? 'toggle' : 'hold';
@@ -7203,7 +7229,13 @@
   if (optPttMode) optPttMode.addEventListener('change', () => { settings.ptt.mode = optPttMode.value === 'toggle' ? 'toggle' : 'hold'; pttSave(true); });
   if (btnPttKey) btnPttKey.addEventListener('click', () => {
     if (pttKeyLabel) pttKeyLabel.textContent = t('set.ptt.press');
+    /* v0.60 — ثبت کلید مهارشده: فقط کلیدهای لاتین + تایم‌اوت ۱۰ ثانیه + لغو با ESC
+       (قبلاً هر کلیدی بی‌سروصدا می‌پذیرفت و accelerator مثل Ctrl+ش هرگز ثبت نمی‌شد) */
+    if (btnPttKey) btnPttKey.title = t('set.key.escHint');
+    let latinToastAt = 0;
     const done = (acc) => {
+      clearTimeout(capTimer);
+      if (btnPttKey) btnPttKey.title = '';
       window.removeEventListener('keydown', onKey, true);
       if (acc) {
         settings.ptt.combo = acc;
@@ -7212,6 +7244,7 @@
       }
       pttRefreshUi();
     };
+    const capTimer = setTimeout(() => { toast(t('set.key.timeout'), '#i-info'); done(null); }, 10000);
     const onKey = (e) => {
       e.preventDefault(); e.stopPropagation();
       if (e.key === 'Escape') { done(null); return; }
@@ -7222,8 +7255,10 @@
       if (e.shiftKey) acc += 'Shift+';
       let keyName = e.key === ' ' ? 'Space' : (e.key.length === 1 ? e.key.toUpperCase() : e.key);
       keyName = keyName.replace(/^Arrow/, '');
-      const okName = /^(F\d{1,2}|Space|Tab|Enter|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Plus|Minus|Comma|Period|Slash|Backquote|Up|Down|Left|Right)$/.test(keyName) || keyName.length === 1;
+      /* v0.60 — کلید تکی فقط لاتین ( accelerator غیرلاتین مثل Ctrl+ش در Electron هرگز ثبت نمی‌شود) */
+      const okName = /^(F\d{1,2}|Space|Tab|Enter|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Plus|Minus|Comma|Period|Slash|Backquote|Up|Down|Left|Right)$/.test(keyName) || /^[A-Za-z0-9]$/.test(keyName);
       if (okName) { acc += keyName; done(acc); }
+      else if (Date.now() - latinToastAt > 1200) { latinToastAt = Date.now(); toast(t('set.key.latin'), '#i-info'); }
     };
     window.addEventListener('keydown', onKey, true);
   });
@@ -7477,7 +7512,7 @@
     };
   }
   async function runDiscordCmd(action, name, okMsg, userId) {
-    if (!bridge || !bridge.discord) return toast('کنترل دیسکورد فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+    if (!bridge || !bridge.discord) return toast(t('toast.discOnly'), '#i-info');
     toast(t('disc.working'), '#i-smile');
     const r = await bridge.discord.cmd({ action, name, userId, ...discordCtx() }).catch((e) => ({ ok: false, error: String(e) }));
     actLog('discord manual ' + action + (name ? ' name=' + name.slice(0, 24) : '') + ' -> ' + (r && r.ok ? String(r.result) : String(r && r.error || 'fail')));
@@ -7630,7 +7665,7 @@
   bindDxy(optDiscordCallDy, 'discordCallDy');
   const btnDcProbe = $('#btnDcProbe');
   if (btnDcProbe) btnDcProbe.addEventListener('click', async () => {
-    if (!bridge || !bridge.discord) return toast('فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-info');
+    if (!bridge || !bridge.discord) return toast(t('toast.winOnly'), '#i-info');
     toast(t('set.dc.probing'), '#i-smile');
     const r = await bridge.discord.cmd({ action: 'probe', ...discordCtx() }).catch((e) => ({ ok: false, error: String(e) }));
     if (r && r.ok) toast(t('set.dc.probed'), '#i-check');
@@ -7794,7 +7829,7 @@
     } else if (okS) {
       toast(LANG === 'en' ? 'Sample played with ' + ttsEngineName(ttsLastEngine) : 'نمونهٔ صدا با موتور ' + ttsEngineName(ttsLastEngine) + ' پخش شد', '#i-check');
     } else {
-      toast(LANG === 'en' ? 'No speech engine is available' : 'هیچ موتور صدایی در دسترس نیست', '#i-warn');
+      toast(LANG === 'en' ? 'No speech engine is available' : 'هیچ موتور صدایی در دسترس نیست', '#i-info'); /* v0.60 — آیکون هشدارِ ناموجود در defs با i-info جایگزین شد */
     }
   });
   if (optEdgeVoice) optEdgeVoice.addEventListener('change', () => {
@@ -8195,7 +8230,7 @@
   }
   if (btnUpdBadge) btnUpdBadge.addEventListener('click', () => {
     if (btnUpdBadge.classList.contains('ready') && bridge && bridge.updater) {
-      toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
+      toast(t('toast.updInstalling'), '#i-download');
       bridge.updater.install();
     } else if (btnUpdBadge.classList.contains('dl') && bridge && bridge.updater) {
       /* v0.21 — بج «نسخه جدید» = شروع دانلود (دانلود دیگر خودکار نیست) */
@@ -8209,7 +8244,7 @@
     } else if (bridge && bridge.updater) {
       bridge.updater.check().catch(() => {});
     } else {
-      toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh');
+      toast(t('toast.updOnlyApp'), '#i-refresh');
     }
   });
 
@@ -8237,6 +8272,8 @@
       sessionStorage.setItem('ava.updCardShown', s.version);
       const cv = $('#updCardVer');
       if (cv) cv.textContent = t('upd.cardVer', { x: faNum(s.version) });
+      const ct = $('#updCardTitle');
+      if (ct) ct.textContent = t('upd.cardTitle'); /* v0.60 — تیتر کارت آپدیت هم دوزبانه شد */
       const cb = $('#updCardBody');
       if (cb) cb.textContent = t('upd.cardBody');
       const cn = $('#updCardNow');
@@ -8361,7 +8398,7 @@
       toast(t('upd.cancelToast'), '#i-close');
     });
     btnInstallUpdate.addEventListener('click', () => {
-      toast('در حال نصب نسخه جدید… برنامه راه‌اندازی مجدد می‌شود', '#i-download');
+      toast(t('toast.updInstalling'), '#i-download');
       bridge.updater.install();
     });
     if (btnManualDl) btnManualDl.addEventListener('click', async () => {
@@ -8376,7 +8413,7 @@
       toast((r && r.error) ? `خطا: ${r.error}` : t('upd.manualFailToast'), '#i-info');
     });
   } else {
-    btnCheckUpdate.addEventListener('click', () => toast('آپدیت خودکار فقط داخل نرم‌افزار ویندوزی کار می‌کند', '#i-refresh'));
+    btnCheckUpdate.addEventListener('click', () => toast(t('toast.updOnlyApp'), '#i-refresh'));
     btnInstallUpdate.addEventListener('click', needApp);
   }
 
@@ -8386,7 +8423,7 @@
       const url = b.dataset.url;
       if (bridge && bridge.system && bridge.system.openUrl) {
         const r = await bridge.system.openUrl(url);
-        if (!r || !r.ok) toast('باز کردن لینک ممکن نشد', '#i-info');
+        if (!r || !r.ok) toast(t('toast.linkFail'), '#i-info');
       } else {
         window.open(url, '_blank');
       }
