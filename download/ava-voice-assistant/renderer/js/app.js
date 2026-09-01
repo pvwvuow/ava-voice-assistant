@@ -1805,7 +1805,18 @@
   let mediaRec = null, recChunks = [], isRecording = false;
 
   async function attachMic() {
-    if (analyser) return true;
+    /* v0.60 (A7) — کشِ میک اعتبارسنجی می‌شود: «if (analyser) return true» قبلاً
+       میکِ قطع‌شده را برای همیشه کش می‌کرد و هیچ‌وقت ریکاور نمی‌شد؛ استریمِ
+       مرده (ترک ended) بلافاصله باطل و گرفتن تازه انجام می‌شود */
+    if (analyser) {
+      let dead = false;
+      try { dead = !micStream || micStream.getTracks().some((trk) => trk.readyState === 'ended'); } catch (_) { /* noop */ }
+      if (!dead) return true;
+      actLog('mic: cached stream is dead (device gone) — rebuilding');
+      if (micStream) { try { micStream.getTracks().forEach((trk) => { try { trk.onended = null; } catch (_) { /* noop */ } }); } catch (_) { /* noop */ } micStream = null; }
+      if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
+      analyser = null; micData = null; micLive = false;
+    }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return false;
     try {
@@ -1821,6 +1832,14 @@
       };
       micStream = await tryGet(raw);
       if (!micStream) micStream = await tryGet(base);
+      /* v0.60 (A7) — مرگ ترک (آن‌پلاگ میک) خودش را اعلام می‌کند: onended →
+         detachMic (خودش حین جلسه/ضبط/بیدارباش دست نمی‌زند — watchdog/attach
+         بعدی بازسازی می‌کند) */
+      try {
+        micStream.getTracks().forEach((trk) => {
+          try { trk.onended = () => { actLog('mic: track ended (device unplugged?) — mic cache invalidated'); detachMic(); }; } catch (_) { /* noop */ }
+        });
+      } catch (_) { /* noop */ }
       audioCtx = new AC();
       /* بعضی سیستم‌ها کانتکست را معلق (suspended) می‌سازند — بدون resume هیچ صدایی نمی‌آید */
       if (audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch (_) { /* noop */ } }
@@ -1916,6 +1935,20 @@
     if (audioCtx) { try { audioCtx.close(); } catch (_) { /* noop */ } audioCtx = null; }
     analyser = null; micData = null; micLive = false;
     sbMic.innerHTML = `<i class="dot err"></i>${t('mic.off')}`;
+  }
+
+  /* v0.60 (A7) — تنها گوش‌دهٔ devicechange سراسری برنامه: حذف/اضافهٔ دستگاه
+     صوتی → کشِ میک باطل تا attach بعدی تازه بگیرد. تک‌ listener با گارد
+     duplicate (بدون نشت شنونده)؛ حین جلسه/ضبط فقط لاگ — watchdog/attach
+     بعدی بازسازی می‌کند */
+  if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === 'function' && !window.__AVA_MIC_DEVCHANGE__) {
+    window.__AVA_MIC_DEVCHANGE__ = true;
+    navigator.mediaDevices.addEventListener('devicechange', () => {
+      if (!analyser) return; /* چیزی برای باطل کردن نیست */
+      if (isRecording || ave || wakeLoop) { actLog('mic: devicechange during active use — watchdog/next attach rebuilds'); return; }
+      actLog('mic: devicechange — cached mic invalidated, next attach rebuilds');
+      detachMic();
+    });
   }
 
   async function startAudioRec() {
@@ -2046,7 +2079,9 @@
       .replace(/(در\s+)?(گوگل|google)/gi, '')
       /* v0.36 — پرت‌گوی‌ها جزو عبارت جستجو نیستند («بابا دیگه ممنون») */
       .replace(/(^|\s)(بابا|دیگه|دیگ|خب|خوب|ممنون|مرسی|واسه|برام|برای\s*من|واسم|الان)(?=\s|$)/gi, '$1')
-      .replace(/(را|رو)\s+/g, '')
+      /* v0.60 (A9) — «رو/را» فقط واژهٔ مستقل برده می‌شود نه داخل کلمات
+         («سرچ کن قیمت سرو کاج» → «سرو کاج» سالم می‌ماند، نه «س کاج») */
+      .replace(/(^|\s)(را|رو)\s+/g, '$1')
       .replace(/(جستجو|جستجوی|سرچ|سیرچ|سارچ|پیداش?|search)[\s\u200C]*(ش)?\s*(کن|بکن|بزن|بگیر|میکنی|می\s*کنی)?[\s\u200C]*ی?[\s\u200C]*/gi, '')
       .replace(/\s+ی(?=\s|$)/g, ' ')
       .replace(/[\s\u200C]+/g, ' ')
@@ -2651,19 +2686,22 @@
   }
 
   const RULES = [
-    /* --- پاور: خواب / خاموش / ریستارت / مانیتور (نسخه ۰.۱۰) --- */
+    /* --- پاور: خواب / خاموش / ریستارت / مانیتور (نسخه ۰.۱۰) ---
+       v0.60 (A1) — run از این ۴ قانون حذف شد: resolveReply هم rule.r (runPower
+       → bridge.system.run) و هم مسیر rule.run را اجرا می‌کرد — هر فرمان پاور
+       دوبار اجرا می‌شد. حالا فقط r (یک اجرای واقعی، یک پاسخ). */
     {
       k: /لغو.{0,8}(خاموش|شات\s?داون)|انصراف.{0,8}(خاموش|ریستارت)|cancel.{0,8}(shutdown|restart)|abort.{0,8}shutdown/i, id: 'shutdown_abort', t: 'لغو خاموش شدن', i: '#i-power', run: 'shutdown_abort',
       r: () => runPower('shutdown_abort'),
     },
-    { k: /(بخواب|خواب.{0,6}ببر|حالت.{0,6}خواب|به\s*خواب|sleep( now)?|go to sleep)/i, id: 'sleep', t: 'حالت خواب', i: '#i-moon', run: 'sys_sleep', r: () => runPower('sys_sleep') },
-    { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|صفحه\s?(نمایشگر)?\s?(رو|را)?\s?خاموش\s?(کن|شه)|نور.{0,6}خاموش|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, id: 'monitor_off', t: 'خاموش کردن مانیتور', i: '#i-monitor', run: 'monitor_off', r: () => runPower('monitor_off') },
-    { k: /ری\s?استارت|ریستارت|راه\s?اندازی.{0,4}مجدد|restart|reboot/i, id: 'restart', t: 'راه‌اندازی مجدد', i: '#i-refresh', run: 'sys_restart', confirm: 'restart', r: () => runPower('sys_restart') },
+    { k: /(بخواب|خواب.{0,6}ببر|حالت.{0,6}خواب|به\s*خواب|sleep( now)?|go to sleep)/i, id: 'sleep', t: 'حالت خواب', i: '#i-moon', r: () => runPower('sys_sleep') },
+    { k: /مانیتور.{0,10}خاموش|نمایشگر.{0,10}خاموش|خاموش.{0,10}مانیتور|خاموش.{0,10}نمایشگر|صفحه\s?(نمایشگر)?\s?(رو|را)?\s?خاموش\s?(کن|شه)|نور.{0,6}خاموش|turn off.{0,10}(monitor|screen|display)|monitor.{0,6}off/i, id: 'monitor_off', t: 'خاموش کردن مانیتور', i: '#i-monitor', r: () => runPower('monitor_off') },
+    { k: /ری\s?استارت|ریستارت|راه\s?اندازی.{0,4}مجدد|restart|reboot/i, id: 'restart', t: 'راه‌اندازی مجدد', i: '#i-refresh', confirm: 'restart', r: () => runPower('sys_restart') },
     {
       /* v0.38.1 — «صدا رو خاموش کن» دیگر دیالوگ خاموشی PC باز نمی‌کرد!
          قبلاً گروهِ دستگاه اختیاری بود و «خاموش» تنها کافی بود؛ حالا باید
          دستگاه (کامپیوتر/سیستم/ویندوز/pc) در جمله باشد — در هر دو ترتیب */
-      k: /(خاموش|شات\s?داون|shutdown|shut\s?down|power\s?off|turn\s?off)[^.]{0,16}(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)|(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)[^.]{0,16}(خاموش|شات\s?داون|shutdown|power\s?off)/i, id: 'shutdown', t: 'خاموش کردن', i: '#i-power', run: 'sys_shutdown', confirm: 'shutdown',
+      k: /(خاموش|شات\s?داون|shutdown|shut\s?down|power\s?off|turn\s?off)[^.]{0,16}(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)|(کامپیوتر|سیستم|ویندوز|پی\s?سی|pc|computer|system)[^.]{0,16}(خاموش|شات\s?داون|shutdown|power\s?off)/i, id: 'shutdown', t: 'خاموش کردن', i: '#i-power', confirm: 'shutdown',
       r: () => runPower('sys_shutdown'),
     },
 
@@ -3549,7 +3587,7 @@
       /* v0.54 — دامنهٔ گارد باز شد: همین/این/اون و حالت‌های پیوسته‌اش هم
          (لاگ v0.53 ۱۶:۴۸/۱۶:۴۹: «تو یوتیوب همین آهنگو سرچ کن» و «…مگم همینو
          برام…» learn set شدند چون گارد فقط همون/همان را می‌گرفت) */
-      if (/(همون|همین|همان|همو|همونو|همینو|اونو|اینو)([\s،؛»"']|$)|(?:^|[\s،؛])(اون|این)\s?(آهنگ|موزیک|ویدیو|اسم|صفحه|سایت|لینک)|آخرین بار|قبلی|پارسال|که گفتی|که گفتم|که سرچ کردی|که پخش کردی|منظورم/.test(String(cmd))) {
+      if (/(همون|همین|همان|همو|همونو|همینو|اونو|اینو)([\s،؛»"']|$)|(?:^|[\s،؛])(اون|این)\s?(آهنگ|موزیک|ویدیو|اسم|صفحه|سایت|لینک)|آخرین بار|قبلی|پارسال|که گفتی|که گفتم|که سرچ کردی|که پخش کردی|منظورم|آخرین\s(سایت|یادداشت|آهنگ)/.test(String(cmd))) {
         actLog('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست: ' + String(cmd).slice(0, 44));
         return;
       }
@@ -4016,7 +4054,7 @@
         const mer = /عصر|شب/i.test(seg) ? 'pm' : /صبح/i.test(seg) ? 'am' : /ظهر/i.test(seg) ? 'noon' : null;
         let hour = h;
         if (mer === 'pm' && hour < 12) hour += 12;
-        else if (mer === 'noon' && hour < 12) hour += hour === 0 ? 12 : 0;
+        else if (mer === 'noon' && hour < 12) hour += 12; /* v0.60 (A5) — «۲ ظهر»→۱۴:۰۰ و «۱۲ ظهر»→۱۲:۰۰ (قبلاً ۲ ظهر = ۲ بامداد فردا می‌شد) */
         else if (!mer && hour <= 12) {
           /* بدون صبح/عصر: نزدیک‌ترین زمان آینده (۵ را هم ۵ صبح می‌گیریم هم ۵ عصر) */
           const cand = [hour, (hour % 12) + 12, hour + 12];
@@ -4566,7 +4604,22 @@
       }
       startDictation(true); _dispatchOutcome = 'dict-start'; return;
     }
-    if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); _dispatchOutcome = 'dict-start'; return; }
+    if (DICT_START_RE.test(raw) || wakeDictStart) {
+      /* v0.60 (A6) — «برام تایپ کن سلام» دیگر حالت مودار را قورت نمی‌دهد:
+         اگر typeOnceOf محتوای واقعی دارد → مسیر تایپ یک‌باره (همان مسیر type_once)؛
+         فقط تایپِ لختِ بی‌محتوا («برام تایپ کن») حالت تایپ صوتی پیوسته می‌ماند */
+      const onceTxt = (typeof AVAIntent !== 'undefined' && AVAIntent.typeOnceOf) ? AVAIntent.typeOnceOf(raw) : '';
+      if (onceTxt) {
+        _dispatchOutcome = 'type-once';
+        actLog('interpret: گفت «' + raw.slice(0, 48) + '» | فهمید type_once', 'ui', { ev: 'interpret', via: 'rule', rule: 'type_once', q: onceTxt.slice(0, 40) });
+        const rep = await typeOnceExec(onceTxt);
+        typeText(rcReply, rep);
+        speak(rep);
+        pushChatHist('user', raw); pushChatHist('assistant', rep);
+        return;
+      }
+      startDictation(); _dispatchOutcome = 'dict-start'; return;
+    }
     /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد)
        v0.38.1 — ریشهٔ «خیلی از فرمان‌ها کاری نمی‌کنند» با whisper: خروجی STT
        حروف عربی ي/ك و نیم‌فاصله دارد ولی dispatch پایین با cmdِ خام انجام می‌شد؛
@@ -5394,6 +5447,7 @@
     clearInterval(ave.tVad); ave.tVad = null;
     clearTimeout(ave.tStable); ave.tStable = null;
     clearTimeout(ave.tGrace); ave.tGrace = null;
+    clearTimeout(ave.tPttFlush); ave.tPttFlush = null; /* v0.60 (A8) — فلاش PTTِ کهنه جلسهٔ تازه را نمی‌کشد */
     try { if (ave.proc) ave.proc.disconnect(); } catch (_) { /* noop */ }
     try { if (ave.srcNode) ave.srcNode.disconnect(); } catch (_) { /* noop */ }
     try { if (ave.sink) ave.sink.disconnect(); } catch (_) { /* noop */ }
@@ -6794,6 +6848,7 @@
   }
   function pttStop() {
     if (state !== 'listening' || !ave) { actLog('ptt up: nothing to stop (state=' + state + ')'); return; }
+    const myEpoch = ave.myEpoch; /* v0.60 (A8) — اپوک این جلسه؛ تایمر کهنه هرگز جلسهٔ تازه را نمی‌بندد */
     actLog('ptt up → stop + flush (≤1400ms wait for final)');
     /* تحویلِ فوری (نه لغو): stop() بدون کشتنِ جلسه → فاینال برمی‌گردد؛
        اگر تا ۱۴۰۰ms فاینال نیامد، همان متن میان‌یادِ آخر تحویل می‌شود */
@@ -6801,10 +6856,16 @@
     try { if (ave.tPttFlush) clearTimeout(ave.tPttFlush); } catch (_) { /* noop */ }
     ave.tPttFlush = setTimeout(() => {
       try {
-        if (!ave || ave.delivered) return;
+        /* v0.60 (A8) — گارد اپوک: جلسه عوض/بسته شده؟ تایمر کهنه هیچ می‌کند */
+        if (!ave || ave.myEpoch !== myEpoch) { actLog('ptt flush: stale timer — session changed, ignored'); return; }
+        if (ave.delivered) return;
         const txt = String(ave.srFinal || ave.srGotText || ave.lastTxt || '').trim();
-        if (txt) { actLog('ptt flush: «' + txt.slice(0, 48) + '» → deliver'); aveDeliver(txt, 'ptt-flush', ave.myEpoch); }
-        else { actLog('ptt flush: empty (no speech detected)'); stopListening(); }
+        if (txt) { actLog('ptt flush: «' + txt.slice(0, 48) + '» → deliver'); aveDeliver(txt, 'ptt-flush', myEpoch); }
+        /* v0.60 (A3) — متنِ وب نیست ≠ بی‌صدا بود: بافر PCM تا الان ضبط شده —
+           مسیر finalize (WAV + مسابقهٔ ابری) تصمیم می‌گیرد، نه دورانداختن جلسه؛
+           گارد tGrace: finalize در پرواز است → دوباره‌کاری نمی‌شود */
+        else if (ave.tGrace) { actLog('ptt flush: empty (no speech detected)'); actLog('ptt flush: finalize grace already pending — let it decide'); }
+        else { actLog('ptt flush: empty (no speech detected)'); actLog('ptt flush: no web text → finalize (WAV/cloud race)'); aveFinalize(myEpoch, 'ptt-flush'); }
       } catch (_) { /* noop */ }
     }, 1400);
   }
@@ -8450,7 +8511,9 @@
     /* v0.51 — قانون مهم ۸: پادزهر توهم در درخواست‌های «اول تحقیق بعد انجام بده» */
     'قانون مهم ۸ (بسیار مهم): اگر کاربر خواست اول تحقیق/فهمیدن و بعد انجام دادن (مثل: اول ببین آهنگ جدید شادمهر چی هست بعد اسمشو تو گوگل سرچ کن)، هرگز اسم یا عنوان را از حافظه‌ات نساز — در بلوک DO فقط act=research با value=عبارتِ تحقیق بده؛ نتایج واقعی وب به تو برمی‌گردد تا در دور بعد اکشن نهایی را فقط بر پایهٔ همان نتایج بدهی. اگر نتایج به سؤال جواب نداد، صادقانه بگو که چی پیدا نشد.\n' +
     /* v0.51 — دیکتهٔ یک‌باره (خواستهٔ کاربر: در هر برنامه‌ای که آمادهٔ تایپ است بنویسد؛ محدود به یک تعبیر نیست) */
-    'قانون مهم ۹ (مهم): اگر کاربر خواست متنی «همان‌جا که هست» نوشته/تایپ شود (اینجا بنویس… / ببین بنویس… / اینو تایپ کن… / هر تعبیر دیگری از نوشتن)، با act=type_once بده و value را متنِ عیناً خواسته‌شده بگذار (فقط واژه‌های فرمانی حذف شوند؛ متنِ داخل گیومه عیناً). برای شروع حالت تایپ صوتیِ پیوسته هنوز run_cmd(dict) می‌تواند استفاده شود.\n' +
+    /* v0.60 (A11) — جملهٔ ارجاع به فرمان dict (run_cmd با value=dict) حذف شد:
+       چنین rule idای وجود ندارد؛ اجرایش فقط فالبک صادق «چنین فرمانی نیست» می‌داد */
+    'قانون مهم ۹ (مهم): اگر کاربر خواست متنی «همان‌جا که هست» نوشته/تایپ شود (اینجا بنویس… / ببین بنویس… / اینو تایپ کن… / هر تعبیر دیگری از نوشتن)، با act=type_once بده و value را متنِ عیناً خواسته‌شده بگذار (فقط واژه‌های فرمانی حذف شوند؛ متنِ داخل گیومه عیناً).\n' +
     /* v0.53 — قانون ارجاع به تاریخچه (لاگ واقعی 16:14:47: «همون آهنگ شادمهری که آخرین بار سرچ کردی» → توهم «قشنگترین گناه شادمهر») */
     /* v0.54 — قانون ۱۰ بازنویسی شد (بازخورد کاربر: در v0.52 جریانِ ارجاع+تحقیق درست کار می‌کرد — قانون نباید بهانهٔ ردِ اجرا شود) */
     'قانون مهم ۱۰ (بسیار مهم): اگر کاربر با ارجاع به گذشته حرف زد (همینو، همونو، اونو، همون، همونی که گفتی/سرچ کردی/پخش کردی، آخرین بار، قبلی، «همون آهنگ جدیدشو»)، مرجع را اول از «تاریخچهٔ همین گفتگو» بردار — مخصوصاً عنوانی که خودت چند پیام قبل در جواب گفتی. بعد از حلِ مرجع حتماً اکشن بده: پخش = music_play با عنوانِ حل‌شده؛ سرچ در یوتیوب = yt_search؛ سرچ گوگل = web_search. اگر مرجع در تاریخچه نبود، act=research بده یا صادقانه بپرس — هرگز عنوان را از حافظه‌ات نساز. این قانون هرگز مجوزِ رد کردن یا بی‌جواب گذاشتنِ خواستهٔ کاربر نیست.\n' +
@@ -8514,7 +8577,8 @@
     /* v0.51 — anti-hallucination research phase (user log v0.50: AI invented the song name «نازنین» twice) */
     'Important rule 7 (critical, anti-hallucination): when the user asks you to FIRST find out / research and THEN act (e.g. "first see what the new song is called, then search it"), NEVER invent names or titles from memory — reply with a DO block containing ONLY act=research (value=the research query). Real web results come back to you in the next turn; then give the final actions based ONLY on those results. If the results do not answer it, say honestly that nothing was found.\n' +
     /* v0.51 — one-shot dictation (user: type into whatever box is focused; any phrasing) */
-    'Important rule 8: when the user wants text WRITTEN right where they are (اینجا بنویس… / ببین بنویس… / type this… / any write phrasing), reply with act=type_once and value=the exact text verbatim (strip only the command words; if the text was quoted, keep only the quoted part). Continuous voice-typing mode is still run_cmd(dict).\n' +
+    /* v0.60 (A11) — removed the sentence pointing at run_cmd with value=dict: no such rule id exists; the honest fallback says "چنین فرمانی نیست" */
+    'Important rule 8: when the user wants text WRITTEN right where they are (اینجا بنویس… / ببین بنویس… / type this… / any write phrasing), reply with act=type_once and value=the exact text verbatim (strip only the command words; if the text was quoted, keep only the quoted part).\n' +
     /* v0.53 — history-reference law (real log 16:14:47: "the same Shadmehr song you last searched" → hallucinated «قشنگترین گناه») */
     'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the chat history — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: play = music_play with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
