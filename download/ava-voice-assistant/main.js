@@ -11,7 +11,6 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto'); /* v0.42 — توکن Sec-MS-GEC برای TTS اِج */
 const { Readable } = require('stream');
-const telemetry = require('./lib/telemetry'); /* v0.48 — ارسال خودکار لاگ به Gist */
 
 /* v0.48 — شناسهٔ نشست: همهٔ خط‌های JSONL یک اجرا با همین b برچسب می‌خورند
    تا ممیزی «کرش بین boot و quit» دقیق شود (بوت بدون quit قبلی = کرش) */
@@ -4830,10 +4829,9 @@ ipcMain.handle('sys:typeText', async (_e, p) => {
       بهتر کنی که بهتر مشکلات رو متوجه بشی») — هر خط یک JSON:
       {t, v(نسخه), b(شناسهٔ نشست), ch(کانال/تگ), m(پیام), ...extra}
       + مارکرهای session: boot/quit/crash — بوت بدون quit قبلی = کرش.
-   ارسال خودکار: همین نسخه لاگ را با Gist API به گیت‌هاب می‌فرستد
-   (lib/telemetry.js) تا ممیزی بعدی بدون رفت‌وآمد فایل انجام شود؛
-   توکن فقط scope گیست — از تنظیمات/UI وارد می‌شود، داخل ریپوی عمومی هیچ
-   توکنی جاسازی نمی‌شود. */
+   ارسال دستی: کاربر با «آوا گزارش بفرست» یا دکمهٔ تنظیمات، پوشهٔ logs را
+   باز می‌کند (log:openFolder) و فایل‌های activity.jsonl/activity.log را
+   خودش برای ممیزی می‌فرستد (تصمیم کاربر — آپلود آنلاین کلاً حذف شد). */
 const ACT_MAX = 400 * 1024;
 const ACT_JSONL_MAX = 2 * 1024 * 1024;
 function logDirOf() { return path.join(app.getPath('userData'), 'logs'); }
@@ -4869,57 +4867,8 @@ function actLog(line, tag = 'app', extra = null) {
     const rec = Object.assign({ t: new Date().toISOString(), v: app.getVersion(), b: AVA_BOOT_ID, ch: String(tag || 'app'), m: String(line).replace(/\s+/g, ' ').slice(0, 400) }, (extra && typeof extra === 'object') ? extra : {});
     fs.appendFileSync(jf, JSON.stringify(rec) + '\n');
   } catch (_) { /* noop */ }
-  /* ۳) خطای تازه → شانس ارسال زودتر تله‌متری (تrottle داخلی دارد) */
-  try { if (tag === 'err' && TELE) TELE.notifyErr(); } catch (_) { /* noop */ }
 }
-var TELE = null; /* v0.48 — نمونهٔ تله‌متری (var تا actLog در بوتِ زودهنگام TDZ نخورد) */
-/* درخواست GitHub با پاسخ کامل {status,text} — برای Gist API (PATCH/POST) */
-function ghFetchFull(url, opts) {
-  return new Promise((resolve, reject) => {
-    try {
-      const req = net.request({ url, redirect: 'follow' });
-      req.setHeader('User-Agent', 'AVA-Voice-Assistant-Telemetry');
-      const h = (opts && opts.headers) || {};
-      Object.keys(h).forEach((k) => { try { req.setHeader(k, h[k]); } catch (_) { /* noop */ } });
-      let done = false;
-      const chunks = [];
-      let size = 0;
-      const finish = (err, data) => { if (done) return; done = true; clearTimeout(timer); try { req.abort(); } catch (_) { /* noop */ } err ? reject(err) : resolve(data); };
-      const timer = setTimeout(() => finish(new Error('timeout')), 25000);
-      req.on('response', (res) => {
-        res.on('data', (c) => { size += c.length; if (size > 4 * 1024 * 1024) return finish(new Error('response too large')); chunks.push(c); });
-        res.on('end', () => finish(null, { status: res.statusCode || 0, text: Buffer.concat(chunks).toString('utf8') }));
-        res.on('error', (e) => finish(e));
-      });
-      req.on('error', (e) => finish(e));
-      if (opts && opts.body) {
-        const buf = Buffer.from(String(opts.body), 'utf8');
-        try { req.setHeader('Content-Length', String(buf.length)); } catch (_) { /* noop */ }
-        req.write(buf);
-      }
-      req.end();
-    } catch (e) { reject(e); }
-  });
-}
-try {
-  const teleStateFile = () => { try { return path.join(app.getPath('userData'), 'ava-telemetry.json'); } catch (_) { return ''; } };
-  let teleInitState = {};
-  try { teleInitState = JSON.parse(fs.readFileSync(teleStateFile(), 'utf8')) || {}; } catch (_) { /* اولین اجرا */ }
-  TELE = telemetry.createTelemetry({
-    fs,
-    version: app.getVersion(),
-    bootId: AVA_BOOT_ID,
-    platform: os.platform() + ' ' + os.release(),
-    env: process.env,
-    readSettings: loadedSettings, /* هر بار از فایل — تغییر توکن از UI بدون ری‌استارت اعمال می‌شود */
-    logDir: logDirOf(),
-    logFiles: () => [path.join(logDirOf(), 'activity.jsonl'), path.join(logDirOf(), 'activity.old.jsonl')],
-    ghFetch: ghFetchFull,
-    log: actLog,
-    initialState: teleInitState,
-    saveState: (s) => { const f2 = teleStateFile(); if (f2) writeJsonAtomic(f2, s); },
-  });
-} catch (e) { try { actLog('telemetry init failed: ' + String((e && e.message) || e), 'err'); } catch (_) { /* noop */ } }
+ipcMain.handle('log:openFolder', () => { try { const d = logDirOf(); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); return { ok: true, path: d }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });
 ipcMain.handle('log:act', (_e, msg, extra) => {
   /* v0.48 — سازگار با قبلی: رشتهٔ ساده؛ جدید: {m, tag, extra} ساخت‌یافته */
   if (msg && typeof msg === 'object' && !Array.isArray(msg)) {
@@ -4935,15 +4884,6 @@ ipcMain.handle('log:get', () => {
     const lines = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean);
     return { ok: true, lines: lines.slice(-80) };
   } catch (e) { return { ok: false, lines: [], error: netErr(e) }; }
-});
-/* v0.48 — وضعیت/ارسال دستی تله‌متری (تنظیمات › برنامه › گزارش خودکار) */
-ipcMain.handle('logs:status', () => {
-  try { return Object.assign({ ok: true }, TELE ? TELE.status() : { configured: false, auto: true, lastResult: 'init' }); }
-  catch (e) { return { ok: false, error: netErr(e) }; }
-});
-ipcMain.handle('logs:sendNow', async () => {
-  try { if (!TELE) return { ok: false, error: 'init' }; const r = await TELE.tick(true); return Object.assign({ ok: !!r.ok }, r); }
-  catch (e) { return { ok: false, error: netErr(e) }; }
 });
 
 /* ============================================================
@@ -5014,8 +4954,6 @@ app.whenReady().then(() => {
   /* v0.48 — مارکر بوت در JSONL + تایمر تله‌متری + بازپخش جلسهٔ قبل */
   try { logSessionMarker('boot', { electron: process.versions.electron, pid: process.pid }); } catch (_) { /* noop */ }
   try {
-    TELE.tick().catch(() => { /* noop */ }); /* اگر جلسهٔ قبل چیزی نفرستاده بود، همین اول می‌رود */
-    setInterval(() => { try { TELE.tick().catch(() => { /* noop */ }); } catch (_) { /* noop */ } }, 5 * 60 * 1000);
   } catch (_) { /* noop */ }
   app.on('before-quit', () => { try { logSessionMarker('quit', { uptimeS: Math.round(process.uptime()) }); } catch (_) { /* noop */ } });
   /* v0.35 — تور ایمنی کرش: رندرر اگر مرد (GPU درایور/OOM وسط بازی) به‌جای

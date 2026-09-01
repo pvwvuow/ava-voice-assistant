@@ -188,7 +188,51 @@
     } catch (_) { return ''; }
   }
 
-  const api = { arbitrate, candidatesText, TABLE };
+
+  /* ============================================================
+     v0.49 — گیت نوع جمله (خواستهٔ صریح کاربر: «چرا طبق دستور عمل نمی‌کنه؟
+     اگر هزار تا دستور باشه باید هزار تا رو دونه‌دونه بررسی کنیم؟ این اشتباهه»)
+     ------------------------------------------------------------
+     قانون عمومی، نه patch دونه‌دونه. جمله‌هایی که «اکشنِ کور» مجاز ندارند:
+       ۱) سوال (چیه/چرا/کجا/چنده/اسمش…/؟)  → باید جواب بگیرد نه اجرا
+       ۲) تصحیح (نه، منظورم… / اشتباه کردی…) → با زمینهٔ گفتگو به AI می‌رود
+       ۳) چندمرحله‌ای (اول… بعد… / بعدش…)    → AI توالی می‌سازد
+       ۴) «پیدا کن» بدون سرچ صریح           → AI بهترین مسیر را انتخاب می‌کند
+       ۵) اسم/عبارت بدون هیچ فعلی (کوتاه)    → چت/سوال است نه فرمان
+     فقط خانوادهٔ «اکشن» بلاک می‌شوند؛ سوال‌های راهنما (چطور/چی بلدی)،
+     تایمر/یادآوری/DNS/rates و… مسیر خودشان را دارند و دست نمی‌خورند.
+     AI قطع بود → رفتار قبلی (قانون محلی) تا کاربر بی‌جواب نماند.
+     ============================================================ */
+  const GATE_FAMILY = new Set(['open_music', 'yt_search', 'open_youtube', 'yt_watch', 'pip_youtube',
+    'web_search', 'site_search', 'web_open', 'player_open', 'music_play',
+    'music_pause', 'music_next', 'music_prev', 'music_page']);
+
+  const GATE_Q_RE = /(چ\s?یه|چیه|چی\s?ست|چنده|کیه|کی\s?ه|کی\s?بود|کجاست|کجا\s?ه|کدوم|کدام|چرا|چطوری?|چگونه|اسمش|اسم\s?شون|اسماش|هست\s?[؟?]|است\s?[؟?]|[؟?])/;
+  const GATE_IMP_RE = /(باز\s?کن|اجرا\s?کن|سرچ\s?کن|جستجو\s?کن|پخش\s?کن|پلی\s?کن|بذار|بزن|بگرد|پیدا\s?کن|ببند|خاموش\s?کن|تایمر|یادآوری|تنظیم\s?کن|ست\s?کن)/;
+  const GATE_QSTRONG_RE = /(چیه|چی\s?ست|چرا|کجا|کدوم|چنده|اسمش|چطوری?|چگونه)/;
+  const GATE_CORR_RE = /^(نه|نخیر|نه\s?بابا|نچ|منظورم|من\s?ظورم|اشتباه|غلط|این\s?نه|من\s?میگم|گفتم\s?که|والا|بجاش|برعکس|بذار\s?این)/;
+  const GATE_CORR_IN_RE = /(منظورم\s?(این|اون)\s?بود|منظورم\s?نبود|اشتباه\s?کردی|غلط\s?کردی|نه\s?بابا|حرف\s?من\s?نبود)/;
+  const GATE_MULTI_RE = /(اول[^.،؛]{0,50}بعد)|(بعد\s?(ازش|از\s?اون)|بعدش)|(و\s?بعد)/;
+  const GATE_VERBISH_RE = /(کن|بکن|بزن|بذار|برو|بیا|بگرد|ببین|پخش|باز|اجرا|سرچ|جستجو|پیدا|تنظیم|خاموش|روشن|ببند|قطع|بده|بگو|بخون|بنویس|تایپ|اضافه|حذف|پین|شناور|بیار|ببر|پاک|قفل|ذخیره|بفرست|بگیر|چک|استارت|بساز)/;
+  const GATE_FIND_RE = /(پیدا\s?کن|پیدا\s?کردن|برام\s?پیدا|بیار\s?ببینم)/;
+
+  function gateType(cmd) {
+    const s = String(cmd || '').trim();
+    if (!s) return '';
+    if (GATE_CORR_RE.test(s) || GATE_CORR_IN_RE.test(s)) return 'correction';
+    if (GATE_MULTI_RE.test(s)) return 'multi-step';
+    if (GATE_Q_RE.test(s) && !(GATE_IMP_RE.test(s) && !GATE_QSTRONG_RE.test(s))) return 'question';
+    if (GATE_FIND_RE.test(s) && !/(سرچ|جستجو)/.test(s)) return 'smart-find';
+    const toks = s.split(/[\s\u200C]+/);
+    if (!GATE_VERBISH_RE.test(s) && toks.length <= 3 && s.length <= 18) return 'noun-phrase';
+    return '';
+  }
+  function blocksActionRule(cmd, ruleId) {
+    if (!ruleId || !GATE_FAMILY.has(String(ruleId))) return false;
+    return !!gateType(cmd);
+  }
+
+  const api = { arbitrate, candidatesText, TABLE, gateType, blocksActionRule };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

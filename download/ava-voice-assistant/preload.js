@@ -197,8 +197,7 @@ contextBridge.exposeInMainWorld('ava', {
     get: () => ipcRenderer.invoke('log:get'),
   },
   logs: {
-    status: () => ipcRenderer.invoke('logs:status'),
-    sendNow: () => ipcRenderer.invoke('logs:sendNow'),
+    openFolder: () => ipcRenderer.invoke('log:openFolder'),
   },
 
   /* v0.24 — وضعیت شبکه (سلف‌چک TCP از پروسهٔ اصلی بعد از بوت) */

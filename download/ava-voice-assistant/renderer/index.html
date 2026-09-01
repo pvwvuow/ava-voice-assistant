@@ -297,10 +297,6 @@
                   <span class="set-info"><b data-i18n="set.stt.gkey">کلید اختصاصی گوگل (اختیاری)</b><span data-i18n="set.stt.gkeyHint">خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی</span></span>
                   <input type="password" id="optGoogleKey" class="set-input" data-i18n-ph="set.stt.gkeyPh" placeholder="خالی = رایگان و بدون کلید" autocomplete="off" dir="ltr" />
                 </div>
-                <label class="set-row">
-                  <span class="set-info"><b data-i18n="set.stt.demo">حالت نمایشی (دمو)</b><span data-i18n="set.stt.demoHint">اگر موتوری در دسترس نبود، فرمان نمونه اجرا شود — پیش‌فرض: خاموش</span></span>
-                  <span class="sw"><input type="checkbox" id="optDemo"/><i></i></span>
-                </label>
                 </details>
                 <p class="set-note" data-i18n="set.stt.note">بلندی صدای میکروفون خودکار نرمال می‌شود، آستانه تشخیص صدا برای هر میکروفون تطبیقی تنظیم می‌شود و اگر موتوری جواب نداد، همان صدا به موتور بعدی فرستاده می‌شود.</p>
               </div>
@@ -629,25 +625,6 @@
                   <div class="set-links">
                     <button class="chip" id="btnLearnClear" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="learn.uiClear">پاک کردن همه</span></button>
                   </div>
-                </div>
-                <!-- v0.48 — گزارش خودکار به گیت‌هاب: لاگ ساخت‌یافته (JSONL) هر ۱۵ دقیقه
-                     در یک Gist مخفی ذخیره می‌شود تا ممیزی ریشه‌ای بعدی بدون رفت‌وآمد
-                     فایل انجام شود؛ توکن فقط scope گِیست دارد (نه دسترسی ریپو) -->
-                <div class="set-row col">
-                  <label class="set-row">
-                    <span class="set-info"><b data-i18n="tele.uiTitle">گزارش خودکار به گیت‌هاب</b><span data-i18n="tele.uiHint">لاگ فنی برنامه هر ۱۵ دقیقه در یک Gist مخفی ذخیره می‌شود تا مشکلات ریشه‌یابی سریع‌تر شود — فقط توکنِ دسترسی گِیست لازم است (نه دسترسی ریپو)</span></span>
-                    <span class="sw"><input type="checkbox" id="optAutoLog"/><i></i></span>
-                  </label>
-                  <span class="set-info"><b data-i18n="tele.tokenTitle">توکن گیت‌هاب (فقط گِیست)</b><span data-i18n="tele.tokenHint">یک بار وارد کن — فقط در فایل تنظیمات خودت روی همین کامپیوتر ذخیره می‌شود، نه در هیچ ریپویی</span></span>
-                  <div class="upd-row">
-                    <input type="password" id="optLogToken" class="set-input" data-i18n-ph="tele.tokenPh" placeholder="ghp_…" autocomplete="off" dir="ltr" spellcheck="false" />
-                    <button class="chip" id="btnLogTokenSave" type="button"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="tele.tokenSave">ذخیره</span></button>
-                  </div>
-                  <div class="set-links">
-                    <button class="chip" data-url="https://github.com/settings/tokens/new?scopes=gist&description=AVA%20logs" type="button"><svg class="ic"><use href="#i-globe"/></svg><span data-i18n="tele.makeToken">ساخت توکن (۳۰ ثانیه)</span></button>
-                    <button class="chip" id="btnLogSend" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="tele.sendNow">ارسال الان</span></button>
-                  </div>
-                  <span class="set-info"><b id="logStatusText">—</b><span id="logStatusHint"></span></span>
                 </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.app.links">پیوندها</b><span data-i18n="set.app.linksHint">ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود</span></span>
@@ -1090,7 +1067,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.48.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.49.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

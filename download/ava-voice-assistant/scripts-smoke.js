@@ -693,7 +693,7 @@ app.whenReady().then(async () => {
         settingsRestore: appjs.includes('settings restored from file') && appjs.includes('applyPerf();\n        syncPerfUI();'),
         actLogIpc: mainjs.includes("ipcMain.handle('log:act'") && mainjs.includes("ipcMain.handle('log:get'") && mainjs.includes('function actLog('),
         logBridge: preload.includes('log: {') && preload.includes("'log:act'") && appjs.includes('const actLog ='),
-        reportCmd: appjs.includes('function sendActivityReport(') && appjs.includes('گزارش\\s*(بفرست') && appjs.includes('issues/new?title='),
+        reportCmd: appjs.includes('function sendActivityReport(') && appjs.includes('گزارش\\s*(بفرست') && appjs.includes('bridge.logs.openFolder'),
         deltaOn: mainjs.includes('disableDifferentialDownload = false'),
         aiFast: mainjs.includes('thinkingBudget: 0') && mainjs.includes('SEARCH_INTENT_RE') && mainjs.includes('if (search && wantsSearch)'),
         dcWait: mainjs.includes('$waited -lt $WaitMs') && mainjs.includes('$tryN -le $Retries') && mainjs.includes("'-WaitMs', String(waitMs)"),
@@ -703,7 +703,7 @@ app.whenReady().then(async () => {
       ok('v0.25 listening dispatch: dual-track AVE3 reaches web + cloud engines', v18.dispatchFix);
       ok('v0.18 settings file restore re-applies theme/perf', v18.settingsRestore);
       ok('v0.18 activity log IPC + rotation', v18.actLogIpc && v18.logBridge);
-      ok('v0.18 voice report send (GitHub issue)', v18.reportCmd);
+      ok('v0.49 voice report → opens logs folder (online upload removed by user)', v18.reportCmd);
       ok('v0.18 delta updates re-enabled (sha512-verified differential)', v18.deltaOn);
       ok('v0.18 faster AI (thinkingBudget=0 + search on intent)', v18.aiFast);
       ok('v0.18 discord wait-for-start + call-button retry', v18.dcWait);

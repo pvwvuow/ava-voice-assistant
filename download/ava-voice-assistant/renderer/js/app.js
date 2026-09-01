@@ -262,8 +262,9 @@
     'set.dc.note': ['فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.', 'Commands: "call Ali", "hang up", "mute Discord", "deafen Discord", "answer", "decline". For hangup/answer/decline bind once in Discord › Settings › Keybinds: Disconnect = Ctrl+Shift+H, Answer = Ctrl+Shift+A, Decline = Ctrl+Shift+E; Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work by default.'],
     'disc.namePh': ['اسم دوستت در دیسکورد…', "Your friend's Discord name…"],
     /* ---------- v0.18 ---------- */
-    'report.working': ['گزارش عملکرد آماده می‌شود…', 'Preparing the activity report…'],
-    'report.sent': ['گزارش آماده شد — صفحهٔ گیت‌هاب باز شد، فقط دکمهٔ Submit را بزن ✓ (اگر مرورگر باز نشد، گزارش در کلیپ‌بورد کپی شده)', 'Report ready — GitHub opened, just press Submit ✓ (if no browser opened, the report was copied to clipboard)'],
+    'report.working': ['پوشهٔ لاگ‌ها باز می‌شود…', 'Opening the logs folder…'],
+  'report.folder': ['پوشهٔ لاگ‌ها باز شد — فایل activity.jsonl (و activity.log) را برای من بفرست تا خودم بررسی کنم', 'Logs folder opened — send me the activity.jsonl file and I will review it'],
+  'report.folder.fail': ['باز کردن پوشهٔ لاگ‌ها نشد — مسیر: %APPDATA%/ava-voice-assistant/logs', 'Could not open the logs folder — path: %APPDATA%/ava-voice-assistant/logs'],
     'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
     'dnsp.title': ['DNS Changer', 'DNS Changer'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
@@ -551,8 +552,9 @@
     'set.dc.note': ['فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.', 'Commands: "call Ali", "hang up", "mute Discord", "deafen Discord", "answer", "decline". For hangup/answer/decline bind once in Discord › Settings › Keybinds: Disconnect = Ctrl+Shift+H, Answer = Ctrl+Shift+A, Decline = Ctrl+Shift+E; Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work by default.'],
     'disc.namePh': ['اسم دوستت در دیسکورد…', "Your friend's Discord name…"],
     /* ---------- v0.18 ---------- */
-    'report.working': ['گزارش عملکرد آماده می‌شود…', 'Preparing the activity report…'],
-    'report.sent': ['گزارش آماده شد — صفحهٔ گیت‌هاب باز شد، فقط دکمهٔ Submit را بزن ✓ (اگر مرورگر باز نشد، گزارش در کلیپ‌بورد کپی شده)', 'Report ready — GitHub opened, just press Submit ✓ (if no browser opened, the report was copied to clipboard)'],
+    'report.working': ['پوشهٔ لاگ‌ها باز می‌شود…', 'Opening the logs folder…'],
+  'report.folder': ['پوشهٔ لاگ‌ها باز شد — فایل activity.jsonl (و activity.log) را برای من بفرست تا خودم بررسی کنم', 'Logs folder opened — send me the activity.jsonl file and I will review it'],
+  'report.folder.fail': ['باز کردن پوشهٔ لاگ‌ها نشد — مسیر: %APPDATA%/ava-voice-assistant/logs', 'Could not open the logs folder — path: %APPDATA%/ava-voice-assistant/logs'],
     'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
     'dnsp.title': ['DNS Changer', 'DNS Changer'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
@@ -730,20 +732,6 @@
     'learn.uiUnstable': ['ناپایدار — فقط هوش مصنوعی تصمیم می‌گیرد', 'unstable — AI decides every time'],
     'learn.tag': ['⚡ یادگرفته · بدون اینترنت', '⚡ learned · offline'],
     /* v0.48 — گزارش خودکار به گیت‌هاب (تله‌متری) */
-    'tele.uiTitle': ['گزارش خودکار به گیت‌هاب', 'Auto log report to GitHub'],
-    'tele.uiHint': ['لاگ فنی برنامه هر ۱۵ دقیقه در یک Gist مخفی ذخیره می‌شود تا مشکلات ریشه‌یابی سریع‌تر شود — فقط توکنِ دسترسی گِیست لازم است (نه دسترسی ریپو)', 'The technical log is saved to a secret Gist every 15 minutes so problems get root-caused faster — only a gist-scoped token is needed'],
-    'tele.tokenTitle': ['توکن گیت‌هاب (فقط گِیست)', 'GitHub token (gist only)'],
-    'tele.tokenHint': ['یک بار وارد کن — فقط در فایل تنظیمات خودت روی همین کامپیوتر ذخیره می‌شود، نه در هیچ ریپویی', 'Enter once — stored only in your local settings file on this PC, never in any repo'],
-    'tele.tokenPh': ['ghp_…', 'ghp_…'],
-    'tele.tokenSave': ['ذخیره', 'Save'],
-    'tele.makeToken': ['ساخت توکن (۳۰ ثانیه)', 'Create token (30 seconds)'],
-    'tele.sendNow': ['ارسال الان', 'Send now'],
-    'tele.stConfigured': ['فعال — آخرین ارسال: {x}', 'active — last send: {x}'],
-    'tele.stNoToken': ['برای ارسال خودکار، توکن گِیستی بساز و وارد کن', 'create & paste a gist-scoped token to enable'],
-    'tele.stOff': ['خاموش', 'off'],
-    'tele.sentOk': ['گزارش در گیت‌هاب ذخیره شد — دفعه بعد خودم لاگ را می‌گیرم و ممیزی می‌کنم', 'Report saved to GitHub — I will fetch and review the log myself next time'],
-    'tele.sentFail': ['ارسال به گیت‌هاب نشد — بعداً دوباره خودکار تلاش می‌کنم', 'GitHub upload failed — I will retry automatically later'],
-    'tele.savedToast': ['توکن ذخیره شد — گزارش خودکار فعال شد', 'Token saved — auto report enabled'],
     'suggest.say': ['بگو', 'Say'],
     'toast.welcome': ['آوا آماده است — اجرای واقعی فرمان‌ها فعال است', 'AVA is ready — real command execution is on'],
     'toast.preview': ['آوا آماده است — پیش‌نمایش رابط کاربری', 'AVA is ready — UI preview'],
@@ -2057,6 +2045,29 @@
     return s.length >= 2 ? s.slice(0, 80) : '';
   };
 
+  /* ============================================================
+     v0.49 — رجیستری جستجوی درون‌سایتی (قالب‌های تست‌شدهٔ واقعی با HTTP 200)
+     ریشهٔ لینک‌های خراب دیوار: AI اسلاگ‌های توهمی می‌ساخت (divar.ir/s/tehran/anti… → ۴۰۴).
+     قانون: اگر host در رجیستری است و query ندارد → بازسازی با تمپلیت واقعی.
+     ============================================================ */
+  const SITE_QUERY_REGISTRY = [
+    [/^www\.divar\.ir$|^divar\.ir$/, (q) => 'https://divar.ir/s/tehran?q=' + encodeURIComponent(q)],
+    [/^www\.sheypoor\.com$|^sheypoor\.com$/, (q) => 'https://www.sheypoor.com/search?q=' + encodeURIComponent(q)],
+    [/^www\.aparat\.com$|^aparat\.com$/, (q) => 'https://www.aparat.com/search/' + encodeURIComponent(q)],
+    [/^www\.digikala\.com$|^digikala\.com$/, (q) => 'https://www.digikala.com/search/?q=' + encodeURIComponent(q)],
+    [/^torob\.com$|^www\.torob\.com$/, (q) => 'https://torob.com/search/?query=' + encodeURIComponent(q)],
+    [/^emalls\.ir$|^www\.emalls\.ir$/, (q) => 'https://emalls.ir/?s=' + encodeURIComponent(q)],
+  ];
+  function siteUrlFix(url) {
+    try {
+      const u = new URL(String(url || ''));
+      const hit = SITE_QUERY_REGISTRY.find((r) => r[0].test(u.hostname));
+      if (!hit) return url;
+      if ((u.search || '').replace('?', '').trim()) return url;
+      const seg = u.pathname.split('/').filter(Boolean).filter((x) => !/^search$|^s$|^result$/i.test(x)).pop() || '';
+      return seg && seg.length >= 2 ? hit[1](seg) : url;
+    } catch (_) { return url; }
+  }
   /* ============================================================
      v0.28 — باز کردن مستقیم سایت: «برو به سایت دیجی کالا»
      دیگر «برو به» در گوگل سرچ نمی‌شود؛ دیکشنری سایت‌های معروف
@@ -4102,51 +4113,6 @@
     } catch (_) { /* noop */ }
   });
 
-  /* ============================================================
-     v0.48 — گزارش خودکار به گیت‌هاب: toggle + توکن + ارسال الان + وضعیت
-     ============================================================ */
-  async function refreshTeleStatus() {
-    const b1 = $('#logStatusText');
-    const b2 = $('#logStatusHint');
-    if (!b1) return;
-    try {
-      if (!bridge || !bridge.logs || !bridge.logs.status) { b1.textContent = '—'; return; }
-      const s = await bridge.logs.status();
-      if (!s || s.ok === false) { b1.textContent = '—'; return; }
-      if (!s.configured) { b1.textContent = t('tele.stNoToken'); b2.textContent = s.auto ? '' : t('tele.stOff'); return; }
-      const last = s.lastSentAt ? new Date(s.lastSentAt).toLocaleString(LANG === 'en' ? 'en-US' : 'fa-IR') : '—';
-      b1.textContent = t('tele.stConfigured', { x: last });
-      b2.textContent = (s.lastResult || '') + (s.failStreak ? (' ×' + s.failStreak) : '');
-    } catch (_) { b1.textContent = '—'; }
-  }
-  const optAutoLog = $('#optAutoLog');
-  if (optAutoLog) optAutoLog.addEventListener('change', () => {
-    settings.logs = Object.assign({ auto: true, githubToken: '' }, settings.logs || {}, { auto: optAutoLog.checked });
-    store.set('logs', settings.logs);
-    toast(optAutoLog.checked ? t('tele.uiTitle') : t('tele.stOff'), '#i-refresh');
-    refreshTeleStatus();
-  });
-  const btnLogTokenSave = $('#btnLogTokenSave');
-  if (btnLogTokenSave) btnLogTokenSave.addEventListener('click', () => {
-    const inp = $('#optLogToken');
-    const v = ((inp && inp.value) || '').trim();
-    settings.logs = Object.assign({ auto: true, githubToken: '' }, settings.logs || {}, { githubToken: v });
-    store.set('logs', settings.logs);
-    if (inp) inp.value = v;
-    toast(v ? t('tele.savedToast') : t('tele.stNoToken'), v ? '#i-check' : '#i-close');
-    refreshTeleStatus();
-  });
-  const btnLogSend = $('#btnLogSend');
-  if (btnLogSend) btnLogSend.addEventListener('click', async () => {
-    if (!bridge || !bridge.logs || !bridge.logs.sendNow) return;
-    btnLogSend.disabled = true;
-    try {
-      const r = await bridge.logs.sendNow();
-      toast(r && r.ok ? t('tele.sentOk') : (t('tele.sentFail') + ' (' + ((r && r.error) || '?') + ')'), r && r.ok ? '#i-globe' : '#i-close');
-      refreshTeleStatus();
-    } catch (_) { toast(t('tele.sentFail'), '#i-close'); }
-    btnLogSend.disabled = false;
-  });
 
   /* اجرای فرمان‌های پاور — خاموش/ریستارت از قبل در resolveReply تأیید گرفته‌اند */
   async function runPower(id) {
@@ -4450,39 +4416,16 @@
 
   /* v0.18 — ارسال لاگ عملکرد به گیت‌هاب (بدون توکن داخل برنامه؛ صفحهٔ Issue پیش‌پر می‌شود) */
   async function sendActivityReport() {
-    /* v0.48 — اگر تله‌متری (توکن گِیست) تنظیم شده: آپلود واقعی و فوری لاگ.
-       بدون توکن: مسیر قدیمی (صفحهٔ Issues با خلاصهٔ لاگ) — همان v0.18. */
-    try {
-      if (bridge && bridge.logs && bridge.logs.status && bridge.logs.sendNow) {
-        const st = await bridge.logs.status();
-        if (st && st.ok !== false && st.configured) {
-          const r = await bridge.logs.sendNow();
-          if (r && r.ok) {
-            actLog('voice report uploaded ' + (r.bytes || 0) + 'B', 'telemetry');
-            return t('tele.sentOk');
-          }
-          actLog('voice report upload failed: ' + ((r && r.error) || '?'), 'err');
-          return t('tele.sentFail') + ' (' + ((r && r.error) || '?') + ')';
-        }
-      }
-    } catch (_) { /* فالبک به مسیر مرورگر */ }
-    if (!bridge || !bridge.log || !bridge.log.get) return LANG === 'en' ? 'Log report works only inside the Windows app.' : 'ارسال گزارش فقط داخل نرم‌افزار ویندوزی کار می‌کند';
-    let lines = [];
-    try { const r = await bridge.log.get(); lines = (r && r.lines) || []; } catch (_) { /* noop */ }
-    const ver = (typeof appVersion !== 'undefined' && appVersion) || '?';
-    const bodyText = ([
-      'AVA activity log — v' + ver,
-      'UA: ' + (navigator.userAgent || '?'),
-      '',
-      ...lines.slice(-60),
-    ].join('\n') || '(log is empty)').slice(0, 3200);
-    const url = 'https://github.com/pvwvuow/ava-voice-assistant/issues/new?title=' + encodeURIComponent('AVA log report (v' + ver + ')') + '&body=' + encodeURIComponent(bodyText);
-    let okOpen = false;
-    try { if (bridge.system && bridge.system.openUrl) { await bridge.system.openUrl(url); okOpen = true; } } catch (_) { /* noop */ }
-    if (!okOpen) { try { await navigator.clipboard.writeText(bodyText); } catch (_) { /* noop */ } }
-    actLog('activity report ' + (okOpen ? 'opened in browser' : 'copied to clipboard'));
-    return t('report.sent');
-  }
+  /* v0.49 — آپلود آنلاین حذف شد (تصمیم کاربر: «ارسال لاگ با گیت‌هاب رو کلاً فراموش کن،
+     خودم دستی برات ارسال می‌کنم») → فقط پوشهٔ لاگ‌ها باز می‌شود تا فایل را دستی بفرستد */
+  try {
+    if (bridge && bridge.logs && bridge.logs.openFolder) {
+      const r = await bridge.logs.openFolder();
+      if (r && r.ok) return t('report.folder');
+    }
+  } catch (_) { /* noop */ }
+  return t('report.folder.fail');
+}
 
   /* ============================================================
      نرمال‌سازی متن فارسی (v0.20 — لایهٔ utils پروژهٔ مرجع)
@@ -4697,6 +4640,13 @@
           rule = null;
         }
       } catch (_) { /* noop */ }
+    }
+    /* v0.49 — گیت نوع جمله: سوال/تصحیح/چندمرحله‌ای/بی‌فعل هرگز اکشنِ کور اجرا نمی‌کنند
+       (ریشهٔ «جدیدترین آهنگ شادمهر اسمش چیه» → open_music و «نه منظورم…» → yt_search در لاگ) */
+    if (rule && aiConnected() && typeof AVAIntent !== 'undefined' && AVAIntent.blocksActionRule && AVAIntent.blocksActionRule(cmd, rule.id)) {
+      const _gt = AVAIntent.gateType(cmd);
+      actLog('sentence-gate: «' + cmd.slice(0, 60) + '» → ' + _gt + ' → AI decides (no blind ' + (rule.id || '?') + ')', 'ui', { ev: 'gate', gtype: _gt, blocked: rule.id || '?' });
+      rule = null;
     }
     if (!rule) {
       /* مرحله ۳ پایپ‌لاین: تطبیق فازی برنامه‌های سیستم («تلگرام رو اجرا کن»)
@@ -5754,7 +5704,13 @@
       const wm = (window.AVAWake || { match: () => ({ t1: false, near: false, cloud: false, tail: '' }) }).match(txt, wakeWordCfg());
       const fresh = txt && txt !== (L.lastHeard || '');
       L.lastHeard = txt;
-      if (txt && (wm.t1 || wm.near || wm.cloud || fresh)) { actLog('wake-always heard: ' + txt.slice(0, 44)); L.stats.heard++; }
+      if (txt && (wm.t1 || wm.near || wm.cloud || fresh)) {
+        /* v0.49 — لاگ دایت: نویز محض («از از از»، «Q»، «[صرق]»…) فقط در آمار می‌رود؛
+           سیلِ نویز پشتهٔ لاگ دستی کاربر را بی‌استفاده می‌کرد */
+        const _toks = String(txt).trim().split(/[\s\u200C]+/);
+        const _real = _toks.filter((tk) => tk.length > 1 && !/^(از|او|اوه|ایه|ای|آ|اِ|هوم|ببب|مه|تن|اون|این|ا|ه|ی|و|که|q|aba|ava)$/i.test(tk));
+        if (String(txt).trim().length >= 6 && _real.length >= 1) { actLog('wake-always heard: ' + txt.slice(0, 44)); L.stats.heard++; }
+      }
       if (Date.now() - (L.statsAt || 0) > 600000) {
         actLog('wake stats (10min): checks=' + L.stats.n + ' heard=' + L.stats.heard + ' near=' + L.stats.near + ' cloud=' + L.stats.cloud + ' wakes=' + L.stats.wake);
         L.stats = { n: 0, heard: 0, near: 0, cloud: 0, wake: 0 };
@@ -7121,7 +7077,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.48.0-beta';
+  let appVersion = '0.49.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7488,13 +7444,7 @@
     if (osm) osm.checked = !!settings.safeMode;
     optTts.checked = !!settings.tts;
     optAutoUpdate.checked = !!settings.autoUpdate;
-    /* v0.48 — گزارش خودکار به گیت‌هاب: toggle/توکن/وضعیت */
-    const oal = $('#optAutoLog');
-    if (oal) oal.checked = !!(settings.logs && settings.logs.auto !== false);
-    const olt = $('#optLogToken');
-    if (olt) olt.value = (settings.logs && settings.logs.githubToken) || '';
-    try { refreshTeleStatus(); } catch (_) { /* noop */ }
-    optDemo.checked = !!settings.demoMode;
+    if (optDemo) optDemo.checked = !!settings.demoMode;
     optSttEngine.value = settings.sttEngine || 'auto';
     if (optSttLang) optSttLang.value = settings.sttLang || 'fa-IR';
     if (optLang) optLang.value = settings.lang || 'fa';
@@ -7831,12 +7781,6 @@
     btnKeyShow.querySelector('span').textContent = show ? (LANG === 'en' ? 'Hide' : 'مخفی') : t('set.ai.show');
   });
 
-  optDemo.addEventListener('change', () => {
-    settings.demoMode = optDemo.checked;
-    store.set('demoMode', settings.demoMode);
-    refreshEngineUI();
-    toast(settings.demoMode ? t('toast.demoOn') : t('toast.demoOff'), '#i-info');
-  });
 
   /* v0.28 — خطای رایج کاربر: کلید جمنای (AIza…) در «کلید اختصاصی گوگل» بخش
      تشخیص گفتار چسبانده می‌شود و بعد «کلید جمنای ثبت نشده» دیده می‌شود.
@@ -8273,9 +8217,11 @@
     'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
     /* v0.44 — قانون «فهم-اول» (خواستهٔ صریح کاربر: «توی دیوار دنبال موتور بگرد،
        نره گوگل سرچ کنه» + «اول تحلیل کنه واقعاً بفهمه») */
-    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/search?q=…، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
+    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/s/tehran?q=… (فقط همین قالب؛ هرگز /s/<city>/<دسته‌بندی>/ بساز نکن چون ۴۰۴ می‌شود)، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
     /* v0.46 — لاگ واقعی: AI برای «ایمال سرچ کن موتور» دو بار URLِ بی‌عبارت داد */
     'قانون مهم ۶ (بسیار مهم): اگر درخواست، جستجوی درون-سایتی است، URL باز‌شده باید خودِ عبارت جستجو را داخلش داشته باشد (مثل divar.ir/search?q=موتور یا emalls.ir/?s=موتور) — باز کردن صفحهٔ اصلی سایت بدون عبارتِ جستجو یعنی مأموریتِ نیمه‌کاره و ممنوع است.\n' +
+    /* v0.49 — درخواست چندمرحله‌ای/اکتشافی (لاگ: «آهنگ جدید شادمهر رو برام پیدا کن») */
+    'قانون مهم ۷ (بسیار مهم): اگر درخواست چند مرحله دارد (اول X را بفهم، بعد Y را سرچ کن / اول ببین اسمش چیه بعد پخش کن) یا فعلِ «پیدا کن» دارد (مثل «آهنگ جدید فلانی رو برام پیدا کن»)، توالی act در همان بلوک DO بده (حداکثر ۳): مرحلهٔ اول اطلاعات (web_search با عبارتِ دقیق)، بعد مرحلهٔ اجرا. اگر اجرای مرحلهٔ دوم بدون دیدن نتیجهٔ اول ممکن نیست، در reply صادقانه بگو اول چه چیزی را جستجو کردی تا کاربر نتیجه را ببیند و بعدش را بگوید — هرگز یک کارِ نامرتبط جایگزین نکن.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -8415,6 +8361,8 @@
     recycle_empty: () => LANG === 'en' ? 'Recycle bin emptied.' : 'سطل بازیافت خالی شد.',
   };
   async function executeDoActions(actions, origCmd) { /* v0.39 — origCmd برای run_cmd */
+  /* v0.49 — URLهای درون‌سایتی AI با رجیستری واقعی اصلاح می‌شوند (لینک خراب دیوار ریشه‌ای بسته شد) */
+  actions = (Array.isArray(actions) ? actions : []).map((x) => (x && x.act === 'open_url' && x.value) ? Object.assign({}, x, { value: siteUrlFix(x.value) }) : x);
     const outs = [];
     for (const a of actions) {
       try {
