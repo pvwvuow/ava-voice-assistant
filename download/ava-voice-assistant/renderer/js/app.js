@@ -1155,6 +1155,19 @@
   const zaiWrap = $('#zaiWrap');
   const zaiWeb = $('#zaiWeb');
   const zaiBadge = $('#zaiBadge');
+  /* v0.45 — سبک‌سازی RAM: صفحهٔ chat.z.ai دیگر در بوت لود نمی‌شود
+     (یک صفحهٔ کامل کرومیوم = صدها مگابایت). فقط با اولین باز شدن تب
+     «صفحه چت GLM» بارگذاری می‌شود؛ توکن نشست از اجرای قبل کش می‌ماند
+     تا «چت سریع» و فرمان‌های صوتی هم بدون لود صفحه کار کنند. */
+  let zaiWebLoaded = false;
+  function ensureZaiWebLoaded() {
+    if (zaiWebLoaded || !zaiWeb) return;
+    const src = zaiWeb.getAttribute('data-src');
+    if (!src) return;
+    zaiWebLoaded = true;
+    actLog('zai webview lazy-load (RAM diet: not loaded at boot)');
+    zaiWeb.src = src;
+  }
 
   /* ---------- مودال تأیید ---------- */
   const confirmBox = $('#confirmBox');
@@ -2173,6 +2186,18 @@
     return false;
   }
 
+  /* v0.45 — رزول‌شدنیِ «وبی» برای دروازهٔ فهم-اول: برای قوانین خانوادهٔ وب
+     (web_search/web_open/…)، «برنامهٔ نصب‌شده بودنِ هدف» کافی نیست —
+     «توی تلگرام دنبال پیام بگرد» نباید گوگل‌سرچ شود؛ باید برود AI تصمیم
+     بگیرد (باز کردن برنامه / جستجوی درون‌برنامه‌ای ممکن نیست → صادق بگوید).
+     برنامه‌بودنِ هدف فقط برای قوانین غیروب رزول‌شدنی است (targetResolvableSync). */
+  function targetResolvableWebSync(t) {
+    const s = String(t || '').trim();
+    if (!s || s.length < 2) return true;
+    try { if (knownExactOf(s) || knownSiteOf(s) || siteDomainOf(s)) return true; } catch (_) { /* noop */ }
+    return false;
+  }
+
   function wxExtractCity(c) {
     let city = String(c || '')
       .replace(WX_STRIP, ' ')
@@ -2735,7 +2760,10 @@
   ];
 
   /* فرمان‌های صوتی موزیک — قبل از قانون قدیمی یوتیوب‌موزیک */
-  const MUSIC_FA = 'موزیک|موسیقی|آهنگ|اهنگ|آواز|ترانه|پلی\s?[\u200C]?لیست|music|song|playlist';
+  /* v0.45 — فیکس: داخل رشتهٔ JS، \s به «s» تبدیل می‌شد («پلیs?لیست» بی‌معنا!) —
+     حالا [\\s\u200C] درست ساخته می‌شود؛ همین باعث می‌شد «آهنگ رو نگه دار»
+     هرگز مکث موزیک نمی‌شد (باگ واقعیِ کشف‌شده در بازنگری کامل منطق) */
+  const MUSIC_FA = 'موزیک|موسیقی|آهنگ|اهنگ|آواز|ترانه|پلی[\\s\u200C]?لیست|music|song|playlist';
   {
     const musicRules = [
       {
@@ -2747,7 +2775,9 @@
         id: 'music_prev', t: 'آهنگ قبلی', i: '#i-music', r: () => voiceMusicPrev(),
       },
       {
-        k: new RegExp(`(?:${MUSIC_FA})[^.]{0,16}(پاز|توقف|نگه\s?[\u200C]?دار|قطع|استاپ|استپ|ساکت|stop|pause)|(پاز|stop|pause)[^.]{0,10}(?:${MUSIC_FA})`, 'i'),
+        /* v0.45 — «ببند» هم توقف موزیک است: «موزیک رو ببند» دیگر به نیت باز کردن
+           نمی‌رود (منفی‌های open_music) و همین‌جا مکث می‌شود */
+        k: new RegExp(`(?:${MUSIC_FA})[^.]{0,16}(پاز|توقف|نگه[\\s\u200C]?دار|قطع|استاپ|استپ|ساکت|ببند|stop|pause)|(پاز|stop|pause|ببند)[^.]{0,10}(?:${MUSIC_FA})`, 'i'),
         id: 'music_pause', t: 'توقف موزیک', i: '#i-music', r: () => voiceMusicPause(),
       },
       {
@@ -2755,7 +2785,7 @@
            پخشِ موزیکِ محلی می‌گرفت (ریشهٔ بخشی از «الکی انجام میده»؛ باز کردن
            پلیر موزیک الان مسیر درست خودش را دارد) */
         k: new RegExp(`(?:پخش|بزن|پلی|شروع|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|play)`, 'i'),
-        id: 'music_play', t: 'پخش موزیک', i: '#i-music', r: () => voiceMusicPlay(),
+        id: 'music_play', t: 'پخش موزیک', i: '#i-music', r: (c) => voiceMusicPlay(c),
       },
       {
         k: /پلی\s?[\u200C]?لیست|playlist|صفحه.{0,8}موزیک|موزیک.{0,8}(باز|صفحه)/i,
@@ -2961,6 +2991,15 @@
           } catch (_) { return LANG === 'en' ? 'Control failed.' : 'کنترل پلیر ممکن نشد.'; }
         },
       },
+      /* --- v0.45 — بازنگری کامل منطق: نیتِ «بستن» قرینهٔ «باز کردن» است ---
+         ریشهٔ ممیزی: «یوتیوب رو ببند» فقط واژهٔ یوتیوب را می‌دید و یوتیوب را
+         «باز» می‌کرد! حالا فعلِ بستن/خاموش/قطع/استاپ یک نیت واقعی است.
+         دقت: «ویدیو/فیلم/کلیپ + ببند» عمداً اینجا نیست — همان مسیر UNPIN
+         پنجرهٔ شناور (فیکس v0.40) می‌ماند. */
+      {
+        k: /(یوتیوب|youtube|پخش|استریم)[^.]{0,12}(ببند|بس\s?بند|بس\s?کن|خاموش\s?کن|قطع\s?کن|استاپ|استوپ|پایان)|(ببندش?|خاموشش?\s?کن|قطعش?\s?کن|استاپش?|استوپش?)[^.]{0,12}(یوتیوب|youtube|پخش)|(از\s*)?(یوتیوب|youtube)[^.]{0,10}(بیرون|کافی)|close (the )?(youtube|player|stream)/i,
+        id: 'yt_close', t: 'بستن پخش', i: '#i-window', r: (c) => ytCloseReply(c),
+      },
       {
         k: AVAVoice.PIP_COMMAND_RE, id: 'pip', t: 'ویدیوی شناور', i: '#i-window', r: (c) => pipVoiceReply(c),
       },
@@ -3103,6 +3142,8 @@
   function siteSearchUrlFor(base, q) {
     const host = String(base || '').replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
     const enc = encodeURIComponent(q || '');
+    /* v0.45 — «توی گوگل دنبال X بگرد» جستجوی گوگل است، نه site:google.com */
+    if (/^(www\.)?google\./.test(host)) return 'https://www.google.com/search?q=' + enc;
     if (/digikala/.test(host)) return 'https://www.digikala.com/search/?q=' + enc;
     if (/aparat/.test(host)) return 'https://www.aparat.com/result/' + enc;
     if (/torob/.test(host)) return 'https://torob.com/search/?query=' + enc;
@@ -4030,9 +4071,19 @@
         }
       } else {
         rcTag.textContent = t('tag.fail');
+        /* v0.45 — پاسخ صادق (بازنگری منطق پاسخ‌دهی): وقتی عمل واقعاً انجام نشد،
+           آوا متنِ موفقیت را تکرار نمی‌کند (دروغ «باز شد» ممنوع) — نام همان
+           کارِ ناموفق را می‌گوید تا کاربر بداند چه اتفاقی نیفتاد */
+        reply = (LANG === 'en'
+          ? `Couldn't do it: ${rule.t || 'the request'}${res && res.error ? ' — ' + String(res.error).slice(0, 80) : ''}.`
+          : `«${rule.t || 'این درخواست'}» انجام نشد${res && res.error ? ' — ' + String(res.error).slice(0, 80) : ''}.`);
       }
     } catch (_) {
       rcTag.textContent = t('tag.fail');
+      /* v0.45 — پاسخ صادق در خطای اجرا (دروغ «انجام شد» ممنوع) */
+      reply = (LANG === 'en'
+        ? `Couldn't do it: ${rule.t || 'the request'}.`
+        : `«${rule.t || 'این درخواست'}» انجام نشد.`);
     }
     return reply;
   }
@@ -4285,7 +4336,7 @@
     if (rule && aiConnected() && typeof AVAUnderstand !== 'undefined') {
       try {
         const _und = AVAUnderstand.analyze(cmd);
-        if (_und && AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableSync)) {
+        if (_und && AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableWebSync)) {
           actLog('understand-first: «' + _und.target.clean + '» not locally resolvable → AI decides (no blind ' + rule.id + ')');
           _intentCands = AVAUnderstand.briefForAi(_und) + (_intentCands ? '\n' + _intentCands : '');
           rule = null;
@@ -6525,7 +6576,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.44.0-beta';
+  let appVersion = '0.45.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7729,7 +7780,7 @@
 
   let chatBusy = false;
   let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
-  let zaiToken = '';   // توکن نشست حساب z.ai — از webview خوانده می‌شود
+  let zaiToken = store.get('zaiToken', '');   /* v0.45 — توکن نشست z.ai کش می‌شود تا وب‌ویو تنبل بماند */
 
   /* در برنامه واقعی همیشه می‌توان AI را صدا زد؛ پل GLM خودش نشست حساب
      را در پنجره مخفی پیدا می‌کند (وگرنه پیام ورود نشان می‌دهد). */
@@ -7817,10 +7868,13 @@
           if (!rr) { outs.push(LANG === 'en' ? 'That command is not in my list.' : 'چنین فرمانی در فهرست آوا نیست.'); break; }
           actLog('ai run_cmd → ' + rr.id);
           const out = await resolveReply(rr, String(origCmd || a.value || ''));
-          outs.push(typeof out === 'string' && out ? out : (LANG === 'en' ? 'Done.' : 'انجام شد.'));
+          /* v0.45 — پاسخ صادق: null (استثنا) دیگر «انجام شد» نمی‌گوید */
+          outs.push(typeof out === 'string' && out ? out : (LANG === 'en' ? "Couldn't do it." : 'انجام نشد.'));
           if (rr.id && SUGGEST_TRIGGERS.has(rr.id)) maybeSuggestCommands('video');
-          /* v0.41 — نگاشت موفق ذخیره شود؛ دفعهٔ بعدِ همین عبارت = اجرای آنی بی‌شبکه */
-          if (origCmd && typeof out === 'string' && out && !(out && typeof out === 'object' && out.__aiFallback)) aiMapSet(origCmd, rr.id);
+          /* v0.41 — نگاشت موفق ذخیره شود؛ دفعهٔ بعدِ همین عبارت = اجرای آنی بی‌شبکه
+             v0.45 — فقط «موفقیت» یاد گرفته می‌شود: پاسخ شکست («انجام نشد») هرگز
+             کش نمی‌شود تا نگاشت خراب در حافظه ماندگار نشود */
+          if (origCmd && typeof out === 'string' && out && !/انجام نشد|Couldn't/.test(out) && !(out && typeof out === 'object' && out.__aiFallback)) aiMapSet(origCmd, rr.id);
           continue;
         }
         switch (a.act) {
@@ -7955,7 +8009,7 @@
     if (tabZai) tabZai.classList.toggle('active', zai);
     if (quickWrap) quickWrap.hidden = zai;
     if (zaiWrap) zaiWrap.hidden = !zai;
-    if (zai) setTimeout(() => checkZaiToken(), 900);
+    if (zai) { ensureZaiWebLoaded(); setTimeout(() => checkZaiToken(), 1200); }
   }
   if (tabQuick) tabQuick.addEventListener('click', () => selectChatTab('quick'));
   if (tabZai) tabZai.addEventListener('click', () => selectChatTab('zai'));
@@ -7972,9 +8026,11 @@
       zaiWeb.executeJavaScript("localStorage.getItem('token')||''", true).then((tk) => {
         if (tk) {
           zaiToken = String(tk);
+          try { store.set('zaiToken', zaiToken); } catch (_) { /* noop */ } /* v0.45 — کش توکن برای بوت‌های بعدی */
           setZaiBadge(true);
         } else {
           zaiToken = '';
+          try { store.set('zaiToken', ''); } catch (_) { /* noop */ }
           setZaiBadge(false, attempts < 4 ? t('badge.needLogin') : t('badge.off'));
           if (attempts < 4) setTimeout(() => checkZaiToken(attempts + 1), 2500);
         }
@@ -8177,8 +8233,32 @@
         if (rr) {
           actLog('ai map cache → ' + rr.id);
           const out = await resolveReply(rr, cmd).catch(() => null);
-          if (!(out && typeof out === 'object' && out.__aiFallback)) {
-            const fin = (typeof out === 'string' && out) ? out : (LANG === 'en' ? 'Done.' : 'انجام شد.');
+          const failedOut = typeof out === 'string' && out && /انجام نشد|Couldn't/.test(out);
+          /* v0.45 — منطق اصلاحی: نگاشت کش‌شده‌ای که شکست خورد (null یا متن شکست)
+             نباید سرِ جایش بماند — نگاشت خراب حذف می‌شود تا دفعهٔ بعد AI تازه
+             تصمیم بگیرد؛ null (استثنا) مستقیم به مسیر عادی AI می‌رود */
+          if (out == null || failedOut) {
+            try {
+              delete aiCmdMap[aiMapNorm(cmd)];
+              localStorage.setItem(AI_MAP_KEY, JSON.stringify(aiCmdMap));
+              actLog('ai map cache dropped (failed run): ' + rr.id);
+            } catch (_) { /* noop */ }
+            if (failedOut) {
+              pushChatHist('user', cmd); pushChatHist('assistant', out);
+              setState('success');
+              statusText.textContent = t('ai.got');
+              rcTag.textContent = t('tag.aiDo') + ' · ⚡';
+              typeText(rcReply, out);
+              speak(out);
+              pushHistory(cmd, false);
+              handsFreeRearm();
+              cmdBusy = false;
+              setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+              return;
+            }
+            /* null → نگاشت کش‌شده امروز نتوانست انجام دهد → مسیر عادی AI */
+          } else if (!(out && typeof out === 'object' && out.__aiFallback)) {
+            const fin = out;
             pushChatHist('user', cmd); pushChatHist('assistant', fin);
             setState('success');
             statusText.textContent = t('ai.got');
@@ -8343,6 +8423,27 @@
   };
   const PIP_SIZE_KEY = { 'small': 'small', 'medium': 'medium', 'large': 'large', 'extra-large': 'xl' };
   const PIP_SIZE_FA = { small: 'کوچک', medium: 'متوسط', large: 'بزرگ', 'extra-large': 'خیلی بزرگ' };
+
+  /* v0.45 — نیت «بستن پخش» (بازنگری کامل منطق): بستنِ چیزی که واقعاً باز است.
+     ترتیب: پنجرهٔ یوتیوب آوا → پنجرهٔ شناور (PiP) → وگرنه صادقانه: چیزی باز نیست.
+     (قبلاً «یوتیوب رو ببند» یوتیوب را باز می‌کرد — نیت مخالف نادیده گرفته می‌شد) */
+  async function ytCloseReply() {
+    let st = null;
+    try { st = (bridge && bridge.yt && bridge.yt.status) ? await bridge.yt.status() : null; } catch (_) { /* noop */ }
+    if (st && st.open) {
+      try { await bridge.yt.close(); } catch (_) { /* noop */ }
+      return LANG === 'en' ? 'Closed the AVA YouTube player.' : 'پنجرهٔ یوتیوب آوا بسته شد.';
+    }
+    let pipSt = null;
+    try { pipSt = (bridge && bridge.pipAPI) ? await bridge.pipAPI.getState() : null; } catch (_) { /* noop */ }
+    if (pipSt && pipSt.open) {
+      try { await bridge.pipAPI.hide(); } catch (_) { /* noop */ }
+      return LANG === 'en' ? 'Floating video closed.' : 'ویدیوی شناور بسته شد.';
+    }
+    return LANG === 'en'
+      ? 'No player of mine is open right now. To stop local music, say "pause the music".'
+      : 'الان پنجرهٔ پخشی از من باز نیست. برای توقف موزیکِ محلی بگو «آهنگ رو قطع کن».';
+  }
 
   async function pipVoiceReply(cmd) {
     let st = null;
@@ -9020,12 +9121,42 @@
     showView('ext');
     return t('music.extOff');
   }
-  function voiceMusicPlay() {
+  function voiceMusicPlay(cmd) {
     if (!settings.extMusic) return musicExtOffReply();
+    /* v0.45 — موزیکِ آگاه‌به‌آهنگ (بازنگری منطق فرمان‌پذیری):
+       «آهنگ شادمهر رو پخش کن» قبلاً هرچه در پلیر بود را پخش می‌کرد و
+       می‌گفت «پخش می‌کنم» — عمل می‌کرد ولی چیزی که خواسته شده نبود.
+       حالا: اسم خواسته‌شده جدا می‌شود؛ در کتابخانه محلی هست → همان پخش می‌شود؛
+       نیست → درخواست به AI می‌رود (پخش از یوتیوب)؛ بدون AI → صادقانه. */
+    const req = musicReqOf(cmd);
+    if (req) {
+      const nq = normFaFull(req);
+      const idx = music.tracks.findIndex((tr) => {
+        const tt = normFaFull(tr.title || ''), ar = normFaFull(tr.artist || '');
+        return (tt && (tt.includes(nq) || nq.includes(tt))) || (ar && (ar.includes(nq) || nq.includes(ar)));
+      });
+      if (idx >= 0) { playTrack(idx); return t('music.playing', { x: music.tracks[idx].title }); }
+      if (aiConnected()) return AI_FALLBACK;
+      return LANG === 'en'
+        ? `"${req}" is not in your local music library. Say "play ${req} on YouTube" and I will.`
+        : `«${req}» توی کتابخانهٔ موزیک محلی نیست. بگو «تو یوتیوب ${req} رو پخش کن» تا از یوتیوب برات پخشش کنم.`;
+    }
     if (!music.tracks.length) { showView('music'); return t('music.emptyPlay'); }
     if (!mAudio.src) { playTrack(music.cur < 0 ? 0 : music.cur); return t('music.playing', { x: music.tracks[Math.max(0, music.cur)].title }); }
     if (mAudio.paused) { mAudio.play().catch(() => {}); return t('music.resumed'); }
     return t('music.playing', { x: music.tracks[music.cur].title });
+  }
+  /* v0.45 — جدا کردن اسم آهنگ/خواننده از جملهٔ پخش — بدون دیکشنری نمونه */
+  function musicReqOf(c) {
+    let s = String(c || '');
+    s = s.replace(/(توی|تو|در)\s+(یوتیوب|youtube|آپارات|اپارات)/gi, ' ');
+    s = s.replace(/(یوتیوب|youtube|آپارات|اپارات)/gi, ' ');
+    s = s.replace(/(پخش|پلی|بزن|بذار|بزار|شروع|اجرا|بگیر)\s*(کن|بکن|کنی|میکنی|می\s?کنی)?/gi, ' ');
+    s = s.replace(/(^|\s)(آهنگ|ترانه|موزیک|موسیقی|اهنگ|آواز|پلی\s?لیست|song|music|track|playlist)(ی)?(?=\s|$)/gi, ' ');
+    s = s.replace(/(^|\s)(رو|را|برام|برای\s*من|واسم|لطفا|ممنون|مرسی|دیگه|خب|خوب|هم|یه|یک)(?=\s|$)/gi, ' ');
+    s = s.replace(/\s*(کن|بکن|کنی)\s*$/g, ' ');
+    s = s.replace(/[\s\u200C]+/g, ' ').trim();
+    return s.length >= 2 ? s.slice(0, 60) : '';
   }
   function voiceMusicPause() {
     if (!settings.extMusic) return musicExtOffReply();

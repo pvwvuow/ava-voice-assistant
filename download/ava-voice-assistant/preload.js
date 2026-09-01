@@ -154,6 +154,9 @@ contextBridge.exposeInMainWorld('ava', {
     resolve: (query) => ipcRenderer.invoke('yt:resolve', { query }),
     /* باز کردن ویدیو/لینک/جستجو در پخش‌کنندهٔ یوتیوب خود آوا */
     watch: (p) => ipcRenderer.invoke('yt:watch', p),
+    /* v0.45 — نیت «بستن»: «یوتیوب رو ببند» */
+    status: () => ipcRenderer.invoke('yt:status'),
+    close: () => ipcRenderer.invoke('yt:close'),
   },
   player: {
     scan: () => ipcRenderer.invoke('player:scan'),

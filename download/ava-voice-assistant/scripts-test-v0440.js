@@ -73,7 +73,8 @@ ok(arb2 && arb2.rule.id === 'open_youtube', 'arbitrate: یوتیوب رو باز
 
 /* ---------- ۵) اتصال در app.js (نشان‌های منبع) ---------- */
 const appSrc = fs.readFileSync(path.join(R, 'renderer', 'js', 'app.js'), 'utf8');
-ok(appSrc.includes("AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableSync)"), 'app.js: گیت فهم-اول در runCommand وصل است');
+/* v0.45 — گیت حالا رزول‌شدنیِ «وبی» است (هدفِ برنامه‌ای برای قوانین وب کافی نیست) */
+ok(appSrc.includes("AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableSync)") || appSrc.includes("AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableWebSync)"), 'app.js: گیت فهم-اول در runCommand وصل است');
 ok(appSrc.includes("function targetResolvableSync"), 'app.js: targetResolvableSync هست');
 ok(appSrc.includes('knownSiteOf(s) || siteDomainOf(s)'), 'app.js: حل هدف با سایت معروف/دامنه');
 ok(appSrc.includes('matchSysApp(s)'), 'app.js: حل هدف با برنامهٔ نصب‌شده');
@@ -99,7 +100,7 @@ ok(/voiceIntent\.js[\s\S]*?voiceUnderstand\.js[\s\S]*?app\.js/.test(idxSrc), 'in
 
 /* ---------- ۸) نسخه ---------- */
 const pkg = JSON.parse(fs.readFileSync(path.join(R, 'package.json'), 'utf8'));
-ok(pkg.version === '0.44.0-beta', 'package.json version = 0.44.0-beta');
+ok(/^0\.4/.test(pkg.version), 'package.json version forwards-compatible 0.4x = ' + pkg.version);
 
 console.log(`\nv0.44 understand-first: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

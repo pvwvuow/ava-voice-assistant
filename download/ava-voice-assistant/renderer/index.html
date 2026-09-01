@@ -731,7 +731,10 @@
           </div>
 
           <div class="zai-wrap glass" id="zaiWrap" hidden>
-            <webview id="zaiWeb" class="zai-web" src="https://chat.z.ai/" partition="persist:ai"
+            <!-- v0.45 — سبک‌سازی RAM: صفحهٔ chat.z.ai دیگر در بوت لود نمی‌شود
+                 (۱۰۰ تا ۳۰۰ مگابایت حافظه)؛ فقط وقتی کاربر تب «صفحه چت GLM» را
+                 باز کند بارگذاری می‌شود (ensureZaiWebLoaded در app.js) -->
+            <webview id="zaiWeb" class="zai-web" data-src="https://chat.z.ai/" partition="persist:ai"
                      allowpopups useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"></webview>
             <p class="zai-hint" data-i18n="chat.zaiHint">یک بار وارد حسابت شو — نشست ذخیره می‌ماند و «چت سریع» و دستیار صوتی هم بدون کلید API به همین حساب وصل می‌شوند.</p>
           </div>
@@ -1054,7 +1057,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.44.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.45.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

@@ -3187,6 +3187,20 @@ function ytWatchWindow(p) {
 }
 ipcMain.handle('yt:watch', (_e, p) => Promise.resolve(ytWatchWindow(p)));
 
+/* v0.45 — نیت «بستن» (بازنگری کامل منطق): «یوتیوب رو ببند» نباید یوتیوب را
+   باز کند — وضعیت و بستنِ پنجرهٔ پخش یوتیوبِ آوا از مسیر IPC در دسترس است */
+function ytWatchStatus() {
+  try { return { ok: true, open: !!(ytWin && !ytWin.isDestroyed()) }; } catch (_) { return { ok: true, open: false }; }
+}
+function ytWatchClose() {
+  try {
+    if (ytWin && !ytWin.isDestroyed()) { ytWin.close(); return { ok: true, closed: true }; }
+    return { ok: true, closed: false };
+  } catch (e) { return { ok: false, error: netErr(e) }; }
+}
+ipcMain.handle('yt:status', () => Promise.resolve(ytWatchStatus()));
+ipcMain.handle('yt:close', () => Promise.resolve(ytWatchClose()));
+
 /* ---------- ۴) اسکن پلیرهای نصب‌شده ---------- */
 const PF = () => process.env.ProgramFiles || 'C:\\Program Files';
 const PF86 = () => process.env['ProgramFiles(x86)'] || PF();
