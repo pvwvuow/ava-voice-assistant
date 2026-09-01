@@ -69,7 +69,7 @@ ok('app: detachMic keeps the stream alive while the wake loop runs', appSrc.incl
 ok('app: pack-ready hook starts the loop automatically', appSrc.includes("if (settings.wakeAlways && !wakeLoop) wakeLoopStart();"));
 ok('app: boot hook starts the loop after init', appSrc.includes('setTimeout(() => { wakeBootRetry(); }, 2600);'));
 ok('html: wakeAlways toggle exists', htmlSrc.includes('id="optWakeAlways"'));
-ok('i18n: wakeAlways + woke + needPack keys in both dictionaries', (appSrc.match(/'toast\.wakeAlwaysOn': \[/g) || []).length === 2 && (appSrc.match(/'wake\.woke': \[/g) || []).length === 2 && (appSrc.match(/'wake\.alwaysNeedPack': \[/g) || []).length === 2);
+ok('i18n: wakeAlways + woke + needPack keys present (merged dict — forward-relax v0.60)', (appSrc.match(/'toast\.wakeAlwaysOn': \[/g) || []).length >= 1 && (appSrc.match(/'wake\.woke': \[/g) || []).length >= 1 && (appSrc.match(/'wake\.alwaysNeedPack': \[/g) || []).length >= 1);
 
 /* ---- 4) Intent protocol: full Discord coverage ---- */
 ok('DO_ACTS include unmute/deafen/answer/decline', appSrc.includes("'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom'"));

@@ -97,8 +97,9 @@ ok(appSrc.includes("wakeWordText: store.get('wakeWordText', 'آوا')"), 'تنظ
 ok(appSrc.includes('function wakeWordTextApply()'), 'apply از UI');
 ok(htmlSrc.includes('id="optWakeWordText"'), 'ورودی UI در index.html');
 ok(htmlSrc.includes('<script src="js/voiceWake.js"></script>'), 'voiceWake.js قبل از app.js لود می‌شود');
-ok((appSrc.match(/'set\.stt\.wakeWordText': \[/g) || []).length === 2, 'i18n کلیدها در هر دو دیکشنری');
-ok((appSrc.match(/'toast\.wakeWordSet': \[/g) || []).length === 2, 'i18n toast در هر دو دیکشنری');
+/* forward-relax (17-c2/D2): موج 3a/D1 دیکشنری‌ها را در «یک» بلوک ادغام کرد — pins دوبخشیِ کهنه، حالا فقط حضور کلید را چک می‌کنند */
+ok((appSrc.match(/'set\.stt\.wakeWordText': \[/g) || []).length >= 1, 'i18n کلیدها در هر دو دیکشنری (after D1 merge: حداقل یک تعریف در دیکشنری ادغام‌شده)');
+ok((appSrc.match(/'toast\.wakeWordSet': \[/g) || []).length >= 1, 'i18n toast در هر دو دیکشنری (after D1 merge: حداقل یک تعریف)');
 
 /* ---------- 9) version ---------- */
 console.log('\n[9] نسخه');

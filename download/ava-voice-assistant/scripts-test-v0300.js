@@ -102,7 +102,7 @@ console.log('\n[6] renderer: state voice command');
 ok('state branch first in tryDiscordCmd', appSrc.indexOf("action: 'state'") < appSrc.indexOf("action: 'hangup'"));
 ok('state query regex (وضعیت/چطوره/چیه × میکروفون/صدا/دیسکورد)', /وضعیت[^/]*میکروفون|میکروفون[\s\S]{0,40}وضعیت/.test(appSrc));
 ok('state result mapped to Persian speech (MUTED/DEAF)', appSrc.includes("/:MUTED/.test(s)") && appSrc.includes("/:DEAF/.test(s)"));
-ok('i18n state keys in BOTH dictionaries', (appSrc.match(/'disc\.stateOn': \[/g) || []).length === 2 && (appSrc.match(/'disc\.stateMuted': \[/g) || []).length === 2 && (appSrc.match(/'disc\.stateFail': \[/g) || []).length === 2);
+ok('i18n state keys present in merged dict — forward-relax v0.60', (appSrc.match(/'disc\.stateOn': \[/g) || []).length >= 1 && (appSrc.match(/'disc\.stateMuted': \[/g) || []).length >= 1 && (appSrc.match(/'disc\.stateFail': \[/g) || []).length >= 1);
 ok('stateFail fallback on error', appSrc.includes("(r && r.error) || t('disc.stateFail')"));
 ok('preload discord bridge unchanged', preSrc.includes("discord"));
 ok('ALREADY honest mapping kept (mute family + deaf family)',

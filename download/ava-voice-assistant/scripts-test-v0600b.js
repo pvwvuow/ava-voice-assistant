@@ -53,8 +53,8 @@ ok(dnsPageSlice.includes('data-i18n="dnsp.pageTitle"'), 'h2 صفحهٔ DNS حا�
 ok(!dnsPageSlice.includes('data-i18n="dnsp.title"'), 'h2 صفحهٔ DNS دیگر از dnsp.title استفاده نمی‌کند');
 const dnsPingSlice = htmlSrc.slice(htmlSrc.indexOf('id="dnsPing"'), htmlSrc.indexOf('id="about"'));
 ok(dnsPingSlice.includes('data-i18n="dnsp.title"'), 'پاپ‌آپ پینگ همچنان روی dnsp.title است («پینگ DNSها»)');
-ok((appSrc.split("'dnsp.title': ['DNS Changer', 'DNS Changer'],").length - 1) === 2,
-   'تعریف‌های قدیمی dnsp.title («DNS Changer») عیناً سر جایشان (بلوک مرده + بلوک زنده)');
+ok((appSrc.split("'dnsp.title': ['DNS Changer', 'DNS Changer'],").length - 1) === 0,
+   'تعریف‌های قدیمی dnsp.title («DNS Changer») حذف شدند (D1: بلوک مرده ادغام شد — dnsp.title فقط «پینگ DNSها»)');
 ok(appSrc.includes("'dnsp.title': ['پینگ DNSها', 'Ping DNS servers'],"),
    'تعریف «پینگ DNSها» هم عیناً سر جایش است (برندهٔ پاپ‌آپ)');
 
@@ -232,8 +232,8 @@ ok(appSrc.includes("'about.desc': ['آوا؛ دستیار صوتی فارسی ت
    'فارسی: آوا + پوش-تو-تاک در یک خط');
 ok(/'about\.desc': \[[^\]]*push-to-talk key is configurable in Settings/.test(appSrc),
    'انگلیسی: معادل با ذکر PTT قابل‌تنظیم');
-ok((appSrc.split("'about.desc': ['نسخه ۰.۲۵").length - 1) === 1,
-   'بلوک مرده: about.desc قدیمی (v0.25) دست‌نخورده ماند — فقط بلوک زنده عوض شد');
+ok((appSrc.split("'about.desc': ['نسخه ۰.۲۵").length - 1) === 0,
+   'D1: بلوک مرده حذف شد — about.desc قدیمی (v0.25) دیگر در دیکشنری نیست (فقط نسخهٔ زنده)');
 
 /* ============================================================
    [11] نگهبان v0570 — ساختار تنظیمات دست نخورده + بدون bump نسخه
@@ -252,7 +252,7 @@ ok(cssSrc.includes('.set-row.first { border-top: none; }') && !cssSrc.includes('
    'v0570: جداکنندهٔ first سالم');
 ok(appSrc.includes("let appVersion = '0.57.0-beta';"), 'نسخه: بدون bump (0.57.0-beta — bump با موج بعدی والد)');
 for (const k of ['set.ptt.onoff', 'set.navg.speak', 'set.sub.appLook']) {
-  ok((appSrc.split("'" + k + "'").length - 1) === 2, 'v0570 i18n: کلید ' + k + ' همچنان دقیقاً ۲ بار (هر دو بلوک)');
+  ok((appSrc.split("'" + k + "'").length - 1) >= 1, 'v0570 i18n: کلید ' + k + ' در دیکشنری ادغام‌شدهٔ D1 موجود است');
 }
 
 console.log('\n-----------------------------');

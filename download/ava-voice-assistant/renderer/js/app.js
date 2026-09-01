@@ -230,304 +230,6 @@
     'set.ai.gemTestFail': ['وصل نشد: {x}', 'Connection failed: {x}'],
     'set.ai.gemBase': ['آدرس رلهٔ جمنای (پیشرفته — اختیاری)', 'Gemini relay URL (advanced — optional)'],
     'set.ai.gemBaseHint': ['اگر گوگل منطقهٔ تو را محدود کرده («location is not supported»)، آدرس پایهٔ یک پروکسی/ورکر شخصی را بگذار (مثل https://my-worker.workers.dev) تا درخواست‌های جمنای از سرور خودت رد شوند؛ خالی = مستقیم گوگل', 'If Google blocks your region ("location is not supported"), put the base URL of your own proxy/worker (e.g. https://my-worker.workers.dev) — requests go through your server; empty = direct Google'],
-    'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
-    'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
-    'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
-    'disc.callBtn': ['زنگ بزن', 'Call'],
-    /* ---------- v0.17 — تنظیمات دیسکورد ---------- */
-    'set.nav.discord': ['دیسکورد', 'Discord'],
-    'set.dc.open': ['تنظیمات', 'Settings'],
-    'set.dc.openPage': ['تنظیمات و دکمه‌ها', 'Settings & buttons'],
-    'set.dc.quick': ['دکمه‌های سریع دیسکورد', 'Discord quick buttons'],
-    'set.dc.quickHint': ['میوت، بی‌صدای کل، جواب/رد/قطع تماس — حتی وقتی دیسکورد مینیمایز است (بدون باز شدن پنجره)', 'Mute, deafen, answer/decline/hangup — even when Discord is minimized (no window opens)'],
-    'set.adv.stt': ['سرور Whisper، کلید گوگل و دمو (پیشرفته — همان پیش‌فرض‌ها برای اکثر مردم کافی است)', 'Whisper server, Google key and demo (advanced — defaults are fine for most people)'],
-    'set.adv.ai': ['رله، مدل‌ها و کلید OpenAI (پیشرفته)', 'Relay, models and OpenAI key (advanced)'],
-
-    'set.dc.contacts': ['مخاطبین دیسکورد', 'Discord contacts'],
-    'set.dc.contactsHint': ['برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID', 'Save a simple name for friends with awkward IDs, then say "call …". To get the ID: enable Settings › Advanced › Developer Mode in Discord, right-click the user → Copy User ID'],
-    'set.dc.namePh': ['اسم ساده (مثلاً: علی)', 'Simple name (e.g. Ali)'],
-    'set.dc.idPh': ['Discord User ID — ۱۷/۱۸ رقم', 'Discord User ID — 17/18 digits'],
-    'set.dc.add': ['افزودن', 'Add'],
-    'set.dc.empty': ['هنوز مخاطبی نداری — اسم ساده + آی‌دی دیسکورد را وارد کن', 'No contacts yet — add a simple name + Discord ID'],
-    'set.dc.call': ['زنگ بزن', 'Call'],
-    'set.dc.del': ['حذف مخاطب', 'Delete contact'],
-    'set.dc.deleted': ['مخاطب «{x}» حذف شد', 'Contact "{x}" removed'],
-    'set.dc.needBoth': ['هم اسم و هم آی‌دی دیسکورد را وارد کن', 'Enter both a name and the Discord ID'],
-    'set.dc.badId': ['آی‌دی دیسکورد فقط عدد است (۱۷ یا ۱۸ رقم)', 'A Discord ID is all digits (17–18 of them)'],
-    'set.dc.added': ['مخاطب «{x}» ذخیره شد ✓ — حالا بگو «به {x} زنگ بزن»', 'Contact "{x}" saved ✓ — now say "call {x}"'],
-    'set.dc.bg': ['بدون باز کردن پنجرهٔ دیسکورد', 'No Discord window opening'],
-    'set.dc.bgHint': ['میوت/دیفن حتی وقتی دیسکورد مینیمایز یا بسته به تری است، بدون باز شدن و بدون قاپیدن فوکوس اجرا می‌شود (کلیک مجازی دکمهٔ واقعی + تایید تغییر وضعیت) — اگر روی نسخه‌ای جواب نداد خاموشش کن تا با فوکوس مستقیم اجرا شود', 'Mute/deafen runs even when Discord is minimized or in the tray — no window opens and focus is never stolen (virtual click on the real button + state-flip proof). Turn off only if your Discord build resists it'],
-    'set.dc.bgOn': ['حالت بک‌گراند روشن شد — دیسکورد وسط بازی پاپ‌آپ نمی‌شود', 'Background mode on — Discord will not pop up mid-game'],
-    'set.dc.bgOff': ['حالت بک‌گراند خاموش شد — اجرا با فوکوس مستقیم', 'Background mode off — commands run with direct focus'],
-    'set.dc.cal': ['مکان دکمهٔ تماس (فالبک)', 'Call button position (fallback)'],
-    'set.dc.calHint': ['وقتی دکمهٔ تماس پیدا نشود، از گوشهٔ بالا-راست این فاصله‌ها کلیک می‌شود — با «آزمایش» نشانگر موس سر جایش می‌نشیند', 'When the call button cannot be found, AVA clicks this far from the top-right corner — "Probe" moves the mouse there for checking'],
-    'set.dc.probe': ['آزمایش', 'Probe'],
-    'set.dc.probing': ['نشانگر موس به مکان دکمهٔ تماس می‌رود…', 'Moving the mouse to the call button position…'],
-    'set.dc.probed': ['نشانگر روی مکان دکمهٔ تماس قرار گرفت — درست است؟ عدد X/Y را اگر لازم است عوض کن', 'Mouse is now on the call button spot — adjust X/Y if it is off'],
-    'set.dc.note': ['فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.', 'Commands: "call Ali", "hang up", "mute Discord", "deafen Discord", "answer", "decline". For hangup/answer/decline bind once in Discord › Settings › Keybinds: Disconnect = Ctrl+Shift+H, Answer = Ctrl+Shift+A, Decline = Ctrl+Shift+E; Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work by default.'],
-    'disc.namePh': ['اسم دوستت در دیسکورد…', "Your friend's Discord name…"],
-    /* ---------- v0.18 ---------- */
-    'report.working': ['پوشهٔ لاگ‌ها باز می‌شود…', 'Opening the logs folder…'],
-  'report.folder': ['پوشهٔ لاگ‌ها باز شد — فایل activity.jsonl (و activity.log) را برای من بفرست تا خودم بررسی کنم', 'Logs folder opened — send me the activity.jsonl file and I will review it'],
-  'report.folder.fail': ['باز کردن پوشهٔ لاگ‌ها نشد — مسیر: %APPDATA%/ava-voice-assistant/logs', 'Could not open the logs folder — path: %APPDATA%/ava-voice-assistant/logs'],
-    'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
-    'dnsp.title': ['DNS Changer', 'DNS Changer'],
-    'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
-    'set.mic.checking': ['دسترسی میکروفون بررسی می‌شود…', 'Checking microphone access…'],
-    'set.mic.default': ['پیش‌فرض ویندوز', 'Windows default'],
-    'set.mic.test': ['تست زنده میکروفون', 'Live microphone test'],
-    'set.mic.testHint': ['حرف بزن — میله‌ها باید با صدای تو بالا و پایین شوند', 'Speak — the bars should move with your voice'],
-    'set.mic.note': ['برای دقت بیشتر در تشخیص گفتار، میکروفون نزدیک‌تر باشد و با آهنگ یکنواخت حرف بزن.', 'For better recognition accuracy, stay close to the microphone and speak at an even pace.'],
-    'set.stt.engine': ['موتور تشخیص گفتار', 'Speech recognition engine'],
-    'set.stt.engineHint': ['«خودکار»: اول موتور وب زنده؛ بعد سریع‌ترین‌های ابری — Whisper (۲-۳ ثانیه)، گوگل رایگان، GLM و آخر Gemini (دقیق ولی گاهی کند)', '"Auto": live web engine first; then fastest cloud engines — Whisper (2-3s), free Google, GLM, Gemini last (accurate but sometimes slow)'],
-    'set.stt.auto': ['خودکار (پیشنهادی)', 'Auto (recommended)'], 'set.stt.web': ['فقط موتور وب گوگل', 'Google web engine only'],
-    'set.stt.google': ['فقط گوگل رایگان HTTP (دی‌ان‌اس داخلی شکن — بدون نیاز به تغییر ویندوز)', 'Free Google HTTP only (built-in Shekan DNS bypass — no Windows change)'],
-    'set.stt.glm': ['فقط GLM-ASR ابری (نیاز به کلید)', 'Cloud GLM-ASR only (needs key)'],
-    'set.stt.lang': ['زبان گفتار', 'Speech language'],
-    'set.stt.langHint': ['زبانی که با آن فرمان می‌گویی — تشخیص با همین زبان انجام می‌شود', 'The language you speak commands in — recognition uses it'],
-    'set.stt.handsFree': ['حالت بی‌دست (گوش دائمی)', 'Hands-free (always listening)'],
-    'set.stt.handsFreeHint': ['آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A', 'AVA always listens; say the wake word first to run a command — shortcut: Ctrl+Alt+A'],
-    'set.stt.wake': ['کلمه بیدارباش «آوا»', 'Wake word "Ava"'],
-    'set.stt.wakeHint': ['در حالت بی‌دست فقط فرمان‌هایی که با «آوا» شروع شوند اجرا می‌شوند — و با همین یک «آوا» حالت گفتگو باز می‌شود: تا مدتی بقیهٔ حرف‌ها بدون تکرار اسم اجرا می‌شوند (مثل سیری)', 'In hands-free only commands starting with "Ava" run — and that one "Ava" opens conversation mode: for a while the rest runs without repeating the name (like Siri)'],
-    'set.stt.gkey': ['کلید اختصاصی موتور گفتار گوگل (اختیاری — مربوط به جمنای نیست)', 'Custom Google speech key (optional — not for Gemini)'],
-    'set.stt.gkeyHint': ['خالی = کلید رایگان داخلی — فقط اگر با 403 روبه‌رو شدی', 'Empty = built-in free key — only if you hit 403 errors'],
-    'set.stt.gkeyPh': ['خالی = رایگان و بدون کلید', 'Empty = free, no key'],
-    'set.stt.demo': ['حالت نمایشی (دمو)', 'Demo mode'],
-    'set.stt.demoHint': ['اگر موتوری در دسترس نبود، فرمان نمونه اجرا شود — پیش‌فرض: خاموش', 'If no engine is available, run a sample command — default: off'],
-    'set.stt.note': ['بلندی صدای میکروفون خودکار نرمال می‌شود، آستانه تشخیص صدا برای هر میکروفون تطبیقی تنظیم می‌شود و اگر موتوری جواب نداد، همان صدا به موتور بعدی فرستاده می‌شود.', 'Microphone loudness is auto-normalized, the voice threshold adapts to your mic, and if one engine fails the same audio is retried on the next engine.'],
-    'set.dict.start': ['شروع و پایان', 'Start and stop'],
-    'set.dict.startHint': ['بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین', 'Say "Ava type" to start; "Ava done" or "stop typing" to finish — or use the button'],
-    /* v0.51 — Push-to-Talk */
-    'set.ptt.title': ['دکمهٔ فشاری صحبت (Push-to-Talk)', 'Push-to-Talk button'],
-    'set.ptt.hint': ['تا وقتی دکمه را نگه داشته‌ای آوا گوش می‌دهد و به محض رهاکردن، ضبط تمام و فرمان اجرا می‌شود — بدون نیاز به گفتن «آوا» و بدون پرش پنجره. کلید ترکیبی هم قابل تنظیم است.', 'While held, AVA listens; on release the recording ends and the command runs — no wake word and no window stealing. Combos supported.'],
-    'set.ptt.hold': ['نگه‌دار و حرف بزن (hold)', 'Hold to talk'],
-    'set.ptt.toggle': ['یک بار بزن (toggle)', 'Press once (toggle)'],
-    'set.ptt.press': ['کلید دلخواهت را فشار بده…', 'Press your key combo…'],
-    'set.ptt.set': ['کلید ذخیره شد:', 'Key saved:'],
-    'set.ptt.on': ['دکمهٔ فشاری صحبت روشن شد', 'Push-to-Talk enabled'],
-    'set.ptt.off': ['دکمهٔ فشاری صحبت خاموش شد', 'Push-to-Talk disabled'],
-    'set.dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
-    'set.dict.target': ['خروجی تایپ', 'Typing output'],
-    'set.dict.targetHint': ['«کادر آوا»: متن در آوا نوشته و با دکمه کپی برمی‌دارد؛ «برنامه فعال»: همان‌جا که داری کار می‌کنی تایپ می‌شود (پیست خودکار)', '"AVA box": text is written here with a copy button; "Active app": typed directly into whatever app you use (auto paste)'],
-    'set.dict.box': ['کادر تایپ آوا (با کپی)', 'AVA typing box (with copy)'], 'set.dict.apps': ['تایپ مستقیم در برنامه فعال', 'Type directly into active app'],
-    'set.dict.custom': ['فرمان‌های صوتی سفارشی', 'Custom voice commands'],
-    'set.dict.customHint': ['مثال: عبارت گفتاری «آدرس» → متن «تهران، خیابان …» — یا «خط جدید»، «پاک کردن کلمه آخر»، «پاک کردن همه»', 'Example: spoken phrase "address" → text "…" — or "new line", "delete last word", "clear all"'],
-    'set.dict.phPh': ['وقتی گفتم… (مثلاً: آدرس)', 'When I say… (e.g.: address)'],
-    'set.dict.valPh': ['این را بنویس / خط جدید / پاک کردن کلمه آخر', 'Write this / new line / delete last word'],
-    'set.dict.add': ['افزودن', 'Add'],
-    'set.dict.note': ['علائم داخلی: بگو «نقطه»، «کاما»، «علامت سوال»، «علامت تعجب»، «دو نقطه»، «خط تیره»، «پرانتز باز/بسته»، «خط جدید»، «پاک کن».', 'Built-in punctuation (fa): نقطه، کاما، علامت سوال… switch speech language to English for period/comma/new line.'],
-    'set.dns.state': ['وضعیت فعلی', 'Current status'],
-    'set.dns.stateHint': ['«دی ان اس رو بردار» یا دکمه بازگردانی، همه‌چیز را به حالت خودکار (DHCP) برمی‌گرداند', 'Voice "remove DNS" or the reset button returns everything to automatic (DHCP)'],
-    'set.dns.reset': ['بازگردانی خودکار', 'Reset to auto'],
-    'set.dns.quick': ['افزودن سریع DNS', 'Quick add DNS'],
-    'set.dns.quickHint': ['فرم شیشه‌ای کوچک داخل صفحه اصلی: اسم + دو آی‌پی + فعال‌سازی فوری — با فرمان صوتی «تنظیم دی ان اس جدید» هم باز می‌شود', 'A small glass form right on the home page: name + two IPs + instant apply — also opens with the "new DNS" voice command'],
-    'set.dns.quickBtn': ['فرم DNS جدید', 'New DNS form'],
-    'set.dns.namePh': ['اسم DNS (مثلاً: الکترو، کاری‌ام، …)', 'DNS name (e.g.: Electro)'],
-    'set.dns.p1Ph': ['DNS اول (Preferred) — 78.157.42.100', 'Preferred DNS — 78.157.42.100'],
-    'set.dns.p2Ph': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'],
-    'set.dns.save': ['ذخیره DNS', 'Save DNS'], 'set.dns.cancelEdit': ['لغو ویرایش', 'Cancel editing'],
-    'set.dns.builtin': ['DNSهای معروف (یک‌کلیکی)', 'Well-known DNS (one click)'],
-    'set.dns.builtinHint': ['برای افزودن به فهرست‌ت کلیک کن — فعال‌سازی با دکمه «فعال‌سازی»', 'Click to add to your list — activate with the "Activate" button'],
-    'set.dns.mine': ['فهرست DNSهای من', 'My DNS list'],
-    'set.dns.mineHint': ['بدون محدودیت — فعال‌سازی، ویرایش و حذف', 'Unlimited — activate, edit and delete'],
-    'set.dns.note': ['فرمان صوتی: «دی ان اس الکترو» یا «دی اناس شکن» → مستقیم اعمال می‌شود؛ «دی ان اس شماره ۱» → پروفایل اول تو؛ «تنظیم دی ان اس جدید» → فرم شیشه‌ای. اعمال DNS پنجره تأیید مدیر (UAC) ویندوز را باز می‌کند.', 'Voice: "DNS Electro" applies directly; "DNS number 1" → your first profile; "new DNS" → glass form. Applying DNS opens the Windows UAC prompt.'],
-    'set.voice.tts': ['پاسخ گفتاری (TTS)', 'Spoken replies (TTS)'], 'set.voice.ttsHint': ['آوا جواب‌ها را با صدای بلند بخواند', 'AVA reads replies out loud'],
-    'set.voice.sel': ['صدای گوینده', 'Voice'], 'set.voice.selHint': ['اگر صدای فارسی نصب نباشد، از Settings › Time & Language › Speech اضافه کن', 'If no Persian voice is installed, add one from Settings › Time & Language › Speech'],
-    'set.ai.nokey': ['اتصال بدون کلید API', 'Connect without API key'],
-    'set.ai.nokeyHint': ['از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — پیام‌ها مستقیم به چت حسابت می‌روند و جوابش برمی‌گردد', 'From the chat page › "GLM chat" tab, sign in once — messages go straight to your account chat and the answer comes back'],
-    'set.ai.login': ['ورود به حساب GLM', 'Sign in to GLM'],
-    'set.ai.key': ['کلید API GLM (اختیاری)', 'GLM API key (optional)'],
-    'set.ai.keyHint': ['فقط اگر کلید داشته باشی — بدون آن هم چت از نشست حساب کار می‌کند. چند کلید؟ با ویرگول جدا کن (چرخش خودکار)', 'Only if you have a key — chat works via your account session without it. Multiple keys: comma separated (auto rotation)'],
-    'set.ai.keyPh': ['اختیاری — مثل: 1a2b3c…', 'Optional — e.g.: 1a2b3c…'], 'set.ai.show': ['نمایش', 'Show'],
-    'set.ai.model': ['مدل گفتگو (با کلید API)', 'Chat model (with API key)'],
-    'set.ai.modelHint': ['فلاش رایگان است؛ ۴.۶ هوشمندتر است', 'Flash is free; 4.6 is smarter'],
-    'set.ai.note': ['سوالات پیچیده‌ای که فرمان نباشند، خودکار به GLM می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.', 'Complex questions that are not commands go to GLM automatically for an analytical answer; new commands are built with your confirmation.'],
-    'set.app.lang': ['زبان برنامه / App language', 'App language / زبان برنامه'],
-    'set.app.langHint': ['کل رابط کاربری و پاسخ‌های آوا به این زبان نشان داده می‌شود', 'The whole UI and AVA replies are shown in this language'],
-    'set.app.fa': ['فارسی', 'فارسی'], 'set.app.en': ['English', 'English'],
-    'set.app.theme': ['تم ظاهری', 'Appearance theme'],
-    'set.app.themeHint': ['تیره زمردی یا روشن بنفش/کهربایی — از دکمه خورشید/ماه نوار بالا هم عوض می‌شود', 'Dark emerald or light violet/amber — also via the sun/moon button in the title bar'],
-    'set.app.dark': ['تیره (زمردی)', 'Dark (emerald)'], 'set.app.light': ['روشن (بنفش و کهربایی)', 'Light (violet & amber)'],
-    'set.app.lite': ['سبک روشن (سیستم ضعیف)', 'Lite light (weak PC)'], 'set.app.darklite': ['سبک تیره (سیستم ضعیف)', 'Lite dark (weak PC)'],
-    'set.app.safe': ['حالت امن (اگر برنامه درست کار نمی‌کند)', 'Safe mode (if the app misbehaves)'],
-    'set.app.safeHint': ['افکت‌های سنگین (شیشه، گرادیان، انیمیشن) خاموش می‌شوند تا روی هر سیستمی برنامه سالم کار کند', 'Heavy effects (glass, gradients, animation) turn off so the app works on any system'],
-    'set.app.errCopy': ['گزارش خطاها', 'Error report'],
-    'set.app.errCopyHint': ['اگر چیزی کار نمی‌کند، این دکمه گزارش کامل خطاها را کپی می‌کند تا بفرستی', 'If something is broken, this copies the full error report so you can send it'],
-    'set.app.errCopyBtn': ['کپی گزارش', 'Copy report'],
-    'toast.safeOn': ['حالت امن روشن است — افکت‌های سنگین خاموش', 'Safe mode is on — heavy effects disabled'],
-    'toast.safeOff': ['حالت امن خاموش شد', 'Safe mode off'],
-    'toast.safeAuto': ['چند خطا دیدم — خودکار حالت امن روشن شد', 'Errors detected — safe mode auto-enabled'],
-    'toast.copied': ['گزارش کپی شد — برایم بفرست ✓', 'Report copied — send it to me ✓'],
-    'toast.copyFail': ['کپی نشد — از پنل خطا استفاده کن', 'Copy failed — use the crash panel'],
-    'set.app.top': ['همیشه روی همه پنجره‌ها', 'Always on top'], 'set.app.topHint': ['پنجره آوا روی برنامه‌های دیگر باقی بماند', 'Keep the AVA window above other apps'],
-    'set.app.login': ['اجرای خودکار با ویندوز', 'Start with Windows'], 'set.app.loginHint': ['آوا هنگام روشن شدن سیستم بالا بیاید', 'Launch AVA when the system boots'],
-    'set.app.links': ['پیوندها', 'Links'], 'set.app.linksHint': ['ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود', 'Opens the repo and the latest download in your browser'],
-    'set.app.repo': ['ریپوی گیت‌هاب', 'GitHub repo'], 'set.app.dl': ['دانلود آخرین نسخه', 'Download latest'],
-    'set.upd.auto': ['بررسی خودکار هنگام شروع', 'Auto check on startup'],
-    'set.upd.autoHint': ['۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود', 'Check for a new version 12 seconds after launch'],
-    'set.upd.check': ['بررسی نسخه جدید', 'Check for updates'], 'set.upd.install': ['نصب و راه‌اندازی مجدد', 'Install and restart'],
-    'set.upd.manualDl': ['دانلود مستقیم نصّاب', 'Download installer directly'],
-    'set.upd.download': ['دانلود نسخه جدید', 'Download the new version'], 'set.upd.pause': ['توقف', 'Pause'], 'set.upd.resume': ['ادامه دانلود', 'Resume download'], 'set.upd.cancel': ['لغو', 'Cancel'],
-    'set.upd.note': ['بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.', 'Auto-check runs by itself, but downloading only when you want: hit “Download new version” whenever you like — pause or cancel anytime. Only changed parts are downloaded (delta update) and install is one click.'],
-    'hist.title': ['تاریخچه فرمان‌ها', 'Command history'], 'hist.recent': ['فرمان‌های اخیر', 'Recent commands'],
-    'hist.recentHint': ['روی هر فرمان بزنی دوباره اجرا می‌شود', 'Click any command to run it again'], 'hist.clear': ['پاک‌سازی', 'Clear'],
-    'hist.empty': ['هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.', 'No commands yet — try a suggestion or speak into the microphone.'],
-    'dict.title': ['تایپ صوتی', 'Voice typing'], 'dict.text': ['متن تایپ‌شده', 'Typed text'],
-    'dict.textHint': ['هر چه بگویی اینجا نوشته می‌شود؛ علائم را هم با صدا بگو (نقطه، کاما، علامت سوال…)', 'Whatever you say is written here; speak punctuation out loud (period, comma…)'],
-    'dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
-    'dict.ph': ['متن اینجا تایپ می‌شود… بگو «آوا تایپ» تا شروع کنم، و «آوا تموم» یا «قطع تایپ» تا تمام کنم.', 'Text appears here… say the typing command to start.'],
-    'dict.copy': ['کپی متن', 'Copy text'], 'dict.clear': ['پاک کردن', 'Clear'],
-    'dict.note': ['پایان تایپ: «آوا تموم» یا «قطع تایپ». محل خروجی (کادر آوا یا برنامه فعال) را از تنظیمات › تایپ صوتی عوض کن. فرمان‌های صوتی دلخواهت را هم همان‌جا تعریف کن.', 'Stop typing with the stop command; change the output target and custom commands in Settings › Voice typing.'],
-    'chat.title': ['چت با هوش مصنوعی', 'AI chat'], 'chat.quick': ['چت سریع آوا', 'AVA quick chat'], 'chat.zai': ['صفحه چت GLM (z.ai)', 'GLM chat (z.ai)'],
-    'chat.ph': ['پیامت را بنویس… مثلاً: چطور حافظه رم رو بهینه کنم؟', 'Write your message… e.g.: how do I optimize RAM?'],
-    'chat.zaiHint': ['یک بار وارد حسابت شو — نشست ذخیره می‌ماند و «چت سریع» و دستیار صوتی هم بدون کلید API به همین حساب وصل می‌شوند.', 'Sign in once — the session is kept and quick chat + the voice assistant connect to the same account without an API key.'],
-    'chat.note': ['آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.', 'AVA asks GLM complex questions for you; new commands are created with your confirmation.'],
-    'sb.micReady': ['میکروفون: آماده', 'Mic: ready'],
-    'cf.run': ['اجرا', 'Run'], 'cf.skip': ['بی‌خیال', 'Skip'],
-    'dnsq.title': ['DNS جدید', 'New DNS'], 'dnsq.sub': ['فقط اسم و دو آی‌پی — همین!', 'Just a name and two IPs — that is it!'],
-    'dnsq.name': ['اسم DNS', 'DNS name'], 'dnsq.namePh': ['مثلاً: الکترو', 'e.g.: Electro'],
-    'dnsq.p1': ['DNS اول (Preferred)', 'Preferred DNS'], 'dnsq.p1Ph': ['78.157.42.100', '78.157.42.100'],
-    'dnsq.p2': ['DNS دوم (Alternate) — اختیاری', 'Alternate DNS — optional'], 'dnsq.p2Ph': ['78.157.42.101', '78.157.42.101'],
-    'dnsq.apply': ['بعد از ذخیره، همین حالا روی ویندوز اعمال شود (UAC)', 'Apply to Windows right after saving (UAC)'],
-    'dnsq.save': ['ذخیره (Enter)', 'Save (Enter)'], 'dnsq.cancel': ['کنسل', 'Cancel'],
-    'about.desc': ['نسخه ۰.۲۵ — «بازسازی کامل مکالمهٔ صوتی (AVE3)»: هر جلسهٔ گوش‌دادن حالا دو مسیر موازی دارد — شنوندهٔ زندهٔ وب (همان که در کروم عالی بود) + ضبط PCM از لحظهٔ صفر با VAD تطبیقی. اگر موتور وب بمیرد، دیگر «دوباره گوش نمی‌دهیم» — همان صدای ضبط‌شده بی‌درنگ به مسابقهٔ موازی موتورهای ابری (گوگل/Whisper/GLM/Gemini، سقف ۱۲ ثانیه برای هر موتور) می‌رود؛ کاربر هرگز چیزی را تکرار نمی‌کند. پایان جمله با سکوت واقعی (VAD ۱.۲ ثانیه‌ای) تصمیم گرفته می‌شود و teardown تمیز جلسه با شمارش نسل، رفتارهای عجیب استارت/استارت را ریشه‌کن می‌کند.', 'v0.25 — "voice conversation rebuilt from scratch (AVE3)": every listening session now runs two parallel tracks — the live web listener (the one that was great in Chrome) plus a from-zero PCM buffer with adaptive VAD. If the web engine dies, we never re-listen — the already-captured audio instantly enters the parallel cloud race (Google/Whisper/GLM/Gemini, 12s cap each); the user never repeats a command. End-of-utterance is decided by real silence (1.2s VAD) and clean epoch-guarded teardown kills weird start/start behavior.'],
-    'tb.theme': ['تم روشن / تیره', 'Light / Dark theme'],
-    'tb.min': ['کوچک کردن', 'Minimize'], 'tb.max': ['بزرگ کردن / بازگردانی', 'Maximize / Restore'], 'tb.close': ['بستن', 'Close'],
-    'nav.home': ['خانه صوتی', 'Voice home'], 'nav.dict': ['تایپ صوتی — بگو «آوا تایپ»', 'Voice typing — say "Ava type"'],
-    'nav.chat': ['چت با هوش مصنوعی GLM (بدون کلید)', 'Chat with GLM AI (no API key)'],
-    'nav.ext': ['افزونه‌ها — DNS Changer، پلیر موزیک و بیشتر', 'Extensions — DNS Changer, music player and more'],
-    'nav.dnsExt': ['DNS Changer — مدیریت کامل DNS', 'DNS Changer — full DNS management'],
-    'nav.history': ['تاریخچه فرمان‌ها', 'Command history'], 'nav.plugins': ['افزونه‌ها — به‌زودی', 'Plugins — soon'],
-    'nav.about': ['درباره آوا', 'About AVA'], 'nav.settings': ['تنظیمات', 'Settings'],
-    'hero.sub': ['فرمانت را بگو تا برایت انجامش بدهم.', 'Say the word and I will do it for you.'],
-    'hf.tip': ['حالت بی‌دست (Ctrl+Alt+A) — با گفتن «آوا …» فرمان بده', 'Hands-free (Ctrl+Alt+A) — start with "Ava …"'],
-    'hf.label': ['حالت بی‌دست', 'Hands-free'],
-    'suggest.hint': ['مثلاً بگو…', 'Try saying…'],
-    'cmd.ph': ['فرمان را اینجا بنویس یا دکمه میکروفون را بزن…', 'Type a command here or press the mic button…'],
-    'set.title': ['تنظیمات', 'Settings'], 'set.back': ['بازگشت به خانه', 'Back to home'],
-    'set.nav.mic': ['میکروفون', 'Microphone'], 'set.nav.stt': ['تشخیص گفتار', 'Speech recognition'],
-    'set.nav.dict': ['تایپ صوتی', 'Voice typing'], 'set.nav.dns': ['DNS و شبکه', 'DNS & network'],
-    'set.nav.wake': ['بیدارباش', 'Wake word'],
-    'set.wake.note': ['بیدارباش یعنی آوا همیشه گوش می‌دهد که کی داری حرف می‌زنی — حتی وقتی برنامه مینیمایز باشد یا در بازی هستی. با گفتن «آوا» (یا تلفظ‌های نزدیک مانند «آبا») آمادهٔ گوش دادن می‌شود.', 'Wake word means AVA always listens for your voice — even minimized or in a game. Say "Ava" (or close pronunciations like "Aba") and it gets ready to listen.'],
-    'set.dc.adv': ['مخاطبین، روش تماس و مکان دکمه (پیشرفته)', 'Contacts, call mode & button position (advanced)'],
-    'set.nav.voice': ['صدا و پاسخ', 'Voice & replies'], 'set.nav.ai': ['هوش مصنوعی', 'AI'],
-    'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
-    'set.nav.ext': ['افزونه‌ها', 'Extensions'],
-    'set.nav.perf': ['بهینه‌سازی', 'Optimization'],
-    'set.navg.speak': ['گفتار', 'Speech'], 'set.navg.voice': ['صدا و هوش', 'Voice & AI'],
-    'set.navg.connect': ['اتصال‌ها', 'Integrations'], 'set.navg.system': ['سیستم', 'System'],
-    'set.sub.appLook': ['زبان و ظاهر', 'Language & theme'], 'set.sub.appRun': ['پنجره و شروع', 'Window & startup'],
-    'set.sub.appMem': ['یادآوری و یادگیری', 'Reminders & learning'], 'set.sub.appMisc': ['عیب‌یابی و پیوندها', 'Diagnostics & links'],
-    'set.ptt.onoff': ['روشن/خاموش', 'On/off'],
-    'set.ext.dns': ['افزونهٔ DNS Changer', 'DNS Changer extension'],
-    'set.ext.dnsHint': ['با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند', 'When on, its button stays in the side rail and opens full DNS management'],
-    'set.ext.music': ['افزونهٔ پلیر موزیک', 'Music player extension'],
-    'set.ext.musicHint': ['تا وقتی فعالش نکنی در ستون نمی‌آید و برنامه سبک‌تر می‌ماند', 'Until you enable it, it stays out of the rail and the app stays light'],
-    'set.ext.open': ['مدیریت افزونه‌ها', 'Manage extensions'],
-    'set.ext.openHint': ['صفحهٔ افزونه‌ها: فعال‌سازی، باز کردن و کارت‌های جدید در نسخه‌های بعدی', 'The extensions page: enable, open, and new cards in future releases'],
-    'set.ext.openBtn': ['باز کردن افزونه‌ها', 'Open extensions'],
-    'set.ext.note2': ['به‌زودی افزونه‌های بیشتری مثل آب‌وهوا و تایمر به همین صفحه اضافه می‌شود.', 'More extensions like Weather and Timer will arrive on this page soon.'],
-    'set.perf.anim': ['انیمیشن‌ها', 'Animations'],
-    'set.perf.animHint': ['همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر', 'All motion is silenced — great for weak laptops and battery'],
-    'set.perf.fx': ['افکت‌های پس‌زمینه', 'Background effects'],
-    'set.perf.fxHint': ['ذرات، شفق و هالهٔ دور دکمه حذف می‌شوند و شیشه‌ها ساده می‌شوند', 'Removes particles, aurora and the orb halo; glass becomes simple'],
-    'set.perf.theme': ['تم‌های سبک (سیستم ضعیف)', 'Lite themes (weak PC)'],
-    'set.perf.themeHint': ['هر بار کلیک، یک قدم جلو: سبک روشن → سبک تیره → بازگشت — ظاهر صاف بدون شیشه و گرادیان سنگین', 'Each click cycles: lite light → lite dark → back — flat look, no heavy glass or gradients'],
-    'set.perf.themeBtn': ['تغییر تم سبک', 'Cycle lite theme'],
-    'set.perf.note': ['تم سبک خودش افکت‌ها و انیمیشن‌ها را هم کم می‌کند؛ اگر فقط کمی سبک‌تر شدن کافی است، فقط همان دو کلید بالا را خاموش کن.', 'The lite theme also trims effects and animations by itself; for a lighter touch just use the two switches above.'],
-    'set.ai.save': ['ذخیره تنظیمات هوش مصنوعی', 'Save AI settings'],
-    'toast.savedAll': ['همهٔ تنظیمات هوش مصنوعی ذخیره شد ✓', 'All AI settings saved ✓'],
-    'toast.themeLite': ['تم سبک فعال شد — برای سیستم‌های ضعیف', 'Lite theme on — made for weak PCs'],
-    'toast.extOn': ['افزونهٔ {x} فعال شد — دکمه‌اش به ستون کنار آمد', '{x} extension enabled — added to the rail'],
-    'toast.extOff': ['افزونهٔ {x} خاموش شد', '{x} extension disabled'],
-    'toast.noAnimOn': ['انیمیشن‌ها خاموش شد — سبک‌تر از همیشه', 'Animations off — lighter than ever'],
-    'toast.noAnimOff': ['انیمیشن‌ها روشن شد', 'Animations back on'],
-    'toast.noFxOn': ['افکت‌های پس‌زمینه خاموش شد', 'Background effects off'],
-    'toast.noFxOff': ['افکت‌های پس‌زمینه روشن شد', 'Background effects on'],
-    'music.pausedFling': ['ویجت بسته شد — پخش متوقف شد', 'Widget dismissed — playback paused'],
-    'ext.title': ['افزونه‌ها', 'Extensions'],
-    'ext.hint': ['افزونه‌ها بخش‌های اضافهٔ آوا هستند؛ هر کدام را فعال کنی دکمه‌اش به ستون کنار می‌آید و وقتی لازمشان نداری برنامه سبک و جمع‌وجور می‌ماند.', 'Extensions are optional AVA modules; enabling one adds its button to the side rail, keeping the app light otherwise.'],
-    'ext.dns': ['DNS Changer', 'DNS Changer'],
-    'ext.dnsDesc': ['تغییر سریع DNS با کلیک یا صدا، پروفایل نام‌دار بی‌نهایت، پینگ سرعت و وضعیت لحظه‌ای اتصال', 'Fast DNS switching by click or voice, named profiles, speed ping and live status'],
-    'ext.music': ['پلیر موزیک', 'Music player'],
-    'ext.musicDesc': ['پلی‌لیست از پوشهٔ خودت با کاور، ویجت صفحه اصلی و کنترل صوتی', 'Playlist from your own folder with covers, home widget and voice control'],
-    'ext.open': ['باز کردن', 'Open'],
-    'ext.soon': ['به‌زودی', 'Soon'],
-    'ext.soonWeather': ['آب‌وهوا', 'Weather'],
-    'ext.soonDesc': ['وضعیت هوا و پیش‌بینی چند روز آینده — با فرمان صوتی', 'Current weather and multi-day forecast — by voice'],
-    'ext.soonTimer': ['تایمر و پومودورو', 'Timer & Pomodoro'],
-    'ext.soonDesc2': ['تایمر صوتی، شمارش معکوس و حالت تمرکز', 'Voice timer, countdown and focus mode'],
-    'ext.discord': ['کنترل دیسکورد با صدا', 'Voice-controlled Discord'],
-    'ext.discordDesc': ['«به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»', '"Call Ali", "hang up", "mute Discord" — calls, end, mute, answer'],
-    'ext.discordHint': ['زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد', 'Call friends, hang up, mute and answer calls — via Discord keybinds'],
-    'disc.working': ['در حال اجرای فرمان دیسکورد…', 'Running the Discord command…'],
-    'disc.done': ['انجام شد ✓', 'Done ✓'],
-    'disc.fail': ['فرمان دیسکورد اجرا نشد', 'Discord command failed'],
-    'disc.muted': ['میکروفون دیسکورد قطع/وصل شد ✓', 'Discord mic toggled ✓'],
-    'disc.deafened': ['صدای دیسکورد قطع/وصل شد ✓', 'Discord sound toggled ✓'],
-    'disc.hangup': ['تماس قطع شد ✓', 'Call disconnected ✓'],
-    'disc.answer': ['تماس جواب داده شد ✓', 'Call answered ✓'],
-    'disc.decline': ['تماس رد شد ✓', 'Call declined ✓'],
-    'disc.focused': ['پنجرهٔ دیسکورد فعال شد ✓', 'Discord window focused ✓'],
-    'disc.calling': ['در حال زنگ زدن به {x} در دیسکورد…', 'Calling {x} on Discord…'],
-    'disc.needName': ['اسم دوستت را بنویس', "Type your friend's name first"],
-    /* v0.35 — پیام خصوصی + قطع/وصل کلاً */
-    'disc.msgSent': ['پیامت برای {x} فرستاده شد ✓', 'Your message was sent to {x} ✓'],
-    'disc.msgSentUnver': ['پیامت برای {x} رفت — نتوانستم ارسال را در صفحه تایید کن؛ یک نگاه به دیسکورد بنداز', 'Message handed to {x} — could not verify on screen; take a quick look at Discord'],
-    'disc.msgNeedText': ['چه پیامی برای {x} بفرستم؟ آخرش بگو «که …» و متن پیام', 'What message should I send to {x}? End with the text'],
-    'disc.comboOff': ['میکروفون و صدای دیسکورد هر دو قطع شدند ✓', 'Discord mic and sound are both off ✓'],
-    'disc.comboOn': ['میکروفون و صدای دیسکورد هر دو وصل شدند ✓', 'Discord mic and sound are both back on ✓'],
-    /* v0.29 — نتایج صادقانهٔ UIA + ان‌میوت واقعی */
-    'disc.unmuted': ['میکروفون دیسکورد وصل شد ✓', 'Discord mic unmuted ✓'],
-    'disc.alreadyMuted': ['میکروفون دیسکورد از قبل بی‌صدا بود ✓', 'Discord mic was already muted ✓'],
-    'disc.alreadyOn': ['میکروفون دیسکورد از قبل وصل بود ✓', 'Discord mic was already on ✓'],
-    'disc.alreadyDeaf': ['صدای دیسکورد از قبل قطع بود ✓', 'Discord was already deafened ✓'],
-    /* v0.30 — وضعیت واقعی دیسکورد (بدون هیچ کلیکی) */
-    'disc.stateMuted': ['میکروفون دیسکورد قطع است', 'Discord mic is muted'],
-    'disc.stateOn': ['میکروفون دیسکورد وصل است', 'Discord mic is on'],
-    'disc.stateDeaf': ['صدای دیسکورد قطع است', 'Discord sound is off'],
-    'disc.stateSound': ['صدای دیسکورد وصل است', 'Discord sound is on'],
-    'disc.stateFail': ['وضعیت دیسکورد خوانده نشد — دیسکورد باز است؟', 'Could not read Discord state — is Discord open?'],
-    'wake.woke': ['آوا شنیدم! گوش می‌دهم…', 'Heard "Ava"! Listening…'],
-    'wake.alwaysNeedPack': ['برای بیدارباش همیشگی، اول بستهٔ موتور آفلاین را از تنظیمات › گفتار دانلود کن', 'For always-on wake word, download the offline engine pack first (Settings › Speech)'],
-    'wake.alwaysPreparing': ['در حال آماده‌سازی بیدارباش همیشگی… بستهٔ آفلاین دانلود می‌شود (فقط بار اول — بعدش ۱۰۰٪ آفلاین)', 'Preparing always-on wake word… downloading the offline pack (first time only — fully offline afterwards)'],
-    'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
-    'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
-    'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
-    /* v0.34 — سلامت و تست بیدارباش + حالت ابری بدون بستهٔ آفلاین */
-    'wake.alwaysCloudOn': ['بیدارباش همیشگی روشن شد — تا نصب بستهٔ آفلاین، تشخیص «آوا» با اینترنت انجام می‌شود', 'Always-on wake is on — until the offline pack installs, "Ava" detection uses the internet'],
-    'wake.healthTitle': ['وضعیت بیدارباش', 'Wake word status'],
-    'wake.healthIdle': ['خاموش — سوییچ «بیدارباش همیشگی» را روشن کن', 'Off — turn on the always-on wake switch'],
-    'wake.healthCloud': ['فعال — تشخیص «آوا» با اینترنت (بستهٔ آفلاین هنوز نصب نشده)', 'Active — "Ava" detection via internet (offline pack not installed yet)'],
-    'wake.healthLocal': ['فعال — تشخیص «آوا» ۱۰۰٪ آفلاین داخل ویندوز', 'Active — "Ava" detection 100% offline on-device'],
-    'wake.healthMic': ['در انتظار میکروفون — ۳۰ ثانیه دیگر دوباره تلاش می‌کنم', 'Waiting for the microphone — retrying in 30s'],
-    'wake.healthFail': ['شروع نشد: {x}', 'Failed to start: {x}'],
-    'wake.healthLast': ['آخرین شنیده: «{x}»', 'Last heard: "{x}"'],
-    'wake.testBtn': ['تست بیدارباش', 'Test wake word'],
-    'wake.testHint': ['الان بگو: «آوا» — نتیجه همین‌جا نشان داده می‌شود', 'Now say: "Ava" — the result shows right here'],
-    'wake.testOk': ['تست موفق — آوا شنید و بیدار شد ✓', 'Test passed — Ava heard you and woke up ✓'],
-    'wake.testMiss': ['شنیدم: «{x}» — ولی «آوا» توش نبود؛ کمی بلندتر و نزدیک‌تر به میکروفون امتحان کن', 'Heard: "{x}" — no "Ava" in it; try louder and closer to the mic'],
-    'wake.testOff': ['اول بیدارباش همیشگی را روشن کن، بعد تست بگیر', 'Turn always-on wake on first, then test'],
-    /* v0.34 — تایپ صوتی در برنامهٔ فعال */
-    'dict.sysOn': ['تایپ در همین برنامه شروع شد — حرف بزن؛ پایان: «آوا تموم»', 'Typing into this app started — speak; say the stop command to finish'],
-    'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
-    'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
-    'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود — حتی وقتی آوا مینیمایز است، پشت بازی‌ست یا مانیتور خاموش است (بدون توقف تایمر و صدا). با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود', 'Keeps the mic open and checks speech 100% on-device — even when Ava is minimized, behind a fullscreen game, or the monitor is off (timers and audio never throttle). Saying "Ava" plays the chime and starts listening'],
-    /* v0.46 — کلمهٔ بیدارباش قابل تغییر (در هر دو دیکشنری) */
-    'set.stt.wakeWordText': ['کلمهٔ بیدارباش (اسم صدازدن)', 'Wake word (call name)'],
-    'set.stt.wakeWordTextHint': ['اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود', 'If "Ava" is misheard or you prefer another name, change it here — phonetic matching adapts to any word'],
-    'toast.wakeWordSet': ['از این به بعد با گفتن «{x}» بیدار می‌شوم', 'From now on say "{x}" to wake me'],
-    'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
-    'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
-    'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
-    'set.ai.gemTesting': ['در حال تست…', 'Testing…'],
-    'set.ai.gemTestNoKey': ['اول کلید جمنای را در کادر بالا بگذار', 'Put your Gemini key in the field above first'],
-    'set.ai.gemTestOk': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه', 'Connected ✓ model {x} — {y} ms'],
-    'set.ai.gemTestOkList': ['وصل شد ✓ مدل {x} — {y} میلی‌ثانیه ({z} مدل زنده پیدا شد — دکمهٔ «فهرست مدل‌ها»)', 'Connected ✓ model {x} — {y} ms ({z} live models found — see "Model list")'],
-    'set.ai.gemTestToastOk': ['جمنای وصل است ✓', 'Gemini is connected ✓'],
-    'set.ai.gemTestFail': ['وصل نشد: {x}', 'Connection failed: {x}'],
-    'set.ai.gemBase': ['آدرس رلهٔ جمنای (پیشرفته — اختیاری)', 'Gemini relay URL (advanced — optional)'],
-    'set.ai.gemBaseHint': ['اگر گوگل منطقهٔ تو را محدود کرده («location is not supported»)، آدرس پایهٔ یک پروکسی/ورکر شخصی را بگذار (مثل https://my-worker.workers.dev) تا درخواست‌های جمنای از سرور خودت رد شوند؛ خالی = مستقیم گوگل', 'If Google blocks your region ("location is not supported"), put the base URL of your own proxy/worker (e.g. https://my-worker.workers.dev) — requests go through your server; empty = direct Google'],
     'disc.dmOnly': ['پیام‌رسان دیسکورد باز شد ولی دکمهٔ تماس پیدا نشد — مختصات دکمه را در تنظیمات دیسکورد آزمایش/تنظیم کن', 'Discord DM opened but the call button was not found — calibrate it in Discord settings'],
     'disc.assist': ['صفحهٔ مخاطب در دیسکورد باز شد — فقط دکمهٔ تماس را بزن ✓', 'Contact page is open in Discord — just press the call button ✓'],
     'set.dc.callMode': ['روش شروع تماس', 'How calls start'],
@@ -575,7 +277,6 @@
   'report.folder': ['پوشهٔ لاگ‌ها باز شد — فایل activity.jsonl (و activity.log) را برای من بفرست تا خودم بررسی کنم', 'Logs folder opened — send me the activity.jsonl file and I will review it'],
   'report.folder.fail': ['باز کردن پوشهٔ لاگ‌ها نشد — مسیر: %APPDATA%/ava-voice-assistant/logs', 'Could not open the logs folder — path: %APPDATA%/ava-voice-assistant/logs'],
     'disc.hint': ['یک‌بار در دیسکورد این کلیدها را بساز: Settings › Keybinds → Disconnect از Voice Channel = Ctrl+Shift+H، Answer Call = Ctrl+Shift+A، Decline Call = Ctrl+Shift+E — بعد با صدا بگو «تماس رو قطع کن». میوت (Ctrl+Shift+M) و بی‌صدای کل (Ctrl+Shift+D) با پیش‌فرض دیسکورد کار می‌کنند.', 'Once in Discord make these keybinds: Settings › Keybinds → Disconnect from Voice Channel = Ctrl+Shift+H, Answer Call = Ctrl+Shift+A, Decline Call = Ctrl+Shift+E — then just say "hang up". Mute (Ctrl+Shift+M) and Deafen (Ctrl+Shift+D) work with Discord defaults.'],
-    'dnsp.title': ['DNS Changer', 'DNS Changer'],
     'set.mic.input': ['ورودی میکروفون', 'Microphone input'],
     'set.mic.checking': ['دسترسی میکروفون بررسی می‌شود…', 'Checking microphone access…'],
     'set.mic.default': ['پیش‌فرض ویندوز', 'Windows default'],
@@ -665,8 +366,6 @@
     'toast.safeOn': ['حالت امن روشن است — افکت‌های سنگین خاموش', 'Safe mode is on — heavy effects disabled'],
     'toast.safeOff': ['حالت امن خاموش شد', 'Safe mode off'],
     'toast.safeAuto': ['چند خطا دیدم — خودکار حالت امن روشن شد', 'Errors detected — safe mode auto-enabled'],
-    'toast.copied': ['گزارش کپی شد — برایم بفرست ✓', 'Report copied — send it to me ✓'],
-    'toast.copyFail': ['کپی نشد — از پنل خطا استفاده کن', 'Copy failed — use the crash panel'],
     'set.app.top': ['همیشه روی همه پنجره‌ها', 'Always on top'], 'set.app.topHint': ['پنجره آوا روی برنامه‌های دیگر باقی بماند', 'Keep the AVA window above other apps'],
     'set.app.login': ['اجرای خودکار با ویندوز', 'Start with Windows'], 'set.app.loginHint': ['آوا هنگام روشن شدن سیستم بالا بیاید', 'Launch AVA when the system boots'],
     'set.app.links': ['پیوندها', 'Links'], 'set.app.linksHint': ['ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود', 'Opens the repo and the latest download in your browser'],
@@ -749,7 +448,6 @@
     'tag.reply': ['پاسخ آوا', 'AVA reply'], 'tag.custom': ['فرمان سفارشی', 'Custom command'], 'tag.demo': ['شبیه‌سازی دمو', 'Demo simulation'],
     'tag.ai': ['هوش مصنوعی', 'AI'], 'tag.aiCmd': ['هوش مصنوعی + فرمان جدید', 'AI + new command'],
     'tag.heard': ['شنیدم', 'Heard'],
-    'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
     'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
     'default.reply': ['این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!', 'I have not learned this command yet. Connect the AI (GLM chat tab › sign in) and I will analyze anything you ask there!'],
     'cmd.fail': ['یه خطای داخلی موقع اجرای این فرمان پیش آمد؛ دوباره امتحان کن. اگر تکرار شد، از تنظیمات › برنامه › گزارش خطاها بفرست.', 'An internal error happened while running that command; please try again. If it repeats, send the error report from Settings › App.'],
@@ -1266,7 +964,6 @@
   const optNoFx = $('#optNoFx');
   const btnLiteTheme = $('#btnLiteTheme');
   const btnSaveAi = $('#btnSaveAi');
-  const mViz = $('#mViz');
   const btnMusicBack = $('#btnMusicBack');
   const btnMusicFolder = $('#btnMusicFolder');
   const mFolder = $('#mFolder');
@@ -1728,14 +1425,6 @@
   tickClock();
   setInterval(tickClock, 15000);
 
-  /* ---------- وضعیت ویژوالایزر (v0.16.2) ----------
-     ⚠ این let باید «قبل از» اولین applyPerf() بیاید؛ applyPerf در حین بوت
-     ممکن است vizStop() را صدا بزند (safeMode/noFx/lite) و اگر vizRaf هنوز
-     در TDZ (منطقهٔ مرگ موقت let) باشد، کل بوت با ReferenceError می‌مرد —
-     باگ گزارش کرش کاربر: «Cannot access 'vizRaf' before initialization».
-     تعریف تابع‌های viz پایین فایل می‌ماند (hoist کامل دارند). */
-  let vizCtx = null, vizAnalyser = null, vizData = null, vizRaf = 0, vizTick = false;
-
   /* ---------- تم روشن/تیره/سبک (v0.15) + تیرهٔ سبک v0.17 + بهینه‌سازی ---------- */
   const flatTheme = () => (settings.theme === 'lite' || settings.theme === 'darklite');
   function applyTheme() {
@@ -1752,8 +1441,6 @@
     body.classList.toggle('perf-noanim', !!settings.noAnim || !!settings.safeMode);
     body.classList.toggle('perf-nofx', !!settings.noFx || flatTheme() || !!settings.safeMode);
     body.classList.toggle('safe-orb', !!settings.safeMode); /* دیسک شیشه‌ای → ساده و صاف */
-    /* try/catch اضافی: هیچ خطایی از این مسیر نباید بوت را بکشد (سپر دوم بعد از فیکس TDZ) */
-    if (typeof vizStop === 'function' && (settings.noFx || flatTheme() || settings.safeMode)) { try { vizStop(); } catch (_) { /* noop */ } }
   }
   function syncPerfUI() {
     if (optNoAnim) optNoAnim.checked = !!settings.noAnim;
@@ -7099,11 +6786,6 @@
   if (bridge && bridge.voice && bridge.voice.onPttDown) bridge.voice.onPttDown(() => pttStart());
   if (bridge && bridge.voice && bridge.voice.onPttUp) bridge.voice.onPttUp(() => pttStop());
 
-  /* ---------- آیتم‌های قفل‌شده سایدبار ---------- */
-  document.querySelectorAll('.rail-item.locked').forEach((b) =>
-    b.addEventListener('click', () => toast(t('toast.locked'), '#i-info'))
-  );
-
   /* ---------- تاریخچه فرمان‌ها ---------- */
   function pushHistory(cmd, ok = true) {
     const t = String(cmd || '').trim();
@@ -8519,6 +8201,9 @@
   /* ============================================================
      چت با هوش مصنوعی GLM — بدون کلید API (با نشست حساب z.ai) یا با کلید
      ============================================================ */
+  /* v0.60 — نشانِ بافتار تحقیق وب: گاردهای دور دوم و سازندهٔ بلوک نتایج همه از این ثابت استفاده می‌کنند
+     (بایت‌ها عین رشتهٔ قبلی است — فقط منبع واحد شد) */
+  const RESEARCH_CTX_MARK = '[نتایج واقعی وب';
   const AI_SYSTEM_FA =
     'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود و به فرمان‌های کاربر گوش می‌دهی.\n' +
     'همیشه فارسی، کوتاه (حداکثر ۳ جمله)، دوستانه و مفید جواب بده.\n' +
@@ -8734,13 +8419,13 @@
     const st = stripThink(r.text);
     if (st.think) actLog('interpret: گفت «' + String(text).slice(0, 48) + '» | فهمید(ai فکر) ' + st.think.slice(0, 120), 'ui', { ev: 'interpret', via: 'ai', think: st.think.slice(0, 220) });
     const rs = parseResearch(st.body);
-    const _done = extraCtx && String(extraCtx).indexOf('[نتایج واقعی وب') >= 0;
+    const _done = extraCtx && String(extraCtx).indexOf(RESEARCH_CTX_MARK) >= 0;
     if (rs.query && !_done && bridge && bridge.ai && bridge.ai.research) {
       actLog('ai research(جواب): «' + rs.query.slice(0, 80) + '» → وب‌گردی واقعی، بعد دور دوم');
       const rr = await bridge.ai.research(rs.query).catch(() => null);
       const rt = (rr && rr.text) || '';
       const ctx2 = (extraCtx || '') +
-        '\n[نتایج واقعی وب برای «' + rs.query + '»]' +
+        '\n' + RESEARCH_CTX_MARK + ' برای «' + rs.query + '»]' +
         (rt ? '\n' + rt : '\n(تحقیق وب ناموفق بود — صادقانه بگو چی پیدا نشد)') +
         '\n[پایان نتایج — حالا فقط بر پایهٔ همین نتایج جواب نهایی بده؛ بلوک RESEARCH دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز]';
       const r2 = await aiAsk(text, ctx2);
@@ -9298,14 +8983,14 @@
              (قابل اجرای آفلاین نیستند) — صادقانه لاگ می‌شود. حلقه بیش از یک دور
              نیست: دور دوم هر research ای بدهد فیلتر می‌شود. */
           const _rAct = doRes.do.actions.find((a) => a && a.act === 'research');
-          const _rDone = extraCtx && String(extraCtx).indexOf('[نتایج واقعی وب') >= 0;
+          const _rDone = extraCtx && String(extraCtx).indexOf(RESEARCH_CTX_MARK) >= 0;
           if (_rAct && !_rDone && bridge && bridge.ai && bridge.ai.research) {
             const _rq = String(_rAct.value || '').trim().slice(0, 150);
             actLog('ai research: «' + _rq + '» → وب‌گردی واقعی، بعد دور دوم');
             const _rr = await bridge.ai.research(_rq).catch(() => null);
             const _resTxt = (_rr && _rr.text) || '';
             const _ctx2 = (extraCtx || '') +
-              '\n[نتایج واقعی وب برای «' + _rq + '»]' +
+              '\n' + RESEARCH_CTX_MARK + ' برای «' + _rq + '»]' +
               (_resTxt ? '\n' + _resTxt : '\n(تحقیق وب ناموفق بود — صادقانه بگو و هیچ action نساز)') +
               '\n[پایان نتایج — حالا فقط بر پایهٔ همین نتایج بلوک DO نهایی بده؛ act=research دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز]';
             const _r2 = await aiAsk(cmd, _ctx2);
@@ -9918,8 +9603,8 @@
 
   if (mAudio) {
     mAudio.volume = settings.musicVol;
-    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); vizStart(); actLog('music play'); });
-    mAudio.addEventListener('pause', () => { music.playing = false; updatePlayerUI(); vizStop(); });
+    mAudio.addEventListener('play', () => { music.playing = true; updatePlayerUI(); actLog('music play'); });
+    mAudio.addEventListener('pause', () => { music.playing = false; updatePlayerUI(); });
     mAudio.addEventListener('ended', () => {
       if (music.repeat === 'one') playTrack(music.cur);
       else musicNext(true);
@@ -9972,83 +9657,6 @@
       }) : null;
     } catch (_) { /* noop */ }
   }
-
-  /* ---------- ویژوالایزر زندهٔ موزیک (v0.15) ----------
-     AnalyserNode روی همان <audio>؛ فقط هنگام پخش رسم می‌شود (~۳۰fps برای CPU کم)
-     و با کلیدهای بهینه‌سازی/تم سبک کلاً خاموش می‌ماند. */
-  /* حالت viz بالای فایل اعلان شده (قبل از اولین applyPerf) — فیکس TDZ v0.16.2 */
-  function vizEnsure() {
-    if (vizAnalyser) return true;
-    if (!mViz) return false;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return false;
-      vizCtx = vizCtx || new AC();
-      const src = vizCtx.createMediaElementSource(mAudio); /* فقط یک بار مجاز است */
-      vizAnalyser = vizCtx.createAnalyser();
-      vizAnalyser.fftSize = 256;
-      vizAnalyser.smoothingTimeConstant = 0.82;
-      src.connect(vizAnalyser);
-      vizAnalyser.connect(vizCtx.destination);
-      vizData = new Uint8Array(vizAnalyser.frequencyBinCount);
-      return true;
-    } catch (_) { vizAnalyser = null; return false; }
-  }
-  function vizResize() {
-    if (!mViz) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    const w = mViz.clientWidth || 480;
-    const h = mViz.clientHeight || 64;
-    if (mViz.width !== Math.round(w * dpr) || mViz.height !== Math.round(h * dpr)) {
-      mViz.width = Math.round(w * dpr);
-      mViz.height = Math.round(h * dpr);
-    }
-  }
-  function vizDraw() {
-    vizRaf = 0;
-    if (!vizAnalyser || !mViz || mAudio.paused) { if (mViz) mViz.classList.remove('on'); return; }
-    vizTick = !vizTick;
-    if (vizTick) { vizRaf = requestAnimationFrame(vizDraw); return; } /* ~۳۰ فریم بر ثانیه */
-    try {
-      vizResize();
-      const g = mViz.getContext('2d');
-      const W = mViz.width, H = mViz.height;
-      vizAnalyser.getByteFrequencyData(vizData);
-      g.clearRect(0, 0, W, H);
-      const acc = (getComputedStyle(document.body).getPropertyValue('--acc-rgb') || '16, 185, 129').trim();
-      const bars = 52;
-      const bw = W / bars;
-      for (let i = 0; i < bars; i++) {
-        const vi = Math.floor((i / bars) * vizData.length * 0.72); /* فرکانس‌های خیلی بالا را کنار می‌گذاریم */
-        const v = (vizData[vi] || 0) / 255;
-        const bh = Math.max(2 * (window.devicePixelRatio || 1), v * H * 0.88);
-        const x = i * bw + bw * 0.2;
-        const w2 = bw * 0.6;
-        const grad = g.createLinearGradient(0, (H - bh) / 2, 0, (H + bh) / 2);
-        grad.addColorStop(0, `rgba(${acc}, 0.95)`);
-        grad.addColorStop(0.5, `rgba(${acc}, 0.38)`);
-        grad.addColorStop(1, `rgba(${acc}, 0.95)`);
-        g.fillStyle = grad;
-        const y = (H - bh) / 2;
-        if (g.roundRect) { g.beginPath(); g.roundRect(x, y, w2, bh, Math.min(w2 / 2, 4)); g.fill(); }
-        else g.fillRect(x, y, w2, bh);
-      }
-    } catch (_) { /* noop */ }
-    vizRaf = requestAnimationFrame(vizDraw);
-  }
-  function vizStart() {
-    if (!mViz || settings.noFx || settings.noAnim || settings.theme === 'lite') { if (mViz) mViz.classList.remove('on'); return; }
-    if (!vizEnsure()) return;
-    try { if (vizCtx && vizCtx.state === 'suspended') vizCtx.resume().catch(() => {}); } catch (_) { /* noop */ }
-    vizResize();
-    mViz.classList.add('on');
-    if (!vizRaf) vizRaf = requestAnimationFrame(vizDraw);
-  }
-  function vizStop() {
-    if (vizRaf) { cancelAnimationFrame(vizRaf); vizRaf = 0; }
-    if (mViz) mViz.classList.remove('on');
-  }
-  window.addEventListener('resize', () => { if (vizRaf) vizResize(); });
 
   /* ============================================================
      v0.22 — پلیر موزیک ماندگار (فیکس «پوشه‌ها بعد از ری‌استارت گم می‌شوند»)

@@ -70,7 +70,7 @@ ok(appSrc.includes('const _bt = await aiThinkRound(v);'), 'handleChatSend: چت 
 ok(appSrc.includes('فهمید(ai فکر)') && appSrc.includes("ev: 'interpret', via: 'ai'"), 'لاگ گفت/فهمید برای مسیر AI (فکر در لاگ می‌ماند)');
 ok(appSrc.includes('ai research(جواب)'), 'تحقیق واقعی وب برای سوال‌ها (نه فقط act=research)');
 ok(appSrc.includes('بلوک RESEARCH دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز'), 'دور دوم: ضد توهم (فقط بر پایهٔ نتایج)');
-ok(appSrc.indexOf("'[نتایج واقعی وب'", appSrc.indexOf('async function aiThinkRound')) > 0, 'گارد دورِ دوم (حلقهٔ بیش از یک دور نیست)');
+ok(appSrc.indexOf('RESEARCH_CTX_MARK', appSrc.indexOf('async function aiThinkRound')) > 0, 'گارد دورِ دوم (حلقهٔ بیش از یک دور نیست — از طریق RESEARCH_CTX_MARK؛ forward-relax v0.60: لیترال به ثابت منتقل شد)');
 
 console.log('\n[5] نسخه 0.57.0-beta');
 ok(pkg.version === '0.57.0-beta', 'package.json → 0.57.0-beta');

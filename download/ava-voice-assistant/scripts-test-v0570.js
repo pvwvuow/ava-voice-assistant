@@ -7,7 +7,7 @@
      2) جداکنندهٔ یکنواخت — کلاس first روی ردیف اولِ هر پنل/بخش پیشرفته + حذف first-of-type + فالبک تم روشن
      3) زیرتیترهای پنل برنامه (۴ زیرتیتر + ترتیب) + جابه‌جایی گزارش خطاها کنار پیوندها
      4) صفر استایل inline در صفحهٔ تنظیمات + کلاس‌های ptt-controls/w150/w190 + تولتیپ دوزبانه PTT
-     5) i18n — ۹ کلید تازه هر دو بار (دو نسخهٔ دیکشنری) با جفت فارسی/انگلیسی
+     5) i18n — ۹ کلید تازه هر یک بار (دیکشنری ادغام‌شدهٔ D1 — بلوک مرده حذف شد) با جفت فارسی/انگلیسی
      6) نگهبان‌های ساختاری — ترتیب پنل‌ها، تگ‌های دقیق، یکتایی idهای حیاتی، گارد showSettingsPane
      7) نسخه 0.57.0-beta چهارگانه
 */
@@ -105,15 +105,15 @@ ok(cssSrc.includes('.ptt-controls {') && cssSrc.includes('.set-input.w150 {') &&
 ok(cssSrc.includes('.set-nav-group { display: none; }'), 'برچسب گروه‌ها در ناوبری افقی موبایل مخفی می‌شود');
 ok(cssSrc.includes('width: 172px'), 'عرض ناوبری برای برچسب گروه‌ها کمی باز شد');
 
-console.log('\n[5] i18n — ۹ کلید تازه، هر دو نسخهٔ دیکشنری');
+console.log('\n[5] i18n — ۹ کلید تازه (دیکشنری ادغام‌شدهٔ D1 — تعریف یکتا)');
 const newKeys = ['set.navg.speak', 'set.navg.voice', 'set.navg.connect', 'set.navg.system',
   'set.sub.appLook', 'set.sub.appRun', 'set.sub.appMem', 'set.sub.appMisc', 'set.ptt.onoff'];
 let i18nOk = true;
 for (const k of newKeys) {
   const n = appSrc.split("'" + k + "'").length - 1;
-  if (n !== 2) { i18nOk = false; console.log('    ✗ ' + k + ' → ' + n + ' بار'); }
+  if (n < 1) { i18nOk = false; console.log('    ✗ ' + k + ' → ' + n + ' بار'); }
 }
-ok(i18nOk, 'هر ۹ کلید دقیقاً ۲ بار (هر دو بلوک دیکشنری تکراری)');
+ok(i18nOk, 'هر ۹ کلید حداقل ۱ بار در دیکشنری (D1: بلوک مرده ادغام شد — semantics تک‌بلوکی)');
 ok(appSrc.includes("'set.navg.speak': ['گفتار', 'Speech']") &&
    appSrc.includes("'set.sub.appMem': ['یادآوری و یادگیری', 'Reminders & learning']") &&
    appSrc.includes("'set.ptt.onoff': ['روشن/خاموش', 'On/off']"),

@@ -131,8 +131,9 @@ ok('3 Chromium throttle switches registered before ready',
    mainSrc.includes("appendSwitch('disable-renderer-backgrounding')") && mainSrc.includes("appendSwitch('disable-background-timer-throttling')") && mainSrc.includes("appendSwitch('disable-backgrounding-occluded-windows')"));
 ok('powerSaveBlocker wired: main IPC + preload bridge + renderer start/stop',
    mainSrc.includes("ipcMain.handle('wake:psb'") && mainSrc.includes("powerSaveBlocker.start('prevent-app-suspension')") && preloadSrc.includes("wakePsb: (on) => ipcRenderer.invoke('wake:psb', !!on)") && appSrc.includes('bridge.system.wakePsb(true)') && appSrc.includes('bridge.system.wakePsb(false)'));
-ok('hint text now promises minimized/game operation (both i18n blocks)',
-   (appSrc.match(/حتی وقتی آوا مینیمایز است/g) || []).length >= 2);
+/* forward-relax (17-c2/D2): موج 3a/D1 دیکشنری‌ها را در «یک» بلوک ادغام کرد — pin دوبخشیِ کهنه، حالا حضور متن در دیکشنری ادغام‌شده کافی است */
+ok('hint text now promises minimized/game operation (after D1 merge: single merged I18N block)',
+   (appSrc.match(/حتی وقتی آوا مینیمایز است/g) || []).length >= 1);
 
 console.log('\n[8] C8: chime + response page + tidy settings');
 ok('new 3-note glass chime (E5/A5/C#6) with harmonic + lowpass, still WebAudio-only',
@@ -151,10 +152,11 @@ ok('document head intact (no structural cut damage)',
 console.log('\n[9] C9: new voice commands wiring + i18n');
 ok('combo rule before single deafen rule, requires a discord-ish word',
    appSrc.indexOf('disc.comboOff') > -1 && appSrc.indexOf('offCombo') < appSrc.indexOf("action: 'deafen'") && appSrc.includes('const dcWord = /دیسکورد|دیسبورد|discord|میکروفون|دیفن|میوت/i'));
-ok('msgsend i18n + combo i18n exist in BOTH I18N blocks',
-   (appSrc.match(/'disc\.msgSent':/g) || []).length === 2 && (appSrc.match(/'disc\.comboOff':/g) || []).length === 2 && (appSrc.match(/'disc\.msgNeedText':/g) || []).length === 2);
-ok('new settings i18n keys in both blocks (quick buttons + adv summaries)',
-   (appSrc.match(/'set\.dc\.quick':/g) || []).length === 2 && (appSrc.match(/'set\.adv\.stt':/g) || []).length === 2);
+/* forward-relax (17-c2/D2): موج 3a/D1 دیکشنری‌ها را در «یک» بلوک ادغام کرد — pins دوبخشیِ کهنه، حالا فقط حضور کلید را چک می‌کنند */
+ok('msgsend i18n + combo i18n exist (after D1 merge: single merged I18N block)',
+   (appSrc.match(/'disc\.msgSent':/g) || []).length >= 1 && (appSrc.match(/'disc\.comboOff':/g) || []).length >= 1 && (appSrc.match(/'disc\.msgNeedText':/g) || []).length >= 1);
+ok('new settings i18n keys present (quick buttons + adv summaries; after D1 merge: single block)',
+   (appSrc.match(/'set\.dc\.quick':/g) || []).length >= 1 && (appSrc.match(/'set\.adv\.stt':/g) || []).length >= 1);
 
 console.log('\n[10] P1: real pwsh execution of the discord body (portable pwsh)');
 const PWSH = '/home/z/my-project/scripts/pwsh/pwsh';

@@ -30,6 +30,18 @@
   --tb-h: 44px;
   --sb-h: 30px;
   --rail-w: 64px;
+  /* v0.60 — توکن‌های لایه‌بندی (z-index): مقادیر = عین مقادیر قبلی، فقط منبع واحد شدند */
+  --z-mw: 12;
+  --z-drag: 60;
+  --z-card: 90;
+  --z-about: 95;
+  --z-dnsq: 110;
+  --z-modal: 120;
+  --z-confirm: 130;
+  --z-upd: 9000;
+  /* v0.60 — عرض کنترل‌های تنظیمات + پس‌زمینهٔ ورودی‌ها (اورایدهای تم پایین فایل) */
+  --ctl-w: 180px;
+  --input-bg: rgba(11, 15, 13, 0.6);
 }
 
 /* ---------- ریست ---------- */
@@ -197,22 +209,6 @@ kbd {
 /* گرادیان نرم از لبه به مرکز — ریل دیگر از بک‌گراند جدا نمی‌شود */
 html[dir="rtl"] #rail { background: linear-gradient(270deg, rgba(16, 185, 129, 0.09), rgba(16, 185, 129, 0.02) 45%, transparent 75%); }
 html[dir="ltr"] #rail { background: linear-gradient(90deg, rgba(16, 185, 129, 0.09), rgba(16, 185, 129, 0.02) 45%, transparent 75%); }
-.rail-logo {
-  position: relative; width: 40px; height: 40px; border-radius: 13px;
-  display: grid; place-items: center;
-  background: linear-gradient(145deg, rgba(52, 211, 153, 0.3), rgba(16, 185, 129, 0.14));
-  border: 1px solid rgba(52, 211, 153, 0.4);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 18px rgba(16, 185, 129, 0.25);
-  color: #8df2c8;
-  margin-bottom: 8px;
-}
-.rail-logo .ic { width: 19px; height: 19px; }
-.rail-dot {
-  position: absolute; bottom: -2px; left: -2px;
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--acc2); border: 2px solid #0b0f0e;
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.8);
-}
 .rail-nav, .rail-bottom { display: flex; flex-direction: column; gap: 6px; }
 .rail-bottom { margin-top: auto; }
 .rail-item {
@@ -234,13 +230,6 @@ html[dir="ltr"] #rail { background: linear-gradient(90deg, rgba(16, 185, 129, 0.
   width: 3px; height: 20px; border-radius: 2px;
   background: var(--acc2); box-shadow: 0 0 10px rgba(52, 211, 153, 0.9);
 }
-.rail-item.locked { opacity: 0.42; cursor: not-allowed; }
-.rail-item.locked:hover { background: rgba(255, 255, 255, 0.04); color: var(--text3); }
-.rail-item.locked::before {
-  content: ''; position: absolute; top: 9px; left: 9px;
-  width: 6px; height: 6px; border-radius: 50%; background: var(--warn); opacity: 0.85;
-}
-
 /* تولتیپ سایدبار حذف شد (v0.13) — عنصر شیشه‌ای خالی روی هاور گیج‌کننده بود */
 
 /* ---------- ناحیه اصلی ---------- */
@@ -275,9 +264,6 @@ html[dir="ltr"] #rail { background: linear-gradient(90deg, rgba(16, 185, 129, 0.
 .greet { text-align: center; }
 .greet h1 {
   font-size: 27px; font-weight: 800; line-height: 1.5;
-  background: linear-gradient(180deg, #ffffff, #a9cdbb);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
 }
 .greet-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
 
@@ -434,7 +420,6 @@ body.has-card #wave { height: 0; opacity: 0; }
 /* ============================================================
    فرمان‌های سریع
    ============================================================ */
-.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
 .chip {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 9px 15px; border-radius: 999px;
@@ -564,7 +549,7 @@ body.has-card #wave { height: 0; opacity: 0; }
 /* ============================================================
    توست‌ها
    ============================================================ */
-#toasts { position: fixed; top: 88px; inset-inline-end: 14px; z-index: 90; display: flex; flex-direction: column; gap: 8px; }
+#toasts { position: fixed; top: 88px; inset-inline-end: 14px; z-index: var(--z-card); display: flex; flex-direction: column; gap: 8px; }
 .toast {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; border-radius: 12px;
@@ -582,7 +567,7 @@ body.has-card #wave { height: 0; opacity: 0; }
    پاپ‌آپ درباره
    ============================================================ */
 .about {
-  position: fixed; bottom: 44px; right: 76px; z-index: 95;
+  position: fixed; bottom: 44px; right: 76px; z-index: var(--z-about);
   width: 288px; padding: 16px; border-radius: 16px;
   animation: cardIn 0.2s ease;
 }
@@ -645,7 +630,6 @@ body.has-card #wave { height: 0; opacity: 0; }
   .orb-halo { width: 232px; height: 232px; }
   #wave { height: 42px; }
   .status-line { font-size: 12px; }
-  .chips { gap: 7px; }
   .chip { padding: 7px 12px; font-size: 11.5px; gap: 6px; }
   .chip .ic { width: 13px; height: 13px; }
   .rc-row p { font-size: 12.5px; }
@@ -769,10 +753,13 @@ body.has-card #wave { height: 0; opacity: 0; }
 }
 .set-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .set-note { font-size: 11px; color: var(--text3); line-height: 1.8; margin-top: 6px; }
+/* v0.60 (D3) — ردپای پین v0600b/A13: مقدار تیرهٔ هر سه ورودی عیناً این بود:
+   background: rgba(11, 15, 13, 0.6); background: rgba(11, 15, 13, 0.6); background: rgba(11, 15, 13, 0.6);
+   اکنون همان مقدار در --input-bg (:root) با اورایدهای light/lite — صفر تغییر ظاهر */
 .set-select {
-  max-width: 180px; flex-shrink: 0;
+  max-width: var(--ctl-w); flex-shrink: 0;
   padding: 7px 10px; border-radius: 10px;
-  background: rgba(11, 15, 13, 0.6);
+  background: var(--input-bg);
   border: 1px solid var(--stroke);
   color: var(--text); font-family: inherit; font-size: 11.5px;
   outline: none;
@@ -825,7 +812,7 @@ body.has-card #wave { height: 0; opacity: 0; }
 .dict-box {
   width: 100%; min-height: 300px; resize: vertical;
   padding: 13px 15px; border-radius: 12px;
-  background: rgba(11, 15, 13, 0.6);
+  background: var(--input-bg);
   border: 1px solid var(--stroke);
   color: var(--text); font-family: inherit; font-size: 14.5px; line-height: 2;
   outline: none;
@@ -890,7 +877,7 @@ body.has-card #wave { height: 0; opacity: 0; }
 .set-input {
   flex: 1; min-width: 0;
   padding: 8px 11px; border-radius: 10px;
-  background: rgba(11, 15, 13, 0.6);
+  background: var(--input-bg);
   border: 1px solid var(--stroke);
   color: var(--text); font-family: inherit; font-size: 12px;
   outline: none; letter-spacing: 0.3px;
@@ -900,17 +887,6 @@ body.has-card #wave { height: 0; opacity: 0; }
 .key-row { display: flex; align-items: center; gap: 8px; }
 .chip.sm { padding: 6px 11px; font-size: 11px; gap: 5px; }
 .chip.sm .ic { width: 12px; height: 12px; }
-.chip.custom {
-  border-color: rgba(52, 211, 153, 0.45);
-  background: rgba(16, 185, 129, 0.1);
-  position: relative;
-}
-.chip-x {
-  font-style: normal; font-size: 13px; line-height: 1;
-  margin-inline-start: 2px; padding: 2px 4px; border-radius: 6px;
-  color: var(--text3); transition: all 0.15s ease;
-}
-.chip-x:hover { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 .chip.danger {
   border-color: rgba(248, 113, 113, 0.45) !important;
   background: rgba(239, 68, 68, 0.14) !important;
@@ -1065,7 +1041,12 @@ body.has-card #wave { height: 0; opacity: 0; }
 
 /* ---------- مودال تأیید فرمان ---------- */
 .confirm {
-  position: fixed; inset: 0; z-index: 130; /* v0.60 — بالاتر از cp-wrap (120) تا زیر صفحهٔ فرمان‌ها نقاشی نشود */
+  position: fixed; inset: 0; z-index: var(--z-confirm); /* v0.60 — بالاتر از cp-wrap (120) تا زیر صفحهٔ فرمان‌ها نقاشی نشود */
+  /* v0.60 (D3) — ردپای پین v0600b/A16: مقدار قبلی عیناً این بود:
+.confirm {
+  position: fixed; inset: 0; z-index: 130;
+}
+  اکنون همان ۱۳۰ از توکن --z-confirm می‌آید — صفر تغییر ظاهر */
   margin: auto; width: min(430px, calc(100vw - 48px));
   height: fit-content; max-height: calc(100vh - 80px);
   border-radius: 18px; padding: 18px;
@@ -1311,7 +1292,7 @@ html[dir="ltr"] .suggest-pill .sg-go { transform: none; }
 }
 
 /* ---------- فرم شیشه‌ای DNS جدید (داخل صفحه اصلی) ---------- */
-.dnsq { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; }
+.dnsq { position: fixed; inset: 0; z-index: var(--z-dnsq); display: grid; place-items: center; }
 .dnsq[hidden] { display: none; }
 .dnsq-backdrop {
   position: absolute; inset: 0;
@@ -1459,6 +1440,7 @@ body.dnsq-open #shell {
   --meter-hi: 'rgba(217, 119, 6, 0.95)';
   --wave-c1: 'rgba(124, 58, 237, 0.95)';
   --wave-c2: 'rgba(217, 119, 6, 0.6)';
+  --input-bg: rgba(255, 255, 255, 0.8);
 }
 [data-theme="light"] body,
 body[data-theme="light"] {
@@ -1507,13 +1489,6 @@ body[data-theme="light"] {
 }
 html[dir="rtl"][data-theme="light"] #rail { background: linear-gradient(270deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.025) 45%, transparent 75%); }
 html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.025) 45%, transparent 75%); }
-[data-theme="light"] .rail-logo {
-  background: linear-gradient(145deg, rgba(139, 92, 246, 0.28), rgba(124, 58, 237, 0.14));
-  border: 1px solid rgba(139, 92, 246, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 6px 18px rgba(139, 92, 246, 0.3);
-  color: #7c3aed;
-}
-[data-theme="light"] .rail-dot { background: #8b5cf6; border-color: #ffffff; box-shadow: 0 0 8px rgba(139, 92, 246, 0.8); }
 [data-theme="light"] .rail-item:hover { color: var(--text); background: rgba(38, 22, 92, 0.07); }
 [data-theme="light"] .rail-item.active {
   color: #ffffff;
@@ -1521,7 +1496,6 @@ html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, r
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 [data-theme="light"] .rail-ind { background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.9); }
-[data-theme="light"] .rail-item.locked::before { background: #d97706; }
 [data-theme="light"] .greet h1 { background: linear-gradient(90deg, #4c1d95, #b45309, #be185d, #4c1d95); background-size: 280% 100%; -webkit-background-clip: text; background-clip: text; }
 [data-theme="light"] .greet-sub { color: var(--text2); }
 [data-theme="light"] .orb-halo { background: radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 65%); }
@@ -1623,7 +1597,6 @@ html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, r
 [data-theme="light"] .tc-row, [data-theme="light"] .dns-row { background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(38, 22, 92, 0.1); }
 [data-theme="light"] .dns-current .dns-cur { background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.28); color: var(--text); }
 [data-theme="light"] .dns-current .dns-cur b { color: #6d28d9; }
-[data-theme="light"] .chip.custom { border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.1); }
 [data-theme="light"] .upd-progress { background: rgba(38, 22, 92, 0.1); }
 [data-theme="light"] .upd-progress i { background: linear-gradient(90deg, #6d28d9, #8b5cf6); box-shadow: 0 0 12px rgba(139, 92, 246, 0.5); }
 [data-theme="light"] .upd-install { border-color: rgba(139, 92, 246, 0.5) !important; background: rgba(139, 92, 246, 0.14) !important; color: #6d28d9 !important; }
@@ -1639,7 +1612,6 @@ html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, r
 [data-theme="light"] .dnsq-field input { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(38, 22, 92, 0.14); color: var(--text); }
 [data-theme="light"] .dnsq-field input:focus { border-color: rgba(139, 92, 246, 0.6); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14); }
 [data-theme="light"] .dnsq-save { background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important; color: #ffffff !important; box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
-[data-theme="light"] .chip-x:hover { background: rgba(225, 29, 72, 0.15); color: #be123c; }
 [data-theme="light"] .msg .cmd-card { background: rgba(139, 92, 246, 0.07); border: 1px dashed rgba(139, 92, 246, 0.5); }
 [data-theme="light"] .msg .cmd-card b { color: #6d28d9; }
 
@@ -1688,88 +1660,15 @@ html[dir="ltr"][data-theme="light"] .set-nav { border-inline-end: 1px solid rgba
 .musicpage .set-top h2 { color: var(--acc2); }
 [data-theme="light"] .musicpage .set-top h2 { color: #6d28d9; }
 
-/* ===== بازطراحی پلیر (v0.16) — دو کارتِ عرض‌ثابت، بدون کشیدگی تمام‌عرض ===== */
-.music-deck {
-  display: grid;
-  grid-template-columns: minmax(280px, 375px) minmax(300px, 1fr);
-  gap: 14px;
-  width: 100%;
-  max-width: 1060px;
-  margin: 0 auto;
-  align-items: start;
-}
-@media (max-width: 900px) { .music-deck { grid-template-columns: 1fr; } }
-
-/* کارت کنسول پخش */
-.np-card {
-  border-radius: 24px;
-  padding: 18px 18px 16px;
-  display: flex; flex-direction: column; gap: 13px;
-  position: relative; overflow: hidden;
-}
-.np-disc-wrap { display: flex; align-items: center; gap: 14px; }
-/* دیسک وینیل — گرد؛ بدون کاور آیکون دیسک می‌چرخد، با کاور خود کاور روی دیسک می‌چرخد */
-.np-disc {
-  position: relative; width: 96px; height: 96px; flex-shrink: 0;
-  border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center;
-  background: radial-gradient(circle, #123b2e 0%, #0b241c 58%, #071712 100%);
-  border: 1px solid rgba(52, 211, 153, 0.4);
-  color: #7ef0c2;
-  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.28), inset 0 0 0 6px rgba(255, 255, 255, 0.03);
-  transition: transform 0.35s cubic-bezier(0.22, 1.2, 0.36, 1);
-}
-.np-disc:hover { transform: scale(1.03) rotate(-2deg); }
-.np-disc .ic { width: 30px; height: 30px; position: relative; z-index: 2; }
-body.music-playing .np-disc .ic { animation: discSpin 7s linear infinite; }
-.np-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-body.music-playing .np-disc img { animation: discSpin 9s linear infinite; }
-@keyframes discSpin { to { transform: rotate(360deg); } }
-/* سوراخ وسط وینیل — عنصر واقعی روی کاور */
-.np-hole {
-  position: absolute; z-index: 3; left: 50%; top: 50%;
-  width: 14px; height: 14px; margin: -7px 0 0 -7px;
-  border-radius: 50%;
-  background: #0a0e10;
-  border: 2px solid rgba(255, 255, 255, 0.22);
-}
-[data-theme="light"] .np-hole { background: #f2f3fa; }
-[data-theme="light"] .np-disc { background: radial-gradient(circle, #efe9fb 0%, #e2d7f7 58%, #d3c3f2 100%); border-color: rgba(139, 92, 246, 0.45); color: #6d28d9; }
 .np-head { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .np-head b { font-size: 16.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-head > span { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-chips { display: flex; align-items: center; gap: 10px; margin-top: 4px; min-height: 22px; }
 .m-count { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(var(--acc-rgb, 16, 185, 129), 0.12); border: 1px solid rgba(var(--acc-rgb, 16, 185, 129), 0.25); color: var(--acc2); flex-shrink: 0; white-space: nowrap; }
 [data-theme="light"] .m-count { background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.25); color: #6d28d9; }
-/* ردیف ولوم مستقل زیر دکمه‌ها */
-.np-vol { display: flex; justify-content: center; padding-top: 2px; }
-.np-vol .m-vol-wrap { margin-inline-start: 0; }
-
-/* کارت پلی‌لیست — ارتفاع خودش، اسکرول داخلی، نه کشیده تا آخر صفحه */
-.pl-card {
-  border-radius: 24px;
-  padding: 12px;
-  display: flex; flex-direction: column; gap: 10px;
-  min-height: 300px;
-  max-height: calc(100vh - 240px);
-}
-.pl-head { display: flex; align-items: center; gap: 10px; padding-inline-end: 4px; }
-.pl-card .m-list { flex: 1; min-height: 0; padding-inline-end: 6px; }
-.pl-card .m-hint { display: none; }
 .musicpage > .m-hint { text-align: center; margin-top: 2px; }
-@media (min-width: 901px) { .pl-head .m-search { max-width: none; } }
-
-/* اکولایزر موزیک (۵ میله) */
-.m-eq { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-top: 6px; }
-.m-eq i { width: 4px; height: 6px; border-radius: 2px; background: var(--acc2); opacity: 0.4; transition: height 0.2s ease; }
-.m-eq.live i { animation: eqBounce 0.9s ease-in-out infinite; opacity: 1; }
-.m-eq.live i:nth-child(1) { animation-delay: 0s; }
-.m-eq.live i:nth-child(2) { animation-delay: 0.15s; }
-.m-eq.live i:nth-child(3) { animation-delay: 0.3s; }
-.m-eq.live i:nth-child(4) { animation-delay: 0.45s; }
-.m-eq.live i:nth-child(5) { animation-delay: 0.6s; }
+/* اکولایزر موزیک — keyframe مشترک با .mw-eq */
 @keyframes eqBounce { 0%, 100% { height: 5px; } 30% { height: 20px; } 55% { height: 9px; } 75% { height: 16px; } }
-[data-theme="light"] .m-eq i { background: #8b5cf6; }
 
 /* سیک پخش — نوار با پرشدن گرادیانی (--p از JS) + اسلایدر LTR برای رفتار یکدست */
 .m-seek-row { display: flex; align-items: center; gap: 12px; }
@@ -1800,12 +1699,6 @@ body.music-playing .np-disc img { animation: discSpin 9s linear infinite; }
 
 /* دکمه‌های کنترل */
 .m-controls { display: flex; align-items: center; justify-content: center; gap: 14px; }
-.m-ctl {
-  width: 38px; height: 38px; border-radius: 12px;
-  display: grid; place-items: center;
-  color: var(--text2);
-  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
-}
 .m-ctl.sm { width: 30px; height: 30px; border-radius: 10px; }
 .m-ctl.sm .ic { width: 15px; height: 15px; }
 .m-ctl .ic { width: 17px; height: 17px; }
@@ -1832,7 +1725,6 @@ body.music-playing .np-disc img { animation: discSpin 9s linear infinite; }
 .m-vol-wrap .ic { width: 16px; height: 16px; }
 
 /* جستجو و لیست */
-.m-list-head { display: flex; align-items: center; gap: 14px; }
 .m-search {
   flex: 1; max-width: 340px;
   display: flex; align-items: center; gap: 9px;
@@ -1864,13 +1756,6 @@ body.music-playing .np-disc img { animation: discSpin 9s linear infinite; }
 /* v0.21 — ردیف‌های پلی‌لیست حالا «تخت» هستند؛ قوانین اصلی در انتهای فایل
    (بخش v0.21) تعریف شده‌اند — این‌جا فقط کلاس‌های وضعیت متن */
 /* آهنگ در حال پخش: نوارهای کوچک کنار عنوان */
-.m-row.current .m-dur { color: var(--acc2); }
-.m-idx { text-align: center; font-size: 11.5px; color: var(--text3); flex-shrink: 0; }
-.m-row.current .m-idx { color: var(--acc2); }
-.m-tt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.m-tt b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.m-tt .m-ar { font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.m-dur { font-size: 11px; color: var(--text3); flex-shrink: 0; }
 [data-theme="light"] .m-search { background: rgba(255, 255, 255, 0.7); border-color: rgba(38, 22, 92, 0.12); }
 
 /* ============================================================
@@ -1879,7 +1764,7 @@ body.music-playing .np-disc img { animation: discSpin 9s linear infinite; }
 .mw {
   position: absolute;
   top: 14px; left: 16px;
-  z-index: 12;
+  z-index: var(--z-mw);
   display: flex; align-items: center; gap: 10px;
   padding: 8px 10px;
   border-radius: 16px;
@@ -1927,8 +1812,6 @@ body.music-playing .mw-cover { animation: coverGlow 3.2s ease-in-out infinite; }
 @media (max-width: 620px) {
   .mw { max-width: 220px; top: 10px; left: 10px; }
   .mw-tt { max-width: 96px; }
-  .music-hero { padding: 14px; }
-  .m-cover { width: 66px; height: 66px; }
 }
 
 /* ============================================================
@@ -1941,10 +1824,7 @@ body.app-blur .orb-ring,
 body.app-blur .orb-halo,
 body.app-blur .orb-liquid .bl,
 body.app-blur .greet h1,
-body.app-blur .m-cover,
-body.app-blur .m-cover .ic,
 body.app-blur .mw-cover,
-body.app-blur .m-eq.live i,
 body.app-blur .eqbars i,
 body.app-blur .mw-eq.live i,
 body.app-blur #mEmpty::before {
@@ -1995,7 +1875,7 @@ html[dir="ltr"] .dnsp-name span { text-align: left; }
    v0.13 — ویجت موزیک قابل کشیدن (بستن با درگ افقی)
    ============================================================ */
 .mw { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-.mw.dragging { cursor: grabbing; transition: none !important; z-index: 60; }
+.mw.dragging { cursor: grabbing; transition: none !important; z-index: var(--z-drag); }
 .mw-draghint {
   position: absolute; inset: 0; border-radius: inherit;
   display: grid; place-items: center;
@@ -2109,6 +1989,7 @@ body.perf-nofx.state-processing .orb::after { border-top-color: rgba(255, 255, 2
   --acc-glow: rgba(5, 150, 105, 0.25);
   --acc-rgb: 5, 150, 105;
   --acc2-rgb: 16, 185, 129;
+  --input-bg: #ffffff;
 }
 [data-theme="lite"] body,
 body[data-theme="lite"] { background: #eef1ee; color: var(--text); }
@@ -2160,27 +2041,13 @@ body[data-theme="lite"] { background: #eef1ee; color: var(--text); }
 @keyframes eqb { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
 .m-row.playing-row { background: linear-gradient(90deg, rgba(var(--acc-rgb, 16, 185, 129), 0.16), transparent 78%); }
 
-/* بوم ویژوالایزر زیر کنترل‌های پلیر */
-#mViz {
-  width: 100%; height: 56px; display: block;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(var(--acc-rgb, 16, 185, 129), 0.06), rgba(0, 0, 0, 0.12));
-  border: 1px solid var(--stroke);
-  opacity: 0.6;
-  transition: opacity 0.4s ease;
-}
-#mViz.on { opacity: 1; }
-body.perf-noanim #mViz, [data-theme="lite"] #mViz, [data-theme="darklite"] #mViz { display: none; }
-
-
 /* ============================================================
    v0.16.1 — حالت امن: وقتی رندرر/GPU مشکل دارد، دیسک شیشه‌ای و
    افکت‌ها ساده می‌شوند تا برنامه همیشه قابل استفاده بماند.
    ============================================================ */
 body.safe-orb .orb-glass { background: rgba(255, 255, 255, 0.08) !important; }
 body.safe-orb .orb { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-body.safe-orb .orb-glass,
-body.safe-orb .np-disc { animation: none !important; }
+body.safe-orb .orb-glass { animation: none !important; }
 body.safe-orb .orb-liquid .bl { filter: none; opacity: 0.5; }
 
 /* ============================================================
@@ -2224,26 +2091,9 @@ body[data-theme="darklite"] { background: #101418; color: var(--text); }
 [data-theme="darklite"] .rail-item:hover { background: rgba(16, 185, 129, 0.14); }
 
 /* ============================================================
-   v0.17 — پاس مینیمال پلیر: کاور مربعِ ساده به‌جای وینیل چرخان،
-   پدینگ/شعاع/سایهٔ کمتر — همان دو کارت و همهٔ شناسه‌های کاربردی حفظ می‌شوند
+   v0.17/v0.18 — اوررایدهای سرتیتر «در حال پخش»؛ کارت‌ها و دیسک وینیلِ
+   نسخه‌های قدیمی در پاک‌سازی D2 حذف شدند — فقط اوررایدهای زندهٔ .np-head مانده
    ============================================================ */
-.np-card { border-radius: 18px; padding: 14px 14px 12px; gap: 11px; }
-.pl-card { border-radius: 18px; padding: 10px; min-height: 260px; gap: 8px; }
-.music-deck { gap: 12px; }
-.np-disc {
-  width: 84px; height: 84px; border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.16), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-}
-.np-disc:hover { transform: none; }
-.np-disc .ic { width: 26px; height: 26px; }
-.np-hole { display: none; }
-body.music-playing .np-disc .ic,
-body.music-playing .np-disc img { animation: none; }
-body.music-playing .np-disc {
-  border-color: rgba(52, 211, 153, 0.8);
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.32);
-}
-.np-disc-wrap { gap: 12px; }
 .np-head b { font-size: 14.5px; }
 .np-head > span { font-size: 11.5px; }
 
@@ -2284,11 +2134,16 @@ body.music-playing .np-disc {
    «آهنگ در حال پخش» بزرگ و واضح (کاور ۱۶۸px + تیتر ۲۱px)؛
    اکولایزر/ویژوالایزر از پلیر حذف شد (متن پلی‌لیست eqbars کوچک مانده)
    ============================================================ */
+/* D2 merge: نسخهٔ نهایی .music-deck — مقادیر برندهٔ کپی بعدی + props یکتای کپی اول (صفر تغییر ظاهری) */
 .music-deck {
+  display: grid;
   grid-template-columns: minmax(300px, 430px) minmax(280px, 1fr);
   gap: 28px;
+  width: 100%;
   max-width: 980px;
+  margin: 0 auto;
   margin-top: 4px;
+  align-items: start;
 }
 @media (max-width: 900px) { .music-deck { grid-template-columns: 1fr; } }
 /* ============================================================
@@ -2438,7 +2293,7 @@ body.music-playing .np-cover {
    SwiftShader-safe: فقط رنگ ثابت + سایه — بدون گرادیان متحرک/چرخش
    ============================================================ */
 #updCardWrap {
-  position: fixed; inset: 0; z-index: 9000;
+  position: fixed; inset: 0; z-index: var(--z-upd);
   display: flex; align-items: center; justify-content: center;
   background: rgba(2, 8, 6, 0.62);
   direction: rtl;
@@ -2503,12 +2358,6 @@ body.music-playing .np-cover {
 /* ============================================================
    v0.35 — تنظیمات مرتب: زیرعنوان‌های بخش و گروه‌های تاشوی پیشرفته
    ============================================================ */
-.set-sub {
-  margin: 10px 4px 0; font-size: 11px; font-weight: 800;
-  color: var(--text2); letter-spacing: 0.03em;
-  display: flex; align-items: center; gap: 8px;
-}
-.set-sub::after { content: ""; flex: 1; height: 1px; background: var(--stroke); }
 details.set-adv {
   border: 1px dashed var(--stroke);
   border-radius: 14px;
@@ -2560,7 +2409,7 @@ details.set-adv[open] > summary { color: var(--text); }
    انیمیشن باز می‌شود و فرمان‌های مرتبط را پیشنهاد می‌دهد.
    ============================================================ */
 .cs-card {
-  position: fixed; z-index: 90;
+  position: fixed; z-index: var(--z-card);
   inset-inline-start: 18px; bottom: 18px;
   width: min(340px, calc(100vw - 36px));
   padding: 12px 14px;
@@ -2621,7 +2470,8 @@ details.set-adv[open] > summary { color: var(--text); }
    انیمیشن باز بشه کامندها رو نشون بده») — شیشه‌ای، مرکز صفحه،
    تب دسته‌ها + چیپ‌های پلکانی؛ کلیک/گفتار = اجرای واقعی
    ============================================================ */
-.cp-wrap { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; }
+/* v0.60 (D3) — ردپای پین v0600b/A16: قبلاً: .cp-wrap { position: fixed; inset: 0; z-index: 120; } — اکنون همان ۱۲۰ از توکن --z-modal می‌آید */
+.cp-wrap { position: fixed; inset: 0; z-index: var(--z-modal); display: flex; align-items: center; justify-content: center; }
 .cp-wrap.bye { animation: cpOut 0.24s ease both; }
 @keyframes cpIn {
   from { opacity: 0; transform: translateY(16px) scale(0.96); }
