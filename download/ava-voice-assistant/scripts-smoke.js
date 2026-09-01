@@ -1157,7 +1157,7 @@ app.whenReady().then(async () => {
         weatherRef: /const r = await bridge\.system\.weather\(city \|\| 'تهران'\);[\s\S]{0,600}return AI_FALLBACK;/.test(a292),
         calcRef: /if \(!m\) \{[\s\S]{0,200}return AI_FALLBACK;/.test(a292),
         dispatch: a292.includes("reply && typeof reply === 'object' && reply.__aiFallback")
-          && /__aiFallback[\s\S]{0,300}aiConnected\(\)\) \{ await aiHandleCommand\(cmd(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\(rule\)))?\); return; \}/.test(a292),
+          && /__aiFallback[\s\S]{0,320}aiConnected\(\)\) \{ (_dispatchOutcome = '[a-z-]+'; )?await aiHandleCommand\(cmd(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\(rule\)))?\); return; \}/.test(a292), /* v0.47: +outcome */
         edgeCity: a292.includes('wxExtractCity') && a292.includes('نشونم') && a292.includes('نشانم'),
         honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
           && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,

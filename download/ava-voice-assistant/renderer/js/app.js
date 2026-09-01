@@ -719,6 +719,16 @@
     'tag.aiDo': ['هوش مصنوعی · اجرا شد', 'AI · executed'],
     'default.reply': ['این فرمان را هنوز یاد نگرفتم. اتصال هوش مصنوعی را برقرار کن (تب «صفحه چت GLM» › ورود به حسابت) تا هر سوال و فرمانی را همان‌جا تحلیل کنم و یاد بگیرم!', 'I have not learned this command yet. Connect the AI (GLM chat tab › sign in) and I will analyze anything you ask there!'],
     'cmd.fail': ['یه خطای داخلی موقع اجرای این فرمان پیش آمد؛ دوباره امتحان کن. اگر تکرار شد، از تنظیمات › برنامه › گزارش خطاها بفرست.', 'An internal error happened while running that command; please try again. If it repeats, send the error report from Settings › App.'],
+    'cmd.busy': ['یک لحظه صبر کن — هنوز دارم فرمان قبلی‌ات را انجام می‌دهم.', 'One moment — I am still finishing your previous command.'], /* v0.47 B02 */
+    'toast.shortcutFail': ['برخی میانبرهای کیبورد آوا ثبت نشدند — کلیدها اشغال است؛ می‌توانید از دکمهٔ میکروفون استفاده کنید. خودکار دوباره تلاش می‌شود.', 'Some AVA keyboard shortcuts could not be registered — keys are occupied; use the mic button instead. AVA will retry automatically.'], /* v0.47 B13 */
+    'learn.uiTitle': ['چیزهایی که آوا یاد گرفته', 'Things AVA has learned'],
+    'learn.uiHint': ['وقتی هوش مصنوعی درخواستی را درست انجام دهد، آوا همان را یاد می‌گیرد و دفعهٔ بعد بدون اینترنت اجرا می‌کند — اگر راضی نبودی همان را تکرار کن تا اصلاح کند', 'When the AI fulfills a request, AVA learns it and replays it offline next time — repeat the request if unsatisfied and AVA will revise the learning'],
+    'learn.uiClear': ['پاک کردن همه', 'Forget all'],
+    'learn.uiEmpty': ['هنوز چیزی یاد نگرفته — بگذار هوش مصنوعی چند درخواست را انجام دهد', 'Nothing learned yet — let the AI fulfill a few requests'],
+    'learn.uiForget': ['فراموش کن', 'Forget'],
+    'learn.uiUsed': ['اجراشده ({n} بار)', 'used ({n} times)'],
+    'learn.uiUnstable': ['ناپایدار — فقط هوش مصنوعی تصمیم می‌گیرد', 'unstable — AI decides every time'],
+    'learn.tag': ['⚡ یادگرفته · بدون اینترنت', '⚡ learned · offline'],
     'suggest.say': ['بگو', 'Say'],
     'toast.welcome': ['آوا آماده است — اجرای واقعی فرمان‌ها فعال است', 'AVA is ready — real command execution is on'],
     'toast.preview': ['آوا آماده است — پیش‌نمایش رابط کاربری', 'AVA is ready — UI preview'],
@@ -1568,11 +1578,16 @@
     /* v0.42 — زنجیره: اِج → گوگل → ویندوز (اِج پیش‌فرض جدید؛ هر حلقه اگر
        جواب نداد خودکار به بعدی می‌رود تا صدا هیچ‌وقت خاموش نماند) */
     if (settings.ttsEngine === 'edge') {
-      if (await speakEdge(txt)) { ttsLastEngine = 'edge'; return true; }
+      if (await speakEdge(txt)) { ttsLastEngine = 'edge'; actLog('tts played via edge'); return true; }
+      /* v0.47 — B12: جایگزینی اِج→گوگل هر بار در لاگ می‌آید و اعلان هر ۱۰ دقیقه
+         تکرار می‌شود (قبلاً فقط یک‌بار در کل session — کاربر فکر می‌کرد تغییر صدا
+         کلاً خراب است در حالی که اِج بلاک است) */
+      actLog('tts edge unavailable → google fallback');
       if (await speakGoogle(txt)) {
         ttsLastEngine = 'google';
-        if (!ttsEdgeFailTold) {
+        if (!ttsEdgeFailTold || Date.now() - (speak._edgeToldAt || 0) > 600000) {
           ttsEdgeFailTold = true;
+          speak._edgeToldAt = Date.now();
           try {
             toast(LANG === 'en'
               ? 'Edge voice is blocked on your network — Google voice is used (VPN enables Edge)'
@@ -1582,12 +1597,13 @@
         return true;
       }
       ttsLastEngine = 'windows';
+      actLog('tts played via windows (edge+google unavailable)');
       speakWindows(txt);
       return true;
     }
     if (settings.ttsEngine === 'google') {
       const ok = await speakGoogle(txt);
-      if (ok) { ttsLastEngine = 'google'; return true; }
+      if (ok) { ttsLastEngine = 'google'; actLog('tts played via google'); return true; }
       /* گوگل جواب نداد (آفلاین/فیلتر) → صدای ویندوز */
       ttsLastEngine = 'windows';
       speakWindows(txt);
@@ -2043,6 +2059,8 @@
     ['واتساپ', 'https://web.whatsapp.com'], ['whatsapp', 'https://web.whatsapp.com'],
     ['تلگرام وب', 'https://web.telegram.org'], ['telegram web', 'https://web.telegram.org'],
     ['گیت هاب', 'https://github.com'], ['گیت\u200Cهاب', 'https://github.com'], ['github', 'https://github.com'],
+    /* v0.47 — B16: حرف‌نوشت STT «گیتاب» (لاگ کاربر: ۴ بار تکرار «تو گیتاب سرچ کن خرید» که به گوگلِ زباله می‌رفت) */
+    ['گیتاب', 'https://github.com'], ['گیت اب', 'https://github.com'], ['گیتـاب', 'https://github.com'],
     ['استک اورفلو', 'https://stackoverflow.com'], ['stack overflow', 'https://stackoverflow.com'],
     ['ویکی پدیا', 'https://fa.wikipedia.org'], ['ویکی\u200Cپدیا', 'https://fa.wikipedia.org'], ['wikipedia', 'https://wikipedia.org'],
     ['دیجی استایل', 'https://style.digikala.com'], ['کافه بازار', 'https://cafebazaar.ir'], ['بازار', 'https://cafebazaar.ir'],
@@ -2875,7 +2893,8 @@
       /* --- v0.43 — «همین ویدیو رو بیار» — ویدیوی در حال پخشِ مرورگر، بدون کپی لینک
          (خواستهٔ کاربر: «کاربر خودش کپی نکنه لینکو») --- */
       {
-        k: /همین\s?(ویدیو|فیلم|کلیپ)|ویدیو(یی)?\s?که\s?(داره|در\s?حال)\s?پخش|ویدیو\s?در\s?حال\s?پخش|همینو?\s?(بیار|پین\s?کن|باز\s?کن)|برام\s?همون\s?ویدیو|bring (the )?current video|this video/i,
+        /* v0.47 — B16: فاصلهٔ جمله («ویدیویی که توی یوتیوب داره پخش میشه رو بیار…») دیگر رول را نمی‌پراند (لاگ: به yt_search زباله می‌رفت) */
+        k: /همین\s?(ویدیو|فیلم|کلیپ)|ویدیو(یی)?\s?که[^.]{0,28}?(داره|در\s?حال)[^.]{0,12}?پخش|ویدیو\s?در\s?حال\s?پخش|همینو?\s?(بیار|پین\s?کن|باز\s?کن)|برام\s?همون\s?ویدیو|(بیار|بیارش)[^.]{0,16}(پات\s?پلیر|potplayer|وی\s?ال\s?سی|vlc)|bring (the )?current video|this video/i,
         id: 'yt_bring', t: 'ویدیوی در حال پخش', i: '#i-music',
         r: async (c) => {
           const cleanTitle = (s) => String(s || '').replace(/\s*[-–—]\s*(YouTube|یوتیوب)\s*$/i, '').trim();
@@ -2940,7 +2959,8 @@
       },
       /* --- v0.43 — کنترل پلیرها: «با وی ال سی پخش کن…» / «برو جلو ۳۰ ثانیه» --- */
       {
-        k: /(با|توی|تو|توسط)\s*(وی\s?ال\s?سی|\bvlc\b|ام\s?پی\s?وی|\bmpv\b|پت\s?پلیر|potplayer|ام\s?پی\s?سی|\bmpc\b)|(پخش|پلی\s?کن|بذار|اجرا)[^.]{0,12}(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|potplayer|ام\s?پی\s?سی|mpc)/i,
+        /* v0.47 — B16: حرف‌نوشت STT «پات پلیر» + فعل‌های باز کن/بیار (لاگ: «پات پلیر رو باز کن» رول را نمی‌گرفت) */
+        k: /(با|توی|تو|توسط)\s*(وی\s?ال\s?سی|\bvlc\b|ام\s?پی\s?وی|\bmpv\b|پت\s?پلیر|پات\s?پلیر|potplayer|ام\s?پی\s?سی|\bmpc\b)|(پخش|پلی\s?کن|بذار|اجرا|باز\s?کن|بیار|بیارش)[^.]{0,12}(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|پات\s?پلیر|potplayer|ام\s?پی\s?سی|mpc)|(پت\s?پلیر|پات\s?پلیر|potplayer)[^.]{0,10}(باز\s?کن|بیار|پخش\s?کن)/i,
         id: 'player_open', t: 'پخش در پلیر', i: '#i-music',
         r: async (c) => {
           const pidOf = (s) => (/وی\s?ال\s?سی|vlc/i.test(s) ? 'vlc' : /ام\s?پی\s?وی|mpv/i.test(s) ? 'mpv' : /پت\s?پلیر|potplayer/i.test(s) ? 'potplayer' : /ام\s?پی\s?سی|mpc/i.test(s) ? 'mpc' : '');
@@ -3211,16 +3231,19 @@
     const hit = AVAVoice.parseSiteSearch(c, siteSearchDeps());
     if (!hit || !bridge || !bridge.system) return AI_FALLBACK;
     const q = hit.query;
-    /* سایت ناشناس («سایت موزیک بلاگ …») → گوگل با «اسم سایت + عبارت» —
-       دیگر کل جملهٔ «برو توی سایت … سرچ کن» به گوگل نمی‌رود */
+    /* v0.47 — B14: نتیجهٔ واقعی IPC دیگر دور ریخته نمی‌شود — شکست = پیام صادق
+       (قبلاً .catch(()=>null) بود و همیشه «جستجو کردم» گفته می‌شد) */
+    const _fail = (LANG === 'en' ? 'The search could not be opened.' : 'جستجو باز نشد — یک بار دیگر امتحان کن.');
     if (hit.rawName) {
       const wq = (hit.rawName + ' ' + q).trim();
-      await bridge.system.run('web_search', wq).catch(() => null);
+      const r = await bridge.system.run('web_search', wq).catch(() => null);
+      if (!(r && r.ok)) return _fail;
       return LANG === 'en' ? `"${q}" on ${hit.rawName} — searched the web.` : `«${q}» را در ${hit.rawName} جستجو کردم (از طریق وب).`;
     }
     if (!q) return AI_FALLBACK;
     if (hit.thisSite && !hit.base) {
-      await bridge.system.run('web_search', q).catch(() => null);
+      const r = await bridge.system.run('web_search', q).catch(() => null);
+      if (!(r && r.ok)) return _fail;
       return LANG === 'en' ? `I searched the web for "${q}" — no site was opened before.` : `سایتی قبلاً باز نشده بود؛ «${q}» را در وب جستجو کردم.`;
     }
     let base = hit.base, siteName = hit.siteName;
@@ -3228,7 +3251,8 @@
     if (!base) return AI_FALLBACK;
     if (!siteName) siteName = base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
     store.set('lastSite', base); /* «حالا توی این سایت…» بعدی همین‌جا می‌افتد */
-    await bridge.system.run('web_open', siteSearchUrlFor(base, q)).catch(() => null);
+    const r2 = await bridge.system.run('web_open', siteSearchUrlFor(base, q)).catch(() => null);
+    if (!(r2 && r2.ok)) return _fail;
     return LANG === 'en' ? `I searched "${q}" on ${siteName}.` : `«${q}» را در ${siteName} جستجو کردم.`;
   }
   {
@@ -3402,6 +3426,60 @@
   }
 
   /* ============================================================
+     v0.47 — سیستم یادگیری آوا (SELF-LEARNING — درخواست صریح کاربر)
+     «اگ از ai یک درخواستی کرد کاربر ava خودش اون رو یاد بگیره و دفعات
+     بعد افلاین انجام بده ..ولی اگ کاربر از عمل کرد ai راضی نبود و دوباره
+     تکرار کرد اون یادگیری قبلی رو تجدید نظر کنه»
+     موتور: renderer/js/voiceLearn.js — ذخیرهٔ پایدار: ava-learnings.json
+     ============================================================ */
+  let learnStore = { v: 1, items: [] };
+  let learnLoaded = false;
+  async function loadLearnStore() {
+    try {
+      if (bridge && bridge.learnings && bridge.learnings.load) {
+        const r = await bridge.learnings.load();
+        if (r && r.ok && r.data && Array.isArray(r.data.items)) learnStore = r.data;
+      }
+    } catch (_) { /* noop */ }
+    learnLoaded = true;
+    /* میراث: نگاشت‌های run_cmd قدیمیِ localStorage وارد حافظهٔ پایدار می‌شوند */
+    try {
+      let migrated = 0;
+      for (const [k, v] of Object.entries(aiCmdMap || {})) {
+        if (!v || !v.id || Date.now() - Number(v.at || 0) > AI_MAP_TTL) continue;
+        if (learnStore.items.some((x) => x.k === k)) continue;
+        learnStore.items.push({ k, acts: [{ act: 'run_cmd', value: String(v.id) }], at: Number(v.at || Date.now()), used: 0, revise: 0, lastHit: 0 });
+        migrated++;
+      }
+      if (migrated) { saveLearnStore(); actLog('learn migration from aiCmdMap: ' + migrated); }
+    } catch (_) { /* noop */ }
+  }
+  let learnSaveBusy = false;
+  async function saveLearnStore() {
+    if (learnSaveBusy) return;
+    learnSaveBusy = true;
+    try { if (bridge && bridge.learnings && bridge.learnings.save) await bridge.learnings.save(JSON.parse(JSON.stringify(learnStore))); } catch (_) { /* noop */ }
+    learnSaveBusy = false;
+  }
+  /* فرمت مقدار lastHit در زمانِ یادگیری هم ست می‌شود: اولین تکرار کاربرِ
+     ناراضیِ بلافاصله هم «تجدید نظر» حساب می‌شود (خواستهٔ صریح کاربر) */
+  async function learnFromAI(cmd, acts, reply) {
+    try {
+      const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
+      if (!Le || !cmd) return;
+      const safe = Le.safeActs(acts);
+      if (!safe.length) return;
+      const lr = Le.learn(learnStore, cmd, safe, reply || '');
+      if (lr.changed && lr.entry) {
+        lr.entry.lastHit = Date.now(); /* AI همین حالا انجامش داد */
+        await saveLearnStore();
+        actLog('learn set (from AI): "' + String(cmd).slice(0, 44) + '" → ' + Le.summary(safe));
+        try { renderLearnList(); } catch (_) { /* noop */ }
+      }
+    } catch (_) { /* noop */ }
+  }
+
+  /* ============================================================
      v0.42 — عکسِ لحظه‌ایِ وضعیت آوا برای هوش مصنوعی (خواستهٔ کاربر:
      «gemini یا ai پس‌زمینه … درخواست‌های پس‌زمینه و ذخیره‌شدهٔ کاربر
      رو بتونه ببینه») — تایمرهای فعال، یادآوری‌ها، یادداشت‌های ذخیره‌شده،
@@ -3564,6 +3642,9 @@
     let s = String(cmd || '');
     if (/(سایت|وب\s?سایت|https?:\/\/)/i.test(s)) return '';
     s = s
+      /* v0.47 — B16: صفت‌های خطابی آغاز جمله («آقا بازی مارول رو تو استیم باز کن»
+         قبلاً «آقا بازی مارول تو استیم» می‌ماند) */
+      .replace(/(^|\s)(آقا|آخه|خب|خوب|اِ|الا|الان|حالا|یه\s?دونه|یک\s?دونه|لطفاً?)(?=\s)/gi, ' ')
       .replace(/(لطفا|لطفاً|ممنون|بی\s?زحمت|تو\s?رو\s?خدا)/g, ' ')
       .replace(/(برام|برای\s*من|می‌شه|میشه|می\s*شه|می‌خوام|میخوام|لطفا)/g, ' ')
       .replace(/(باز\s*(کن|بکن|شو|شه|کردن)?(?=\s|$|،|\.|!|؟))|(اجرا\s*(کن|بکن|بده|شه|کردن)?(?=\s|$|،|\.|!|؟))|(بیار\s*(بالا|روی|شکم)?(?=\s|$|،|\.|!|؟))|(بذار\s*(باز|اجرا|بشه)(?=\s|$|،|\.|!|؟))|(لانچ\s*(کن)?(?=\s|$|،|\.|!|؟))|(بشین\s*(رو|روی)(?=\s|$|،|\.|!|؟))|\b(run|open|launch|start)\b/gi, ' ')
@@ -3735,6 +3816,19 @@
 
   async function tryAppOpen(cmd) {
     if (!APP_OPEN_RE.test(cmd)) return null;
+    /* v0.47 — B16: «بازی X رو تو استیم باز کن» — قبلاً فقط خود Steam باز می‌شد و
+       بازی جا می‌ماند؛ جستجوی فروشگاه Steam برای بازیِ خواسته‌شده باز می‌شود */
+    const steamGameM = String(cmd || '').match(/بازی\s+([^\s][^.]{2,40}?)\s+(رو|را)?\s*(تو|توی|در)?\s*(استیم|steam)\s*(رو\s*)?(باز|اجرا|run|open)/i);
+    if (steamGameM && steamGameM[1] && /استیم|steam/i.test(String(cmd))) {
+      const game = steamGameM[1].replace(/\s*(رو|را)\s*$/,'').trim();
+      if (game.length >= 2) {
+        if (!bridge || !bridge.system) return null;
+        const url = 'https://store.steampowered.com/search/?term=' + encodeURIComponent(game);
+        const r = await bridge.system.run('web_open', url).catch(() => null);
+        if (r && r.ok) return LANG === 'en' ? `Steam store search opened for "${game}".` : `جستجوی «${game}» در فروشگاه استیم باز شد — از آنجا نصب/اجرا کن.`;
+        return LANG === 'en' ? 'Could not open Steam store.' : 'فروشگاه استیم باز نشد.';
+      }
+    }
     const name = extractAppName(cmd);
     if (!name) return null;
     if (!bridge || !bridge.apps) return LANG === 'en' ? 'Opening apps only works inside the Windows app.' : 'باز کردن برنامه‌ها فقط داخل نرم‌افزار ویندوزی کار می‌کند.';
@@ -3784,7 +3878,7 @@
   }
 
   /* پارس یادآوری: خروجی {at, text} یا null — اول ساعت مطلق، بعد مدت */
-  function parseReminder(c) {
+  function parseReminder(c, opts) {
     const txt = String(c || '').replace(/(لطفا|لطفاً)/g, '');
     const now = new Date();
 
@@ -3843,10 +3937,18 @@
       }
     }
 
-    /* ۲) مدت: «۲۰ دقیقه دیگه» / «یک ساعت و نیم بعد» / «نیم ساعت دیگه» */
+    /* ۲) مدت: «۲۰ دقیقه دیگه» / «یک ساعت و نیم بعد» / «نیم ساعت دیگه»
+       v0.47 — B01: قید نسبیت («دیگه/بعد») دیگر الزامی نیست — مقدارِ AI مثل
+       «5 دقیقه» (لاگ: reminder_add(5 دقیقه) هرگز شلیک نشد) و جمله‌های درخواستی
+       بدون «دیگه» («برای ۵ دقیقه منو بیدار کن») هم یادآوری می‌شوند؛
+       بدون قیدِ نسبیت فقط با نشانهٔ درخواست/allowBare (مقدار AI) پذیرفته می‌شود */
     const half = /نیم\s*ساعت/.test(txt);
-    const dur = txt.match(/([\d۰-۹]+|[ا-ی\u200C\s]{2,20}?)\s*(ثانیه|دقیقه|ساعت)(?:\s*و\s*(نیم|ربع))?\s*(دیگه|دیگر|بعد)/i);
+    const dur = txt.match(/([\d۰-۹]+|[ا-ی\u200C\s]{2,20}?)\s*(ثانیه|دقیقه|ساعت)(?:\s*و\s*(نیم|ربع))?(\s*(دیگه|دیگر|بعد))?/i);
     if (dur) {
+      const rel = !!(dur[5]);
+      const requestish = rel || /(بیدار|یادآوری|یادم|یادت|آلارم|تایمر|بذار|بگذار|بزن|remind|timer)/i.test(txt) || !!(opts && opts.allowBare);
+      const past = /پیش|قبل از/.test(txt);
+      if (requestish && !past) {
       let n = faWordNum(dur[1]);
       if (n === null) { const m2 = faToEn(dur[1]).match(/\d+/); n = m2 ? Number(m2[0]) : null; }
       if (n === null) n = half ? 30 : null;
@@ -3863,6 +3965,7 @@
         const text = stripTime(txt) || 'یادآوری';
         return { at: Date.now() + ms, text };
       }
+      }
     }
     if (half && /(دیگ|دیگر|بعد)/.test(txt)) {
       const text = stripTime(txt) || 'یادآوری';
@@ -3871,8 +3974,8 @@
     return null;
   }
 
-  async function reminderReply(c) {
-    const parsed = parseReminder(c);
+  async function reminderReply(c, opts) {
+    const parsed = parseReminder(c, opts);
     if (!parsed) {
       /* زمان نفهمیدیم — اگر مدت داشت مثل تایمر رفتار کن */
       if (/ثانیه|دقیقه|ساعت|timer/i.test(c)) return startTimer(c);
@@ -3928,6 +4031,55 @@
       renderRemList();
       toast(t('rem.uiEmpty'), '#i-trash');
     }
+  });
+
+  /* ============================================================
+     v0.47 — UI یادگیری‌ها: فهرست «چیزهایی که آوا یاد گرفته» + فراموشی
+     ============================================================ */
+  async function renderLearnList() {
+    const list = $('#learnList');
+    if (!list) return;
+    try {
+      const items = (learnStore && Array.isArray(learnStore.items)) ? learnStore.items.slice() : [];
+      items.sort((a, b) => (b.at || 0) - (a.at || 0));
+      list.innerHTML = '';
+      if (!items.length) {
+        const e = document.createElement('div');
+        e.className = 'dc-empty';
+        e.textContent = t('learn.uiEmpty');
+        list.appendChild(e);
+        return;
+      }
+      const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
+      for (const it of items.slice(0, 30)) {
+        const row = document.createElement('div');
+        row.className = 'dc-item';
+        const stTxt = it.unstable
+          ? t('learn.uiUnstable')
+          : ((it.used ? t('learn.uiUsed', { n: faNum(it.used) }) : (Le ? Le.summary(it.acts) : '')) || Le.summary(it.acts));
+        row.innerHTML = `
+          <div class="dc-ct-info"><b></b><span></span></div>
+          <button type="button" class="chip sm danger dc-del"><svg class="ic"><use href="#i-close"/></svg></button>`;
+        row.querySelector('.dc-ct-info b').textContent = '«' + it.k + '»';
+        row.querySelector('.dc-ct-info span').textContent = stTxt;
+        row.querySelector('.dc-del').addEventListener('click', async () => {
+          try {
+            const Le2 = (typeof AVALearn !== 'undefined') ? AVALearn : null;
+            if (Le2) { Le2.dropKey(learnStore, it.k); await saveLearnStore(); renderLearnList(); }
+          } catch (_) { /* noop */ }
+        });
+        list.appendChild(row);
+      }
+    } catch (_) { /* noop */ }
+  }
+  const btnLearnClear = $('#btnLearnClear');
+  if (btnLearnClear) btnLearnClear.addEventListener('click', async () => {
+    try {
+      learnStore = { v: 1, items: [] };
+      await saveLearnStore();
+      renderLearnList();
+      toast(t('learn.uiEmpty'), '#i-trash');
+    } catch (_) { /* noop */ }
   });
 
   /* اجرای فرمان‌های پاور — خاموش/ریستارت از قبل در resolveReply تأیید گرفته‌اند */
@@ -3989,6 +4141,12 @@
     const tm = idx >= 0 ? TIMERS[idx] : null;
     if (idx >= 0) TIMERS.splice(idx, 1);
     armNextTimer();
+    /* v0.47 — B01: شلیک تایمر در لاگ می‌آید (قبلاً بی‌لاگ بود و قابل دیباگ نبود)
+       + رونوشت پایدارِ تایمر از فهرست یادآوری‌ها حذف می‌شود */
+    actLog('timer fired: ' + (tm ? (tm.label + ' ' + tm.unit) : '?'));
+    if (tm && tm.persistId && bridge && bridge.reminders && bridge.reminders.remove) {
+      bridge.reminders.remove(tm.persistId).then(() => { try { renderRemList(); } catch (_) { /* noop */ } }).catch(() => { /* noop */ });
+    }
     beep();
     const doneMsg = t('timer.done') + (tm ? ` (${tm.label} ${tm.unit})` : '');
     toast(doneMsg, '#i-timer');
@@ -4000,6 +4158,32 @@
     respCard.classList.add('show');
     speak(doneMsg);
     setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4000);
+  }
+  /* v0.47 — B01: رونوشت پایدار تایمر در فهرست یادآوری‌ها (kind=timer)
+     — بعد از reload/crash با rearmPersistedTimers دوباره مسلح می‌شود */
+  function persistTimerCopy(tm) {
+    try {
+      if (!tm || !bridge || !bridge.reminders || !bridge.reminders.add) return;
+      if (tm.endsAt <= Date.now() + 3500) return; /* خیلی کوتاه — ارزش persist ندارد */
+      bridge.reminders.add({ text: (tm.label + ' ' + (tm.unit || '')).trim(), at: tm.endsAt, kind: 'timer', label: tm.label, unit: tm.unit })
+        .then((r) => {
+          if (r && r.ok && r.reminder) { tm.persistId = r.reminder.id; try { renderRemList(); } catch (_) { /* noop */ } }
+        }).catch(() => { /* noop */ });
+    } catch (_) { /* noop */ }
+  }
+  async function rearmPersistedTimers() {
+    try {
+      if (!bridge || !bridge.reminders || !bridge.reminders.list) return;
+      const r = await bridge.reminders.list();
+      const items = ((((r && r.reminders) || []))).filter((x) => x.kind === 'timer' && x.at > Date.now() + 2000);
+      let added = 0;
+      for (const it of items) {
+        if (TIMERS.some((tm) => tm.persistId === it.id)) continue;
+        TIMERS.push({ id: ++timerSeq, endsAt: it.at, label: it.label || it.text || 'تایمر', unit: it.unit || t('timer.min'), persistId: it.id });
+        added++;
+      }
+      if (added) { armNextTimer(); actLog('timers re-armed after boot/reload: ' + added); }
+    } catch (_) { /* noop */ }
   }
   function startTimer(c, msOverride) {
     const txt = faToEn(c);
@@ -4031,7 +4215,12 @@
     if (firstUnit === 's') { unit = t('timer.sec'); label = faNum(Math.round(mins * 60)); }
     else if (firstUnit === 'h' && Number.isInteger(mins / 60) && mins / 60 < 24) { unit = t('timer.hour'); label = faNum(mins / 60); }
     TIMERS.push({ id: ++timerSeq, endsAt: Date.now() + mins * 60000, label, unit });
+    /* v0.47 — B01: تایمر دیگر فقط درون‌حافظه‌ایِ رندرر نیست (با reload/crash می‌مُرد —
+       ریشهٔ دوم «یادآوریام کجا رفت») — رونوشت پایدار در ava-reminders.json */
+    const newTm = TIMERS[TIMERS.length - 1];
+    persistTimerCopy(newTm);
     armNextTimer();
+    actLog('timer set: ' + label + ' ' + unit);
     const base = t('timer.on', { x: label, y: unit });
     /* v0.42 — کاربر بداند چند تایمر فعال دارد (چندتایمری جدید) */
     return TIMERS.length > 1
@@ -4133,6 +4322,9 @@
      (دومین ریشهٔ گزارش کاربر: «درخواست اجرا نمی‌شود»). */
   let cmdBusy = false;
   let cmdBusyAt = 0;
+  /* v0.47 — B18: نتیجهٔ هر dispatch در لاگ ثبت می‌شود تا activity.log قابل دیباگ باشد
+     (قبلاً «utterance total 3ms» هیچ دلالتی بر اجرا نداشت و دیباگ جلسات قبل را فلج کرد) */
+  let _dispatchOutcome = '';
   const cmdBusyGuard = () => {
     if (!cmdBusy) return false;
     if (Date.now() - cmdBusyAt < 45000) return true; /* واقعاً در جریان است */
@@ -4140,7 +4332,15 @@
     cmdBusy = false;
     return false;
   };
-  const cmdBusySet = () => { cmdBusy = true; cmdBusyAt = Date.now(); };
+  const cmdBusySet = () => { cmdBusy = true; cmdBusyAt = Date.now(); _dispatchOutcome = ''; };
+  /* v0.47 — B02: تکرار فرمان در پنجرهٔ busy دیگر «بلعِ بی‌صدا» نیست — اعلان محدود */
+  let cmdBusyHintAt = 0;
+  function cmdBusyHint() {
+    if (Date.now() - cmdBusyHintAt < 8000) return;
+    cmdBusyHintAt = Date.now();
+    try { toast(t('cmd.busy'), '#i-info'); } catch (_) { /* noop */ }
+    try { statusText.textContent = t('cmd.busy'); } catch (_) { /* noop */ }
+  };
 
   /* اجرای فرمان‌های DNS (با UAC واقعی) — هم از مسیر «دی ان اس …»
      و هم از مسیر «الکترو رو تنظیم کن» (اسم ذخیره‌شده کاربر)
@@ -4169,9 +4369,14 @@
       typeText(rcReply, reply);
       speak(reply);
       pushHistory(raw, true);
-    } catch (_) {
+    } catch (dnsErr) {
+      /* v0.47 — B03: شکست DNS دیگر بی‌صدا نیست (لاگ کاربر: «دی ان اس امو تست بگیر» ساکت ماند) */
+      actLog('dns command fail: ' + String((dnsErr && (dnsErr.stack || dnsErr.message)) || dnsErr).slice(0, 160));
       setState('idle');
       statusText.textContent = t('dns.dnsFail');
+      try { typeText(rcReply, t('dns.dnsFail')); } catch (_) { /* noop */ }
+      try { speak(t('dns.dnsFail')); } catch (_) { /* noop */ }
+      try { pushHistory(raw, false); } catch (_) { /* noop */ }
     }
     cmdBusy = false;
     setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
@@ -4222,8 +4427,15 @@
 
   async function runCommand(cmd, opts) {
     if (!cmd) return;
-    if (cmdBusyGuard()) return;
     let raw = String(cmd).trim();
+    /* v0.47 — B02: گارد busy قبل از actLog بود → تکرار کاربر در پنجرهٔ ~۳ثانیه‌ای
+       بدون لاگ/UI/صدا دور ریخته می‌شد (ریشهٔ کل خانوادهٔ «۳ تا ۱۰ms و هیچ» در لاگ) */
+    if (cmdBusyGuard()) {
+      _dispatchOutcome = 'busy-drop';
+      actLog('cmd busy-drop (previous still running): ' + raw.slice(0, 80));
+      cmdBusyHint();
+      return;
+    }
     actLog('cmd: ' + raw.slice(0, 120));
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
     const DICT_START_RE = /([اآا]وا|ava)[\s\u200C،,:-]*تایپ|حالت\s*تایپ|تایپ\s*(رو\s*)?(شروع|بزن)\s*کن|شروع\s*به\s*تایپ|برام\s*تایپ\s*کن|برایم\s*تایپ\s*کن|این\s*(رو|را)\s*تایپ\s*کن|تایپش\s*کن/i;
@@ -4232,14 +4444,15 @@
     const SYS_DICT_RE = /(اینجا|همینجا|همین\s*جا)\s*(برام|برایم|هم)?\s*(تایپ|بنویس)|(بنویس|تایپ)\s*(کن)?\s*(اینجا|همینجا)/i;
     const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
     if (dictation.active) {
-      if (DICT_STOP_RE.test(raw)) { stopDictation(true); return; }
+      if (DICT_STOP_RE.test(raw)) { stopDictation(true); _dispatchOutcome = 'dict-stop'; return; }
       /* وسط تایپ: همین متن اضافه شود، نه اجرای فرمان */
       dictateHandle(raw);
+      _dispatchOutcome = 'dictation';
       return;
     }
     /* v0.34 — «اینجا برام تایپ کن» قبل از تایپ معمولی: مقصد = همین برنامهٔ فعال */
-    if (SYS_DICT_RE.test(raw)) { startDictation(true); return; }
-    if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); return; }
+    if (SYS_DICT_RE.test(raw)) { startDictation(true); _dispatchOutcome = 'dict-start'; return; }
+    if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); _dispatchOutcome = 'dict-start'; return; }
     /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد)
        v0.38.1 — ریشهٔ «خیلی از فرمان‌ها کاری نمی‌کنند» با whisper: خروجی STT
        حروف عربی ي/ك و نیم‌فاصله دارد ولی dispatch پایین با cmdِ خام انجام می‌شد؛
@@ -4321,7 +4534,8 @@
       }
     }
     /* پینگ DNSها (v0.13) — قبل از مسیر کلاسیک DNS تا «پینگ دی ان اس» قاطی نشود */
-    if (/پینگ[^.]{0,16}(دی\s?ان\s?اس|dns)|(دی\s?ان\s?اس|dns)[^.]{0,12}پینگ|پینگ\s?(بگیر|نشون|بده)|dns.{0,10}ping|ping.{0,10}dns/i.test(raw)) {
+    /* v0.47 — B16: «دی ان اس امو تست بگیر» هم تست واقعی اجرا کند (لاگ: فقط مدیریت DNS باز می‌شد) */
+    if (/پینگ[^.]{0,16}(دی\s?ان\s?اس|dns)|(دی\s?ان\s?اس|dns)[^.]{0,16}(پینگ|تست|سرعت)|پینگ\s?(بگیر|نشون|بده)|تست\s?(بگیر|کن)[^.]{0,16}(دی\s?ان\s?اس|dns)|dns.{0,10}ping|ping.{0,10}dns/i.test(raw)) {
       if (cmdBusyGuard()) return;
       cmdBusySet();
       setState('processing');
@@ -4336,16 +4550,18 @@
         typeText(rcReply, reply);
         speak(reply);
         pushHistory(raw, true);
+        _dispatchOutcome = 'ping';
       } catch (_) {
         setState('idle');
         statusText.innerHTML = IDLE_HINT;
+        _dispatchOutcome = 'ping-fail';
       }
       cmdBusy = false;
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
       return;
     }
     /* DNS کلاسیک: هر جمله‌ای که «دی ان اس / dns» دارد */
-    if (/دی\s?ان\s?اس|dns/i.test(raw)) { await runDnsCommand(raw); return; }
+    if (/دی\s?ان\s?اس|dns/i.test(raw)) { _dispatchOutcome = 'dns'; await runDnsCommand(raw); return; }
     /* DNS با اسم دلخواه — حتی بدون واژه «دی ان اس»:
        «الکترو رو تنظیم کن» یا «شکن رو فعال کن» → همان پروفایل روی ویندوز ست می‌شود */
     if (/(تنظیم|فعال|وصل|اعمال|ست)\s*(کن|بکن)?/i.test(raw)) {
@@ -4355,7 +4571,7 @@
         .replace(/(تنظیم|فعال|وصل|اعمال|کن|بکن|بزن|شروع)/g, ' ')
         .replace(/[\s\u200C]+/g, ' ')
         .trim();
-      if (cand.length >= 3 && findDnsProfile(cand)) { await runDnsCommand(raw); return; }
+      if (cand.length >= 3 && findDnsProfile(cand)) { _dispatchOutcome = 'dns'; await runDnsCommand(raw); return; }
     }
     cmdBusySet();
     try {
@@ -4411,7 +4627,9 @@
         typeText(rcReply, appReply);
         speak(appReply);
         pushHistory(cmd, !/پیدا نکردم|not found/i.test(appReply));
-        setTimeout(() => { cmdBusy = false; }, 100);
+        /* v0.47 — B02: قفلِ busy بلافاصله آزاد شود */
+        cmdBusy = false;
+        _dispatchOutcome = 'app-open';
         setTimeout(() => {
           if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; }
         }, 2600);
@@ -4423,10 +4641,12 @@
            به فرمان واقعی آوا نگاشت کند (act=run_cmd)
            v0.42 — عکسِ وضعیت (تایمرها/یادآوری‌ها/یادداشت‌ها/آخرین سایت) هم
            می‌چسبد تا AI «ذخیره‌شده‌های» کاربر را ببیند */
+        _dispatchOutcome = 'ai';
         await aiHandleCommand(cmd, await aiFallbackCtx());
         return;
       }
     }
+    _dispatchOutcome = rule ? ('rule:' + (rule.id || rule.t || '?')) : 'free-reply';
     let reply = rule ? await resolveReply(rule, cmd) : t('default.reply');
     /* v0.29.2 — قانونی که درخواست را فهمید ولی نتوانست انجام دهد (شهر پیدا
        نشد / شبکه / پارس ریاضی) → دیگر بن‌بست نیست؛ همان درخواست به تحلیل
@@ -4434,24 +4654,31 @@
     if (reply && typeof reply === 'object' && reply.__aiFallback) {
       actLog('rule "' + ((rule && rule.t) || '?') + '" could not fulfill → AI fallback');
       /* v0.37 — __aiExtra: قانون راهنما فهرست توانایی‌های آوا را به AI می‌چسباند */
-      if (aiConnected()) { await aiHandleCommand(cmd, await aiFallbackCtx(rule)); return; }
+      if (aiConnected()) { _dispatchOutcome = 'rule-fallback-ai'; await aiHandleCommand(cmd, await aiFallbackCtx(rule)); return; }
       reply = t('weather.fail'); /* AI هم در دسترس نیست → پیام صادقانهٔ از پیش تعریف‌شده */
       rcTag.textContent = t('tag.reply');
     }
     if (!rule) rcTag.textContent = t('tag.reply');
 
+    /* v0.47 — B02: پاسخ آماده شد → قفل busy همین‌جا آزاد شود، نه ۳ ثانیه بعد.
+       تکرار سریع کاربر دیگر در پنجرهٔ مرده ساکت بلعیده نمی‌شود؛ فقط انیمیشن کارت ۵۰۰ms است */
+    cmdBusy = false;
     setTimeout(() => {
-      setState('success');
-      statusText.textContent = t('status.done');
-      typeText(rcReply, reply);
-      speak(reply);
-      if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
-      /* v0.39 — پیشنهاد زمینه‌ای: کاربر درگیر یوتیوب/ویدیو/موسیقی بود → کارت فرمان‌ها */
-      if (rule && rule.id && SUGGEST_TRIGGERS.has(rule.id)) maybeSuggestCommands('video');
-      pushHistory(cmd, !/نشده|نمی‌شود|Failed/.test(rcTag.textContent || ''));
-      handsFreeRearm();
+      try {
+        setState('success');
+        statusText.textContent = t('status.done');
+        typeText(rcReply, reply);
+        speak(reply);
+        if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
+        /* v0.39 — پیشنهاد زمینه‌ای: کاربر درگیر یوتیوب/ویدیو/موسیقی بود → کارت فرمان‌ها */
+        if (rule && rule.id && SUGGEST_TRIGGERS.has(rule.id)) maybeSuggestCommands('video');
+        pushHistory(cmd, !/نشده|نمی‌شود|Failed/.test(rcTag.textContent || ''));
+        handsFreeRearm();
+      } catch (e) {
+        /* v0.47 — B03: استثنای مسیر پاسخ هرگز بی‌صدا دور ریخته نمی‌شود */
+        try { actLog('reply path fail: ' + String((e && (e.stack || e.message)) || e).slice(0, 160)); } catch (_) { /* noop */ }
+      }
       setTimeout(() => {
-        cmdBusy = false;
         if (state === 'success') {
           setState('idle');
           statusText.innerHTML = IDLE_HINT;
@@ -4459,12 +4686,15 @@
       }, 2400);
     }, 500 + Math.random() * 300);
     } catch (err) {
-      /* v0.38.1 — یک reject در قانون (شبکه/IPC) نباید میکروفن را ۴۵ ثانیه قفل کند */
+      /* v0.38.1 — یک reject در قانون (شبکه/IPC) نباید میکروفن را ۴۵ ثانیه قفل کند
+         v0.47 — B03: حالا صدادار هم هست — سکوت به‌جای صداقت ممنوع */
       actLog('command fail: ' + String((err && (err.stack || err.message)) || err).slice(0, 200));
       cmdBusy = false;
       setState('idle');
       statusText.innerHTML = IDLE_HINT;
+      _dispatchOutcome = 'error';
       try { toast(t('cmd.fail'), '#i-info'); } catch (_) { /* noop */ }
+      try { speak(t('cmd.fail')); } catch (_) { /* noop */ }
     }
   }
 
@@ -4507,7 +4737,9 @@
   /* v0.27 — موتور آفلاین همیشه-کار (sherpa-onnx + Whisper int8 داخل ویندوز):
      بدون اینترنت، بدون فیلترینگ، بدون کلید — ضامن «همیشه کار کردن» صدا */
   let localStat = { installed: false, ready: false, downloading: false };
-  const localReady = () => !!localStat.ready;
+  /* v0.47 — B19: installed کافی است (لود تنبل با اولین stt:local) — بوت دیگر
+     ~۲۰۰MB sync لود نمی‌کند (۱۸ بار «offline engine ready» در لاگ کاربر) */
+  const localReady = () => !!(localStat.ready || localStat.installed);
   function updateOfflineCard() {
     const st = $('#offStatus'), bt = $('#offBtnTxt'), btn = $('#btnOfflineDl'), pr = $('#offProgress');
     if (!st || !bt || !btn) return;
@@ -4940,17 +5172,33 @@
       if (won || isDead()) { actLog('stt ' + eng + ' late (' + ms + 'ms) — race already decided'); return; }
       if (r && r.ok && r.text) {
         const tx0 = String(r.text).trim();
-        /* v0.40 — برندهٔ هذیانی برنده نیست: موتورهای دیرترِ ابری شانس می‌گیرند */
+        /* v0.40 — برندهٔ هذیانی برنده نیست: موتورهای دیرترِ ابری شانس می‌گیرند
+           v0.47 — B06: نتیجهٔ junk دیگر موتور را بنچ نمی‌کند (قبلاً دو جملهٔ نویزی
+           پشت‌سرهم موتور سالم را ۳ دقیقه کور می‌کرد — «stt web benched 90s (deaf…)») */
         if (!dictation.active && isJunkUtterance(tx0)) {
           actLog('stt ' + eng + ' junk/hallucination result (' + ms + 'ms) — skipped, waiting cloud');
           fails += 1;
-          sttMarkFail(eng);
           if (fails >= chain.length && !won && !isDead()) {
             actLog('stt all engines returned junk/hallucination — nothing dispatched');
             setState('idle');
             statusText.innerHTML = IDLE_HINT;
             sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
           }
+          return;
+        }
+        /* v0.47 — B06: جملهٔ بلندِ فقط-محلی (رژیم توهم whisper-base) ۱.۴ ثانیه
+           فرصت تأیید ابری می‌گیرد — ریشهٔ ۵.۵ ثانیه سوزاندن AI با «افاب بین جایتين…» */
+        const tokN = tx0.split(/\s+/).filter(Boolean).length;
+        if (eng === 'local' && tokN >= 6 && chain.length > 1) {
+          actLog('stt local long sentence (' + tokN + ' tokens) — 1.4s cloud corroboration window');
+          setTimeout(() => {
+            if (won || isDead()) return;
+            won = true;
+            sttMarkOk(eng);
+            actLog('stt race winner=local (long sentence, no cloud corroboration arrived)');
+            setState('idle');
+            handleUtterance(tx0);
+          }, 1400);
           return;
         }
         won = true;
@@ -4976,22 +5224,36 @@
         if (dictation.active) setTimeout(rearmDictation, 1500);
       }
     };
+    /* v0.47 — B08: gemini = موج دوم — لاگ کاربر: ده‌ها «stt gemini late (4-12s) —
+       race already decided». gemini عملاً هرگز نمی‌برد ولی هر utterance شبکه
+       می‌سوزاند. اگر موتورهای سریع دیگری در زنجیره‌اند، gemini فقط بعد از ۲.۵ ثانیه
+       بدون برنده راه می‌افتد (موج دوم) — مگر آخرین موتورِ موفق خودش gemini باشد. */
+    let lastOk = '';
+    try { lastOk = localStorage.getItem(STT_LAST_KEY) || ''; } catch (_) { /* noop */ }
     chain.forEach((eng) => {
-      const te0 = Date.now();
-      const pr = (async () => {
-        /* v0.27 — آفلاین: همان PCM ۱۶k، ۱۰۰٪ داخل ویندوز، بدون هیچ شبکه‌ای */
-        if (eng === 'local') return bridge.stt.local({ pcm: pcmBytes, rate: 16000, lang: settings.sttLang || 'fa-IR' });
-        if (eng === 'google') return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang: settings.sttLang || 'fa-IR' });
-        const b = new Uint8Array(await wavBlob.arrayBuffer());
-        if (b.length < 900) return { ok: false, error: 'short-audio' };
-        if (eng === 'whisper') return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
-        if (eng === 'glm') return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
-        if (eng === 'gemini') return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR', base: settings.gemBase || '' });
-        return { ok: false, error: 'unknown-engine' };
-      })();
-      withEngTimeout(pr, RACE_MS)
-        .then((r) => raceSettle(eng, r, Date.now() - te0))
-        .catch(() => raceSettle(eng, { ok: false, error: t('stt.connFail') }, Date.now() - te0));
+      const launch = () => {
+        if (won || isDead()) return; /* برنده آمده/جلسه مرده — راه نیفت */
+        const te0 = Date.now();
+        const pr = (async () => {
+          /* v0.27 — آفلاین: همان PCM ۱۶k، ۱۰۰٪ داخل ویندوز، بدون هیچ شبکه‌ای */
+          if (eng === 'local') return bridge.stt.local({ pcm: pcmBytes, rate: 16000, lang: settings.sttLang || 'fa-IR' });
+          if (eng === 'google') return bridge.stt.google({ pcm: pcmBytes, rate: 16000, key: settings.googleKey || '', lang: settings.sttLang || 'fa-IR' });
+          const b = new Uint8Array(await wavBlob.arrayBuffer());
+          if (b.length < 900) return { ok: false, error: 'short-audio' };
+          if (eng === 'whisper') return bridge.stt.whisper({ buf: b, base: settings.whisperBase, key: settings.whisperKey, model: settings.whisperModel, lang: settings.sttLang || 'fa-IR' });
+          if (eng === 'glm') return bridge.stt.transcribe({ buf: b, base: settings.glmBase, key: settings.glmKey, model: ASR_MODEL });
+          if (eng === 'gemini') return bridge.stt.gemini({ buf: b, key: settings.geminiKey, model: settings.geminiModel, lang: settings.sttLang || 'fa-IR', base: settings.gemBase || '' });
+          return { ok: false, error: 'unknown-engine' };
+        })();
+        withEngTimeout(pr, RACE_MS)
+          .then((r) => raceSettle(eng, r, Date.now() - te0))
+          .catch(() => raceSettle(eng, { ok: false, error: t('stt.connFail') }, Date.now() - te0));
+      };
+      if (eng === 'gemini' && chain.length > 1 && lastOk !== 'gemini') {
+        setTimeout(launch, 2500); /* موج دوم */
+      } else {
+        launch();
+      }
     });
   }
 
@@ -5055,6 +5317,9 @@
   let wakeDropCmd = '';
   function showWakeDropCard(text) {
     wakeDropCmd = String(text || '').trim();
+    /* v0.47 — B04: drop در لاگ نامرئی بود (actLog نداشت) — دقیقاً همان «stt final»
+       بی‌دنبالهٔ لاگ v0.46 (۰۷:۲۳:۲۶) که دیباگ را فلج کرد */
+    actLog('wake drop (no wake word, session closed): «' + wakeDropCmd.slice(0, 60) + '» → actionable card');
     body.classList.add('has-card');
     respCard.classList.remove('show');
     void respCard.offsetWidth;
@@ -5321,6 +5586,33 @@
     L.coolUntil = Date.now() + 800;
     try {
       if (buf.length < 5) return; /* خیلی کوتاه */
+      /* v0.47 — B07: سقف نرخ decode — اتاق پرنویز (تلویزیون/بازی/فن) هر ~۱.۵s یک
+         decode کامل whisper می‌ساخت (لاگ کاربر: هزاران «stt local ok (1s audio)»
+         با خروجی نویز، CPU دائمی + whisper سنکرون در main process استاتر IPC می‌دهد).
+         ۱۵ چک در دقیقه برای بیدارباش واقعی بیش از کافی است. */
+      if (!wakeCheck._times) wakeCheck._times = [];
+      const _nowC = Date.now();
+      wakeCheck._times = wakeCheck._times.filter((t) => _nowC - t < 60000);
+      if (wakeCheck._times.length >= 15) {
+        if (_nowC - (wakeCheck._lastSkipLog || 0) > 30000) {
+          wakeCheck._lastSkipLog = _nowC;
+          actLog('wake-always: decode rate capped (15/min) — noisy environment cost cut');
+        }
+        return;
+      }
+      wakeCheck._times.push(_nowC);
+      /* v0.47 — B07: گیت نسبت گفتار — پنجره‌ای که کمتر از ~۸٪ چانک‌های voiced دارد
+         نویز خالص است؛ whisper روی آن فقط توهم تولید می‌کند (آبا/[صول]/"Q") */
+      {
+        const thrV = Math.max(0.004, L.floor * 1.8 + 0.0025);
+        let voiced = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const c = buf[i]; let sm = 0, nn = 0;
+          for (let j = 0; j < c.length; j += 8) { sm += c[j] * c[j]; nn++; }
+          if (Math.sqrt(sm / Math.max(1, nn)) > thrV) voiced++;
+        }
+        if (voiced < Math.max(2, Math.ceil(buf.length * 0.08))) return;
+      }
       /* v0.36 — حذف سکوتِ سرِ صدا: whisper روی «آوا»ی بریده‌تازه خیلی دقیق‌تر است
          v0.46 — پیش‌نواز ۲ چانک (~۱۷۰ms): آغازِ نرمِ «آوا» (واکه) قبلاً زیر
          آستانهٔ VAD می‌ماند و حرف اول بریده می‌شد → whisper «با/وا»ی ناقص
@@ -5507,7 +5799,7 @@
     return out.join(' ');
   }
   const STT_JUNK_WORDS = new Set(['از', 'او', 'اوه', 'ایه', 'ای', 'آ', 'اِ', 'هوم', 'ببب', 'مه', 'تن', 'اون', 'این', 'ا', 'ه', 'ی', 'و', 'که', 'aba', 'ava']);
-  const STT_SHORT_OK = new Set(['سلام', 'هوا', 'ساعت', 'بای', 'جوک', 'توقف', 'پخش', 'درست', 'باشه', 'اوکی', 'خاموش', 'صدا', 'آوا', 'اوا', 'خوبی', 'چطوری', 'بردار', 'بشین']);
+  const STT_SHORT_OK = new Set(['سلام', 'هوا', 'ساعت', 'بای', 'جوک', 'توقف', 'پخش', 'درست', 'باشه', 'اوکی', 'خاموش', 'صدا', 'آوا', 'اوا', 'خوبی', 'چطوری', 'بردار', 'بشین', 'بله', 'اره', 'آره', 'نه', 'برو', 'ایست', 'ادامه']);
   function sttCleanNoise(s) {
     let t = String(s || '');
     t = t.replace(/[\[\]"“”«»'']/g, ' ');
@@ -5515,7 +5807,12 @@
     return t.replace(/[\s\u200C]+/g, ' ').trim();
   }
   function isJunkUtterance(s) {
-    let t = sttCleanNoise(s);
+    /* v0.47 — B06: نرمال‌سازی اول — «اين» با یِ عربی قبلاً از فیلتر می‌گذشت
+       (نرمال‌سازی سبک درجا — فیلتر self-contained می‌ماند) */
+    let t = sttCleanNoise(String(s || '').toLowerCase()
+      .replace(/[\u064A\u0649]/g, '\u06CC')
+      .replace(/\u0643/g, '\u06A9')
+      .replace(/\u200C/g, ' '));
     if (!t) return true;
     t = collapseRepeats(t);
     const toks = t.split(' ').filter(Boolean);
@@ -5554,7 +5851,9 @@
       if (!cmd) {
         setState('idle');
         statusText.textContent = t('wake.sessOn');
-        speak(t('wake.yes'));
+        /* v0.47 — B20: «بله؟» بدون شبکه — پیش‌فرض edge یک synth شبکه‌ای است؛
+           برای بیدارِ تنها از صدای ویندوز (لوکال) استفاده می‌کنیم */
+        try { speakWindows(t('wake.yes')); } catch (_) { try { speak(t('wake.yes')); } catch (_e) { /* noop */ } }
         handsFreeRearm(1600);
         return;
       }
@@ -5564,9 +5863,25 @@
       if (m && (m[1] || '').trim()) cmd = String(m[1] || '').trim();
     }
     /* v0.40 — گارد ضد-هذیان: زبالهٔ STT هرگز dispatch نمی‌شود (نه قوانین،
-       نه هوش مصنوعی) — ریشهٔ «۳۶ ثانیه منتظر خطا ماند» در لاگ کاربر */
+       نه هوش مصنوعی) — ریشهٔ «۳۶ ثانیه منتظر خطا ماند» در لاگ کاربر
+       v0.47 — B06: قبل از دورریختن، تلاشِ wake داخل جمله چک می‌شود
+       («او با» قبلاً junk بود و بیدارباش از دست می‌رفت) */
     if (!dictation.active && !(opts && opts.force) && isJunkUtterance(cmd)) {
+      try {
+        if (typeof AVAWake !== 'undefined' && typeof wakeWordCfg === 'function') {
+          const wm = AVAWake.match(cmd, wakeWordCfg());
+          if (wm && (wm.t1 || wm.near)) {
+            actLog('wake-in-junk rescued: «' + String(cmd || '').slice(0, 40) + '»');
+            wakeSessOpen();
+            playWakeChime();
+            handsFreeRearm(1600);
+            _dispatchOutcome = 'wake-rescued';
+            return;
+          }
+        }
+      } catch (_) { /* noop */ }
       actLog('utterance junk dropped (hallucination/noise): ' + String(cmd || '').slice(0, 40));
+      _dispatchOutcome = 'junk-drop';
       setState('idle');
       handsFreeRearm(900);
       return;
@@ -5579,7 +5894,8 @@
     }
     await runCommand(cmd, { wake: wakeGate });
     wakeSessExtend(); /* هر فرمان اجراشده، مدت گفتگو را تمدید می‌کند */
-    actLog(`utterance total ${Date.now() - h0}ms: ${cmd.slice(0, 60)}`);
+    /* v0.47 — B18: نتیجهٔ واقعی dispatch در لاگ می‌آید (rule/ai/busy/junk/…) */
+    actLog(`utterance total ${Date.now() - h0}ms [${_dispatchOutcome || 'done'}]: ${cmd.slice(0, 60)}`);
   }
 
   /* در حالت بی‌دست، بعد از هر فرمان/خطا دوباره گوش می‌دهیم */
@@ -6301,6 +6617,9 @@
       return;
     }
     if (state === 'listening') return stopListening();
+    /* v0.47 — B04: کاربر خودش دکمهٔ میکروفون را زد = اجازهٔ گفتار داده شده؛
+       در حالت بی‌دست دیگر لازم نیست اول «آوا» بگوید (کلیک دستی = session باز) */
+    if (settings.handsFree && settings.wakeWord) wakeSessOpen();
     startListening();
   };
 
@@ -6719,7 +7038,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.46.0-beta';
+  let appVersion = '0.47.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7891,6 +8210,8 @@
     '- screenshot / lock / monitor_off / minimize_all / recycle_empty؛ sys_sleep: فقط با درخواست صریح کاربر (برنامه تأیید می‌گیرد)\n' +
     '- dns_set: value=اسم پروفایل DNS؛ dns_reset (بدون value)\n' +
     '- reminder_add: value=متن کامل با زمان (مثل: ۲۰ دقیقه دیگه چایی درست کن)\n' +
+    '  ⚠ ممنوعیت‌های سخت (v0.47): value هرگز فقط واژهٔ انتزاعی مثل «timer»/«status»/«بیدار» نیست — همیشه زمانِ واقعی + متن یادآوری را بنویس؛ اگر کاربر زمان نگفته، اول بپرس یا پاسخ متنی بده، هرگز reminder_add با value بی‌زمان نزن\n' +
+    '- مثال‌های منفی (هرگز این خطاها را تکرار نکن): [باز کن]→run_custom نیست؛ عملِ ساخته‌شده در ذهن خودت (مثل run_custom(open_notepad) برای «نوت‌پد باز کن») ممنوع — یا open_app(notepad) بزن یا پاسخ متنی؛ از بین نبردن actهای ناموجود؛ dns_set فقط با درخواست صریح تغییر DNS\n' +
     '- note_show: value=بخشی از متن یک یادداشت ذخیره‌شدهٔ کاربر (یا خالی برای آخرین یادداشت) — یادداشت را برایش می‌خوانی\n' +
     '- discord_call: value=اسم مخاطب ذخیره‌شده؛ discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer (جواب تماس)؛ discord_decline (رد تماس)\n' +
     '- set_wake_word: value=کلمهٔ بیدارباش جدید (فقط یک کلمه، مثل آوا یا اسم کاربر) — کاربر بیدارباش را عوض می‌کند\n' +
@@ -8112,7 +8433,13 @@
             break;
           }
           case 'reminder_add': {
-            outs.push(await reminderReply(a.value));
+            /* v0.47 — B01: مقدار AI مثل «5 دقیقه» بدون قید نسبیت است — allowBare
+               v0.47 — B17: مقدارِ بی‌زمانِ ابداعی («timer»/«status» — لاگ واقعی کاربر)
+               دیگر به تایمرِ پیش‌فرضِ بی‌معنا نمی‌افتد؛ پیام صادق می‌خواهد */
+            const _rv = String(a.value || '');
+            const hasTime = /[\d۰-۹]|ساعت|دقیقه|ثانیه|نیم\s*ساعت/i.test(_rv);
+            if (!hasTime) { outs.push(LANG === 'en' ? 'What time should I set the reminder for?' : 'برای چه زمانی یادآوری بگذارم؟ (مثلاً: ۵ دقیقه دیگه)'); break; }
+            outs.push(await reminderReply(_rv, { allowBare: true }));
             break;
           }
           /* v0.42 — باز کردن/خواندن یادداشت ذخیره‌شده (value خالی = آخرین یادداشت) */
@@ -8396,6 +8723,54 @@
     rcTag.textContent = t('tag.ai');
     /* v0.41 — نگاشت آموخته‌شده: این عبارت قبلاً AI به یک فرمان واقعی آوا
        نگاشتش کرده → همین حالا اجرا، صفر شبکه (سرعت: «سریعتر به AI وصلش کنیم») */
+    /* ============================================================
+       v0.47 — سیستم یادگیری: اول حافظهٔ یادگیری چک می‌شود
+       • hit و تکرارِ اخیر (نارضایتی) → اصلاح: یادگیری باطل + تصمیم تازه با AI
+       • hit عادی → بازپخش آفلاین (بدون شبکه، فوری) با تگ «⚡ یادگرفته»
+       • شکستِ بازپخش → حذف یادگیری و رفتن به AI (همان منطق صادق v0.45)
+       ============================================================ */
+    try {
+      const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
+      if (Le && learnLoaded && learnStore.items.length) {
+        const lhit = Le.match(learnStore, cmd);
+        if (lhit) {
+          if (Le.isRepeatHit(lhit, Date.now())) {
+            /* کاربر همان را دوباره گفت = از عملکرد قبلی راضی نبود */
+            const rv = Le.revise(learnStore, lhit);
+            await saveLearnStore();
+            actLog('learn revise (repeat = unsatisfied): ' + Le.summary(lhit.acts) + ' → ' + (rv.unstable ? 'marked unstable (no more auto-run)' : 'dropped, AI re-decides fresh'));
+            try { renderLearnList(); } catch (_) { /* noop */ }
+            /* ادامه به مسیر عادی AI (پایین) — یادگیری تازه جایگزین می‌شود */
+          } else {
+            actLog('learn hit (offline replay): ' + Le.summary(lhit.acts));
+            const outs = await executeDoActions(lhit.acts, cmd, 'replay');
+            const failedOut = outs.some((x) => /انجام نشد|باز نشد|Could not|Couldn't|پیدا نشد/.test(String(x || '')));
+            if (failedOut) {
+              Le.dropKey(learnStore, lhit.k);
+              await saveLearnStore();
+              actLog('learn replay failed → dropped, asking AI fresh');
+              /* ادامه به AI */
+            } else {
+              Le.markUsed(lhit);
+              await saveLearnStore();
+              const fin = outs.filter(Boolean).join(' — ') || (LANG === 'en' ? 'Done.' : 'انجام شد.');
+              pushChatHist('user', cmd); pushChatHist('assistant', fin);
+              setState('success');
+              statusText.textContent = t('ai.got');
+              rcTag.textContent = t('learn.tag');
+              typeText(rcReply, fin);
+              speak(fin);
+              pushHistory(cmd, true);
+              handsFreeRearm();
+              cmdBusy = false;
+              _dispatchOutcome = 'learn-replay';
+              setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+              return;
+            }
+          }
+        }
+      }
+    } catch (_) { /* noop */ }
     if (extraCtx) {
       const cachedId = aiMapGet(cmd);
       if (cachedId) {
@@ -8455,6 +8830,12 @@
         if (doRes.do) {
           actLog('ai DO: ' + doRes.do.actions.map((a) => a.act + (a.value ? '(' + a.value.slice(0, 24) + ')' : '')).join(' + '));
           const actReply = await executeDoActions(doRes.do.actions, cmd); /* v0.39 — cmd برای run_cmd */
+          /* v0.47 — یادگیری از عمل‌های موفق هوش مصنوعی (فقط عمل‌های امنِ whitelist) */
+          try {
+            if (!/انجام نشد|باز نشد|Could not|Couldn't|پیدا نشد/.test(String(actReply || ''))) {
+              await learnFromAI(cmd, doRes.do.actions, doRes.do.reply || '');
+            }
+          } catch (_) { /* noop */ }
           const finalReply = [doRes.do.reply, actReply].filter(Boolean).join(' — ');
           pushChatHist('user', cmd); pushChatHist('assistant', finalReply);
           setState('success');
@@ -8497,12 +8878,16 @@
         statusText.textContent = r && r.needLogin ? t('ai.noConn') : t('ai.fail');
         rcTag.textContent = t('tag.ai');
         typeText(rcReply, (r && r.error) || t('chat.noReply'));
+        /* v0.47 — B03: شکست هوش مصنوعی صدادار شد (قبلاً فقط متن — لاگ: سکوت کامل) */
+        try { speak(statusText.textContent); } catch (_) { /* noop */ }
         pushHistory(cmd, false);
       }
     } catch (_) {
       setState('success');
       rcTag.textContent = t('tag.ai');
       typeText(rcReply, t('ai.err'));
+      /* v0.47 — B03: سکوت به‌جای صداقت ممنوع */
+      try { speak(t('ai.err')); } catch (_) { /* noop */ }
       pushHistory(cmd, false);
     }
     handsFreeRearm();
@@ -9330,9 +9715,10 @@
   }
   function voiceMusicPause() {
     if (!settings.extMusic) return musicExtOffReply();
-    if (!music.tracks.length || mAudio.paused) return t('music.paused');
-    mAudio.pause();
-    return t('music.paused');
+    if (music.tracks.length && !mAudio.paused) { mAudio.pause(); return t('music.paused'); }
+    /* v0.47 — B15: صداقت — وقتی هیچ‌چیز داخلی پخش نمی‌شود دیگر دروغِ «موزیک متوقف شد»
+       نمی‌گوییم (پلیر خارجی/یوتیوب هم پخش نیست؛ کلید مدیای کور ریسک play دارد) */
+    return LANG === 'en' ? 'Nothing is playing right now.' : 'الان موزیکی در حال پخش نیست.';
   }
   function voiceMusicNext() {
     if (!settings.extMusic) return musicExtOffReply();
@@ -9556,9 +9942,12 @@
       if (!settings.geminiKey || (prov !== 'auto' && prov !== 'gemini')) return;
       if (!bridge || !bridge.ai || !bridge.ai.gemini) return;
       setTimeout(() => {
+        /* v0.47 — B10: کاربر وسط فرمان است → warmup لغو (قبلاً همزمان دو زنجیرهٔ کامل
+           ۴۲۹-spam می‌کردند)؛ اگر مدت warmup قبلی فاجعه‌بار بود (>۳۰s) هم بی‌خیال */
+        if (cmdBusy || state === 'processing' || state === 'listening') return;
         const t0 = Date.now();
         actLog('ai warmup: pinging Gemini …');
-        bridge.ai.gemini({
+        const wp = bridge.ai.gemini({
           key: settings.geminiKey,
           model: settings.geminiModel || '',
           base: settings.gemBase || '',
@@ -9567,6 +9956,11 @@
         }).then((r) => {
           actLog('ai warmup ' + (r && r.ok ? 'ok ' : 'fail ') + (Date.now() - t0) + 'ms' + (r && r.model ? ' model=' + r.model : ''));
         }).catch(() => { /* خاموش — کاربر هنوز فرمانی نداده */ });
+        /* v0.47 — B10: سقف کلی ۱۲ ثانیه (لاگ کاربر: warmup ok 35416ms/37521ms —
+           یعنی اولین فرمان واقعی هم بدون سقف همان‌قدر می‌توانست معطل شود) */
+        Promise.race([wp, new Promise((res) => setTimeout(() => res('warmup-deadline-12s'), 12000))]).then((x) => {
+          if (x === 'warmup-deadline-12s') actLog('ai warmup exceeded 12s deadline — abandoned (chain still capped per-request)');
+        });
       }, 3000);
     } catch (_) { /* noop */ }
   }
@@ -9575,10 +9969,24 @@
   if (bridge && bridge.dns && bridge.dns.onQuickRequest) {
     bridge.dns.onQuickRequest(() => openDnsQuickOverlay());
   }
-  /* یادآوری سر وقت: توست + بوق + گفتن بلند (تیک پس‌زمینه در پروسه اصلی است) */
+  /* v0.47 — B13: میانبرهای سراسری اگر اشغال باشند، کاربر همان لحظه می‌فهمد
+     (قبلاً فقط در activity.log می‌رفت و push-to-talk بی‌سروصدا می‌مرد) */
+  if (bridge && bridge.onShortcutFailed) {
+    bridge.onShortcutFailed((p) => {
+      const combos = ((p && p.combos) || []).join(' و ');
+      try { toast(t('toast.shortcutFail') + (combos ? ' (' + combos + ')' : ''), '#i-info'); } catch (_) { /* noop */ }
+      try { actLog('shortcut failed notice shown: ' + combos); } catch (_) { /* noop */ }
+    });
+  }
+  /* یادآوری سر وقت: توست + بوق + گفتن بلند (تیک پس‌زمینه در پروسه اصلی است)
+     v0.47 — B01: پیام بر اساس kind (تایمر/یادآوری) + ack فوری + لاگ شلیک */
   if (bridge && bridge.reminders && bridge.reminders.onDue) {
     bridge.reminders.onDue((r) => {
-      const msg = t('rem.due', { x: (r && r.text) || '' });
+      const isTimer = r && r.kind === 'timer';
+      const msg = isTimer
+        ? (t('timer.done') + (r && r.text ? ` (${r.text})` : ''))
+        : t('rem.due', { x: (r && r.text) || '' });
+      actLog('reminder due (kind=' + (isTimer ? 'timer' : 'reminder') + '): ' + ((r && r.text) || '').slice(0, 60));
       beep();
       toast(msg, '#i-timer');
       setState('success');
@@ -9588,10 +9996,16 @@
       rcTag.textContent = t('timer.doneTag');
       typeText(rcReply, msg);
       speak(msg);
-      try { renderRemList(); } catch (_) { /* noop */ } /* v0.38.1 — یادآوری رسیده از فهرست برود */
+      /* v0.47 — B01: رندرر رسیدن را تأیید می‌کند تا main از تیک بعدی تکرار نکند */
+      if (r && r.id && bridge.reminders.ack) bridge.reminders.ack(r.id).then(() => { try { renderRemList(); } catch (_) { /* noop */ } }).catch(() => { /* noop */ });
+      else try { renderRemList(); } catch (_) { /* noop */ }
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 5000);
     });
   }
+  /* v0.47 — B01: تایمرهای پایدارِ مانده از جلسهٔ قبل دوباره مسلح شوند */
+  rearmPersistedTimers();
+  /* v0.47 — حافظهٔ یادگیری از فایل بیاید + میراث aiCmdMap منتقل شود */
+  loadLearnStore().then(() => { try { renderLearnList(); } catch (_) { /* noop */ } }).catch(() => { /* noop */ });
   /* v0.38.1 — فهرست یادآوری‌ها در شروع هم پر شود */
   try { renderRemList(); } catch (_) { /* noop */ }
   /* گرم کردن کش برنامه‌های سیستم در پس‌زمینه — اولین «باز کن» سریع باشد */

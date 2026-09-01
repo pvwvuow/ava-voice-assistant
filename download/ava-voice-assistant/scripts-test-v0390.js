@@ -117,7 +117,7 @@ ok(/ویدیو رو پین کن/.test(app), 'app: فرمان‌های پیشنه
 }
 ok(/function aiCmdCatalogCtx\(\)/.test(app), 'app: سازندهٔ کاتالوگ AI');
 ok(/aiHandleCommand\(cmd, (?:await aiFallbackCtx\(\)|aiCmdCatalogCtx\(\))\)/.test(app), 'app: کاتالوگ فقط وقتی تزریق می‌شود که فرمان شناخته نشد'); /* v0.42: aiFallbackCtx = کاتالوگ+وضعیت */
-ok(/'run_custom', 'run_cmd'(, 'note_show')?\]/.test(app), 'app: run_cmd در DO_ACTS مجاز است'); /* v0.42: +note_show */
+ok(/'run_custom', 'run_cmd'((, '(note_show|set_wake_word)')*)?\]/.test(app), 'app: run_cmd در DO_ACTS مجاز است'); /* v0.42: +note_show؛ v0.46: +set_wake_word */
 ok(/a\.act === 'run_cmd'/.test(app), 'app: اجراکنندهٔ run_cmd');
 ok(/RULES\.find\(\(x\) => x\.id === String\(a\.value \|\| ''\)\.trim\(\)\)/.test(app), 'app: run_cmd فقط idهای واقعی کاتالوگ را اجرا می‌کند');
 ok(/executeDoActions\(doRes\.do\.actions, cmd\)/.test(app), 'app: جملهٔ اصلی کاربر برای run_cmd پاس می‌شود');

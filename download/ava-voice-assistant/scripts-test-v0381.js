@@ -213,7 +213,7 @@ ok(/writeJsonAtomic\(f, arr\.slice\(0, 200\)\)/.test(mainjs), 'main: یاددا�
 ok(/writeJsonAtomic\(f, appsCache\)/.test(mainjs), 'main: کش برنامه‌ها اتمیک');
 ok(/renameSync\(tmp, statePath\)/.test(pwm), 'PiP: نوشتن state اتمیک');
 ok(/installer open failed/.test(mainjs), 'main: خطای openPath نصّاب چک می‌شود');
-ok(/shortcut register FAILED: Ctrl\+Shift\+Space/.test(mainjs), 'main: اشغال میانبر PTT لاگ می‌شود');
+ok(/shortcut register FAILED/.test(mainjs), 'main: اشغال میانبر PTT لاگ می‌شود (v0.47: پیام داینامیک + fallback + اعلان)');
 ok(/KEY_BUSY:Ctrl\+Shift\+P/.test(pwm), 'PiP: اشغال Ctrl+Shift+P لاگ می‌شود');
 
 /* ۱۵) app — بقیه فیکس‌ها */

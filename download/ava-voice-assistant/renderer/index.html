@@ -621,6 +621,15 @@
                     <button class="chip" id="btnRemClear" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="rem.uiClear">پاک کردن همه</span></button>
                   </div>
                 </div>
+                <!-- v0.47 — سیستم یادگیری آوا: هر عملِ موفقِ هوش مصنوعی یاد گرفته می‌شود
+                     تا دفعهٔ بعد آفلاین اجرا شود؛ تکرار کاربر = اصلاح یادگیری -->
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="learn.uiTitle">چیزهایی که آوا یاد گرفته</b><span data-i18n="learn.uiHint">وقتی هوش مصنوعی درخواستی را درست انجام دهد، آوا همان را یاد می‌گیرد و دفعهٔ بعد بدون اینترنت اجرا می‌کند — اگر راضی نبودی همان را تکرار کن تا اصلاح کند</span></span>
+                  <div class="dc-list" id="learnList"></div>
+                  <div class="set-links">
+                    <button class="chip" id="btnLearnClear" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="learn.uiClear">پاک کردن همه</span></button>
+                  </div>
+                </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.app.links">پیوندها</b><span data-i18n="set.app.linksHint">ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود</span></span>
                   <div class="set-links">
@@ -1062,7 +1071,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.46.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.47.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و
@@ -1085,6 +1094,7 @@
   <script src="js/voiceIntent.js"></script>
   <script src="js/voiceUnderstand.js"></script>
   <script src="js/voiceWake.js"></script>
+  <script src="js/voiceLearn.js"></script>
   <script src="js/capabilities.js"></script>
   <script src="js/types.js"></script>
   <script src="js/app.js"></script>

@@ -17,6 +17,22 @@ const { Readable } = require('stream');
    heap رندرر/مین را می‌گیرد؛ مصرف عادی آوا خیلی زیر این سقف است */
 try { app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512'); } catch (_) { /* noop */ }
 
+/* v0.47 — B13: قفل تک‌نمونه‌ای — بدون این، اجرای دوبارهٔ آوا (خودکار + دستی)
+   هر دو shortcut را «occupied» می‌کند (لاگ v0.46 کاربر: هر دو FAILED)، صدای
+   دوگانه و دو حلقهٔ wake می‌سازد. نمونهٔ دوم بلافاصله می‌رود؛ نمونهٔ اول
+   پنجره‌اش بالا می‌آید و فوکوس می‌گیرد. */
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    try {
+      const w = BrowserWindow.getAllWindows()[0];
+      if (w) { if (w.isMinimized()) w.restore(); w.show(); w.focus(); }
+    } catch (_) { /* noop */ }
+  });
+}
+
 /* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
 const pipManager = require('./pipWindowManager');
 
@@ -82,6 +98,19 @@ function serveMediaFile(reqUrl, req) {
     if (u.host !== 'm') return new Response('not found', { status: 404 });
     const p = decodeURIComponent(u.pathname).replace(/^\/+/, '');
     if (!path.isAbsolute(p)) return new Response('forbidden', { status: 403 });
+    /* v0.47 — B21: allowlist — فقط پوشه‌های موزیک اسکن‌شدهٔ خود کاربر + userData؛
+       قبلاً هر path مطلقی استریم می‌شد (هرگز نباید از رندرر به فایل‌سیستم کامل برسد) */
+    {
+      const _allowed = [];
+      try { _allowed.push(app.getPath('userData')); } catch (_) { /* noop */ }
+      try {
+        const st0 = loadedSettings();
+        if (Array.isArray(st0.musicDirs)) _allowed.push(...st0.musicDirs);
+        if (st0.musicDir) _allowed.push(String(st0.musicDir));
+      } catch (_) { /* noop */ }
+      const _ok = _allowed.some((d) => d && path.normalize(p).toLowerCase().startsWith(path.normalize(d).toLowerCase() + path.sep));
+      if (!_ok) return new Response('forbidden', { status: 403 });
+    }
     let st;
     try { st = fs.statSync(p); } catch (_) { return new Response('not found', { status: 404 }); }
     if (!st.isFile()) return new Response('not found', { status: 404 });
@@ -314,7 +343,7 @@ setInterval(() => {
         if (j && j.ok && j.map && Object.keys(j.map).length) {
           const before = JSON.stringify([...nodeDnsMap.entries()]);
           applyNodeDnsMap(j.map);
-          try { fs.writeFileSync(path.join(ud, 'dns-map.json'), JSON.stringify({ t: Date.now(), map: j.map })); } catch (_) { /* noop */ }
+          try { writeJsonAtomic(path.join(ud, 'dns-map.json'), { t: Date.now(), map: j.map }); } catch (_) { /* noop */ } /* v0.47 B21: اتمیک */
           if (before !== JSON.stringify([...nodeDnsMap.entries()])) {
             actLog('dns map refreshed: ' + nodeDnsMap.size + ' hosts pinned via shekan/electro');
           }
@@ -811,31 +840,6 @@ const normAppName = (s) =>
     .replace(/[^a-z0-9\u0600-\u06FF ]/g, '')
     .replace(/\s+/g, ' ').trim();
 
-/* v0.43 — اسکن اپ‌های UWP/Store (Get-StartApps) — «باز کن کالکولیتور» بدون
-   شورتکات Start Menu هم جواب می‌دهد */
-function scanUwpApps() {
-  return new Promise((resolve) => {
-    exec(
-      'powershell -NoProfile -Command "Get-StartApps | ForEach-Object { $_.Name + \u0027|\u0027 + $_.AppID }"',
-      { windowsHide: true, timeout: 20000, maxBuffer: 1024 * 1024 },
-      (err, stdout) => {
-        const out = [];
-        if (!err && stdout) {
-          for (const line of String(stdout).split(/\r?\n/)) {
-            const s = line.trim();
-            const ix = s.lastIndexOf('|');
-            if (ix < 1) continue;
-            const name = s.slice(0, ix).trim();
-            const appid = s.slice(ix + 1).trim();
-            if (!name || !appid || !appid.includes('!') || APP_NAME_JUNK.test(name)) continue;
-            out.push({ name, exe: 'shell:appsFolder\\' + appid, lnk: '', kind: 'uwp', appId: appid });
-          }
-        }
-        resolve(out);
-      }
-    );
-  });
-}
 
 /* v0.43 — اسکن اپ‌های UWP/Store (Get-StartApps) — «باز کن ماشین‌حساب» بدون
    شورتکات Start Menu هم جواب می‌دهد؛ اجرا با shell:appsFolder\<AppID> */
@@ -953,25 +957,74 @@ loadReminders();
 setInterval(() => {
   const now = Date.now();
   const due = reminders.filter((r) => !r.done && r.at <= now);
-  if (!due.length) return;
-  for (const r of due) r.done = true;
-  reminders = reminders.filter((r) => !r.done);
-  saveReminders();
-  for (const r of due) sendUI('reminders:due', { id: r.id, text: r.text, at: r.at });
+  /* v0.47 — B01: حذفِ فوری حذف شد — یادآوری تا ack رندرر (یا ۳۰ ثانیه) نگه داشته
+     و در صورت نشدن ack دوباره ارسال می‌شود؛ قبلاً اگر رندرر در لحظهٔ شلیک
+     reload بود، یادآوری برای همیشه گم می‌شد (ریشهٔ «یادآوری‌ام کجا رفت») */
+  for (const r of due) { r.done = true; r.doneAt = now; r.sentAt = 0; }
+  const pendingAck = reminders.filter((r) => r.done && !r.acked);
+  let dirty = due.length > 0;
+  for (const r of pendingAck) {
+    if (!r.sentAt) { sendUI('reminders:due', { id: r.id, text: r.text, at: r.at, kind: r.kind || 'reminder' }); r.sentAt = now; dirty = true; }
+    else if (now - r.sentAt >= 8000 && now - (r.doneAt || now) < 30000) { sendUI('reminders:due', { id: r.id, text: r.text, at: r.at, kind: r.kind || 'reminder' }); r.sentAt = now; } /* یک تکرار نجات‌دهنده */
+  }
+  reminders = reminders.filter((r) => !r.done || (!r.acked && now - (r.doneAt || now) < 30000));
+  if (dirty) saveReminders();
+  /* v0.47 — B01: تا وقتی یادآوری/تایمر در انتظار است، ویندوز جلسه را معلق نکند
+     (Modern Standby تایمرهای جاوااسکریپت را قایم می‌کند — یکی از ریشه‌های شلیک‌نشدن) */
+  const hasPending = reminders.some((r) => !r.done);
+  if (hasPending && !powerSaveBlocker.isStarted(remPsbId)) remPsbId = powerSaveBlocker.start('prevent-app-suspension');
+  else if (!hasPending && remPsbId !== null && powerSaveBlocker.isStarted(remPsbId)) { powerSaveBlocker.stop(remPsbId); remPsbId = null; }
 }, 4000);
+let remPsbId = null;
 
 ipcMain.handle('reminders:add', (_e, p) => {
   const text = String((p && p.text) || '').trim().slice(0, 300);
   const at = Number(p && p.at);
+  /* v0.47 — B01: kind/label/unit برای تایمرهای پایدار (kind=timer) */
+  const kind = (p && p.kind === 'timer') ? 'timer' : 'reminder';
+  const label = String((p && p.label) || '').slice(0, 40);
+  const unit = String((p && p.unit) || '').slice(0, 20);
   if (!text) return { ok: false, error: 'متن یادآوری خالی است' };
   if (!Number.isFinite(at) || at <= Date.now() + 3000) return { ok: false, error: 'زمان یادآوری باید در آینده باشد' };
   if (reminders.length >= 100) return { ok: false, error: 'فهرست یادآوری‌ها پر است' };
-  const rem = { id: Date.now() + Math.floor(Math.random() * 999), text, at };
+  const rem = { id: Date.now() + Math.floor(Math.random() * 999), text, at, kind, label, unit };
   reminders.push(rem);
   saveReminders();
   return { ok: true, reminder: rem };
 });
+/* v0.47 — B01: رندرر شلیک را تأیید می‌کند → حذف قطعی */
+ipcMain.handle('reminders:ack', (_e, id) => {
+  reminders = reminders.filter((r) => r.id !== Number(id));
+  saveReminders();
+  return { ok: true };
+});
 ipcMain.handle('reminders:list', () => ({ ok: true, reminders: reminders.filter((r) => !r.done).sort((a, b) => a.at - b.at) }));
+
+/* ============================================================
+   v0.47 — حافظهٔ یادگیری آوا (SELF-LEARNING — درخواست صریح کاربر)
+   «اگ از ai یک درخواستی کرد کاربر ava خودش اون رو یاد بگیره و دفعات
+   بعد افلاین انجام بده» — ذخیرهٔ پایدار و اتمیک در ava-learnings.json
+   منطق یادگیری/فازی/نارضایتی در renderer/js/voiceLearn.js است؛
+   اینجا فقط نگهداریِ فایل است (writeJsonAtomic).
+   ============================================================ */
+const LEARN_FILE = () => path.join(app.getPath('userData'), 'ava-learnings.json');
+let learningsCache = null;
+function loadLearnings() {
+  if (learningsCache) return learningsCache;
+  try { learningsCache = JSON.parse(fs.readFileSync(LEARN_FILE(), 'utf8')) || null; } catch (_) { learningsCache = null; }
+  if (!learningsCache || typeof learningsCache !== 'object' || !Array.isArray(learningsCache.items)) learningsCache = { v: 1, items: [] };
+  return learningsCache;
+}
+ipcMain.handle('learnings:load', () => ({ ok: true, data: loadLearnings() }));
+ipcMain.handle('learnings:save', (_e, data) => {
+  try {
+    if (!data || typeof data !== 'object' || !Array.isArray(data.items)) return { ok: false, error: 'bad-shape' };
+    if (data.items.length > 200) data.items = data.items.slice(0, 200);
+    learningsCache = data;
+    writeJsonAtomic(LEARN_FILE(), data);
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e).slice(0, 120) }; }
+});
 ipcMain.handle('reminders:remove', (_e, id) => {
   reminders = reminders.filter((r) => r.id !== Number(id));
   saveReminders();
@@ -2064,7 +2117,7 @@ async function zaiInPageChat(messages, model) {
     const js = buildZaiPageScript(messages, model);
     const out = await Promise.race([
       w.webContents.executeJavaScript(js, true),
-      new Promise((res) => setTimeout(() => res(null), 100000)),
+      new Promise((res) => setTimeout(() => res(null), 35000)), /* v0.47 B30: ۱۰۰ثانیه→۳۵ — یک صفحهٔ هنگ‌کرده زنجیرهٔ auto را قفل نمی‌کند */
     ]);
     return out || null;
   } catch (e) {
@@ -2335,9 +2388,10 @@ function loadOfflineEngine(settings, force) {
 
 ipcMain.handle('stt:local:status', () => {
   const inst = offlineInstalled();
-  let ready = false;
-  if (inst) ready = !!(loadOfflineEngine(loadedSettings()) || {}).ok;
-  return { installed: inst, ready, busy: offlineBusy, downloading: !!(offlineDl && offlineDl.on), error: sherpaFailed || undefined };
+  /* v0.47 — B19: status دیگر موتور ~۲۰۰MB را sync لود نمی‌کند (لاگ: ۱۸ بار
+     «offline engine ready» در ~۱۰ بوت — کاربرانی که هرگز آفلاین/wake ندارند
+     هم RAM و بوت می‌پرداختند). لود تنبل فقط با اولین stt:local واقعی رخ می‌دهد. */
+  return { installed: inst, ready: !!(inst && offlineRec), busy: offlineBusy, downloading: !!(offlineDl && offlineDl.on), error: sherpaFailed || undefined };
 });
 
 ipcMain.handle('stt:local', async (_e, p) => {
@@ -2697,6 +2751,11 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده — از تنظیمات › هوش مصنوعی واردش کن' };
   if (!buf || !buf.length) return { ok: false, error: 'صدایی برای تبدیل وجود ندارد' };
+  /* v0.47 — B09/B11: کول‌داون ASR — gemini هرگز مسابقه را نمی‌برد؛ در قطعی
+     شبکه/سهمیه نباید در هر utterance کل گانگستر را بچرخاند */
+  const _nowS = Date.now();
+  if (_nowS < gemCooldown.netUntil) return { ok: false, error: gemCooldown.sttReason || 'network-down' };
+  if (_nowS < gemCooldown.sttUntil) return { ok: false, error: gemCooldown.sttReason || 'quota-cooling' };
   const b64 = Buffer.from(buf).toString('base64');
   const prompt =
     'Transcribe this audio recording verbatim. ' +
@@ -2757,12 +2816,19 @@ ipcMain.handle('stt:gemini', async (_e, p) => {
           : '';
         if (!text) { lastErr = 'Gemini-ASR: پاسخ خالی بود'; continue; }
         gemSttWorkingModel = mdl; /* v0.21 — دفعه بعد اول همین امتحان می‌شود */
+        gemCoolClear(); /* v0.47 — B09 */
         return { ok: true, text, model: mdl };
-      } catch (e) { lastErr = netErr(e); sawNetFail = sawNetFail || isNetFail(String(lastErr)); }
+      } catch (e) {
+        lastErr = netErr(e); sawNetFail = sawNetFail || isNetFail(String(lastErr));
+        /* v0.47 — B11: قطعی آنی شبکه → گانگستر را قطع کن */
+        if (isNetFail(String(lastErr))) { gemNetCool(lastErr); break; }
+      }
     }
   }
   /* v0.26 — همهٔ شکست‌ها شبکه‌ای بود → در لاگ هم صریح بنویس (تشنخیص آسان) */
   if (sawNetFail) actLog('gemini-asr: all attempts failed at NETWORK level — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
+  if (sawNetFail) gemNetCool(lastErr);
+  else { gemCooldown.sttUntil = Date.now() + 60000; gemCooldown.sttReason = lastErr || ''; }
   return { ok: false, error: (lastErr || 'Gemini-ASR پاسخ نداد') };
 });
 
@@ -3019,8 +3085,11 @@ function edgeSynthChunk(text, lang, voiceOverride) {
 const edgeHealth = { fails: 0, until: 0 };
 
 ipcMain.handle('tts:edge', async (_e, p) => {
-  const { text, lang, voice } = p || {};
-  if (Date.now() < edgeHealth.until) return { ok: false, error: 'edge cooling down' };
+  const { text, lang, voice, probe } = p || {};
+  /* v0.47 — B12: کول‌داون ۱۰ دقیقه‌ای → ۹۰ ثانیه (لاگ کاربر: «چرا صدا تغییر نمیکنه
+     پس» — تغییر صدا وسط کول‌داون هیچ تغییری شنیدنی نمی‌داد و هیچ بازخوردی نبود)
+     + probe=true (تغییر صدا/موتور در تنظیمات) یک‌بار از کول‌داون می‌گذرد */
+  if (!probe && Date.now() < edgeHealth.until) return { ok: false, error: 'edge cooling down', cooling: true };
   const chunks = splitEdgeChunks(String(text || '').slice(0, 24000));
   if (!chunks.length) return { ok: false, error: 'متنی برای خواندن نیست' };
   try {
@@ -3030,7 +3099,7 @@ ipcMain.handle('tts:edge', async (_e, p) => {
     for (const r of res) {
       if (!(r && r.ok)) {
         edgeHealth.fails++;
-        if (edgeHealth.fails >= 2) { edgeHealth.until = Date.now() + 10 * 60 * 1000; edgeHealth.fails = 0; }
+        if (edgeHealth.fails >= 2) { edgeHealth.until = Date.now() + 90 * 1000; edgeHealth.fails = 0; } /* v0.47 B12: ۱۰دقیقه→۹۰ثانیه */
         return { ok: false, error: String((r && r.error) || 'edge tts failed').slice(0, 160) };
       }
       parts.push(r.buffer);
@@ -3422,6 +3491,18 @@ ipcMain.handle('player:open', async (_e, p) => {
 const splitKeys = (k) =>
   String(k || '').split(/[\s,;،\n]+/).map((s) => s.trim()).filter((s) => s.length > 8);
 
+/* v0.47 — B09/B11: کش منفی ۴۲۹/شبکه + breaker سراسری
+   لاگ کاربر: در ۵ دقیقه ۵ بار کل گانگسترِ ۱۱مدل×کلید چرخید و هر بار «سرویس شلوغ» —
+   و ۶ خط «fetch failed» در ۱۰ms. حالا: شکست کاملِ ۴۲۹ → ۹۰ ثانیه، شکست کامل شبکه
+   → ۴۵ ثانیه، برنده/موفقیت → پاک شدن. درخواستِ داخل کول‌داون بلافاصله همان خطای
+   انسانی را برمی‌گرداند بدون هیچ درخواست شبکه‌ای. */
+const gemCooldown = { chatUntil: 0, chatReason: '', sttUntil: 0, sttReason: '', netUntil: 0 };
+const gemCoolClear = () => { gemCooldown.chatUntil = 0; gemCooldown.chatReason = ''; gemCooldown.sttUntil = 0; gemCooldown.sttReason = ''; gemCooldown.netUntil = 0; };
+const gemNetCool = (reason) => {
+  gemCooldown.netUntil = Date.now() + 45000;
+  if (reason) { gemCooldown.chatReason = reason; gemCooldown.sttReason = reason; }
+};
+
 /* v0.18 — سوال‌هایی که واقعاً به جستجوی زنده نیاز دارند (گران‌ترین و کندترین مسیر) */
 const SEARCH_INTENT_RE = new RegExp(
   '(سرچ|جستجو|جستجو کن|گوگل کن|اخبار|خبر|قیمت|نرخ|دلار|تومان|ارز|بورس|ارز دیجیتال|بیت کوین|تتر|آب و هوا|هواشناسی|دموا|برفی|بارون|امروز|فردا|الان|چه خبر|جدیدترین|آخرین|نتایج|نتیجه|مسابقه|امتیاز|لیگ|هفته|[؛؟?]\\s*(کی|کجاست|چند|چقدر)|who won|latest news|price of|weather|today|current|score)',
@@ -3435,6 +3516,10 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   const keys = splitKeys(key);
   if (!keys.length) return { ok: false, error: 'کلید Gemini تنظیم نشده' };
   if (!Array.isArray(messages) || !messages.length) return { ok: false, error: 'پیام خالی است' };
+  /* v0.47 — B09: کول‌داون ۴۲۹/سهمیه — بدون این، هر درخواست دوباره ۱۱مدل را می‌چرخاند */
+  const _nowC = Date.now();
+  if (_nowC < gemCooldown.netUntil) return { ok: false, error: gemCooldown.chatReason || 'شبکه در دسترس نیست — چند لحظه بعد دوباره امتحان کن' };
+  if (_nowC < gemCooldown.chatUntil) return { ok: false, error: gemCooldown.chatReason || 'سهمیه موقتاً تمام شده — چند لحظه بعد دوباره امتحان کن' };
   let lastErr = null;
   let sawNetFail = false; /* v0.26 */
   /* زنجیرهٔ مدل: اول مدلِ انتخابی کاربر، بعد جدیدترین فلاش (نام مستعار همیشه‌سبز)
@@ -3455,6 +3540,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   /* v0.39 — صف پویا + قطع سریع خطای منطقه‌ای + 429 → مدل بعدی (سهمیهٔ جدا)
      (همان منطق stt:gemini — توضیح کامل آنجا) */
   let locBlocked = false;
+  let netFailStreak = 0; /* v0.47 — B11: دو شکستِ آنیِ شبکه‌ای = مسیر قطع است، نه مدل */
   for (const k of keys) {
     if (locBlocked) break;
     const queue = baseModels.slice();
@@ -3522,10 +3608,17 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
           : '';
         if (!text) { lastErr = 'پاسخ خالی از Gemini رسید'; continue; }
         gemWorkingModel = mdl; /* v0.21 — حافظهٔ مدل کارا */
+        gemCoolClear(); /* v0.47 — B09: موفقیت = کول‌داون‌ها پاک */
         return { ok: true, text, model: mdl, keyIndex: keys.indexOf(k) };
       } catch (e) {
         lastErr = netErr(e);
         sawNetFail = sawNetFail || isNetFail(String(lastErr));
+        /* v0.47 — B11: شکستِ آنیِ شبکه‌ای (fetch failed/timeout) یعنی مسیر قطع است —
+           چرخش ۱۱مدل دیگر فقط طوفان retry می‌سازد (لاگ: ۶ خط fetch failed در ۱۰ms) */
+        if (isNetFail(String(lastErr))) {
+          netFailStreak += 1;
+          if (netFailStreak >= 2) { gemNetCool(lastErr); break; }
+        }
       }
     }
   }
@@ -3533,6 +3626,14 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   if (sawNetFail) actLog('gemini-chat: all attempts failed at NETWORK level — dns bypass ' + (DNS_BOOT.applied ? 'active' : 'INACTIVE') + ', hosts pinned=' + DNS_BOOT.count);
   /* v0.38 — لیست فنی مدل‌های امتحان‌شده فقط در activity.log می‌ماند، نه در پیام کاربر */
   try { actLog('gemini-chat fail: tried models ' + baseModels.join(', ') + (gemHintModel(lastErr) ? ' (hint applied live)' : '')); } catch (_) { /* noop */ }
+  /* v0.47 — B09: شکست کامل → کول‌داون (۴۲۹/سهمیه: ۹۰s، شبکه: ۴۵s) تا درخواست
+     بعدی فوراً جواب انسانی بگیرد و سهمیه/شبکه هدر نرود */
+  if (sawNetFail) {
+    gemNetCool(lastErr);
+  } else {
+    gemCooldown.chatUntil = Date.now() + 90000;
+    gemCooldown.chatReason = lastErr || '';
+  }
   return { ok: false, error: (lastErr || 'سرویس Gemini در حال حاضر پاسخگو نیست — چند لحظه بعد دوباره امتحان کن') };
 });
 
@@ -4863,15 +4964,28 @@ app.whenReady().then(() => {
   // میانبر سراسری گوش دادن (Push-to-talk)
   try {
     /* v0.38.1 — برگشت register چک می‌شود: اگر برنامهٔ دیگری صاحب کلید است،
-       در activity.log صادقانه می‌رود (دیگر «میانبر ساکت» نداریم) */
-    const okPtt = globalShortcut.register('CommandOrControl+Shift+Space', () => {
+       در activity.log صادقانه می‌رود (دیگر «میانبر ساکت» نداریم)
+       v0.47 — B13: شکست ثبت دیگر فقط لاگ نیست — fallback chord + اعلان کاربر
+       + تلاش مجدد دوره‌ای (کلیدِ اشغال‌شده ممکن است بعداً آزاد شود) */
+    const scFail = [];
+    let okPtt = globalShortcut.register('CommandOrControl+Shift+Space', () => {
       if (win) {
         if (win.isMinimized()) win.restore();
         win.show();
         win.webContents.send('ava:toggle-listen');
       }
     });
-    if (!okPtt) actLog('shortcut register FAILED: Ctrl+Shift+Space (occupied by another app)');
+    if (!okPtt) {
+      okPtt = globalShortcut.register('CommandOrControl+Alt+Space', () => {
+        if (win) {
+          if (win.isMinimized()) win.restore();
+          win.show();
+          win.webContents.send('ava:toggle-listen');
+        }
+      });
+      if (okPtt) actLog('shortcut fallback OK: Ctrl+Alt+Space for push-to-talk');
+    }
+    if (!okPtt) scFail.push('Ctrl+Shift+Space');
     // میانبر سراسری حالت بی‌دست (گوش دائمی + کلمه بیدارباش)
     const okHf = globalShortcut.register('CommandOrControl+Alt+A', () => {
       if (win) {
@@ -4880,7 +4994,32 @@ app.whenReady().then(() => {
         win.webContents.send('ava:toggle-handsfree');
       }
     });
-    if (!okHf) actLog('shortcut register FAILED: Ctrl+Alt+A (occupied by another app)');
+    if (!okHf) scFail.push('Ctrl+Alt+A');
+    if (scFail.length) {
+      actLog('shortcut register FAILED: ' + scFail.join(', ') + ' (occupied by another app)');
+      try { sendUI('ava:shortcut-failed', { combos: scFail }); } catch (_) { /* noop */ }
+      const scRetry = setInterval(() => {
+        try {
+          const left = [];
+          if (!globalShortcut.isRegistered('CommandOrControl+Shift+Space')) left.push('ptt');
+          if (!globalShortcut.isRegistered('CommandOrControl+Alt+A')) left.push('hf');
+          if (!left.length) { clearInterval(scRetry); actLog('shortcut retry: all shortcuts now registered'); return; }
+          if (left.includes('ptt')) {
+            const ok1 = globalShortcut.register('CommandOrControl+Shift+Space', () => {
+              if (win) { if (win.isMinimized()) win.restore(); win.show(); win.webContents.send('ava:toggle-listen'); }
+            });
+            if (!ok1) globalShortcut.register('CommandOrControl+Alt+Space', () => {
+              if (win) { if (win.isMinimized()) win.restore(); win.show(); win.webContents.send('ava:toggle-listen'); }
+            });
+          }
+          if (left.includes('hf')) {
+            globalShortcut.register('CommandOrControl+Alt+A', () => {
+              if (win) { if (win.isMinimized()) win.restore(); win.show(); win.webContents.send('ava:toggle-handsfree'); }
+            });
+          }
+        } catch (_) { clearInterval(scRetry); }
+      }, 60000);
+    }
   } catch (e) {
     /* noop */
   }

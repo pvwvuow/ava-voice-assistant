@@ -71,6 +71,8 @@ contextBridge.exposeInMainWorld('ava', {
     ping: (list) => ipcRenderer.invoke('dns:ping', list),
     quickOpen: () => ipcRenderer.invoke('dns:quick-open'),
     onQuickRequest: (cb) => ipcRenderer.on('dns:quick-request', () => cb()),
+    /* v0.47 B13 — اعلان شکست ثبت میانبرهای سراسری */
+    onShortcutFailed: (cb) => ipcRenderer.on('ava:shortcut-failed', (_e, p) => cb(p)),
   },
 
   /* تنظیمات سیستمی برنامه + ماندگاری تنظیمات در فایل */
@@ -136,6 +138,13 @@ contextBridge.exposeInMainWorld('ava', {
     remove: (id) => ipcRenderer.invoke('reminders:remove', id),
     clear: () => ipcRenderer.invoke('reminders:clear'),
     onDue: (cb) => ipcRenderer.on('reminders:due', (_e, r) => cb(r)),
+    ack: (id) => ipcRenderer.invoke('reminders:ack', id), /* v0.47 B01 */
+  },
+
+  /* v0.47 — حافظهٔ یادگیری آوا (SELF-LEARNING) */
+  learnings: {
+    load: () => ipcRenderer.invoke('learnings:load'),
+    save: (data) => ipcRenderer.invoke('learnings:save', data),
   },
 
   /* صدای گوینده (TTS) — v0.42: موتور عصبی مایکروسافت اِج (رایگان) + گوگل */

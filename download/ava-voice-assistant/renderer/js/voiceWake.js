@@ -148,8 +148,18 @@
      آ/ا انعطاف‌پذیر؛ «هی آوا» هم پذیرفته است */
   function prefixRe(word) {
     const b = escRe(norm(word)).replace(/\u0627/g, '[\u0627\u0622]');
-    return new RegExp('^\\s*(?:هی\\s+|)(?:' + b + ')(?:ی|یی|ی\\s?جان|ی\\s?جون|\\s?جان|\\s?جون)?[\\s\u060C,:-]*(.*)$', 'i');
+    /* v0.47 — B05: خانوادهٔ تاریخی به پیشوند برگشت (رگرسیون v0.46 که
+       «آوه به علی زنگ بزن» را دیگر بیدار نمی‌کرد) + گارد مرزی (lookahead) —
+       «آواز» و «جاوا» هرگز بیدار نمی‌شوند چون بعد از کلمه مرز نیست */
+    const isAva = norm(word) === 'اوا';
+    const fam = isAva
+      ? '(?:' + b + '|اوه|اوها|اوبا|اوب|ابا|اواو|اواا|ava|awa)'
+      : b;
+    return new RegExp('^\\s*(?:هی\\s+|)(?:' + fam + ')(?:ی|یی|ی\\s?جان|ی\\s?جون|\\s?جان|\\s?جون)?(?=[\\s\u060C،,:؛;!?.\\-]|$)[\\s\u060C،,:؛;!?.\\-]*(.*)$', 'i');
   }
+  /* واریانت‌های ضعیفِ پیشوندی — فقط با دنبالهٔ فرمان بیدار می‌کنند
+     («اوه» تنها = سلامِ عادی، نه بیدارباش — FP-hardening) */
+  const AVA_WEAK_PREFIX = /^(اوه|اوها|اوبا|اوب)$/
 
   /* لاتینِ T1 — فقط وقتی کلمهٔ هدف خودِ آوا/اوا است (whisper گاهی ava می‌نویسد) */
   const LATIN_AVA_RE = /\b(?:ava|awa|aba|avaa)\b/i;
@@ -169,15 +179,46 @@
     }
     /* T1 — لاتین (فقط خانوادهٔ آوا) */
     if (!out.t1 && w.replace(/\u06CC/g, 'ی') === 'اوا' && LATIN_AVA_RE.test(s)) out.t1 = true;
-    /* T1 — پیشوند (برای دنبالهٔ یک‌نفسی؛ «آوا جان» هم خالی است یعنی بیدارِ تنها) */
+    /* T1 — پیشوند (برای دنبالهٔ یک‌نفسی؛ «آوا جان» هم خالی است یعنی بیدارِ تنها)
+       v0.47 — B05: هم‌خوانی پیشوندی به‌تنهایی بیدار است (قبلاً T1 توکنی هم لازم بود)
+       — واریانت ضعیف بدون دنباله به T2/T3 سپرده می‌شود */
     const pm = s.match(prefixRe(w));
-    if (pm && out.t1) out.tail = String(pm[1] || '').trim();
-    /* T2 — آوانگار: تک‌توکن یا پیوستهٔ توکن‌ها (او با → اوبا) */
+    if (pm) {
+      const tail2 = String(pm[1] || '').trim();
+      /* سرِ بیدارباش = کل match منهای دنباله (pm[0] کل جمله است، نه فقط کلمه) */
+      const head = norm(tail2 ? String(pm[0] || '').slice(0, String(pm[0] || '').length - tail2.length) : String(pm[0] || '')).replace(/[\s\u060C،,:؛;!?.\-]+/g, ' ').trim();
+      const firstTok = tail2.split(/\s+/)[0] || '';
+      if (!tail2 && AVA_WEAK_PREFIX.test(head)) {
+        /* «اوه» تنها = حرفِ عادی، نه بیدارباش */
+      } else if (tail2 && AVA_WEAK_PREFIX.test(head) && firstTok && nearMatch(head + firstTok, w)) {
+        /* «اوه با» → «با» ادامهٔ کلمهٔ بیدارباشِ بدشنیده است، نه فرمان */
+        out.t1 = true;
+        out.tail = '';
+      } else {
+        out.t1 = true;
+        out.tail = tail2;
+      }
+    }
+    /* T2 — آوانگار: تک‌توکن یا پیوستهٔ توکن‌ها (او با → اوبا)
+       v0.47 — B05: دنبالهٔ فرمان بعد از توکن T2 حفظ می‌شود
+       («او با برو سایت دیوار» قبلاً دنباله‌اش دور ریخته می‌شد) */
     if (!out.t1) {
       const joined = toks.join('');
       if (joined && nearMatch(joined, w)) { out.near = true; }
       else {
-        for (const tk of toks) { if (nearMatch(tk, w)) { out.near = true; break; } }
+        for (let i = 0; i < toks.length; i++) {
+          if (nearMatch(toks[i], w)) {
+            out.near = true;
+            if (i === 0 && toks.length > 1) out.tail = toks.slice(1).join(' ');
+            break;
+          }
+          /* جفتِ آغازین: «او با …» — دو توکنِ نخست خودِ کلمهٔ بدشنیده‌اند */
+          if (i === 0 && toks.length > 1 && nearMatch(toks[i] + toks[i + 1], w)) {
+            out.near = true;
+            out.tail = toks.slice(2).join(' ');
+            break;
+          }
+        }
       }
     }
     /* T3 — نامزد تأیید ابری: برشِ کوتاهِ هم‌خانواده که نه T1 است نه T2

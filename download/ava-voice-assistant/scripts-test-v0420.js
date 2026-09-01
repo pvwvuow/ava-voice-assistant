@@ -77,7 +77,7 @@ function ruleK(src, id) {
   ok(main.includes('Path:turn.end'), 'main: پایان نوبت اِج (turn.end)');
   ok(main.includes('readUInt16BE(0)'), 'main: پارس فریم باینری (طول هدر ۲بایتی)');
   ok(main.includes('edgeHealth'), 'main: قطع‌کنٔ مدار (edgeHealth)');
-  ok(main.includes("Date.now() + 10 * 60 * 1000"), 'main: سرد شدن ۱۰ دقیقه‌ای قطع‌کن');
+  ok(main.includes("Date.now() + 90 * 1000"), 'main: سرد شدن ۹۰ ثانیه‌ای قطع‌کن (v0.47 B12: ۱۰دقیقه→۹۰ثانیه)');
   ok(pre.includes("edge: (payload) => ipcRenderer.invoke('tts:edge', payload)"), 'preload: پل tts.edge');
 
   /* گِج واقعی: SHA-256(تیک‌های ۱۰۰نانوثانیه‌ای رُندشده به ۵دقیقه + توکن) */
@@ -109,7 +109,7 @@ function ruleK(src, id) {
 
   /* زنجیرهٔ صدا در رندرر: اِج → گوگل → ویندوز (v0.43: + ثبت موتور واقعی) */
   ok(app.includes('if (settings.ttsEngine === \'edge\')'), 'app: شاخهٔ موتور اِج در speak()');
-  ok(/speakEdge\(txt\)[\s\S]{0,220}speakGoogle\(txt\)[\s\S]{0,700}speakWindows\(txt\)/.test(app), 'app: زنجیرهٔ اِج→گوگل→ویندوز');
+  ok(/speakEdge\(txt\)[\s\S]{0,420}speakGoogle\(txt\)[\s\S]{0,900}speakWindows\(txt\)/.test(app), 'app: زنجیرهٔ اِج→گوگل→ویندوز (v0.47 +لاگ صداقت)');
   ok(app.includes('async function speakEdge('), 'app: speakEdge تعریف شده');
   ok(app.includes("bridge.tts.edge({ text: String(text).slice(0, 3000), lang, voice })"), 'app: speakEdge از پل preload با سقف ۳۰۰۰ + صدای انتخابی');
   ok(app.includes("ttsLastEngine = 'edge'") && app.includes("ttsLastEngine = 'google'") && app.includes("ttsLastEngine = 'windows'"), 'app: ثبت موتور واقعاً پخش‌شده (v0.43)');

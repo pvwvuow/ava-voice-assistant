@@ -133,7 +133,7 @@ ok(app.includes('now_playing: ') && app.includes('player_ctl: ') && app.includes
 /* ============================================================
    ۳) TTS — موتور واقعی + صدای مذکر/مؤنث
    ============================================================ */
-ok(main.includes("const { text, lang, voice } = p || {};") && main.includes('edgeSynthChunk(c, lang, voice)'), 'main: tts:edge صدای انتخابی را می‌پذیرد');
+ok(main.includes("const { text, lang, voice, probe } = p || {};") && main.includes('edgeSynthChunk(c, lang, voice)'), 'main: tts:edge صدای انتخابی را می‌پذیرد (v0.47 +probe)');
 ok(main.includes('fa-IR-FaridNeural') && main.includes('en-US-GuyNeural'), 'main: صداهای مذکر تعریف شده');
 ok(/const voice = String\(voiceOverride \|\| ''\)\.trim\(\) \|\| EDGE_VOICES/.test(main), 'main: فالبک به صدای پیش‌فرض مؤنث');
 ok(app.includes('let ttsLastEngine') && app.includes("ttsLastEngine = 'google'"), 'app: موتور واقعاً پخش‌شده ثبت می‌شود');
