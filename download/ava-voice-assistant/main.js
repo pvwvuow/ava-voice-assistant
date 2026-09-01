@@ -5075,10 +5075,18 @@ ipcMain.handle('music:readHead', (_e, p, max) => {
    ============================================================ */
 const pttSt = {
   cfg: { enabled: true, combo: 'CommandOrControl+Shift+Space', mode: 'hold', fallback: 'CommandOrControl+Alt+Space' },
-  registered: '',
-  fallbackReg: '',
+  /* v0.53 — معماری نگهبان پایدار: یک پروسهٔ PowerShell از بوت (نه با هر فشردن!)،
+     لبهٔ down/up همهٔ VKهای ترکیب را می‌دهد. ریشه‌های خرابی 0.51/0.52 (لاگ کاربر:
+     صفر ردِ ptt): spawn تازه در «هر فشردن» (استارت ۱-۳s + کامپایل Add-Type در هر بار)
+     و صفر لاگ — خرابی کاملاً نامرئی بود. حالا هر مرحله لاگ دارد. */
+  ok: false,
+  win: null,
   watchChild: null,
   watchFile: '',
+  watchTries: 0,
+  watchReady: false,
+  registered: '',
+  fallbackReg: '',
 };
 
 function pttReadCfg() {
@@ -5112,25 +5120,41 @@ function pttComboVks(combo) {
   return [...new Set(out)];
 }
 
+/* v0.53 — نگهبان پایدار PTT: «یک» پروسهٔ PowerShell از بوت؛ Add-Type فقط یک‌بار
+   کامپایل می‌شود (نسخهٔ قبل با هر فشردن spawn می‌کرد: استارت ۱-۳ ثانیه‌ای + ریسک).
+   خروجی لبه‌ها: ready → آماده؛ down → همهٔ کلیدها پایین؛ up → یکی رها شد.
+   مرگ پروسه → ری‌استارت خودکار با بک‌آف. هر مرحله لاگ صادقانه دارد. */
+function pttWatcherEdge(line) {
+  const win = pttSt.win;
+  if (line === 'down') {
+    actLog('ptt down (' + pttSt.cfg.combo + ')');
+    try {
+      if (!win || win.isDestroyed()) { actLog('ptt down: window gone — dropped'); return; }
+      if (pttSt.cfg.mode === 'toggle') win.webContents.send('ava:toggle-listen', {});
+      else win.webContents.send('ava:ptt-down', {});
+    } catch (_) { /* noop */ }
+    return;
+  }
+  if (line === 'up') {
+    if (pttSt.cfg.mode === 'toggle') return; /* در toggle فقط لبهٔ پایین مهم است */
+    actLog('ptt up (release)');
+    try { sendUI('ava:ptt-up', { why: 'release' }); } catch (_) { /* noop */ }
+  }
+}
 function pttStopHoldWatcher() {
+  pttSt.watchReady = false;
   try { if (pttSt.watchChild && !pttSt.watchChild.killed) pttSt.watchChild.kill(); } catch (_) { /* noop */ }
   pttSt.watchChild = null;
   try { if (pttSt.watchFile) fs.unlinkSync(pttSt.watchFile); } catch (_) { /* noop */ }
   pttSt.watchFile = '';
 }
-
-/* تشخیص رهاشدن کلید (hold): پروسهٔ PowerShell پایدار هر ۴۰ms وضعیت همهٔ
-   VKهای ترکیب را می‌خواند؛ اولین رهاشدن → «up» → پایان ضبط. حداکثر ۱۲۰s. */
-function pttStartHoldWatcher(vks) {
+function pttStartWatcher(vks) {
   pttStopHoldWatcher();
-  if (process.platform !== 'win32' || !vks.length) {
-    /* غیر ویندوز: سقف ۳۰ ثانیه — هیچ ردیابی سراسری امنی بدون ماژول نیتیو نیست */
-    pttSt.watchChild = { killed: false, kill() { this.killed = true; clearTimeout(this.to); }, to: setTimeout(() => { try { sendUI('ava:ptt-up', { why: 'cap' }); } catch (_) { /* noop */ } }, 30000) };
-    return;
-  }
+  if (process.platform !== 'win32') { actLog('ptt watcher unavailable: not win32'); return false; }
+  if (!vks || !vks.length) { actLog('ptt watcher unavailable: empty combo'); return false; }
   try {
     const body = [
-      "$ErrorActionPreference='SilentlyContinue'",
+      "$ErrorActionPreference='Stop'",
       "$s=@\"",
       'using System;',
       'using System.Runtime.InteropServices;',
@@ -5138,73 +5162,108 @@ function pttStartHoldWatcher(vks) {
       '"@',
       'Add-Type -TypeDefinition $s',
       '$keys=@(' + vks.join(',') + ')',
+      '$prev=$false',
+      '[Console]::Out.WriteLine(\'ready\')',
       'while($true){',
-      '  Start-Sleep -Milliseconds 40',
+      '  Start-Sleep -Milliseconds 35',
       '  $down=0',
       '  foreach($k in $keys){ if([AvaKeys]::GetAsyncKeyState($k) -band 0x8000){ $down++ } }',
-      '  if($down -lt $keys.Count){ Write-Output up; exit }',
+      '  $all=($down -eq $keys.Count)',
+      '  if($all -ne $prev){ $prev=$all; [Console]::Out.WriteLine($(if($all){\'down\'}else{\'up\'})) }',
       '}',
     ].join('\r\n');
-    const file = path.join(os.tmpdir(), 'ava-ptt-' + Date.now() + '.ps1');
+    const file = path.join(os.tmpdir(), 'ava-ptt-watcher.ps1');
     fs.writeFileSync(file, body, 'utf8');
     pttSt.watchFile = file;
     const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', file], { windowsHide: true });
     pttSt.watchChild = child;
+    let buf = '';
     child.stdout.on('data', (d) => {
-      if (/up/i.test(String(d || ''))) {
-        try { sendUI('ava:ptt-up', { why: 'release' }); } catch (_) { /* noop */ }
-        pttStopHoldWatcher();
+      buf += String(d || '');
+      const lines = buf.split(/\r?\n/);
+      buf = lines.pop() || '';
+      for (const ln of lines) {
+        const s = ln.trim();
+        if (s === 'ready') {
+          pttSt.watchReady = true; pttSt.watchTries = 0;
+          actLog('ptt watcher ready (Add-Type ok, polling 35ms): ' + pttSt.cfg.combo);
+        } else if (s === 'down' || s === 'up') pttWatcherEdge(s);
       }
     });
-    const killer = setTimeout(() => {
-      try { sendUI('ava:ptt-up', { why: 'cap' }); } catch (_) { /* noop */ }
+    child.on('error', (e) => { /* spawn خودش شکست خورد */
+      actLog('ptt watcher spawn FAILED: ' + String((e && e.message) || e).slice(0, 100));
       pttStopHoldWatcher();
-    }, 120000);
-    child.on('exit', () => {
-      clearTimeout(killer);
+    });
+    child.on('exit', (code) => {
+      const wasReady = pttSt.watchReady;
+      clearTimeout(pttSt.restartTo);
       try { fs.unlinkSync(file); } catch (_) { /* noop */ }
       if (pttSt.watchFile === file) pttSt.watchFile = '';
-      if (pttSt.watchChild === child) pttSt.watchChild = null;
+      if (pttSt.watchChild === child) { pttSt.watchChild = null; pttSt.watchReady = false; }
+      /* ری‌استارت خودکار — اگر وسط ضبط مرد، اول «up» صادقانه بفرست تا ضبط بی‌نهایت نماند */
+      if (wasReady) { try { sendUI('ava:ptt-up', { why: 'watcher-died' }); } catch (_) { /* noop */ } }
+      pttSt.watchTries++;
+      if (pttSt.watchTries <= 3 || pttSt.watchTries % 10 === 0) actLog('ptt watcher exited (code=' + code + ') → restart #' + pttSt.watchTries);
+      if (pttSt.cfg.enabled && !pttSt.registered && !pttSt.fallbackReg) {
+        pttSt.restartTo = setTimeout(() => { try { if (pttSt.cfg.enabled && !pttSt.watchChild) pttStartWatcher(vks); } catch (_) { /* noop */ } }, Math.min(30000, 2000 * pttSt.watchTries));
+      }
     });
-  } catch (_) { pttStopHoldWatcher(); }
+    return true;
+  } catch (e) {
+    actLog('ptt watcher setup FAILED: ' + String((e && e.message) || e).slice(0, 100));
+    pttStopHoldWatcher();
+    return false;
+  }
 }
 
-/* ثبت/تازه‌سازی میانبر PTT از تنظیمات — در boot و بعد از هر تغییر تنظیمات */
+/* v0.53 — مسلح‌کردن PTT: اول نگهبان پایدار (لبهٔ down/up بدون بلعیدن کلید و
+   بدون تداخل با میانبر داخلی گوش‌دادن)؛ اگر نشد → فالبکِ صادقانهٔ globalShortcut
+   (فشردن = شروع، سقف ۳۰s). هر مسیر لاگ دارد تا خرابی دیگر نامرئی نباشد. */
 function pttRegister(win) {
+  pttStopHoldWatcher();
   try { if (pttSt.registered) globalShortcut.unregister(pttSt.registered); } catch (_) { /* noop */ }
   try { if (pttSt.fallbackReg) globalShortcut.unregister(pttSt.fallbackReg); } catch (_) { /* noop */ }
-  pttStopHoldWatcher();
   pttSt.registered = '';
   pttSt.fallbackReg = '';
+  pttSt.ok = false;
+  pttSt.win = win || null;
   const cfg = pttReadCfg();
   pttSt.cfg = cfg;
-  if (!cfg.enabled) { actLog('ptt: disabled in settings — shortcut not registered'); return false; }
+  if (!cfg.enabled) { actLog('ptt: disabled in settings'); return false; }
+  const vks = pttComboVks(cfg.combo);
+  if (pttStartWatcher(vks)) {
+    pttSt.ok = true;
+    actLog('ptt armed: ' + cfg.combo + ' (mode=' + cfg.mode + ', persistent watcher)');
+    return true;
+  }
+  /* فالبک: نگهبان ممکن نشد (غیر-ویندوز/spawn شکست) — globalShortcut قدیمی با سقف ۳۰s */
   const press = () => {
     try {
-      if (!win || win.isDestroyed()) return;
-      if (pttSt.cfg.mode === 'hold') {
-        /* بدون win.show() — ضبط وسط کار کاربر شروع می‌شود، پنجره‌ای جلو نمی‌آید */
-        win.webContents.send('ava:ptt-down', {});
-        pttStartHoldWatcher(pttComboVks(pttSt.cfg.combo));
-      } else {
-        win.webContents.send('ava:toggle-listen');
-      }
+      const w = pttSt.win;
+      if (!w || w.isDestroyed()) return;
+      if (pttSt.cfg.mode === 'toggle') { w.webContents.send('ava:toggle-listen', {}); return; }
+      actLog('ptt down (globalShortcut fallback)');
+      w.webContents.send('ava:ptt-down', {});
+      clearTimeout(pttSt.capTo);
+      pttSt.capTo = setTimeout(() => { try { sendUI('ava:ptt-up', { why: 'cap' }); } catch (_) { /* noop */ } }, 30000);
     } catch (_) { /* noop */ }
   };
   let ok = false;
   try { ok = globalShortcut.register(cfg.combo, press); } catch (_) { ok = false; }
   if (ok) {
     pttSt.registered = cfg.combo;
-    actLog('ptt registered: ' + cfg.combo + ' (mode=' + cfg.mode + ')');
+    pttSt.ok = true;
+    actLog('ptt armed (globalShortcut fallback — watcher unavailable): ' + cfg.combo + ' (mode=' + cfg.mode + ')');
     return true;
   }
   try { ok = globalShortcut.register(cfg.fallback, press); } catch (_) { ok = false; }
   if (ok) {
     pttSt.fallbackReg = cfg.fallback;
+    pttSt.ok = true;
     actLog('ptt combo OCCUPIED (' + cfg.combo + ') → fallback registered: ' + cfg.fallback);
     return true;
   }
-  actLog('ptt register FAILED: ' + cfg.combo + ' and fallback both occupied');
+  actLog('ptt arm FAILED: ' + cfg.combo + ' (watcher unavailable + both shortcuts occupied)');
   return false;
 }
 
@@ -5213,7 +5272,7 @@ ipcMain.handle('ptt:reconfig', (e) => {
   const ok = pttRegister(win || BrowserWindow.getAllWindows()[0]);
   return { ok, cfg: pttSt.cfg, registered: pttSt.registered || pttSt.fallbackReg };
 });
-ipcMain.handle('ptt:get', () => ({ cfg: pttSt.cfg, registered: pttSt.registered || pttSt.fallbackReg, ok: !!(pttSt.registered || pttSt.fallbackReg) }));
+ipcMain.handle('ptt:get', () => ({ cfg: pttSt.cfg, ok: !!pttSt.ok, watcher: !!pttSt.watchChild, ready: !!pttSt.watchReady, registered: pttSt.registered || pttSt.fallbackReg }));
 
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
@@ -5297,7 +5356,7 @@ app.whenReady().then(() => {
       const scRetry = setInterval(() => {
         try {
           const left = [];
-          if (!pttSt.registered && !pttSt.fallbackReg) left.push('ptt');
+          if (!pttSt.ok) left.push('ptt'); /* v0.53 — ok شامل مسیر watcher هم می‌شود */
           if (!globalShortcut.isRegistered('CommandOrControl+Alt+A')) left.push('hf');
           if (!left.length) { clearInterval(scRetry); actLog('shortcut retry: all shortcuts now registered'); return; }
           if (left.includes('ptt')) pttRegister(win);

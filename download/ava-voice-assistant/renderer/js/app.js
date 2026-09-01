@@ -3532,6 +3532,14 @@
     try {
       const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
       if (!Le || !cmd) return;
+      /* v0.53 — جملهٔ ارجاعی به تاریخچه هرگز یاد گرفته نمی‌شود: معنایش وابسته به
+         گفتگوی همان لحظه است و بازپخش آفلاینش = پخش دوبارهٔ توهم. سند لاگ v0.52
+         خط 3260: «همون آهنگ شادمهری که آخرین بار سرچ کردی» → web_search(توهم
+         «قشنگترین گناه شادمهر») و همان توهم learn set شد! */
+      if (/همون|همان\s|آخرین بار|قبلی|پارسال|که گفتی|که سرچ کردی|که پخش کردی|که گفتم/.test(String(cmd))) {
+        actLog('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست: ' + String(cmd).slice(0, 44));
+        return;
+      }
       /* v0.50 — یادگیریِ URL «اصلاح‌شده» نه توهمِ AI: سند لاگ v0.49 خط ۱۵۸۴ —
          لینک توهمی divar.ir/s/bojnurd/mot (۴۰۴) یاد گرفته شد و آفلاین دوباره
          باز می‌شد. الان همان مسیر اجرای واقعی (siteUrlFix) قبل از ذخیره می‌آید */
@@ -6764,14 +6772,16 @@
      کلید/ترکیب و حالت hold/toggle در تنظیمات › بیدارباش.
      ============================================================ */
   function pttStart() {
-    if (state === 'processing') return;
-    if (state === 'listening') return; /* از قبل ضبط — ادامه می‌دهد */
+    if (state === 'processing') { actLog('ptt down: busy (processing previous command) — ignored'); return; }
+    if (state === 'listening') { actLog('ptt down: already listening — release will stop it'); return; }
+    actLog('ptt down → start listening (no wake word needed)');
     /* فشردن دکمه = اجازهٔ صریح گفتار؛ مثل کلیک دستی، جلسه باز است */
     if (settings.handsFree && settings.wakeWord) wakeSessOpen();
     startListening();
   }
   function pttStop() {
-    if (state !== 'listening' || !ave) { return; }
+    if (state !== 'listening' || !ave) { actLog('ptt up: nothing to stop (state=' + state + ')'); return; }
+    actLog('ptt up → stop + flush (≤1400ms wait for final)');
     /* تحویلِ فوری (نه لغو): stop() بدون کشتنِ جلسه → فاینال برمی‌گردد؛
        اگر تا ۱۴۰۰ms فاینال نیامد، همان متن میان‌یادِ آخر تحویل می‌شود */
     try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ }
@@ -6780,8 +6790,8 @@
       try {
         if (!ave || ave.delivered) return;
         const txt = String(ave.srFinal || ave.srGotText || ave.lastTxt || '').trim();
-        if (txt) aveDeliver(txt, 'ptt-flush', ave.myEpoch);
-        else stopListening();
+        if (txt) { actLog('ptt flush: «' + txt.slice(0, 48) + '» → deliver'); aveDeliver(txt, 'ptt-flush', ave.myEpoch); }
+        else { actLog('ptt flush: empty (no speech detected)'); stopListening(); }
       } catch (_) { /* noop */ }
     }, 1400);
   }
@@ -7269,7 +7279,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.52.0-beta';
+  let appVersion = '0.53.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8428,6 +8438,8 @@
     'قانون مهم ۸ (بسیار مهم): اگر کاربر خواست اول تحقیق/فهمیدن و بعد انجام دادن (مثل: اول ببین آهنگ جدید شادمهر چی هست بعد اسمشو تو گوگل سرچ کن)، هرگز اسم یا عنوان را از حافظه‌ات نساز — در بلوک DO فقط act=research با value=عبارتِ تحقیق بده؛ نتایج واقعی وب به تو برمی‌گردد تا در دور بعد اکشن نهایی را فقط بر پایهٔ همان نتایج بدهی. اگر نتایج به سؤال جواب نداد، صادقانه بگو که چی پیدا نشد.\n' +
     /* v0.51 — دیکتهٔ یک‌باره (خواستهٔ کاربر: در هر برنامه‌ای که آمادهٔ تایپ است بنویسد؛ محدود به یک تعبیر نیست) */
     'قانون مهم ۹ (مهم): اگر کاربر خواست متنی «همان‌جا که هست» نوشته/تایپ شود (اینجا بنویس… / ببین بنویس… / اینو تایپ کن… / هر تعبیر دیگری از نوشتن)، با act=type_once بده و value را متنِ عیناً خواسته‌شده بگذار (فقط واژه‌های فرمانی حذف شوند؛ متنِ داخل گیومه عیناً). برای شروع حالت تایپ صوتیِ پیوسته هنوز run_cmd(dict) می‌تواند استفاده شود.\n' +
+    /* v0.53 — قانون ارجاع به تاریخچه (لاگ واقعی 16:14:47: «همون آهنگ شادمهری که آخرین بار سرچ کردی» → توهم «قشنگترین گناه شادمهر») */
+    'قانون مهم ۱۰ (بسیار مهم): اگر کاربر به چیزی که قبلاً گفته/شنیده/سرچ کرده/پخش کرده ارجاع داد (همون، همان، آخرین بار، قبلی، همونی که گفتی/سرچ کردی/پخش کردی)، فقط و فقط از «تاریخچهٔ گفتگو» استفاده کن؛ اگر در تاریخچه نیست، یا act=research بده یا صادقانه بپرس — هرگز اسم/عنوان را از حافظه‌ات نساز. اگر صریحاً «گوگل» خواست، web_search فقط با عبارتِ درستِ برداشته‌شده از تاریخچه.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -8487,6 +8499,8 @@
     'Important rule 7 (critical, anti-hallucination): when the user asks you to FIRST find out / research and THEN act (e.g. "first see what the new song is called, then search it"), NEVER invent names or titles from memory — reply with a DO block containing ONLY act=research (value=the research query). Real web results come back to you in the next turn; then give the final actions based ONLY on those results. If the results do not answer it, say honestly that nothing was found.\n' +
     /* v0.51 — one-shot dictation (user: type into whatever box is focused; any phrasing) */
     'Important rule 8: when the user wants text WRITTEN right where they are (اینجا بنویس… / ببین بنویس… / type this… / any write phrasing), reply with act=type_once and value=the exact text verbatim (strip only the command words; if the text was quoted, keep only the quoted part). Continuous voice-typing mode is still run_cmd(dict).\n' +
+    /* v0.53 — history-reference law (real log 16:14:47: "the same Shadmehr song you last searched" → hallucinated «قشنگترین گناه») */
+    'Important rule 9 (critical): when the user refers to something said/heard/searched/played EARLIER (همون / همونی که گفتی / آخرین بار / قبلی), use ONLY the chat history; if it is not in the history, give act=research or ask honestly — NEVER invent names or titles from memory. If the user explicitly said Google, web_search ONLY with the correct title taken from the history.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
