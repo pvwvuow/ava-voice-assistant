@@ -1818,6 +1818,16 @@
   window.addEventListener('resize', resizeWave);
   resizeWave();
 
+  /* v0.56 — فیکس ریشه‌ای باگ اکولایزر («حالت خاموش گاهی نمایش داده نمی‌شود»):
+     هر تغییر اندازهٔ واقعی بوم (باز شدن از has-card، برگشت به صفحهٔ اصلی، ری‌استور پنجره)
+     → resizeWave + waveDirty → فریم معتبر بلافاصله. دیگر بیت‌مپ صفر/کهنه باقی نمی‌ماند. */
+  try {
+    if (window.ResizeObserver) {
+      const _waveRO = new ResizeObserver(() => { try { resizeWave(); } catch (_) { /* noop */ } });
+      _waveRO.observe(wave);
+    }
+  } catch (_) { /* noop */ }
+
   /* ---------- میکروفون واقعی: همیشه روشن — اکولایزر و تست تنظیمات با صدای واقعی ---------- */
   let micStream = null, audioCtx = null, analyser = null, micData = null, micLive = false;
   let mediaRec = null, recChunks = [], isRecording = false;
@@ -4443,7 +4453,7 @@
       }
     } catch (_) { /* noop */ }
     try {
-      if (u && settings.chatAutoOpen && document.visibilityState === 'visible') showView('chat');
+      if (u && settings.chatAutoOpen && document.visibilityState === 'visible') openChatLayer();
     } catch (_) { /* noop */ }
   }
   function voiceReplyShown(text) {
@@ -4481,7 +4491,7 @@
     el.className = 'rich-card rich-' + card.type;
     try {
       if (card.type === 'weather') {
-        el.innerHTML = '<div class="rc-head"><span class="rc-ic">🌤️</span><b class="rc-city"></b><span class="rc-temp"></span></div><div class="rc-desc"></div><div class="rc-days"></div>';
+        el.innerHTML = '<div class="rc-head"><b class="rc-city"></b><span class="rc-temp"></span></div><div class="rc-desc"></div><div class="rc-days"></div>'; /* v0.56 — بدون emoji، تایپوگرافی مینیمال */
         el.querySelector('.rc-city').textContent = d.city || (LANG === 'en' ? 'Weather' : 'آب‌وهوا');
         el.querySelector('.rc-temp').textContent = d.temp != null && d.temp !== '' ? faNum2(d.temp) + '°' : '';
         el.querySelector('.rc-desc').textContent = d.desc || '';
@@ -4519,6 +4529,7 @@
         (Array.isArray(d.rows) ? d.rows.slice(0, 10) : []).forEach((x) => {
           const tr = document.createElement('tr');
           tr.innerHTML = '<td class="pos"></td><td class="team"></td><td></td><td></td><td class="pts"></td>';
+          try { if (Number(x.pos) <= 3) tr.classList.add('top'); } catch (_) { /* noop */ } /* v0.56 — هایلایت ملایم سه ردهٔ اول */
           tr.cells[0].textContent = faNum2(x.pos != null ? x.pos : tr.parentNode.children.length + 1);
           tr.cells[1].textContent = String(x.team || '').slice(0, 24);
           tr.cells[2].textContent = faNum2(x.pl != null ? x.pl : '—');
@@ -4527,7 +4538,7 @@
           tb.appendChild(tr);
         });
       } else if (card.type === 'input') {
-        el.innerHTML = '<div class="rc-prompt"></div><form class="rc-inrow"><input class="rc-in" type="text" autocomplete="off"/><button class="chip sm" type="submit">ارسال</button></form>';
+        el.innerHTML = '<div class="rc-prompt"></div><form class="rc-inrow"><input class="rc-in" type="text" autocomplete="off"/><button class="rc-send" type="submit" aria-label="ارسال"><svg class="ic"><use href="#i-send"/></svg></button></form>'; /* v0.56 — دکمهٔ گرد ارسال */
         el.querySelector('.rc-prompt').textContent = d.prompt || (LANG === 'en' ? 'Your answer:' : 'پاسخ تو:');
         const form = el.querySelector('form');
         const inp = el.querySelector('.rc-in');
@@ -7534,7 +7545,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.55.1-beta';
+  let appVersion = '0.56.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7566,7 +7577,7 @@
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
-    btnChat.classList.toggle('active', v === 'chat');
+    btnChat.classList.toggle('active', v === 'chat' || chatLayerOpen);
     if (btnDict) btnDict.classList.toggle('active', v === 'dict');
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     if (btnMusic) btnMusic.classList.toggle('active', v === 'music');
@@ -7590,7 +7601,55 @@
   btnSettings.addEventListener('click', () => showView(settingsPage.hidden ? 'settings' : 'home'));
   btnHome.addEventListener('click', () => showView('home'));
   btnSettingsBack.addEventListener('click', () => showView('home'));
-  btnChat.addEventListener('click', () => showView(chatPage.hidden ? 'chat' : 'home'));
+  btnChat.addEventListener('click', () => { if (chatLayerOpen) closeChatLayer(); else { showView('home'); openChatLayer(); } });
+
+  /* ---------- v0.56 — استیج یکپارچه: لایهٔ چت روی خود صفحهٔ اصلی ---------- */
+  const chatLayer = $('#chatLayer');
+  const clStreamHost = $('#clStreamHost');
+  const clBarHost = $('#clBarHost');
+  const clMic = $('#clMic');
+  const clClose = $('#clClose');
+  const clGlm = $('#clGlm');
+  var chatLayerOpen = false; /* var — بدون TDZ برای showViewهای زودهنگام بوت */
+  function openChatLayer() {
+    if (!chatLayer || chatLayerOpen) return;
+    chatLayerOpen = true;
+    try { clStreamHost.appendChild(chatMsgs); } catch (_) { /* noop */ } /* انتقال زندهٔ نودها — listenerها حفظ می‌شوند */
+    try { clBarHost.appendChild(chatBar); } catch (_) { /* noop */ }
+    try { quickWrap.hidden = true; } catch (_) { /* noop */ }
+    chatLayer.hidden = false;
+    hero.classList.add('chat-open');
+    btnChat.classList.add('active');
+    requestAnimationFrame(() => { try { chatLayer.classList.add('open'); } catch (_) { /* noop */ } });
+    if (!chatMsgs.childElementCount) chatWelcome();
+    setTimeout(() => { try { chatInput.focus({ preventScroll: true }); } catch (_) { /* noop */ } }, 260);
+    actLog('chat-layer open');
+  }
+  function closeChatLayer() {
+    if (!chatLayer || !chatLayerOpen) return;
+    chatLayerOpen = false;
+    try { chatLayer.classList.remove('open'); } catch (_) { /* noop */ }
+    hero.classList.remove('chat-open');
+    btnChat.classList.remove('active');
+    setTimeout(() => { try { chatLayer.hidden = true; } catch (_) { /* noop */ } }, 250);
+    actLog('chat-layer close');
+  }
+  if (clMic) clMic.addEventListener('click', () => { try { orb.click(); } catch (_) { /* noop */ } });
+  if (clClose) clClose.addEventListener('click', closeChatLayer);
+  if (clGlm) clGlm.addEventListener('click', () => showView('chat'));
+
+  /* v0.56 — مصرف پل‌های امن: باز کردن چت از ویجت + تاگل گوش دادن از ترِی/ویجت */
+  try {
+    if (bridge && bridge.ava) {
+      if (bridge.ava.onOpenChat) bridge.ava.onOpenChat(() => { try { showView('home'); openChatLayer(); } catch (_) { /* noop */ } });
+      if (bridge.ava.onToggleListen) {
+        let _tlWired = false;
+        try { _tlWired = !!document.__avaToggleListenWired; } catch (_) { /* noop */ }
+        if (!_tlWired) { document.__avaToggleListenWired = true; bridge.ava.onToggleListen(() => { try { orb.click(); } catch (_) { /* noop */ } }); }
+      }
+    }
+  } catch (_) { /* noop */ }
+
   btnChatBack.addEventListener('click', () => showView('home'));
 
   /* ---------- افزونه‌ها (v0.15) — DNS Changer و پلیر موزیک در ستون کنار ---------- */
@@ -9116,7 +9175,7 @@
     if (zaiWrap) zaiWrap.hidden = !zai;
     if (zai) { ensureZaiWebLoaded(); setTimeout(() => checkZaiToken(), 1200); }
   }
-  if (tabQuick) tabQuick.addEventListener('click', () => selectChatTab('quick'));
+  if (tabQuick) tabQuick.addEventListener('click', () => { showView('home'); openChatLayer(); });
   if (tabZai) tabZai.addEventListener('click', () => selectChatTab('zai'));
 
   function setZaiBadge(on, txt) {

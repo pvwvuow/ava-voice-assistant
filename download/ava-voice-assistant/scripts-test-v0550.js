@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0550.js — doctest v0.55.1-beta — ۸ درخواست کاربر
+/* scripts-test-v0550.js — doctest v0.56.0-beta — ۸ درخواست کاربر
    ۱) ویجت شناور (آیکون + هالهٔ سبز + گفتهٔ کاربر/پاسخ آوا)
    ۲) ترِی + بستن = پس‌زمینه
    ۳) باگ «is listening» دروغین → نگهبان وضعیت
@@ -7,7 +7,7 @@
    ۵) چت خودکار (آینهٔ مکالمه صوتی)
    ۶) تاریخچهٔ چت روی دیسک با لود تنبل (جایگزین تاریخچهٔ فرمان)
    ۷) باگ اکولایزر (دادهٔ کهنه/کانتکست مرده)
-   ۸) نسخه 0.55.1-beta
+   ۸) نسخه 0.56.0-beta
 */
 const fs = require('fs');
 const path = require('path');
@@ -37,14 +37,14 @@ ok(widgetMgrSrc.includes('new BrowserWindow') && widgetMgrSrc.includes('transpar
 ok(widgetMgrSrc.includes("path.join(__dirname, 'renderer', 'widgetPreload.js')"), 'ویجت preload امن دارد (contextIsolation)');
 ok(widgetMgrSrc.includes("fs.renameSync(tmp, statePath)") && widgetMgrSrc.includes('widget-state.json'), 'موقعیت/روشن‌بودن: نوشتن اتمیک tmp+rename');
 ok(typeof widgetMgrSrc.includes("module.exports = { init, configure, update, getState, flushState };"), 'API ماژول: init/configure/update/getState/flushState');
-ok(widgetHtml.includes('class="halo"') && widgetHtml.includes('class="halo2"') && widgetHtml.includes('<body class="idle">'), 'هالهٔ حالت در widget.html');
-ok(/body\.listening .*halo/.test(widgetHtml.replace(/\n/g, ' ')) && widgetHtml.includes('@keyframes pulse'), 'هالهٔ سبز پالس‌دار در حالت گوش دادن');
+ok(widgetHtml.includes('class="ring"') && widgetHtml.includes('class="bar"') && widgetHtml.includes('<body class="idle size-m">'), 'حلقهٔ حالت در widget.html (v0.56 ریورک)');
+ok(/body\.listening .*ring \.bar|body\.listening .ring .bar/.test(widgetHtml.replace(/\n/g, ' ')) && widgetHtml.includes('@keyframes sweep'), 'حلقهٔ سبز sweep در حالت گوش دادن (v0.56)');
 ok(widgetHtml.includes('lineUser') && widgetHtml.includes('lineAva') && widgetHtml.includes('شما') && widgetHtml.includes('آوا'), 'متن کوچک گفتهٔ کاربر + پاسخ آوا');
 ok(widgetRndSrc.includes('9000'), 'محو خودکار متن‌ها بعد ۹ ثانیه');
-ok(widgetRndSrc.includes('AVAWidget.onUpdate') && widgetRndSrc.includes('AVAWidget.openMain'), 'رندرر فقط از پل امن AVAWidget');
+ok(widgetRndSrc.includes('AVAWidget.onUpdate') && widgetRndSrc.includes('AVAWidget.openMain') && widgetRndSrc.includes('AVAWidget.menu') && widgetRndSrc.includes('AVAWidget.act'), 'رندرر فقط از پل امن AVAWidget (v0.56: +menu/act)');
 ok(widgetPreloadSrc.includes("contextBridge.exposeInMainWorld('AVAWidget'"), 'widgetPreload: contextBridge');
 ok(widgetRndSrc.includes("dblclick") && widgetMgrSrc.includes("'widget:open-main'"), 'دابل‌کلیک ویجت → باز شدن برنامه');
-ok(mainSrc.includes("require('./widgetManager')") && mainSrc.includes('widgetManager.init({ win })') && mainSrc.includes('widgetManager.flushState()'), 'سیم‌کشی main: init + flush');
+ok(mainSrc.includes("require('./widgetManager')") && mainSrc.includes('widgetManager.init({ win, onConfig:') && mainSrc.includes('widgetManager.flushState()'), 'سیم‌کشی main: init(+onConfig) + flush');
 ok(widgetMgrSrc.includes("'widget:config'") && widgetMgrSrc.includes("'widget:update'") && widgetMgrSrc.includes("widget:get"), 'IPC ویجت: get/config/update');
 ok(htmlSrc.includes('id="optWidget"'), 'سوییچ تنظیمات ویجت');
 ok(appSrc.includes('bridge.widget.config(optWidget.checked)'), 'سوییچ تنظیمات → کانال config');
@@ -99,11 +99,11 @@ ok(appSrc.includes('tr.onended = () => { micLive = false; if (micData) micData.f
 ok(appSrc.includes("if (state === 'listening' && micData && !micAlive)") && appSrc.includes('micData.fill(0); /* خودترمیمی'), 'خودترمیمی حلقهٔ رندر');
 ok(appSrc.includes("audioCtx.resume()") && appSrc.includes("if (s === 'listening' && audioCtx && audioCtx.state === 'suspended')"), 'resume هنگام ورود به گوش دادن');
 
-console.log('\n[8] نسخه 0.55.1-beta');
-ok(appSrc.includes("let appVersion = '0.55.1-beta';"), 'app.js');
-ok(pkg.version === '0.55.1-beta', 'package.json');
-ok(htmlSrc.includes('<span id="abVersion">v0.55.1-beta</span>'), 'index.html');
-ok(readme.includes('۰.۵۵.۱-بتا') && readme.includes('ویجت شناور + ترِی'), 'README: ۰.۵۵.۱-بتا');
+console.log('\n[8] نسخه 0.56.0-beta');
+ok(appSrc.includes("let appVersion = '0.56.0-beta';"), 'app.js');
+ok(pkg.version === '0.56.0-beta', 'package.json');
+ok(htmlSrc.includes('<span id="abVersion">v0.56.0-beta</span>'), 'index.html');
+ok(readme.includes('۰.۵۶.۰-بتا') && readme.includes('ویجت شناور + ترِی'), 'README: ۰.۵۶.۰-بتا');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

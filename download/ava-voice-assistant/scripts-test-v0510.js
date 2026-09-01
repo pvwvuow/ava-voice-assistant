@@ -152,8 +152,8 @@ const RULES = [
 
   console.log('\n[۱۰] نسخه');
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-  ok(pkg.version === '0.55.1-beta', 'package.json → 0.55.1-beta');
-  ok(pkg.description.includes('۰.۵۵'), 'description → ۰.۵۵ (forward-relaxed)');
+  ok(pkg.version === '0.56.0-beta', 'package.json → 0.56.0-beta');
+  ok(pkg.description.includes('۰.۵۶'), 'description → ۰.۵۶ (forward-relaxed)');
 
   console.log('\n==========================================');
   console.log('scripts-test-v0510: ' + pass + ' passed, ' + fail + ' failed');

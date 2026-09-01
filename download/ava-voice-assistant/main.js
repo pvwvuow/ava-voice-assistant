@@ -5345,7 +5345,7 @@ app.whenReady().then(() => {
   try { pipManager.init({ win }); } catch (e) { console.error('pip init:', e); }
 
   /* v0.55 — ویجت شناور + ترِی (درخواست کاربر) */
-  try { widgetManager.init({ win }); } catch (e) { console.error('widget init:', e); }
+  try { widgetManager.init({ win, onConfig: () => { try { if (trayRebuild) trayRebuild(); } catch (_) { /* noop */ } } }); } catch (e) { console.error('widget init:', e); }
   try { createTray(); } catch (e) { console.error('tray init:', e); }
 
   /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود)
@@ -5455,6 +5455,7 @@ function firstTrayNotice() {
   } catch (_) { /* noop */ }
 }
 
+let trayRebuild = null; /* v0.56 — همگام‌سازی منوی ترِی با تغییرات ویجت */
 function createTray() {
   if (tray) return;
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'));
@@ -5473,6 +5474,7 @@ function createTray() {
     tray.setContextMenu(menu);
   };
   rebuild();
+  trayRebuild = rebuild; /* v0.56 — ویجت هم می‌تواند منوی ترِی را تازه کند */
   /* تغییر ویجت از تنظیمات هم منوی ترِی را به‌روز کند */
   const _origConfigure = widgetManager.configure.bind(widgetManager);
   widgetManager.configure = (enabled) => { _origConfigure(enabled); try { rebuild(); } catch (_) { /* noop */ } };

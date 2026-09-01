@@ -221,6 +221,23 @@
             <button type="submit" class="cmd-send" aria-label="اجرا کردن فرمان"><svg class="ic"><use href="#i-send"/></svg></button>
           </form>
 
+          <!-- v0.56 — استیج یکپارچه: لایهٔ چت روی خود صفحهٔ اصلی (بدون پرش به صفحهٔ جدا) -->
+          <div id="chatLayer" class="chat-layer" hidden>
+            <header class="cl-top">
+              <button id="clMic" class="cl-mic" type="button" aria-label="میکروفون" title="گوش دادن / توقف">
+                <span class="clm-ring r1"></span><span class="clm-ring r2"></span>
+                <svg class="ic"><use href="#i-mic"/></svg>
+              </button>
+              <div class="cl-title">گفتگو با آوا</div>
+              <div class="cl-actions">
+                <button id="clGlm" class="cl-ib" type="button" title="چت GLM (z.ai)"><svg class="ic"><use href="#i-globe"/></svg></button>
+                <button id="clClose" class="cl-ib" type="button" title="بستن گفتگو"><svg class="ic"><use href="#i-close"/></svg></button>
+              </div>
+            </header>
+            <div class="cl-stream" id="clStreamHost"></div>
+            <div class="cl-barhost" id="clBarHost"></div>
+          </div>
+
         </section>
 
         <!-- صفحه تنظیمات — ناوبری لیستی + پنل تخت -->
@@ -1088,7 +1105,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.55.1-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.56.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

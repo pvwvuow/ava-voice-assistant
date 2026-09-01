@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /* ============================================================
-   scripts-test-v0551.js — doctest v0.55.1-beta — هات‌فیکسِ «باز نشدن برنامه بعد از نصب»
+   scripts-test-v0551.js — doctest v0.56.0-beta — هات‌فیکسِ «باز نشدن برنامه بعد از نصب»
    ------------------------------------------------------------
    گزارش کاربر: «برنامه نصب شد ولی خرابه باز نمیشه جاوا اسکریپت ارور»
    ریشه: widgetManager.js در build.files نبود ولی main.js بالای فایل آن را
@@ -13,7 +13,7 @@
          (۱) روی دیسک موجود باشد و (۲) با حداقل یک glob از build.files پوشیده شود.
      [B] مقاوم‌سازی main.js: require ویجت با try/catch + استابِ بی‌خطر؛
          تولتیپ ترِی از app.getVersion می‌خواند (نه نسخهٔ دست‌نویس).
-     [C] پین نسخه 0.55.1-beta در package.json / app.js / index.html / README.
+     [C] پین نسخه 0.56.0-beta در package.json / app.js / index.html / README.
    mini-glob این تست فقط الگوهای همین ریپو را پوشش می‌دهد: نام ساده + الگوی dir با گلب‌ستاره (دابل‌ستاره/ستاره).
    ============================================================ */
 const fs = require('fs'), path = require('path');
@@ -78,14 +78,14 @@ ok(mainSrc.includes("app.getVersion() + ')'"), 'تولتیپ ترِی از app.g
 ok(!/setToolTip\([^)]*v0\.55\.0/.test(mainSrc), 'دیگر نسخهٔ دست‌نویس v0.55 در setToolTip نیست');
 ok(mainSrc.includes('try { createTray(); }'), 'createTray در call-site هم گارد دارد');
 
-console.log('\n[C] پین نسخه 0.55.1-beta');
-ok(pkg.version === '0.55.1-beta', 'package.json 0.55.1-beta');
+console.log('\n[C] پین نسخه 0.56.0-beta');
+ok(pkg.version === '0.56.0-beta', 'package.json 0.56.0-beta');
 const appSrc = fs.readFileSync(path.join(ROOT, 'renderer', 'js', 'app.js'), 'utf8');
-ok(appSrc.includes("let appVersion = '0.55.1-beta';"), 'app.js appVersion');
+ok(appSrc.includes("let appVersion = '0.56.0-beta';"), 'app.js appVersion');
 const htmlSrc = fs.readFileSync(path.join(ROOT, 'renderer', 'index.html'), 'utf8');
-ok(htmlSrc.includes('<span id="abVersion">v0.55.1-beta</span>'), 'index.html abVersion');
+ok(htmlSrc.includes('<span id="abVersion">v0.56.0-beta</span>'), 'index.html abVersion');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
-ok(readme.includes('۰.۵۵.۱-بتا') && readme.includes('ویجت شناور + ترِی'), 'README بلاک ۰.۵۵.۱ + سازگاری سوئیت‌های قدیمی');
+ok(readme.includes('۰.۵۶.۰-بتا') && readme.includes('ویجت شناور + ترِی'), 'README بلاک ۰.۵۶.۰ + سازگاری سوئیت‌های قدیمی');
 
 console.log('\n[D] سلامت widgetManager.js');
 const wmSrc = fs.readFileSync(path.join(ROOT, 'widgetManager.js'), 'utf8');

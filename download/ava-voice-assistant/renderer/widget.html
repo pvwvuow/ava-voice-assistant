@@ -5,84 +5,124 @@
 <title>آوا — ویجت</title>
 <style>
   /* ============================================================
-     ویجت شناور آوا — v0.55
-     آیکون مرکزی + هالهٔ حالت + گفتهٔ کاربر/پاسخ آوا (کوچک)
-     هیچ اسکریپت خارجی؛ فقط ipcRenderer مستقیم نیست — preload سبک دارد
+     ویجت شناور آوا — v0.56 (ریورک کامل)
+     اورب شیشه‌ای + حلقهٔ حالت SVG + نقطهٔ وضعیت + نوار ابزار hover
+     متن‌ها فقط با محتوا | hint فقط ۶ ثانیهٔ اول | درگ/قفل | سه اندازه
      ============================================================ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 300px; height: 178px; background: transparent; overflow: hidden; user-select: none; }
+  html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; user-select: none; }
   body {
     font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-    color: #eaf4ee; direction: rtl;
-  }
-  .wrap {
-    width: 100%; height: 100%;
+    color: #eaf4ee; direction: rtl; --op: 1;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    padding: 10px 12px 12px;
+    padding: 10px 12px 8px; opacity: var(--op);
+    transition: opacity .3s ease;
   }
-  /* ناحیهٔ درگ = کل حباب؛ دابل‌کلیک باز کردن برنامه */
-  .bubble {
-    position: relative;
-    width: 92px; height: 92px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(circle at 32% 28%, rgba(28,44,38,.94), rgba(10,16,14,.96));
-    border: 1px solid rgba(120,220,160,.22);
-    box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 0 22px rgba(52,211,153,.08);
-    -webkit-app-region: drag; cursor: grab;
+  /* ---------- اندازه‌ها ---------- */
+  body.size-s  { --bub: 56px; --ic: 30px; --fs: 10.5px; }
+  body.size-m  { --bub: 72px; --ic: 38px; --fs: 11.5px; }
+  body.size-l  { --bub: 88px; --ic: 46px; --fs: 12.5px; }
+  /* ---------- اورب ---------- */
+  .orb {
+    position: relative; width: var(--bub); height: var(--bub); border-radius: 50%;
+    display: grid; place-items: center; cursor: grab; flex: none;
+    background: radial-gradient(circle at 32% 26%, rgba(30,46,40,.92), rgba(9,14,12,.94));
+    border: 1px solid rgba(148, 220, 178, 0.16);
+    box-shadow: 0 12px 34px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    -webkit-app-region: drag;
+    transition: box-shadow .35s ease, transform .25s cubic-bezier(.22,1,.36,1);
   }
-  .bubble img { width: 52px; height: 52px; pointer-events: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
-  /* هالهٔ حالت — سبز: گوش دادن | کهربایی: پردازش | فیروزه‌ای: صحبت آوا */
-  .halo, .halo2 {
-    position: absolute; inset: -7px; border-radius: 50%;
-    border: 2px solid transparent; opacity: 0; pointer-events: none;
-    transition: opacity .35s ease;
+  body.locked .orb { -webkit-app-region: no-drag; cursor: default; }
+  .orb:active { cursor: grabbing; }
+  .orb img { width: var(--ic); height: var(--ic); pointer-events: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
+  /* حلقهٔ حالت — SVG */
+  .ring { position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); transform: rotate(-90deg); pointer-events: none; }
+  .ring circle { fill: none; stroke-width: 3.2; stroke-linecap: round; }
+  .ring .track { stroke: rgba(255,255,255,.09); }
+  .ring .bar {
+    stroke: #34d399; stroke-dasharray: 62 227; opacity: 0;
+    transform-origin: 50% 50%;
   }
-  body.listening .halo, body.listening .halo2 { opacity: 1; border-color: rgba(52,211,153,.85); }
-  body.listening .halo { animation: pulse 1.5s ease-out infinite; }
-  body.listening .halo2 { animation: pulse 1.5s .5s ease-out infinite; border-color: rgba(52,211,153,.45); }
-  body.processing .halo { opacity: 1; border-color: rgba(251,191,36,.8); animation: spin 2.4s linear infinite; border-style: dashed; }
-  body.speaking .halo { opacity: 1; border-color: rgba(94,234,212,.85); animation: pulse 1.9s ease-out infinite; }
-  @keyframes pulse {
-    0% { transform: scale(.92); box-shadow: 0 0 0 0 rgba(52,211,153,.35); }
-    70% { transform: scale(1.12); box-shadow: 0 0 0 16px rgba(52,211,153,0); }
-    100% { transform: scale(.92); box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+  body.listening .ring .bar { opacity: 1; animation: sweep 1.6s linear infinite; }
+  body.listening .orb { box-shadow: 0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(52,211,153,.28), inset 0 1px 0 rgba(255,255,255,.06); }
+  body.processing .ring .bar { opacity: 1; stroke: #fbbf24; stroke-dasharray: 34 40; animation: sweep 1.1s linear infinite; }
+  body.speaking .ring .bar { opacity: 1; stroke: #5eead4; stroke-dasharray: 150 139; animation: breathe 1.9s ease-in-out infinite; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  @keyframes breathe { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+  /* نقطهٔ وضعیت */
+  .dot { position: absolute; bottom: 2px; inset-inline-end: 6px; width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,.28); box-shadow: 0 0 0 2px rgba(9,14,12,.85); transition: background .3s; }
+  body.listening .dot { background: #34d399; animation: dotp 1.5s ease-in-out infinite; }
+  body.processing .dot { background: #fbbf24; }
+  body.speaking .dot { background: #5eead4; }
+  @keyframes dotp { 50% { transform: scale(1.35); } }
+  /* نوار ابزار hover — میک | چت | منو */
+  .tools {
+    position: absolute; top: -14px; inset-inline-start: 50%; transform: translateX(50%) translateY(4px);
+    display: flex; gap: 4px; padding: 3px; border-radius: 12px;
+    background: rgba(12,18,16,.92); border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 8px 22px rgba(0,0,0,.45);
+    opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .orb:hover .tools, .tools.open { opacity: 1; pointer-events: auto; transform: translateX(50%) translateY(0); }
+  .tools button {
+    width: 24px; height: 24px; border-radius: 8px; border: 0; cursor: pointer;
+    display: grid; place-items: center; background: transparent; color: #cfe9dc;
+    transition: background .18s, color .18s;
+  }
+  .tools button:hover { background: rgba(52,211,153,.16); color: #fff; }
+  .tools svg { width: 12.5px; height: 12.5px; }
+  /* ---------- متن‌ها ---------- */
   .texts {
-    margin-top: 8px; width: 100%; max-height: 62px; overflow: hidden;
+    margin-top: 8px; width: 100%; max-height: 66px; overflow: hidden;
     display: flex; flex-direction: column; gap: 4px;
     opacity: 0; transform: translateY(-4px); transition: opacity .3s ease, transform .3s ease;
     pointer-events: none;
   }
   .texts.show { opacity: 1; transform: none; }
+  body.hide-texts .texts { display: none; }
   .line {
-    font-size: 11.5px; line-height: 1.55; padding: 4px 10px; border-radius: 10px;
+    font-size: var(--fs); line-height: 1.55; padding: 4px 10px; border-radius: 11px;
     width: fit-content; max-width: 100%;
     background: rgba(12,20,17,.82); border: 1px solid rgba(255,255,255,.07);
     backdrop-filter: blur(6px);
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   .line.user { align-self: flex-start; border-color: rgba(52,211,153,.25); }
-  .line.ava { align-self: flex-end; border-color: rgba(94,234,212,.22); color: #d9f7ef; }
-  .line .who { font-size: 9px; opacity: .55; display: block; }
+  .line.ava  { align-self: flex-end; border-color: rgba(94,234,212,.22); color: #d9f7ef; }
+  .line .who { font-size: calc(var(--fs) - 2.5px); opacity: .55; display: block; }
   .hint {
-    position: absolute; bottom: 3px; font-size: 8.5px; color: rgba(230,255,242,.4);
-    -webkit-app-region: no-drag; letter-spacing: .3px;
+    position: absolute; bottom: 3px; font-size: 8.5px; color: rgba(230,255,242,.42);
+    -webkit-app-region: no-drag; letter-spacing: .3px; transition: opacity .6s ease;
   }
+  .hint.gone { opacity: 0; }
 </style>
 </head>
-<body class="idle">
-  <div class="wrap">
-    <div class="bubble" id="bubble" title="آوا — دابل‌کلیک: باز کردن برنامه">
-      <div class="halo"></div><div class="halo2"></div>
-      <img src="../assets/icon.png" alt="آوا" draggable="false" />
+<body class="idle size-m">
+  <div class="orb" id="orb" title="آوا — دابل‌کلیک: باز کردن برنامه">
+    <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="track" cx="50" cy="50" r="46"></circle>
+      <circle class="bar" cx="50" cy="50" r="46"></circle>
+    </svg>
+    <img src="../assets/icon.png" alt="آوا" draggable="false" />
+    <i class="dot" id="dot"></i>
+    <div class="tools" id="tools">
+      <button data-act="listen" title="گوش دادن / توقف">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+      <button data-act="chat" title="باز کردن چت">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <button data-act="menu" title="گزینه‌های ویجت">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </button>
     </div>
-    <div class="texts" id="texts">
-      <div class="line user" id="lineUser" hidden><span class="who">شما</span><span id="txtUser"></span></div>
-      <div class="line ava" id="lineAva" hidden><span class="who">آوا</span><span id="txtAva"></span></div>
-    </div>
-    <div class="hint" id="hint">دابل‌کلیک = باز کردن آوا</div>
   </div>
+  <div class="texts" id="texts">
+    <div class="line user" id="lineUser" hidden><span class="who">شما</span><span id="txtUser"></span></div>
+    <div class="line ava" id="lineAva" hidden><span class="who">آوا</span><span id="txtAva"></span></div>
+  </div>
+  <div class="hint" id="hint">دابل‌کلیک = باز کردن آوا</div>
   <script src="js/widgetRenderer.js"></script>
 </body>
 </html>

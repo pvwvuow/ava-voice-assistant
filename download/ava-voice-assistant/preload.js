@@ -6,6 +6,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('ava', {
+  onOpenChat: (cb) => ipcRenderer.on("ava:open-chat", () => { try { cb(); } catch (_) { /* noop */ } }),
   isElectron: true,
   platform: process.platform,
   versions: {

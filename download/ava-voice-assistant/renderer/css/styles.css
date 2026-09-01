@@ -2709,3 +2709,135 @@ details.set-adv[open] > summary { color: var(--text); }
 }
 .history-list.chat-hist .ch-time { font-size: 9px; color: var(--text3, rgba(234,244,238,.45)); align-self: flex-end; }
 #chMore { align-self: center; margin: 4px auto 0; }
+
+
+/* ============ v0.56 — استیج یکپارچه: چت روی صفحهٔ اصلی ============ */
+.hero { position: relative; }
+.chat-layer {
+  position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column;
+  padding: 12px 14px 12px; border-radius: 18px; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(52, 211, 153, 0.10), transparent 55%),
+    rgba(10, 14, 12, 0.55);
+  backdrop-filter: blur(26px) saturate(1.3); -webkit-backdrop-filter: blur(26px) saturate(1.3);
+  opacity: 0; transform: translateY(26px) scale(0.985); pointer-events: none;
+  transition: opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1), transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.chat-layer.open { opacity: 1; transform: none; pointer-events: auto; }
+[data-theme="light"] .chat-layer {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(16, 185, 129, 0.10), transparent 55%),
+    rgba(255, 255, 255, 0.74);
+}
+.greet, .status-line, .suggest, .response-card, .cmd-bar, .handsfree-toggle, .orb-stage {
+  transition: opacity 0.24s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero.chat-open .greet, .hero.chat-open .status-line, .hero.chat-open .suggest,
+.hero.chat-open .response-card, .hero.chat-open .cmd-bar, .hero.chat-open .handsfree-toggle,
+.hero.chat-open #liveText, .hero.chat-open .mw {
+  opacity: 0; pointer-events: none; transform: translateY(8px);
+}
+.hero.chat-open .orb-stage { transform: scale(0.55) translateY(-56px); opacity: 0; pointer-events: none; }
+/* سربرگ لایه — دکمهٔ میکروفون انیمیشنی بالا-وسط */
+.cl-top { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 54px; }
+.cl-title { font-size: 13px; font-weight: 700; opacity: 0.85; letter-spacing: 0.2px; }
+.cl-actions { display: flex; gap: 6px; }
+.cl-ib {
+  width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.09);
+  color: inherit; cursor: pointer; transition: background 0.2s, transform 0.2s;
+}
+.cl-ib:hover { background: rgba(52, 211, 153, 0.14); transform: translateY(-1px); }
+.cl-ib .ic { width: 15px; height: 15px; }
+.cl-mic {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(52, 211, 153, 0.35);
+  display: grid; place-items: center; cursor: pointer; color: inherit;
+  background: radial-gradient(circle at 32% 28%, rgba(52, 211, 153, 0.22), rgba(10, 16, 14, 0.6));
+  animation: clBreathe 3.2s ease-in-out infinite;
+}
+@keyframes clBreathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.14); } 50% { box-shadow: 0 0 0 9px rgba(52, 211, 153, 0); } }
+.cl-mic .ic { width: 18px; height: 18px; }
+.clm-ring { position: absolute; inset: -4px; border-radius: 50%; border: 2px solid rgba(52, 211, 153, 0.75); opacity: 0; pointer-events: none; }
+body.state-listening .cl-mic {
+  animation: none; border-color: rgba(52, 211, 153, 0.8);
+  background: radial-gradient(circle at 32% 28%, rgba(52, 211, 153, 0.4), rgba(10, 16, 14, 0.55));
+}
+body.state-listening .clm-ring { opacity: 1; animation: clPulse 1.5s ease-out infinite; }
+body.state-listening .clm-ring.r2 { animation-delay: 0.5s; border-color: rgba(52, 211, 153, 0.4); }
+body.state-processing .cl-mic { border-color: rgba(251, 191, 36, 0.7); animation: none; }
+@keyframes clPulse { 0% { transform: scale(0.9); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+/* استریم + نوار شناور */
+.cl-stream { flex: 1; min-height: 0; display: flex; }
+.cl-stream .chat-msgs { flex: 1; background: transparent; border: 0; padding: 10px 4px 6px; }
+.cl-barhost { padding-top: 8px; }
+.cl-barhost .chat-bar { border-radius: 99px; background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.09); }
+[data-theme="light"] .cl-barhost .chat-bar { background: rgba(255, 255, 255, 0.8); border-color: rgba(38, 22, 92, 0.1); }
+/* ورود حباب‌ها با stagger هنگام باز شدن لایه */
+.chat-layer.open .msg { animation: clMsgIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.chat-layer.open .msg:nth-last-child(1) { animation-delay: 0.02s; }
+.chat-layer.open .msg:nth-last-child(2) { animation-delay: 0.06s; }
+.chat-layer.open .msg:nth-last-child(3) { animation-delay: 0.1s; }
+.chat-layer.open .msg:nth-last-child(4) { animation-delay: 0.14s; }
+@keyframes clMsgIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+
+/* ============ v0.56 — کارت‌های مینیمال (آب‌وهوا/نمودار/جدول/ورودی) ============ */
+.rich-card {
+  margin-top: 8px; padding: 14px 16px; border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  animation: rcIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+[data-theme="light"] .rich-card { background: rgba(255, 255, 255, 0.85); border-color: rgba(38, 22, 92, 0.1); }
+@keyframes rcIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rich-card .rc-title { display: block; font-size: 12px; font-weight: 700; opacity: 0.65; letter-spacing: 0.2px; margin-bottom: 10px; }
+.rich-card .rc-head { display: flex; align-items: baseline; gap: 10px; }
+.rich-card .rc-head .rc-city { font-size: 13px; font-weight: 700; opacity: 0.9; }
+.rich-card .rc-head .rc-temp { margin-inline-start: auto; font-size: 28px; font-weight: 300; letter-spacing: -1px; }
+.rich-card .rc-desc { font-size: 11.5px; opacity: 0.6; margin: 2px 0 10px; }
+.rich-card .rc-days { display: flex; gap: 14px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+[data-theme="light"] .rich-card .rc-days { border-top-color: rgba(38, 22, 92, 0.08); }
+.rich-card .rc-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 10.5px; }
+.rich-card .rc-day .d { opacity: 0.55; }
+.rich-card .rc-day .hi { color: #6ee7b7; font-weight: 700; font-size: 11.5px; }
+.rich-card .rc-day .lo { opacity: 0.45; }
+.rich-card .rc-bars { display: flex; flex-direction: column; gap: 8px; }
+.rich-card .rc-bar { display: grid; grid-template-columns: 72px 1fr 34px; align-items: center; gap: 8px; font-size: 11px; }
+.rich-card .rc-bar .lb { opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rich-card .rc-bar .track { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+[data-theme="light"] .rich-card .rc-bar .track { background: rgba(38, 22, 92, 0.08); }
+.rich-card .rc-bar .fill {
+  display: block; height: 100%; border-radius: 99px; width: 0;
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.65), rgba(52, 211, 153, 0.95));
+  animation: rcBar 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes rcBar { from { width: 0; } }
+.rich-card .rc-bar .vl { text-align: left; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.rich-card .rc-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.rich-card .rc-table th { text-align: center; font-size: 9.5px; font-weight: 600; opacity: 0.45; padding: 2px 4px 8px; letter-spacing: 0.4px; }
+.rich-card .rc-table th:nth-child(2) { text-align: right; }
+.rich-card .rc-table td { text-align: center; padding: 6px 4px; border-top: 1px solid rgba(255, 255, 255, 0.055); font-variant-numeric: tabular-nums; }
+[data-theme="light"] .rich-card .rc-table td { border-top-color: rgba(38, 22, 92, 0.06); }
+.rich-card .rc-table td.team { text-align: right; font-weight: 600; }
+.rich-card .rc-table td.pos { opacity: 0.55; width: 26px; }
+.rich-card .rc-table tr.top td.pos { color: #6ee7b7; font-weight: 800; opacity: 1; }
+.rich-card .rc-table td.pts { font-weight: 800; }
+.rich-card .rc-prompt { font-size: 12px; opacity: 0.75; margin-bottom: 9px; }
+.rich-card .rc-inrow { display: flex; gap: 8px; }
+.rich-card .rc-in {
+  flex: 1; min-width: 0; height: 38px; border-radius: 12px; padding: 0 12px;
+  font-size: 12.5px; font-family: inherit;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: inherit; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+[data-theme="light"] .rich-card .rc-in { background: #fff; border-color: rgba(38, 22, 92, 0.12); }
+.rich-card .rc-in:focus { border-color: rgba(52, 211, 153, 0.6); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12); }
+.rich-card .rc-send {
+  width: 38px; height: 38px; flex: none; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center;
+  background: rgba(52, 211, 153, 0.9); color: #06281c;
+  transition: transform 0.18s, filter 0.18s;
+}
+.rich-card .rc-send:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.rich-card .rc-send .ic { width: 15px; height: 15px; }

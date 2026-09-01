@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0520.js — doctest v0.55.1-beta
+/* scripts-test-v0520.js — doctest v0.56.0-beta
    پروتکل فکر (THINK-FIRST BRAIN) — خواستهٔ کاربر:
    «چرا AI خودش تحلیل نمی‌کنه جمله رو؟ شاید یک سوال باشه — باید با خودش فکر کنه،
    بعد که فکر کرد و تحقیق کرد، بعد جوابو بده»
@@ -72,11 +72,11 @@ ok(appSrc.includes('ai research(جواب)'), 'تحقیق واقعی وب برا�
 ok(appSrc.includes('بلوک RESEARCH دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز'), 'دور دوم: ضد توهم (فقط بر پایهٔ نتایج)');
 ok(appSrc.indexOf("'[نتایج واقعی وب'", appSrc.indexOf('async function aiThinkRound')) > 0, 'گارد دورِ دوم (حلقهٔ بیش از یک دور نیست)');
 
-console.log('\n[5] نسخه 0.55.1-beta');
-ok(pkg.version === '0.55.1-beta', 'package.json → 0.55.1-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.55.1-beta</span>'), 'index.html abVersion');
-ok(appSrc.includes("let appVersion = '0.55.1-beta';"), 'app.js appVersion');
-ok(readme.includes('۰.۵۵.۱-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
+console.log('\n[5] نسخه 0.56.0-beta');
+ok(pkg.version === '0.56.0-beta', 'package.json → 0.56.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.56.0-beta</span>'), 'index.html abVersion');
+ok(appSrc.includes("let appVersion = '0.56.0-beta';"), 'app.js appVersion');
+ok(readme.includes('۰.۵۶.۰-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
 ok(readme.includes('پروتکل فکر: اول فکر کن، تحقیق کن، بعد جواب بده'), 'README: عنوان نسخه');
 
 console.log('\n======================');
