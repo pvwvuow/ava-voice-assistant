@@ -152,7 +152,7 @@ const RULES = [
 
   console.log('\n[۱۰] نسخه');
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-  ok(pkg.version === '0.53.0-beta', 'package.json → 0.53.0-beta');
+  ok(pkg.version === '0.54.0-beta', 'package.json → 0.54.0-beta');
   ok(pkg.description.includes('۰.۵۱') && pkg.description.includes('ارور ۱۵۳'), 'description → ۰.۵۱');
 
   console.log('\n==========================================');

@@ -3536,7 +3536,10 @@
          گفتگوی همان لحظه است و بازپخش آفلاینش = پخش دوبارهٔ توهم. سند لاگ v0.52
          خط 3260: «همون آهنگ شادمهری که آخرین بار سرچ کردی» → web_search(توهم
          «قشنگترین گناه شادمهر») و همان توهم learn set شد! */
-      if (/همون|همان\s|آخرین بار|قبلی|پارسال|که گفتی|که سرچ کردی|که پخش کردی|که گفتم/.test(String(cmd))) {
+      /* v0.54 — دامنهٔ گارد باز شد: همین/این/اون و حالت‌های پیوسته‌اش هم
+         (لاگ v0.53 ۱۶:۴۸/۱۶:۴۹: «تو یوتیوب همین آهنگو سرچ کن» و «…مگم همینو
+         برام…» learn set شدند چون گارد فقط همون/همان را می‌گرفت) */
+      if (/(همون|همین|همان|همو|همونو|همینو|اونو|اینو)([\s،؛»"']|$)|(?:^|[\s،؛])(اون|این)\s?(آهنگ|موزیک|ویدیو|اسم|صفحه|سایت|لینک)|آخرین بار|قبلی|پارسال|که گفتی|که گفتم|که سرچ کردی|که پخش کردی|منظورم/.test(String(cmd))) {
         actLog('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست: ' + String(cmd).slice(0, 44));
         return;
       }
@@ -7279,7 +7282,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.53.0-beta';
+  let appVersion = '0.54.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8439,7 +8442,8 @@
     /* v0.51 — دیکتهٔ یک‌باره (خواستهٔ کاربر: در هر برنامه‌ای که آمادهٔ تایپ است بنویسد؛ محدود به یک تعبیر نیست) */
     'قانون مهم ۹ (مهم): اگر کاربر خواست متنی «همان‌جا که هست» نوشته/تایپ شود (اینجا بنویس… / ببین بنویس… / اینو تایپ کن… / هر تعبیر دیگری از نوشتن)، با act=type_once بده و value را متنِ عیناً خواسته‌شده بگذار (فقط واژه‌های فرمانی حذف شوند؛ متنِ داخل گیومه عیناً). برای شروع حالت تایپ صوتیِ پیوسته هنوز run_cmd(dict) می‌تواند استفاده شود.\n' +
     /* v0.53 — قانون ارجاع به تاریخچه (لاگ واقعی 16:14:47: «همون آهنگ شادمهری که آخرین بار سرچ کردی» → توهم «قشنگترین گناه شادمهر») */
-    'قانون مهم ۱۰ (بسیار مهم): اگر کاربر به چیزی که قبلاً گفته/شنیده/سرچ کرده/پخش کرده ارجاع داد (همون، همان، آخرین بار، قبلی، همونی که گفتی/سرچ کردی/پخش کردی)، فقط و فقط از «تاریخچهٔ گفتگو» استفاده کن؛ اگر در تاریخچه نیست، یا act=research بده یا صادقانه بپرس — هرگز اسم/عنوان را از حافظه‌ات نساز. اگر صریحاً «گوگل» خواست، web_search فقط با عبارتِ درستِ برداشته‌شده از تاریخچه.\n' +
+    /* v0.54 — قانون ۱۰ بازنویسی شد (بازخورد کاربر: در v0.52 جریانِ ارجاع+تحقیق درست کار می‌کرد — قانون نباید بهانهٔ ردِ اجرا شود) */
+    'قانون مهم ۱۰ (بسیار مهم): اگر کاربر با ارجاع به گذشته حرف زد (همینو، همونو، اونو، همون، همونی که گفتی/سرچ کردی/پخش کردی، آخرین بار، قبلی، «همون آهنگ جدیدشو»)، مرجع را اول از «تاریخچهٔ همین گفتگو» بردار — مخصوصاً عنوانی که خودت چند پیام قبل در جواب گفتی. بعد از حلِ مرجع حتماً اکشن بده: پخش = music_play با عنوانِ حل‌شده؛ سرچ در یوتیوب = yt_search؛ سرچ گوگل = web_search. اگر مرجع در تاریخچه نبود، act=research بده یا صادقانه بپرس — هرگز عنوان را از حافظه‌ات نساز. این قانون هرگز مجوزِ رد کردن یا بی‌جواب گذاشتنِ خواستهٔ کاربر نیست.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -8460,6 +8464,8 @@
     '- vol_up / vol_down / vol_mute؛ vol_set: value=عدد 0 تا 100\n' +
     '- media_next / media_prev / media_toggle (پلیر سیستم)\n' +
     '- music_play: value=اسم آهنگ یا خالی؛ music_pause\n' +
+    /* v0.54 — سرچ یوتیوب ابزار درست گرفت (لاگ v0.53 ۱۶:۴۹: AI برای «همینو برام تو یوتیوب سرچ کن» open_url(https://www.youtube.com/result) می‌داد = صفحهٔ خالی) */
+    '- yt_search: value=عنوانِ دقیق برای جستجو در یوتیوب (مثال: کاربر گفت «تو یوتیوب به سلامتیت رو سرچ کن» → act=yt_search و value=به سلامتیت) — برای سرچ یوتیوب هرگز open_url با آدرسِ دست‌ساز مثل youtube.com/result نده\n' +
     /* v0.51 — پادزهر توهم (لاگ v0.50: AI اسم «نازنین» را از حافظه‌اش ساخت و دوبار یاد گرفت) */
     '- research: value=عبارت تحقیق وب — فقط وقتی کاربر خواست «اول بفهم/تحقیق کن، بعد انجام بده» (مثل: اول ببین آهنگ جدید شادمهر چی هست بعد اسمشو سرچ کن)؛ نتایج واقعی وب به تو برمی‌گردد و دور بعد باید اکشن نهایی را فقط بر پایهٔ همان نتایج بدهی — هرگز اسم/عنوان را از حافظه‌ات نساز\n' +
     '- type_once: value=متنِ دقیقی که کاربر خواست در برنامهٔ فعال نوشته شود — برای هر درخواستِ نوشتن/تایپ (اینجا بنویس… / ببین بنویس… / اینو تایپ کن…)؛ value را عیناً و کامل بنویس (فقط واژه‌های فرمان مثل «اینجا بنویس» را حذف کن)؛ اگر کاربر متن را در گیومه گفت فقط همان داخل گیومه\n' +
@@ -8500,7 +8506,7 @@
     /* v0.51 — one-shot dictation (user: type into whatever box is focused; any phrasing) */
     'Important rule 8: when the user wants text WRITTEN right where they are (اینجا بنویس… / ببین بنویس… / type this… / any write phrasing), reply with act=type_once and value=the exact text verbatim (strip only the command words; if the text was quoted, keep only the quoted part). Continuous voice-typing mode is still run_cmd(dict).\n' +
     /* v0.53 — history-reference law (real log 16:14:47: "the same Shadmehr song you last searched" → hallucinated «قشنگترین گناه») */
-    'Important rule 9 (critical): when the user refers to something said/heard/searched/played EARLIER (همون / همونی که گفتی / آخرین بار / قبلی), use ONLY the chat history; if it is not in the history, give act=research or ask honestly — NEVER invent names or titles from memory. If the user explicitly said Google, web_search ONLY with the correct title taken from the history.\n' +
+    'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the chat history — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: play = music_play with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -8514,7 +8520,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -8566,7 +8572,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word', 'research', 'type_once']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word؛ v0.51 +research (فاز تحقیق) +type_once (دیکتهٔ یک‌باره) */
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'yt_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word', 'research', 'type_once']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word؛ v0.51 +research (فاز تحقیق) +type_once (دیکتهٔ یک‌باره)؛ v0.54 +yt_search (سرچ یوتیوب بومی) */
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -8683,6 +8689,16 @@
               const r = await bridge.apps.launch({ name: hit.app.name, exe: hit.app.exe }).catch(() => null);
               outs.push(r && r.ok ? t('app.open', { x: hit.app.name }) : t('app.launchFail', { x: hit.app.name }));
             } else outs.push(t('app.notFound', { x: a.value }));
+            break;
+          }
+          case 'yt_search': {
+            /* v0.54 — سرچ یوتیوب با کانالِ بومی؛ دیگر open_url دست‌ساز صفحهٔ خالی نمی‌دهد */
+            const yq = String(a.value || '').trim();
+            if (!yq) { outs.push(LANG === 'en' ? 'No search title was given.' : 'عنوانی برای جستجو داده نشد.'); break; }
+            if (!bridge || !bridge.system) { outs.push(t('toast.onlyApp')); break; }
+            const yr = await bridge.system.run('youtube_search', yq).catch(() => null);
+            const yOk = !!(yr && (yr.ok === undefined || yr.ok));
+            outs.push(yOk ? (LANG === 'en' ? 'YouTube search opened.' : 'جستجوی یوتیوب باز شد.') : (LANG === 'en' ? "Couldn't open it." : 'باز نشد.'));
             break;
           }
           case 'open_url': case 'web_search': {
