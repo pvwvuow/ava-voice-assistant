@@ -81,7 +81,7 @@ ok(appSrc.includes('matchSysApp(s)'), 'app.js: حل هدف با برنامهٔ �
 ok(appSrc.includes('قانون مهم ۵'), 'app.js: قانون ۵ فارسی (جستجوی درون-سایتی، نه گوگل)');
 ok(appSrc.includes('Important rule 5'), 'app.js: قانون ۵ انگلیسی');
 ok(appSrc.includes('function appsNamesCtx'), 'app.js: فهرست برنامه‌های نصب‌شده برای AI');
-ok(appSrc.includes('appsNamesCtx(), await avaStateCtx()'), 'app.js: فهرست برنامه‌ها داخل aiFallbackCtx');
+ok(appSrc.includes('appsNamesCtx()') && appSrc.includes('await avaStateCtx()'), 'app.js: فهرست برنامه‌ها داخل aiFallbackCtx (v0.50: نمونه‌های آموخته هم)');
 ok(appSrc.includes('function pushChatHist'), 'app.js: سقف تاریخچهٔ چت');
 ok(appSrc.includes("chatMsgs.children.length > 120"), 'app.js: سقف DOM چت');
 ok(!/chatHist\.push\(/.test(appSrc.replace(/function pushChatHist[\s\S]*?\n  \}/, '')) || appSrc.match(/chatHist\.push\(/g).length === 0, 'app.js: همهٔ pushهای چت از سقف‌دار می‌گذرند');
@@ -100,7 +100,7 @@ ok(/voiceIntent\.js[\s\S]*?voiceUnderstand\.js[\s\S]*?app\.js/.test(idxSrc), 'in
 
 /* ---------- ۸) نسخه ---------- */
 const pkg = JSON.parse(fs.readFileSync(path.join(R, 'package.json'), 'utf8'));
-ok(/^0\.4/.test(pkg.version), 'package.json version forwards-compatible 0.4x = ' + pkg.version);
+ok(/^0\.[45]/.test(pkg.version), 'package.json version forwards-compatible 0.4x+ = ' + pkg.version);
 
 console.log(`\nv0.44 understand-first: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

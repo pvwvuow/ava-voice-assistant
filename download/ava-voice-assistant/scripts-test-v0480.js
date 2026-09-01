@@ -23,6 +23,7 @@ const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
 const preloadSrc = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
 const htmlSrc = fs.readFileSync(path.join(ROOT, 'renderer/index.html'), 'utf8');
 const dnsSrc = fs.readFileSync(path.join(ROOT, 'lib/dns-bypass.js'), 'utf8');
+const sitesSrc = fs.readFileSync(path.join(ROOT, 'renderer/js/voiceSites.js'), 'utf8'); /* v0.50 */
 const intentSrc = fs.readFileSync(path.join(ROOT, 'renderer/js/voiceIntent.js'), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
@@ -60,9 +61,9 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
   ok(intentSrc.includes('function gateType(cmd)') && intentSrc.includes('function blocksActionRule(cmd, ruleId)'), 'voiceIntent: گیت نوع جمله');
   ok(intentSrc.includes("'correction'") && intentSrc.includes("'multi-step'") && intentSrc.includes("'question'") && intentSrc.includes("'smart-find'") && intentSrc.includes("'noun-phrase'"), 'voiceIntent: پنج نوع جمله');
   ok(appSrc.includes('AVAIntent.blocksActionRule(cmd, rule.id)') && appSrc.includes("ev: 'gate'"), 'app: گیت در runCommand وصل است + لاگ ساخت‌یافته gate');
-  ok(appSrc.includes('SITE_QUERY_REGISTRY') && appSrc.includes("'https://divar.ir/s/tehran?q=' + encodeURIComponent(q)"), 'app: رجیستری درون‌سایتی با تمپلیت واقعی دیوار');
+  ok(sitesSrc.includes('SITE_QUERY_REGISTRY') && sitesSrc.includes("'https://divar.ir/s/' + (city || 'tehran') + '?q=' + encodeURIComponent(q)"), 'voiceSites: رجیستری درون‌سایتی شهر-محور (v0.50 — ریشهٔ ۴۰۴ دیوار)');
   ok(appSrc.includes('function siteUrlFix(url)') && appSrc.includes('siteUrlFix(x.value)'), 'app: بازسازی URL پس از AI (executeDoActions)');
-  ok(appSrc.includes('دیوار=divar.ir/s/tehran?q=…'), 'app: قانون ۵ با قالب واقعی دیوار');
+  ok(appSrc.includes('دیوار=divar.ir/s/{شهر-با-حروف-انگلیسی}?q='), 'app: قانون ۵ با قالب شهری دیوار (v0.50 — بجنورد→bojnurd)');
   ok(appSrc.includes('قانون مهم ۷ (بسیار مهم)'), 'app: قانون ۷ — درخواست چندمرحله‌ای/پیدا کن');
   ok(appSrc.includes('لاگ دایت: نویز محض'), 'app: نویز wake از لاگ حذف شد (فقط آمار)');
 
@@ -71,11 +72,11 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
   ok(!/ghp_[A-Za-z0-9]{20,}/.test(mainSrc + appSrc + preloadSrc + htmlSrc + dnsSrc + intentSrc), 'هیچ ghp_… واقعی در سورس نیست');
 
   /* ---------- 6) نسخه ---------- */
-  console.log('\n[6] نسخه 0.49.0-beta');
-  ok(pkg.version === '0.49.0-beta', 'package.json 0.49.0-beta');
-  ok(htmlSrc.includes('<span id="abVersion">v0.49.0-beta</span>'), 'index.html abVersion');
-  ok(appSrc.includes("let appVersion = '0.49.0-beta';"), 'app.js appVersion');
-  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۴۹.۰-بتا'), 'README بلاک ۰.۴۹ (ارقام فارسی)');
+  console.log('\n[6] نسخه 0.50.0-beta');
+  ok(pkg.version === '0.50.0-beta', 'package.json 0.50.0-beta');
+  ok(htmlSrc.includes('<span id="abVersion">v0.50.0-beta</span>'), 'index.html abVersion');
+  ok(appSrc.includes("let appVersion = '0.50.0-beta';"), 'app.js appVersion');
+  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۵۰.۰-بتا'), 'README بلاک ۰.۵۰ (ارقام فارسی)');
 
   console.log('\n==========================================');
   console.log('scripts-test-v0480(relaxed): ' + pass + ' passed, ' + fail + ' failed');

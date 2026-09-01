@@ -1157,7 +1157,7 @@ app.whenReady().then(async () => {
         weatherRef: /const r = await bridge\.system\.weather\(city \|\| 'تهران'\);[\s\S]{0,600}return AI_FALLBACK;/.test(a292),
         calcRef: /if \(!m\) \{[\s\S]{0,200}return AI_FALLBACK;/.test(a292),
         dispatch: a292.includes("reply && typeof reply === 'object' && reply.__aiFallback")
-          && /__aiFallback[\s\S]{0,320}aiConnected\(\)\) \{ (_dispatchOutcome = '[a-z-]+'; )?await aiHandleCommand\(cmd(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\(rule\)))?\); return; \}/.test(a292), /* v0.47: +outcome */
+          && /__aiFallback[\s\S]{0,420}aiConnected\(\)\) \{ (_dispatchOutcome = '[a-z-]+'; )?await aiHandleCommand\(cmd(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\((?:rule, cmd|rule)?\)))?\); return; \}/.test(a292), /* v0.47: +outcome؛ v0.50: aiFallbackCtx(rule, cmd) */
         edgeCity: a292.includes('wxExtractCity') && a292.includes('نشونم') && a292.includes('نشانم'),
         honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
           && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,
@@ -1458,7 +1458,7 @@ app.whenReady().then(async () => {
         mgr: m37.includes("require('./pipWindowManager')") && pm37.includes("'screen-saver'") && pm37.includes('forward: true') && pm37.includes('pip-state.json') && pm37.includes('CommandOrControl+Shift+P') && pm37.includes('Borderless Windowed'),
         parser: vp37.parseVoiceCommand('ویدیو رو پین کن', { pipOpen: false }).intent === 'PIN_VIDEO' && vp37.parseVoiceCommand('ببندش', { pipOpen: false }) === null && vp37.parseVoiceCommand('ببندش', { pipOpen: true }).intent === 'UNPIN_VIDEO' && vp37.parseVoiceCommand('ببرش بالا سمت راست', { pipOpen: false }).entities.position === 'top-right' && vp37.parseVoiceCommand('شفافیت هفتاد درصد', { pipOpen: true }).entities.opacity === 0.7,
         detect: a37.includes('async function detectActiveVideo') && a37.includes("kind: 'blob'") && a37.includes('bridge.pipAPI.clipboard()'),
-        how: a37.includes('__aiExtra: AVACapabilities.aiPromptAddon()') && /aiHandleCommand\(cmd, (?:await aiFallbackCtx\(rule\)|rule && rule\.__aiExtra)\)/.test(a37) && fs.existsSync(path.join(__dirname, 'renderer/js/capabilities.js')),
+        how: a37.includes('__aiExtra: AVACapabilities.aiPromptAddon()') && /aiHandleCommand\(cmd, (?:await aiFallbackCtx\((?:rule, cmd|rule)\)|rule && rule\.__aiExtra)\)/.test(a37) && fs.existsSync(path.join(__dirname, 'renderer/js/capabilities.js')),
         bridge: pl37.includes('pipAPI: {') && ['show', 'hide', 'move', 'resize', 'setOpacity', 'setClickThrough', 'setAlwaysOnTop', 'reset', 'getState'].every((k) => pl37.includes(k)),
         ui: ph37.includes('assets/ava-logo.png') && (ph37.match(/data-ui="1"/g) || []).length >= 6 && pr37.includes('youtube.com/embed/') && pr37.includes('hoverUi'),
         order: h37.indexOf('js/voiceCommandParser.js') > -1 && h37.indexOf('js/voiceCommandParser.js') < h37.indexOf('js/app.js') && h37.indexOf('js/capabilities.js') < h37.indexOf('js/app.js'),

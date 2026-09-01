@@ -595,6 +595,24 @@ const safeUrl = (u) => {
   return /^https?:\/\//i.test(s) ? s.replace(/["^|<>]/g, '') : null;
 };
 
+/* v0.50 — اولین ویدیوی نتایج یوتیوب («پلی کن» = پخش واقعی، نه فقط صفحهٔ نتایج):
+   صفحهٔ نتایج بدون جاوااسکریپت هم ytInitialData با videoId دارد؛
+   با استک شبکهٔ کرومیوم (net.fetch) می‌رویم تا پراکسی سیستم و DNS مثل
+   بقیهٔ ترافیک عمل کند. sp=EgIQAQ== فقط ویدیوها (نه کانال/پلی‌لیست).
+   هر شکستی = '' → فراخواننده صادقانه صفحهٔ نتایج را باز می‌کند */
+async function ytFirstVideoId(q) {
+  try {
+    const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(String(q || '').slice(0, 120)) + '&hl=en&gl=US&sp=EgIQAQ%3D%3D';
+    const ac = new AbortController();
+    const tId = setTimeout(() => ac.abort(), 8000);
+    const r = await net.fetch(url, { signal: ac.signal, headers: { 'accept-language': 'en-US,en;q=0.9' } });
+    const t = await r.text();
+    clearTimeout(tId);
+    const m = t.match(/"videoId":"([A-Za-z0-9_-]{11})"/);
+    return m ? m[1] : '';
+  } catch (_) { return ''; }
+}
+
 const COMMANDS = {
   /* برنامه‌های ویندوز */
   open_chrome:   { cmd: 'start chrome',                fa: 'مرورگر کروم' },
@@ -609,6 +627,22 @@ const COMMANDS = {
   open_youtube:  { cmd: 'start https://www.youtube.com',   fa: 'یوتیوب' },
   /* v0.38 — جستجوی مستقیم یوتیوب: «تو یوتیوب آهنگ X رو سرچ کن» */
   youtube_search: { cmd: (a) => `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}"`, fa: 'جستجوی یوتیوب' },
+  /* v0.50 — «پلی/پخش کن» = پخشِ واقعی اولین نتیجه (لاگ کاربر v0.49:
+     «آهنگ جدید شادمهر تو یوتیوب برام پلی کن» فقط صفحهٔ نتایج باز می‌شد).
+     اولین ویدیو پیدا و مستقیم watch باز می‌شود؛ شکست شبکه/پارس →
+     fallback صادقانه: صفحهٔ نتایج */
+  youtube_play: {
+    cmd: (a) => `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}"`,
+    asyncCmd: async (a) => {
+      const q = String(a || '').trim().slice(0, 120);
+      if (!q) return 'start "" "https://www.youtube.com"';
+      const vid = await ytFirstVideoId(q);
+      return vid
+        ? `start "" "https://www.youtube.com/watch?v=${vid}"`
+        : `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(q)}"`;
+    },
+    fa: 'پخش یوتیوب',
+  },
   /* v0.38 — یوتیوب شناور: اگر عبارت/لینک، ویدیوی یوتیوب بود همان‌جا در پنجرهٔ شناور
      پخش می‌شود؛ وگرنه نتیجه‌ها در مرورگر باز می‌شود (صفحهٔ نتایج iframe نمی‌شود) */
   pip_youtube:   { cmd: (a) => {
@@ -696,10 +730,14 @@ const COMMANDS = {
   },
 };
 
-ipcMain.handle('sys:run', (_e, id, arg) => {
+ipcMain.handle('sys:run', async (_e, id, arg) => {
   const c = COMMANDS[id];
   if (!c) return { ok: false, error: 'فرمان ناشناخته' };
-  const cmdStr = typeof c.cmd === 'function' ? c.cmd(arg) : c.cmd;
+  let cmdStr = typeof c.cmd === 'function' ? c.cmd(arg) : c.cmd;
+  /* v0.50 — سازندهٔ ناهمگام (youtube_play اول اولین ویدیو را از شبکه می‌گیرد) */
+  if (!cmdStr && typeof c.asyncCmd === 'function') {
+    try { cmdStr = await c.asyncCmd(arg); } catch (_) { cmdStr = null; }
+  }
   if (!cmdStr) return { ok: false, error: 'ورودی نامعتبر است' };
   /* فرمان‌های پاور: سیستم می‌خوابد/خاموش می‌شود و پروسه exec ممکن است
      timeout بخورد یا با کد غیرصفر بسته شود — ولی خودِ فرمان درست اجرا شده */

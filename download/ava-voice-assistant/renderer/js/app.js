@@ -2025,48 +2025,32 @@
       .trim();
 
   /* ============================================================
-     v0.38 — استخراج عبارت جستجوی یوتیوب از جملهٔ صوتی
-     «تو یوتیوب آهنگ دیوونه شو رو سرچ کن» → «آهنگ دیوونه شو»
-     «یوتیوب شناور آهنگ X بذار» → «آهنگ X»
-     فقط واژه‌های فرمان حذف می‌شوند؛ خود عبارت دست‌نخورده می‌ماند.
+     v0.50 — استخراج عبارت جستجو به voiceIntent.js منتقل شد (AVAIntent.ytQueryOf)
+     تا بدون Electron هم تست شود. سه لایهٔ جدید آن:
+     ۱) برش جمله‌وارهٔ ارجاعی «که…» («آهنگ X که چند لحظه پیش بهم گفتی…» → «آهنگ X»)
+        ولی نامِ محتوایی که خودش «که» دارد قربانی نمی‌شود («آهنگی که اسمش دیوونه شوه»)
+     ۲) «بهم» جزو فیلرها
+     ۳) سنجاق سلامت: سوال‌محور/ارجاعی/۶+ توکن = زباله → '' (جمله به AI می‌رود)
+     (ریشهٔ واقعی لاگ: «همین آهنگ شادمهر که…بهم گفتی…همون اسمو سرچ کن» که
+     کلِ جمله در یوتیوب سرچ می‌شد)
      ============================================================ */
   const ytQueryOf = (c) => {
-    let s = String(c || '');
-    s = s.replace(/(تو|توی|در)\s+(یوتیوب|youtube)/gi, ' ');
-    s = s.replace(/(یوتیوب|youtube)/gi, ' ');
-    s = s.replace(/\bsearch( for|ing)?\b/gi, ' ');
-    s = s.replace(/(جستجو|جستجوش|سرچش?|سیرچ)\s*(کن|بکن|بزن|می?کنی)?/gi, ' ');
-    /* v0.43 — فعل‌های پخش هم از عبارت حذف می‌شوند («توی یوتیوب آهنگ شادمهر پلی کن» → «آهنگ شادمهر») */
-    s = s.replace(/(بگرد|بگرده|دنبال|پیدا\s?کن|بذار|بزار|پخش\s?کن|پلی\s?کن|باز\s?کن|بگیر|بزن)\s*/gi, ' ');
-    s = s.replace(/(شناور|فیپ|پی\s?ای\s?پی|پینش?)\s*/gi, ' ');
-    s = s.replace(/(^|\s)(لطفا|لطفاً|بابا|دیگه|خب|خوب|ممنون|مرسی|برام|واسه|الان)(?=\s|$)/gi, '$1');
-    s = s.replace(/\s*(رو|را)\s*$/i, ' ');
-    s = s.replace(/^(برو|یه|یک|هه?مین|رو|را)\s+/i, '').replace(/[\s\u200C]+/g, ' ').trim();
-    return s.length >= 2 ? s.slice(0, 80) : '';
+    try { return (typeof AVAIntent !== 'undefined' && AVAIntent.ytQueryOf) ? AVAIntent.ytQueryOf(c) : ''; }
+    catch (_) { return ''; }
   };
 
   /* ============================================================
-     v0.49 — رجیستری جستجوی درون‌سایتی (قالب‌های تست‌شدهٔ واقعی با HTTP 200)
-     ریشهٔ لینک‌های خراب دیوار: AI اسلاگ‌های توهمی می‌ساخت (divar.ir/s/tehran/anti… → ۴۰۴).
-     قانون: اگر host در رجیستری است و query ندارد → بازسازی با تمپلیت واقعی.
+     v0.50 — رجیستری و بازسازی URL به voiceSites.js منتقل شد (AVASites).
+     v0.50 شهر-محور شد (خواستهٔ کاربر: «شهر بجن را اول لینک ننویس — ببین
+     خود سایت چه‌جوری در هر شهری سرچ می‌شود»):
+     • سند لاگ v0.49 خط ۱۵۸۴: AI لینک توهمی divar.ir/s/bojnurd/mot ساخت → ۴۰۴ واقعی
+     • قالب واقعی دیوار: divar.ir/s/{شهر-لاتین}?q=… (bojnurd?q=موتور = 200 OK)
+     • نسخهٔ قبل شهر را دور می‌ریخت و همه‌چیز را tehran می‌کرد — «بجنورد» می‌شد «تهران»
+     • نقشهٔ شهرها (بجنورد→bojnurd…) + حفظ دسته‌های واقعی دیوار + decode سگمنت‌ها
      ============================================================ */
-  const SITE_QUERY_REGISTRY = [
-    [/^www\.divar\.ir$|^divar\.ir$/, (q) => 'https://divar.ir/s/tehran?q=' + encodeURIComponent(q)],
-    [/^www\.sheypoor\.com$|^sheypoor\.com$/, (q) => 'https://www.sheypoor.com/search?q=' + encodeURIComponent(q)],
-    [/^www\.aparat\.com$|^aparat\.com$/, (q) => 'https://www.aparat.com/search/' + encodeURIComponent(q)],
-    [/^www\.digikala\.com$|^digikala\.com$/, (q) => 'https://www.digikala.com/search/?q=' + encodeURIComponent(q)],
-    [/^torob\.com$|^www\.torob\.com$/, (q) => 'https://torob.com/search/?query=' + encodeURIComponent(q)],
-    [/^emalls\.ir$|^www\.emalls\.ir$/, (q) => 'https://emalls.ir/?s=' + encodeURIComponent(q)],
-  ];
   function siteUrlFix(url) {
-    try {
-      const u = new URL(String(url || ''));
-      const hit = SITE_QUERY_REGISTRY.find((r) => r[0].test(u.hostname));
-      if (!hit) return url;
-      if ((u.search || '').replace('?', '').trim()) return url;
-      const seg = u.pathname.split('/').filter(Boolean).filter((x) => !/^search$|^s$|^result$/i.test(x)).pop() || '';
-      return seg && seg.length >= 2 ? hit[1](seg) : url;
-    } catch (_) { return url; }
+    try { return (typeof AVASites !== 'undefined' && AVASites.siteUrlFix) ? AVASites.siteUrlFix(url) : url; }
+    catch (_) { return url; }
   }
   /* ============================================================
      v0.28 — باز کردن مستقیم سایت: «برو به سایت دیجی کالا»
@@ -2891,6 +2875,20 @@
           return LANG === 'en' ? `Looking for "${q}" in the floating window; if it is not a video link, results open in the browser.` : `«${q}» را برای پنجرهٔ شناور برداشتم؛ اگر لینک ویدیو نباشد، نتیجه‌ها در مرورگر باز می‌شود.`;
         },
       },
+      /* --- v0.50 — «پلی/پخش کن» روی یوتیوب = پخشِ واقعی اولین نتیجه ---
+         (لاگ کاربر v0.49: «آهنگ جدید شادمهر تو یوتیوب برام پلی کن» فقط صفحهٔ
+         نتایج باز می‌شد؛ پلی یعنی پخش!) سرچِ صریح همچنان صفحهٔ نتایج می‌دهد */
+      {
+        k: /(?=.*(یوتیوب|youtube))(?=.*(پلی\s?کن|پخش\s?کن|پخشش\s?کن|پلاش\s?کن|بذار\s?(پخش|بزن)))/i,
+        id: 'yt_play', t: 'پخش یوتیوب', i: '#i-music', run: 'youtube_play',
+        arg: (c) => ytQueryOf(c),
+        r: (c) => {
+          const q = ytQueryOf(c);
+          return q
+            ? (LANG === 'en' ? `Playing "${q}" from YouTube.` : `«${q}» را از یوتیوب پخش می‌کنم.`)
+            : (LANG === 'en' ? 'YouTube is open.' : 'یوتیوب باز شد.');
+        },
+      },
       /* --- v0.38 — جستجوی مستقیم یوتیوب: «تو یوتیوب آهنگ X رو سرچ کن» ---
          قبل از قانونِ یوتیوبِ ساده (که هر جملهٔ یوتیوب‌دار را می‌بلعد) */
       {
@@ -3308,7 +3306,7 @@
      = اجرا؛ بعد از ۱۶ ثانیه خودش می‌رود. هر دسته حداکثر هر ۱۲ ساعت یک‌بار
      تا اذیت نکند — و در وسط کار هرگز جلوی فرمان بعدی را نمی‌گیرد.
      ============================================================ */
-  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'yt_bring', 'yt_watch', 'now_playing', 'player_open', 'player_ctl', 'pip_youtube', 'pip', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
+  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'yt_play', 'yt_bring', 'yt_watch', 'now_playing', 'player_open', 'player_ctl', 'pip_youtube', 'pip', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
   const SUGGEST_DECK = {
     video: {
       title: { fa: 'درگیر یوتیوب و ویدیویی؟', en: 'Working with YouTube/video?' },
@@ -3498,7 +3496,12 @@
     try {
       const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
       if (!Le || !cmd) return;
-      const safe = Le.safeActs(acts);
+      /* v0.50 — یادگیریِ URL «اصلاح‌شده» نه توهمِ AI: سند لاگ v0.49 خط ۱۵۸۴ —
+         لینک توهمی divar.ir/s/bojnurd/mot (۴۰۴) یاد گرفته شد و آفلاین دوباره
+         باز می‌شد. الان همان مسیر اجرای واقعی (siteUrlFix) قبل از ذخیره می‌آید */
+      const safe = Le.safeActs(acts).map((a) => (a && a.act === 'open_url' && a.value)
+        ? Object.assign({}, a, { value: siteUrlFix(a.value) })
+        : a);
       if (!safe.length) return;
       const lr = Le.learn(learnStore, cmd, safe, reply || '');
       if (lr.changed && lr.entry) {
@@ -3560,8 +3563,21 @@
       return '[برنامه‌های نصب‌شدهٔ کاربر (بخشی، ' + sysApps.list.length + ' عدد): ' + names.join('، ') + (sysApps.list.length > 60 ? ' …' : '') + ']\n(اگر هدفِ درخواست کاربر یکی از این برنامه‌ها بود، open_app با همان نام بده.)';
     } catch (_) { return ''; }
   }
-  async function aiFallbackCtx(rule) {
-    const parts = [aiCmdCatalogCtx(), appsNamesCtx(), await avaStateCtx()];
+  /* v0.50 — نمونه‌های آموخته برای AI (خواستهٔ کاربر: «کامندِ ناشناخته →
+     Gemini بررسی کنه این به کدوم کامندِ یادگرفته شبیهه و همون اجرا کنه»).
+     محتوا-محور رتبه‌بندی می‌شود (توکن مشترک + بیش‌مصرف + تازه) */
+  function learnedExamplesCtx(cmd) {
+    try {
+      const Le = (typeof AVALearn !== 'undefined') ? AVALearn : null;
+      if (!Le || !Le.examplesForAi || !learnLoaded || !learnStore.items.length) return '';
+      const ex = Le.examplesForAi(learnStore, cmd, 6);
+      if (!ex.length) return '';
+      return '[فرمان‌هایی که خودت قبلاً از این کاربر یاد گرفته‌ای — اگر درخواستِ تازه به یکی از این‌ها شبیه است، دقیقاً همان عمل‌ها را با همان شکل URL بده (فقط عبارت/شهرِ داخلش را با درخواست تازه عوض کن):\n' +
+        ex.map((e) => '- «' + e.say + '» → ' + e.do).join('\n') + '\n]';
+    } catch (_) { return ''; }
+  }
+  async function aiFallbackCtx(rule, cmd) {
+    const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(cmd || ''), await avaStateCtx()];
     if (_intentCands) parts.push(_intentCands);
     if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
     return parts.filter(Boolean).join('\n');
@@ -4674,9 +4690,17 @@
            v0.42 — عکسِ وضعیت (تایمرها/یادآوری‌ها/یادداشت‌ها/آخرین سایت) هم
            می‌چسبد تا AI «ذخیره‌شده‌های» کاربر را ببیند */
         _dispatchOutcome = 'ai';
-        await aiHandleCommand(cmd, await aiFallbackCtx());
+        await aiHandleCommand(cmd, await aiFallbackCtx(null, cmd));
         return;
       }
+    }
+    /* v0.50 — ردِ گفت/فهمید: هر تصمیمِ تفسیرِ محلی در لاگ می‌ماند تا
+       «چرا این کار را کرد؟» قابل دیباگ باشد (کرد = خط utterance total پایانی) */
+    if (rule) {
+      try {
+        const _q = rule.arg ? rule.arg(cmd) : undefined;
+        actLog('interpret: گفت «' + cmd.slice(0, 60) + '» | فهمید ' + (rule.id || 'custom') + (_q !== undefined ? ' q=«' + String(_q || '').slice(0, 60) + '»' : ''), 'ui', { ev: 'interpret', via: 'rule', id: rule.id || '', q: String(_q || '').slice(0, 120) });
+      } catch (_) { /* noop */ }
     }
     _dispatchOutcome = rule ? ('rule:' + (rule.id || rule.t || '?')) : 'free-reply';
     let reply = rule ? await resolveReply(rule, cmd) : t('default.reply');
@@ -4686,7 +4710,7 @@
     if (reply && typeof reply === 'object' && reply.__aiFallback) {
       actLog('rule "' + ((rule && rule.t) || '?') + '" could not fulfill → AI fallback');
       /* v0.37 — __aiExtra: قانون راهنما فهرست توانایی‌های آوا را به AI می‌چسباند */
-      if (aiConnected()) { _dispatchOutcome = 'rule-fallback-ai'; await aiHandleCommand(cmd, await aiFallbackCtx(rule)); return; }
+      if (aiConnected()) { _dispatchOutcome = 'rule-fallback-ai'; await aiHandleCommand(cmd, await aiFallbackCtx(rule, cmd)); return; }
       reply = t('weather.fail'); /* AI هم در دسترس نیست → پیام صادقانهٔ از پیش تعریف‌شده */
       rcTag.textContent = t('tag.reply');
     }
@@ -7077,7 +7101,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.49.0-beta';
+  let appVersion = '0.50.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8217,7 +8241,7 @@
     'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
     /* v0.44 — قانون «فهم-اول» (خواستهٔ صریح کاربر: «توی دیوار دنبال موتور بگرد،
        نره گوگل سرچ کنه» + «اول تحلیل کنه واقعاً بفهمه») */
-    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/s/tehran?q=… (فقط همین قالب؛ هرگز /s/<city>/<دسته‌بندی>/ بساز نکن چون ۴۰۴ می‌شود)، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
+    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/s/{شهر-با-حروف-انگلیسی}?q=… — شهرِ خواسته‌شده را به اسلاگ لاتینِ خودِ دیوار تبدیل کن: بجنورد=bojnurd، تهران=tehran، مشهد=mashhad، اصفهان=isfahan، شیراز=shiraz، تبریز=tabriz، کرج=karaj، قم=qom، اهواز=ahvaz، رشت=rasht، کرمان=kerman، یزد=yazd، همدان=hamedan، …؛ شهر نگفته=tehran؛ هرگز /s/<city>/<دسته‌بندی>/ بساز نکن چون ۴۰۴ می‌شود)، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
     /* v0.46 — لاگ واقعی: AI برای «ایمال سرچ کن موتور» دو بار URLِ بی‌عبارت داد */
     'قانون مهم ۶ (بسیار مهم): اگر درخواست، جستجوی درون-سایتی است، URL باز‌شده باید خودِ عبارت جستجو را داخلش داشته باشد (مثل divar.ir/search?q=موتور یا emalls.ir/?s=موتور) — باز کردن صفحهٔ اصلی سایت بدون عبارتِ جستجو یعنی مأموریتِ نیمه‌کاره و ممنوع است.\n' +
     /* v0.49 — درخواست چندمرحله‌ای/اکتشافی (لاگ: «آهنگ جدید شادمهر رو برام پیدا کن») */
@@ -8262,7 +8286,7 @@
     /* v0.39 — map differently-phrased requests onto real AVA commands */
     'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself.\n' +
     /* v0.44 — understand-first law (user: "توی دیوار دنبال موتور بگرد must not become a Google search") */
-    'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/search?q=…, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, emalls.ir/?s=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
+    'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/s/{city-in-english}?q=… — transliterate the city the user named: Bojnord=bojnurd, Tehran=tehran, Mashhad=mashhad, Isfahan=isfahan, Shiraz=shiraz, Tabriz=tabriz, Karaj=karaj, Qom=qom, Ahvaz=ahvaz, Rasht=rasht; no city named = tehran; never build /s/<city>/<category>/ because it 404s, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, emalls.ir/?s=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
     /* v0.46 — real log: AI returned query-less URLs twice for the same emalls request */
     'Important rule 6 (critical): for an in-site search request the open_url MUST CONTAIN the search query itself (like divar.ir/search?q=motor or emalls.ir/?s=motor) — opening the site homepage without the query is a half-done mission and is forbidden.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +

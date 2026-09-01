@@ -234,7 +234,7 @@ function ruleK(src, id) {
   /* عکس وضعیت → هر دو مسیر فالبک AI */
   ok(app.includes('async function avaStateCtx()'), 'app: avaStateCtx تعریف شده');
   ok(app.includes('تایمرهای فعال: ') && app.includes('یادداشت‌های ذخیره‌شدهٔ کاربر: ') && app.includes('یادآوری‌های ثبت‌شده: '), 'app: وضعیت شامل تایمر/یادآوری/یادداشت');
-  ok(app.includes('async function aiFallbackCtx(rule)'), 'app: aiFallbackCtx (کاتالوگ+وضعیت+extra)');
+  ok(app.includes('async function aiFallbackCtx('), 'app: aiFallbackCtx (کاتالوگ+وضعیت+extra — v0.50: نمونه‌های آموخته هم)');
   const nStateUses = (app.match(/await aiFallbackCtx\(/g) || []).length;
   ok(nStateUses >= 2, 'app: هر دو مسیر فالبک (فرمان ناشناخته + قانون ناتمام) وضعیت می‌چسبانند (' + nStateUses + ')');
   ok(app.includes('[وضعیت لحظه‌ای آوا]'), 'app: بلوک وضعیت برای AI');
@@ -263,9 +263,9 @@ function ruleK(src, id) {
    ۶) نسخه و README
    ============================================================ */
 {
-  ok(/^0\.4[2-9]\./.test(pkg.version), 'نسخه: package.json (0.4x به جلو)');
-  ok(/let appVersion = '0\.4[2-9]\./.test(app), 'نسخه: app.js (0.4x به جلو)');
-  ok(/v0\.4[2-9]\./.test(idx), 'نسخه: index.html (0.4x به جلو)');
+  ok(/^0\.[45][0-9]*\./.test(pkg.version), 'نسخه: package.json (0.4x به جلو)');
+  ok(/let appVersion = '0\.[45][0-9]*\./.test(app), 'نسخه: app.js (0.4x به جلو)');
+  ok(/v0\.[45][0-9]*\./.test(idx), 'نسخه: index.html (0.4x به جلو)');
   ok(readme.includes('v0.42-beta') && readme.includes('openai-edge-tts'), 'README: بلوک v0.42 + اشارهٔ openai-edge-tts');
   ok(pkg.dependencies && pkg.dependencies.ws, 'package: وابستگی ws ثبت شده');
 }

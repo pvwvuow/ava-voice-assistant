@@ -98,7 +98,25 @@
     return { changed: true, entry: e };
   }
 
-  /* مچ: دقیق → فازی (فقط برای عبارت‌های به‌قدر کافی بلند) */
+  /* v0.50 — توکن‌های عامیِ فرمانی برای مچ معنایی (فعل‌ها/حروف اضافه حذف می‌شوند
+     تا «برای شهر بجنورد سرچ کن موتور» با «تو دیوار شهر بجنورد موتور» هم‌ارز دیده شود) */
+  const STOP_TOK = new Set(['رو', 'را', 'تو', 'توی', 'در', 'برای', 'برام', 'واسه', 'کن', 'بکن', 'بزن', 'بذار', 'بزار', 'سرچ', 'جستجو', 'پیدا', 'بگرد', 'دنبال', 'میگم', 'بگو', 'از', 'به', 'با', 'و', 'یه', 'یک', 'خب', 'خوب', 'دیگه', 'الان', 'لطفا', 'بابا', 'بهم', 'هم', 'که', 'روی', 'اجرا', 'باز', 'حالا', 'کنه', 'کنم', 'میکنم']);
+  /* شباهت جکارد روی توکن‌های محتوایی — ≥۲ توکن مشترک لازم است */
+  function tokSim(a, b) {
+    const A = String(a || '').split(' ').filter((x) => x.length > 1 && !STOP_TOK.has(x));
+    const B = String(b || '').split(' ').filter((x) => x.length > 1 && !STOP_TOK.has(x));
+    if (!A.length || !B.length) return 0;
+    const setB = new Set(B);
+    const seen = new Set();
+    let inter = 0;
+    for (const x of A) { if (setB.has(x) && !seen.has(x)) { inter++; seen.add(x); } }
+    if (inter < 2) return 0;
+    const uni = new Set([...A, ...B]).size;
+    return inter / uni;
+  }
+
+  /* مچ: دقیق → لوانشتین → معنایی توکن‌محور (v0.50)
+     خواستهٔ کاربر: «دفعه بعد همین‌جوری ولی کمی فرق‌دار گفت حتی آفلاین قبول کنه» */
   function match(store, cmd) {
     const st = store && Array.isArray(store.items) ? store : { items: [] };
     const k = norm(cmd);
@@ -112,7 +130,15 @@
       const tol = k.length >= 18 ? 2 : (k.length >= 10 ? 1 : 0);
       if (d > 0 && d <= tol) return x;
     }
-    return null;
+    /* v0.50 — پاس معنایی: شبیه‌ترین آیتم با جکارد ≥ ۰٫۶ (≥۲ توکن محتوایی مشترک) */
+    let best = null;
+    let bestSim = 0;
+    for (const x of st.items) {
+      if (x.unstable) continue;
+      const sim = tokSim(k, x.k);
+      if (sim >= 0.6 && sim > bestSim) { best = x; bestSim = sim; }
+    }
+    return best;
   }
 
   /* اصلاح (نارضایتی): تکرار در پنجرهٔ ۱۰ دقیقه → یادگیری قبلی باطل، revise++ */
@@ -150,7 +176,33 @@
       .join(' + ');
   }
 
-  const api = { norm, lev, safeActs, learn, match, isRepeatHit, revise, markUsed, dropKey, summary, MAX_LEARN, REPEAT_WINDOW, MAX_REVISE, LEARN_ACTS_OK };
+  /* v0.50 — نمونه‌های آموخته برای پرامپت AI (خواستهٔ کاربر: «Gemini بررسی کنه
+     این به کدوم کامندِ یادگرفته شبیهه و همون اجرا کنه») —
+     رتبه‌بندی: توکن مشترک با درخواست فعلی + شباهت + بیش‌مصرف + تازه‌ترین */
+  function examplesForAi(store, cmd, n) {
+    try {
+      const st = store && Array.isArray(store.items) ? store : { items: [] };
+      const nn = Math.max(1, Math.min(10, Number(n) || 6));
+      const ck = norm(cmd);
+      const cTokens = new Set(ck.split(' ').filter(Boolean));
+      const scored = st.items
+        .filter((x) => !x.unstable && x.k && x.acts && x.acts.length)
+        .map((x) => {
+          let overlap = 0;
+          for (const t of x.k.split(' ')) if (cTokens.has(t)) overlap++;
+          const sim = tokSim(ck, x.k);
+          return { x, s: overlap * 3 + sim * 10 + (x.used || 0) * 2 + (x.at || 0) / 1e13 };
+        })
+        .sort((a, b) => b.s - a.s)
+        .slice(0, nn);
+      return scored.map((o) => ({
+        say: o.x.k,
+        do: o.x.acts.map((a) => a.act + (a.value ? '(' + String(a.value).slice(0, 40) + ')' : '')).join(' + '),
+      }));
+    } catch (_) { return []; }
+  }
+
+  const api = { norm, lev, safeActs, learn, match, isRepeatHit, revise, markUsed, dropKey, summary, examplesForAi, MAX_LEARN, REPEAT_WINDOW, MAX_REVISE, LEARN_ACTS_OK };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVALearn = api;
 })(typeof window !== 'undefined' ? window : null);

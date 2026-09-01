@@ -112,22 +112,20 @@ ok(app.includes('bridge.media.now()'), 'app: now_playing از SMTC می‌خوا
 ok(app.includes('bridge.yt.resolve') && app.includes('bridge.yt.watch'), 'app: yt_bring/yt_watch از resolve+watch آوا');
 ok(app.includes('bridge.player.open({ player, kind, src })') && app.includes("bridge.player.ctl({ action, arg })"), 'app: کنترل پلیر به پل اصلی وصل است');
 ok(/مسیر درست خودش را دارد/.test(app) && !/\(پخش\|بزن\|پلی\|شروع\|play\|کن\)/.test(app), 'app: music_play دیگر «کن» تنهایی را نمی‌بلعد');
-ok(app.includes('پلی\\s?کن|باز\\s?کن|بگیر|بزن'), 'app: ytQueryOf فعل پخش/پلی را از عبارت حذف می‌کند');
+ok(read('renderer/js/voiceIntent.js').includes('پلی\\s?کن|باز\\s?کن|بگیر|بزن'), 'voiceIntent: ytQueryOf فعل پخش/پلی را از عبارت حذف می‌کند (v0.50 منتقل شد)');
 ok(app.includes('sys_logoff') && /shutdown \/l/.test(main), 'app+main: لاگ‌آف ویندوز واقعی');
 ok(/صفحه\\s\?\(نمایشگر\)\?\\s\?\(رو\|را\)\?\\s\?خاموش/.test(app), 'app: «صفحه رو خاموش کن» هم مانیتور است');
 ok(app.includes('now_playing: ') && app.includes('player_ctl: ') && app.includes('yt_bring: '), 'app: کاتالوگ AI برای قوانین جدید');
 
-/* رفتار ytQueryOf — استخراج و اجرا */
+/* رفتار ytQueryOf — v0.50: پیاده‌سازی در voiceIntent.js منتقل شد (تست‌پذیر بدون Electron) */
 (() => {
-  const m = app.match(/const ytQueryOf = \(c\) => \{[\s\S]*?\n  \};/);
-  if (!m) return ok(false, 'ytQueryOf استخراج شد');
-  try {
-    const fn = eval('(' + m[0].replace('const ytQueryOf = ', '').replace(/;\s*$/, '') + ')');
-    const q1 = fn('توی یوتیوب برام آهنگ شادمهر پلی کن');
-    ok(q1.includes('شادمهر') && !/پلی/.test(q1), 'ytQueryOf: «توی یوتیوب آهنگ شادمهر پلی کن» → «آهنگ شادمهر» [got=' + q1 + ']');
-    const q2 = fn('تو یوتیوب آهنگ دیوونه شو رو سرچ کن');
-    ok(q2.includes('دیوونه شو'), 'ytQueryOf: فرم سرچ قدیمی سالم [got=' + q2 + ']');
-  } catch (e) { ok(false, 'ytQueryOf اجرا شد — ' + e.message); }
+  let I = null;
+  try { I = require(path.join(__dirname, 'renderer/js/voiceIntent.js')); } catch (_) {}
+  if (!I || !I.ytQueryOf) return ok(false, 'ytQueryOf در voiceIntent.js موجود است');
+  const q1 = I.ytQueryOf('توی یوتیوب برام آهنگ شادمهر پلی کن');
+  ok(q1.includes('شادمهر') && !/پلی/.test(q1), 'ytQueryOf: «توی یوتیوب آهنگ شادمهر پلی کن» → «آهنگ شادمهر» [got=' + q1 + ']');
+  const q2 = I.ytQueryOf('تو یوتیوب آهنگ دیوونه شو رو سرچ کن');
+  ok(q2.includes('دیوونه شو'), 'ytQueryOf: فرم سرچ قدیمی سالم [got=' + q2 + ']');
 })();
 
 /* ============================================================
@@ -219,9 +217,9 @@ ok(main.includes('setTimeout(() => { try { scanAllApps().catch(() => {}); } catc
 /* ============================================================
    ۷) نسخه
    ============================================================ */
-ok(/^0\.[4-9][0-9]*\./.test(pkg.version), 'package.json: نسخهٔ 0.4x (forward-relaxed) — got ' + pkg.version);
-ok(/0\.[4-9][0-9]*\.-beta|appVersion = '0\.4/.test(app), 'app.js: نسخهٔ 0.4x (forward-relaxed)');
-ok(/v0\.[4-9][0-9]*\.-beta|abVersion">v0\.4/.test(idx), 'index.html: نسخهٔ 0.4x (forward-relaxed)');
+ok(/^0\.[45][0-9]*\./.test(pkg.version), 'package.json: نسخهٔ 0.4x+ (forward-relaxed) — got ' + pkg.version);
+ok(/appVersion = '0\.[45][0-9]*\.0-beta'/.test(app), 'app.js: نسخهٔ beta (forward-relaxed)');
+ok(/v0\.[45][0-9]*\.0-beta|abVersion">v0\.[45]/.test(idx), 'index.html: نسخهٔ beta (forward-relaxed)');
 ok(app.includes('v0.43') || app.includes('v0.43 —'), 'app.js: کامنت‌های v0.43');
 
 /* نتیجه */

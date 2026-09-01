@@ -60,11 +60,12 @@ ok('pip.html: دکمه‌های ⏸ 🔊 و input pip-search با data-ui', phSr
 ok('pip.html: استایل .pip-search با راست‌چین', phSrc.includes('.bar .pip-search') && phSrc.includes('direction: rtl'));
 ok('tooltipهای فارسی حفظ شده‌اند (حذف نشده‌اند مثل زیپ)', phSrc.includes('بستن (بگو: بردارش)') && phSrc.includes('قفل کلیک'));
 
-/* ---------- ۵) ytQueryOf — رفتار واقعی ---------- */
-const yqMatch = aSrc.match(/const ytQueryOf = (\(c\) => \{[\s\S]*?\n  \};)/);
-ok('ytQueryOf در app.js تعریف شده و قابل استخراج است', !!yqMatch);
-if (yqMatch) {
-  const ytQ = eval('(' + yqMatch[1].replace(/;\s*$/, '') + ')');
+/* ---------- ۵) ytQueryOf — رفتار واقعی (v0.50: پیاده‌سازی در voiceIntent.js) ---------- */
+(() => {
+  let ytQ = null;
+  try { ytQ = require('./renderer/js/voiceIntent.js').ytQueryOf; } catch (_) {}
+  ok('ytQueryOf از voiceIntent.js در دسترس است (v0.50 منتقل شد)', typeof ytQ === 'function');
+  if (typeof ytQ === 'function') {
   const T = [
     ['تو یوتیوب آهنگ دیوونه شو رو سرچ کن', 'آهنگ دیوونه شو'],
     ['یوتیوب شناور آهنگ باران بذار', 'آهنگ باران'],
@@ -79,7 +80,8 @@ if (yqMatch) {
   for (const [inp, want] of T) { const got = ytQ(inp); if (got !== want) { allOk = false; bad.push(`«${inp}» → «${got}» (انتظار «${want}»)`); } }
   ok('ytQueryOf: جدول رفتار (۷ حالت استخراج + ۲ حالت خالی)', allOk);
   if (!allOk) console.log('   جزئیات:', bad.join(' | '));
-}
+  }
+})();
 
 /* ---------- ۶) قوانین صوتی — ترتیب و ضد-ربایش ----------
    استخراج موقعیتی: سه regex literal داخل بلوک pipRules به‌ترتیب =
@@ -89,8 +91,10 @@ const prBlock = aSrc.slice(pipStart, aSrc.indexOf('RULES.splice', pipStart));
 const ruleRes = [...prBlock.matchAll(/k: \/(.*?)\/i[,\n]/g)].map((m) => m[1]);
 ok('بلوک pipRules: حداقل سه regex literal (HOW + ۲ قانون جدید) پیدا شد (v0.43: +۵ قانون مدیا)', ruleRes.length >= 3);
 if (ruleRes.length >= 3) {
+  /* v0.50 — قانون yt_play بین شناور و yt_search اضافه شد؛ قانونِ سرچ را با محتوا پیدا کن */
+  const ytSearchIx = ruleRes.findIndex((r, i) => i >= 2 && /سرچ|جستجو/.test(r));
   const pipYt = new RegExp(ruleRes[1], 'i');
-  const ytSearch = new RegExp(ruleRes[2], 'i');
+  const ytSearch = new RegExp(ruleRes[ytSearchIx >= 0 ? ytSearchIx : 2], 'i');
   const T1 = [
     ['یوتیوب شناور آهنگ باران', true], ['بذار یوتیوب شناور بشه', true],
     ['youtube pip lofi', true], ['floating youtube', true],
