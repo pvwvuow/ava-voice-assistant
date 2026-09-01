@@ -7269,7 +7269,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.51.0-beta';
+  let appVersion = '0.52.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8401,10 +8401,20 @@
   const AI_SYSTEM_FA =
     'تو مغز دستیار صوتی فارسی «آوا» هستی که روی ویندوز اجرا می‌شود و به فرمان‌های کاربر گوش می‌دهی.\n' +
     'همیشه فارسی، کوتاه (حداکثر ۳ جمله)، دوستانه و مفید جواب بده.\n' +
+    /* v0.52 — پروتکل فکر (خواستهٔ صریح کاربر: «چرا AI خودش تحلیل نمی‌کنه جمله رو؛
+       شاید یک سوال باشه؛ باید با خودش فکر کنه، بعد که فکر کرد و تحقیق کرد، بعد جواب بده») */
+    'پروتکل صفر (همیشه، قبل از هر پاسخ): اول با خودت فکر کن، بعد جواب بده — اولین خطِ هر پاسخ باید دقیقاً این قالب باشد:\n' +
+    'فکر: نوع جمله (سوال/فرمان/گفتگو/اصلاح/مبهم) | خواستهٔ واقعی کاربر | نیاز به اطلاعات تازهٔ وب: بله/خیر\n' +
+    'این خط فقط تحلیلِ درونی توست و هرگز خوانده یا نمایش داده نمی‌شود؛ بعد از آن پاسخ واقعی را بنویس.\n' +
     /* v0.36 — قواعد مسیریابی (گزارش کاربر: «جوک را سرچ کرد» / «سایت را کامل سرچ کرد») */
     'قانون مهم ۱: اگر کاربر جوک/جک/لطیفه/شوخی خواست (مثل «بابا یه جوک خفن بگو ولی از تو»)، خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن و بلوک DO هم ننویس.\n' +
     'قانون مهم ۲: اگر کاربر باز کردن سایت/وبسایت خواست (مثل «سایت سافت 98 که خیلی خوبه رو باز کن»)، فقط اسمِ سایت را بردار (بندهای «که …» جزو اسم نیستند) و بلوک DO با open_url بده؛ دامنه را خودت حدس بزن (سافت 98=soft98.ir، دیجی‌کالا=digikala.com). هرگز کل جمله را جستجو نکن.\n' +
-    'قانون مهم ۳: اگر درخواست، سوال یا درخواست گفتگویی است (بگو/چرا/چطور/چیه)، هرگز آن را به جستجوی وب تبدیل نکن — خودت جواب بده.\n' +
+    /* v0.52 — قانون ۳ بازنویسی شد: سوالِ گفتگویی = خودت؛ سوالِ نیازمند اطلاعات تازه = RESEARCH (نه web_search، نه حدس) */
+    'قانون مهم ۳ (به‌روزشده): اگر درخواست گفتگویی/سلیقه‌ای بود (جوک، نظر، چت، بگو/چرا/چطور)، خودت جواب بده و هیچ بلوکی ننویس؛ ولی اگر سوالِ نیازمند «اطلاعات تازهٔ وب» بود (جدیدترین، امروز، قیمت، آب‌وهوا، اخبار، آمار، یا هر چیزی که از جوابش مطمئن نیستی)، هرگز حدس نزن و هرگز web_search نزن — فقط این بلوک را بده تا نتایج واقعی وب به تو برگردد و در دور بعد جوابِ داده‌محور بدهی:\n' +
+    '<<<RESEARCH>>>\n' +
+    '{"query":"عبارت جستجو"}\n' +
+    '<<<END>>>\n' +
+    'سوالِ دانش عمومی پایدار (مثل پایتخت کشورها) را خودت از روی فکر جواب بده و بلوک ننویس. اگر جمله مبهم بود، به جای اجرای حدسی یک سوال کوتاه شفاف‌سازی بپرس.\n' +
     /* v0.39 — نگاشت فرمان نامتعارف به فرمان واقعی آوا */
     'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
     /* v0.44 — قانون «فهم-اول» (خواستهٔ صریح کاربر: «توی دیوار دنبال موتور بگرد،
@@ -8454,10 +8464,19 @@
   const AI_SYSTEM_EN =
     'You are the AI brain of AVA, a Persian/English voice assistant for Windows.\n' +
     'Reply in the user\'s language, short (max 3 sentences), friendly and helpful.\n' +
+    /* v0.52 — THINK protocol (user: the AI must analyze the sentence itself; if it is a question it must think, research, THEN answer) */
+    'Zero protocol (always, before any answer): think first — the FIRST line of every reply must be exactly:\n' +
+    'THINK: sentence type (question/command/chat/correction/ambiguous) | what the user really wants | needs fresh web facts: yes/no\n' +
+    'That line is your inner analysis only and is never spoken or displayed; write the real answer after it.\n' +
     /* v0.36 — routing rules (user report: joke got web-searched / site name got web-searched) */
     'Important rule 1: if the user asks for a joke (جوک/جک/لطیفه), tell a short fresh joke yourself — NEVER search the web for it and write no DO block.\n' +
     'Important rule 2: if the user asks to open a website, extract ONLY the site name (relative clauses like «که …» are not part of it) and emit a DO block with open_url; guess the domain yourself (soft98.ir, digikala.com, zoomit.ir). NEVER web_search the whole sentence.\n' +
-    'Important rule 3: conversational asks (tell me / why / how / what is) must NEVER become web_search — answer them yourself.\n' +
+    /* v0.52 — rule 3 rewritten: conversational = yourself; fresh-facts question = RESEARCH block (never web_search, never guess) */
+    'Important rule 3 (updated): conversational/opinion asks (joke, chat, greetings, tell me / why / how) — answer yourself and write no block; but a question needing FRESH web facts (newest, today, price, weather, news, stats, or anything you are unsure about) must NEVER be guessed and NEVER become web_search — reply with ONLY this block so real web results return to you next turn:\n' +
+    '<<<RESEARCH>>>\n' +
+    '{"query":"the search query"}\n' +
+    '<<<END>>>\n' +
+    'Stable general-knowledge questions: answer yourself from THINK, no block. If the request is ambiguous, ask one short clarifying question instead of guessing.\n' +
     /* v0.39 — map differently-phrased requests onto real AVA commands */
     'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself.\n' +
     /* v0.44 — understand-first law (user: "توی دیوار دنبال موتور بگرد must not become a Google search") */
@@ -8549,6 +8568,60 @@
       if (acts.length) d = { reply: String((j && j.reply) || '').slice(0, 300), actions: acts };
     } catch (_) { /* noop */ }
     return { reply: t.replace(m[0], '').trim(), do: d };
+  }
+
+  /* ---------- v0.52 — پروتکل فکر (THINK-FIRST BRAIN) ----------
+     خواستهٔ صریح کاربر: «چرا AI خودش تحلیل نمی‌کنه جمله رو؟ شاید یک سوال باشه —
+     باید با خودش فکر کنه، بعد که فکر کرد و تحقیق کرد، بعد جواب بده»
+     • هر پاسخ AI با خط «فکر: …» شروع می‌شود (تحلیل درونی؛ هرگز گفته/نمایش داده نمی‌شود)
+     • سوالِ نیازمند اطلاعات تازه → بلوک RESEARCH → وب‌گردی واقعی → دور دوم → جواب داده‌محور
+     • فکر در لاگ می‌ماند: گفت/فهمید/کرد حالا برای مسیر AI هم کامل است */
+  function stripThink(text) {
+    const t = String(text || '');
+    const m = t.match(/^\s*(?:فکر|THINK)\s*[:：]\s*([^\n]*)\n?/i);
+    if (!m) return { think: '', body: t.trim() };
+    return { think: m[1].trim().slice(0, 300), body: t.replace(m[0], '').trim() };
+  }
+  function parseResearch(text) {
+    const t = String(text || '');
+    const m = t.match(/<<<RESEARCH>>>\s*([\s\S]*?)\s*<<<END>>>/);
+    if (!m) return { query: '', body: t.trim() };
+    let q = '';
+    try {
+      const j = JSON.parse(m[1].replace(/^```(?:json)?/i, '').replace(/```$/, '').trim());
+      q = String((j && (j.query || j.q)) || '').trim();
+    } catch (_) {
+      q = m[1].replace(/[{}"\n]/g, ' ').replace(/query\s*:/g, ' ').trim(); /* فرم خراب هم قابل استفاده باشد */
+    }
+    return { query: q.slice(0, 150), body: t.replace(m[0], '').trim() };
+  }
+  /* یک دور کامل: فکر → (در صورت نیاز) تحقیق واقعی وب → دور دوم داده‌محور.
+     خروجی: { r, think, body, didResearch } — body بدون خط فکر و بدون بلوک RESEARCH */
+  async function aiThinkRound(text, extraCtx) {
+    const r = await aiAsk(text, extraCtx);
+    if (!r || !r.ok) return { r, think: '', body: String((r && r.text) || ''), didResearch: false };
+    const st = stripThink(r.text);
+    if (st.think) actLog('interpret: گفت «' + String(text).slice(0, 48) + '» | فهمید(ai فکر) ' + st.think.slice(0, 120), 'ui', { ev: 'interpret', via: 'ai', think: st.think.slice(0, 220) });
+    const rs = parseResearch(st.body);
+    const _done = extraCtx && String(extraCtx).indexOf('[نتایج واقعی وب') >= 0;
+    if (rs.query && !_done && bridge && bridge.ai && bridge.ai.research) {
+      actLog('ai research(جواب): «' + rs.query.slice(0, 80) + '» → وب‌گردی واقعی، بعد دور دوم');
+      const rr = await bridge.ai.research(rs.query).catch(() => null);
+      const rt = (rr && rr.text) || '';
+      const ctx2 = (extraCtx || '') +
+        '\n[نتایج واقعی وب برای «' + rs.query + '»]' +
+        (rt ? '\n' + rt : '\n(تحقیق وب ناموفق بود — صادقانه بگو چی پیدا نشد)') +
+        '\n[پایان نتایج — حالا فقط بر پایهٔ همین نتایج جواب نهایی بده؛ بلوک RESEARCH دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز]';
+      const r2 = await aiAsk(text, ctx2);
+      if (r2 && r2.ok) {
+        const st2 = stripThink(r2.text);
+        if (st2.think) actLog('ai فکر(دور۲): ' + st2.think.slice(0, 120));
+        return { r: r2, think: st2.think || st.think, body: st2.body, didResearch: true };
+      }
+      actLog('research(جواب) دور دوم شکست → پاسخ عادی');
+      return { r, think: st.think, body: rs.body, didResearch: false };
+    }
+    return { r, think: st.think, body: rs.body, didResearch: false };
   }
   const DO_RUN_LABEL = {
     vol_up: () => LANG === 'en' ? 'Volume raised.' : 'صدای سیستم را بلندتر کردم.',
@@ -8888,12 +8961,15 @@
     typing.classList.add('typing');
     chatBusy = true;
     try {
-      const r = await aiAsk(v);
+      /* v0.52 — فکر-اول در چت هم: سوال نیازمند اطلاعات تازه → تحقیق واقعی → جواب داده‌محور */
+      const _bt = await aiThinkRound(v);
+      const r = _bt.r;
       typing.remove();
       if (!r || !r.ok) {
         addMsg('err', (r && r.error) || t('chat.noReply'));
       } else {
-        const { reply, add } = parseAdd(r.text);
+        /* پاسخ بدون خط فکر؛ بلوک RESEARCH قبلاً به دور دومِ داده‌محور تبدیل شده است */
+        const { reply, add } = parseAdd(_bt.body || r.text);
         pushChatHist('assistant', r.text);
         const msgEl = addMsg('bot', reply || '…');
         if (r.via) { const ch = document.createElement('span'); ch.className = 'msg-engine'; ch.textContent = r.via; msgEl.appendChild(ch); }
@@ -9067,7 +9143,9 @@
       }
     }
     try {
-      const r = await aiAsk(cmd, extraCtx);
+      /* v0.52 — مسیر فکر-اول: فکر → در صورت نیاز تحقیق وب واقعی → دور دوم داده‌محور */
+      const _bt = await aiThinkRound(cmd, extraCtx);
+      const r = _bt.r;
       if (r && r.ok) {
         /* v0.20 — اول پروتکل اجرای عملی (Function Calling): اگر AI تصمیم گرفت
            کاری انجام شود، اجرای واقعی با کد محلی و مسیرهای امن آوا است */
@@ -9146,7 +9224,8 @@
           setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
           return;
         }
-        const { reply, add } = parseAdd(r.text);
+        /* v0.52 — پاسخ متنی بدون خط فکر و بدون بلوک RESEARCH */
+        const { reply, add } = parseAdd(_bt.body || r.text);
         pushChatHist('user', cmd); pushChatHist('assistant', r.text);
         setState('success');
         statusText.textContent = t('ai.got');
