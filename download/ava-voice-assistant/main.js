@@ -12,6 +12,11 @@ const os = require('os');
 const crypto = require('crypto'); /* v0.42 — توکن Sec-MS-GEC برای TTS اِج */
 const { Readable } = require('stream');
 
+/* v0.44 — سبک‌سازی RAM (خواستهٔ صریح کاربر: «برنامه رم زیادی مصرف می‌کنه…
+   باید سبک سازی بشه»): سقف هیپ V8 برای هر پروسهٔ آوا — جلوی رشد بی‌سقف
+   heap رندرر/مین را می‌گیرد؛ مصرف عادی آوا خیلی زیر این سقف است */
+try { app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512'); } catch (_) { /* noop */ }
+
 /* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
 const pipManager = require('./pipWindowManager');
 
@@ -2263,6 +2268,7 @@ let offlineRec = null;        /* OfflineRecognizer آماده */
 let offlineLang = '';         /* زبان ساخته‌شدهٔ فعلی */
 let offlineBusy = false;      /* decode در جریان است (تک‌نفره) */
 let offlineDl = null;         /* { on, pct } دانلود جاری */
+let lastLocalSttAt = Date.now(); /* v0.44 — برای تخلیهٔ خودکار موتور آفلاینِ بیکار */
 const OFFLINE_FILES = ['base-encoder.int8.onnx', 'base-decoder.int8.onnx', 'base-tokens.txt'];
 const offlineDir = () => path.join(app.getPath('userData'), 'models', 'whisper-base-int8');
 
@@ -2341,6 +2347,7 @@ ipcMain.handle('stt:local', async (_e, p) => {
   if (offlineDl && offlineDl.on) return { ok: false, error: 'بستهٔ آفلاین در حال دانلود است' };
   const init = loadOfflineEngine({ sttLang: lang }, false);
   if (!init.ok) return { ok: false, error: init.error === 'offline-pack-missing' ? 'بستهٔ آفلاین نصب نیست' : (init.error || 'offline-unavailable') };
+  lastLocalSttAt = Date.now(); /* v0.44 — موتور در حال استفاده است؛ تخلیه نشود */
   offlineBusy = true;
   const t0 = Date.now();
   try {
@@ -2360,6 +2367,20 @@ ipcMain.handle('stt:local', async (_e, p) => {
     offlineBusy = false;
   }
 });
+
+/* v0.44 — سبک‌سازی RAM: موتور آفلاین (whisper-base int8) بعد از ۱۰ دقیقه
+   بی‌کارِی آزاد می‌شود (~۲۰۰مگابایت). هر تماس stt:local آن را همان‌جا و
+   شفاف دوباره می‌سازد؛ حلقهٔ wake-always که پیوسته صدا می‌فرستد هرگز
+   نمی‌گذارد تخلیه شود — فقط کاربرانی که wake/handsFree خاموش دارند
+   این حافظه را پس می‌گیرند. */
+setInterval(() => {
+  try {
+    if (offlineRec && !offlineBusy && Date.now() - lastLocalSttAt > 10 * 60 * 1000) {
+      offlineRec = null;
+      actLog('offline engine unloaded (10min idle — RAM freed, reloads on demand)');
+    }
+  } catch (_) { /* noop */ }
+}, 300000).unref();
 
 /* دانلود بستهٔ آفلاین: GitHub (اصلی) → HuggingFace (فایل‌به‌فایل، فالبک) */
 const OFFLINE_URLS = {

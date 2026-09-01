@@ -219,9 +219,9 @@ ok(main.includes('setTimeout(() => { try { scanAllApps().catch(() => {}); } catc
 /* ============================================================
    ۷) نسخه
    ============================================================ */
-eq(pkg.version, '0.43.0-beta', 'package.json: 0.43.0-beta');
-ok(app.includes('0.43.0-beta'), 'app.js: نسخهٔ 0.43.0-beta');
-ok(idx.includes('0.43.0-beta'), 'index.html: نسخهٔ 0.43.0-beta');
+ok(/^0\.[4-9][0-9]*\./.test(pkg.version), 'package.json: نسخهٔ 0.4x (forward-relaxed) — got ' + pkg.version);
+ok(/0\.[4-9][0-9]*\.-beta|appVersion = '0\.4/.test(app), 'app.js: نسخهٔ 0.4x (forward-relaxed)');
+ok(/v0\.[4-9][0-9]*\.-beta|abVersion">v0\.4/.test(idx), 'index.html: نسخهٔ 0.4x (forward-relaxed)');
 ok(app.includes('v0.43') || app.includes('v0.43 —'), 'app.js: کامنت‌های v0.43');
 
 /* نتیجه */

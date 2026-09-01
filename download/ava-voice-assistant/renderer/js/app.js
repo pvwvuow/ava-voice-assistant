@@ -2157,6 +2157,22 @@
   /* v0.43 — نامزدهای داوری نیتِ همان جمله (برای پیام AI) */
   let _intentCands = '';
 
+  /* ============================================================
+     v0.44 — دروازهٔ «فهم-اول» (درخواست صریح کاربر:
+     «اول تحلیل کنه و واقعاً بفهمه این چیه؛ اگه نفهمید بده gemini
+     انجام بده کار رو» + «توی دیوار دنبال موتور بگرد، نره گوگل سرچ کنه»)
+     هدفِ درون-جمله‌ای («توی X»، «سایت X») که در فهرست‌های محلی حل
+     نشود هرگز با حدسِ جستجوی عمومی اجرا نمی‌شود — به AI برمی‌گردد.
+     نمونه‌پچی ممنوع: هیچ اسمی به دیکشنری اضافه نمی‌شود؛ تحلیل ساختاری است.
+     ============================================================ */
+  function targetResolvableSync(t) {
+    const s = String(t || '').trim();
+    if (!s || s.length < 2) return true;
+    try { if (knownExactOf(s) || knownSiteOf(s) || siteDomainOf(s)) return true; } catch (_) { /* noop */ }
+    try { if (sysApps.list && sysApps.list.length && matchSysApp(s)) return true; } catch (_) { /* noop */ }
+    return false;
+  }
+
   function wxExtractCity(c) {
     let city = String(c || '')
       .replace(WX_STRIP, ' ')
@@ -3347,8 +3363,18 @@
   }
   /* v0.42 — بستهٔ کامل زمینه برای فالبک AI: کاتالوگ + وضعیت + extra قانون
      v0.43 — + نامزدهای داوری نیت (وقتی دو نیت نزدیک بودند) */
+  /* v0.44 — نام برنامه‌های نصب‌شده برای AI («توی دیوار…» برنامه است یا سایت؟
+     AI با دیدن همین فهرست + قانون ۵ تصمیم درست می‌گیرد — حدسِ کورکورانه ممنوع) */
+  function appsNamesCtx() {
+    try {
+      if (!sysApps.list || !sysApps.list.length) return '';
+      const names = sysApps.list.slice(0, 60).map((a) => String(a.name || '').slice(0, 24)).filter(Boolean);
+      if (!names.length) return '';
+      return '[برنامه‌های نصب‌شدهٔ کاربر (بخشی، ' + sysApps.list.length + ' عدد): ' + names.join('، ') + (sysApps.list.length > 60 ? ' …' : '') + ']\n(اگر هدفِ درخواست کاربر یکی از این برنامه‌ها بود، open_app با همان نام بده.)';
+    } catch (_) { return ''; }
+  }
   async function aiFallbackCtx(rule) {
-    const parts = [aiCmdCatalogCtx(), await avaStateCtx()];
+    const parts = [aiCmdCatalogCtx(), appsNamesCtx(), await avaStateCtx()];
     if (_intentCands) parts.push(_intentCands);
     if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
     return parts.filter(Boolean).join('\n');
@@ -4251,6 +4277,20 @@
     if (rule && _arbit && !_arbit.decisive && aiConnected()) {
       try { actLog('intent ambiguous → AI arbitration: ' + _arbit.ranked.slice(0, 3).map((x) => x.rule.id + '=' + Math.round(x.score)).join(',')); } catch (_) { /* noop */ }
       rule = null;
+    }
+    /* v0.44 — فهم-اول: جملهٔ دارای هدفِ حل‌نشدنی («توی دیوار دنبال موتور بگرد»،
+       «برو به سایت همراه من») هرگز به جستجوی عمومی/بازکردن حدسی نمی‌رود؛
+       تحلیل ساختاری + قانون به AI می‌رود تا «واقعاً بفهمد» هدف چیست.
+       اگر AI قطع باشد، رفتار قبلی (حدس محلی) حفظ می‌شود تا کاربر بی‌جواب نماند. */
+    if (rule && aiConnected() && typeof AVAUnderstand !== 'undefined') {
+      try {
+        const _und = AVAUnderstand.analyze(cmd);
+        if (_und && AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableSync)) {
+          actLog('understand-first: «' + _und.target.clean + '» not locally resolvable → AI decides (no blind ' + rule.id + ')');
+          _intentCands = AVAUnderstand.briefForAi(_und) + (_intentCands ? '\n' + _intentCands : '');
+          rule = null;
+        }
+      } catch (_) { /* noop */ }
     }
     if (!rule) {
       /* مرحله ۳ پایپ‌لاین: تطبیق فازی برنامه‌های سیستم («تلگرام رو اجرا کن»)
@@ -6485,7 +6525,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.43.0-beta';
+  let appVersion = '0.44.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7629,6 +7669,9 @@
     'قانون مهم ۳: اگر درخواست، سوال یا درخواست گفتگویی است (بگو/چرا/چطور/چیه)، هرگز آن را به جستجوی وب تبدیل نکن — خودت جواب بده.\n' +
     /* v0.39 — نگاشت فرمان نامتعارف به فرمان واقعی آوا */
     'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
+    /* v0.44 — قانون «فهم-اول» (خواستهٔ صریح کاربر: «توی دیوار دنبال موتور بگرد،
+       نره گوگل سرچ کنه» + «اول تحلیل کنه واقعاً بفهمه») */
+    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/search?q=…، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -7665,6 +7708,8 @@
     'Important rule 3: conversational asks (tell me / why / how / what is) must NEVER become web_search — answer them yourself.\n' +
     /* v0.39 — map differently-phrased requests onto real AVA commands */
     'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself.\n' +
+    /* v0.44 — understand-first law (user: "توی دیوار دنبال موتور بگرد must not become a Google search") */
+    'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/search?q=…, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -7700,8 +7745,17 @@
     m.className = `msg ${role === 'user' ? 'user' : role === 'err' ? 'err' : 'bot'}`;
     m.textContent = text;
     chatMsgs.appendChild(m);
+    /* v0.44 — سبک‌سازی RAM (خواستهٔ صریح کاربر): حباب‌های خیلی قدیمی چت
+       از DOM آزاد می‌شوند تا نشست‌های طولانی حافظه نگیرند */
+    while (chatMsgs.children.length > 120) chatMsgs.removeChild(chatMsgs.firstChild);
     chatMsgs.scrollTop = chatMsgs.scrollHeight;
     return m;
+  }
+  /* v0.44 — سقف تاریخچهٔ چت (AI فقط ۸ پیامِ آخر را می‌خواند؛ نگهداشتنِ
+     نامحدودش فقط RAM هدر می‌داد) */
+  function pushChatHist(role, content) {
+    chatHist.push({ role, content: String(content == null ? '' : content).slice(0, 4000) });
+    if (chatHist.length > 40) chatHist = chatHist.slice(-40);
   }
 
   /* استخراج بلوک افزودن فرمان از پاسخ AI */
@@ -8031,7 +8085,7 @@
 
   async function handleChatSend(v) {
     addMsg('user', v);
-    chatHist.push({ role: 'user', content: v });
+    pushChatHist('user', v);
     const typing = addMsg('bot', t('chat.thinking'));
     typing.classList.add('typing');
     chatBusy = true;
@@ -8042,7 +8096,7 @@
         addMsg('err', (r && r.error) || t('chat.noReply'));
       } else {
         const { reply, add } = parseAdd(r.text);
-        chatHist.push({ role: 'assistant', content: r.text });
+        pushChatHist('assistant', r.text);
         const msgEl = addMsg('bot', reply || '…');
         if (r.via) { const ch = document.createElement('span'); ch.className = 'msg-engine'; ch.textContent = r.via; msgEl.appendChild(ch); }
         speak(reply);
@@ -8125,7 +8179,7 @@
           const out = await resolveReply(rr, cmd).catch(() => null);
           if (!(out && typeof out === 'object' && out.__aiFallback)) {
             const fin = (typeof out === 'string' && out) ? out : (LANG === 'en' ? 'Done.' : 'انجام شد.');
-            chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: fin });
+            pushChatHist('user', cmd); pushChatHist('assistant', fin);
             setState('success');
             statusText.textContent = t('ai.got');
             rcTag.textContent = t('tag.aiDo') + ' · ⚡';
@@ -8152,7 +8206,7 @@
           actLog('ai DO: ' + doRes.do.actions.map((a) => a.act + (a.value ? '(' + a.value.slice(0, 24) + ')' : '')).join(' + '));
           const actReply = await executeDoActions(doRes.do.actions, cmd); /* v0.39 — cmd برای run_cmd */
           const finalReply = [doRes.do.reply, actReply].filter(Boolean).join(' — ');
-          chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: finalReply });
+          pushChatHist('user', cmd); pushChatHist('assistant', finalReply);
           setState('success');
           statusText.textContent = t('ai.got');
           rcTag.textContent = t('tag.aiDo') + (r.via ? ' · ' + r.via : '');
@@ -8165,7 +8219,7 @@
           return;
         }
         const { reply, add } = parseAdd(r.text);
-        chatHist.push({ role: 'user', content: cmd }, { role: 'assistant', content: r.text });
+        pushChatHist('user', cmd); pushChatHist('assistant', r.text);
         setState('success');
         statusText.textContent = t('ai.got');
         /* نشان موتور پاسخ‌دهنده — شفاف بودن اولویت جمنای */
