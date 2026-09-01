@@ -147,7 +147,10 @@ ok(appSrc.includes("speakWindows(t('wake.yes'))"), 'B20: «بله؟» بدون �
 ok(mainSrc.includes("writeJsonAtomic(path.join(ud, 'dns-map.json')"), 'B21: dns-map اتمیک');
 ok(mainSrc.includes('const enu, steam, uwp') === false && mainSrc.includes('const [menu, steam, uwp]'), 'B23: scanUwpApps تکراری حذف شد');
 ok(mainSrc.includes("new Promise((res) => setTimeout(() => res(null), 35000))"), 'B30: z.ai bridge ۳۵ ثانیه');
-ok(mainSrc.includes('_allowed.push(...st0.musicDirs)'), 'B21: serveMediaFile allowlist');
+/* v0.60 forward-relax (B5): بلوک allowlist درون‌خطی serveMediaFile به تابع مشترک
+   mediaDirAllowed() منتقل شد (همان منطق — و حالا music:readHead هم از آن استفاده می‌کند)؛
+   پین «musicDirs در allowlist» به شکل تازهٔ همان منطق به‌روز شد */
+ok(mainSrc.includes('allowed.push(...st0.musicDirs)') && mainSrc.includes('function mediaDirAllowed('), 'B21: serveMediaFile allowlist (تابع مشترک mediaDirAllowed — v0.60 B5)');
 ok((mainSrc.match(/function scanUwpApps\(/g) || []).length === 1, 'B23: فقط یک تعریف scanUwpApps');
 
 /* ---------- 7) سیم‌کشی سیستم یادگیری ---------- */

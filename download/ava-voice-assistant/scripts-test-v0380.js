@@ -38,9 +38,11 @@ for (const f of synFiles) { try { execFileSync(process.execPath, ['--check', pat
 ok('node --check روی هر ۵ فایل تغییر یافته', syn);
 
 /* ---------- ۲) فرمان‌های یوتیوب در main.js ---------- */
-ok('youtube_search: cmd تابعی با encodeURIComponent و سقف ۱۲۰ کاراکتر', /youtube_search:\s*\{ cmd: \(a\) => `start "" "https:\/\/www\.youtube\.com\/results\?search_query=\$\{encodeURIComponent\(String\(a \|\| ''\)\.trim\(\)\.slice\(0, 120\)\)\}"`/.test(mSrc));
+/* v0.60 forward-relax (B8): بازکردن URL از `start ""` (cmd.exe) به shell.openExternal مهاجرت کرد —
+   پین رشته‌ای قدیمی فقط به‌همین شکل تازه به‌روز شد (URL/encodeURIComponent/سقف ۱۲۰ همان است) */
+ok('youtube_search: cmd تابعی با encodeURIComponent و سقف ۱۲۰ کاراکتر', /youtube_search:\s*\{ cmd: \(a\) => \{ try \{ shell\.openExternal\(`https:\/\/www\.youtube\.com\/results\?search_query=\$\{encodeURIComponent\(String\(a \|\| ''\)\.trim\(\)\.slice\(0, 120\)\)\}`\); \} catch \(_\) \{ return null; \} return URL_OPEN_MARKER; \}/.test(mSrc));
 ok('pip_youtube: از pipManager.openUrl استفاده می‌کند وقتی موجود است', mSrc.includes('typeof pipManager.openUrl') && mSrc.includes('pipManager.openUrl(q)') && mSrc.includes("Write-Output pip_started"));
-ok('pip_youtube: فالبک مرورگر برای عبارت/بدون عبارت (نتایج یا صفحهٔ اصلی)', mSrc.includes("results?search_query=${encodeURIComponent(q.slice(0, 120))}") && mSrc.includes("'start \"\" \"https://www.youtube.com\"'"));
+ok('pip_youtube: فالبک مرورگر برای عبارت/بدون عبارت (نتایج یا صفحهٔ اصلی)', mSrc.includes("results?search_query=${encodeURIComponent(q.slice(0, 120))}") && mSrc.includes("shell.openExternal('https://www.youtube.com')"));
 ok('sys:run پشتیبانی cmd تابعی را حفظ کرده', mSrc.includes("typeof c.cmd === 'function' ? c.cmd(arg) : c.cmd"));
 
 /* ---------- ۳) openUrl + جستجوی داخل PiP ---------- */

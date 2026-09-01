@@ -941,7 +941,7 @@ app.whenReady().then(async () => {
         bypassOn: m26.includes('if (cfg.dnsBypass === false)') && !m26.includes('cfg.extDns === false'),
         doh: l26.includes('function queryDoH(') && l26.includes("DOH_ENDPOINTS = ['https://free.shecan.ir/dns-query']") && l26.includes('rejectUnauthorized: false'),
         fallback: l26.includes('async function resolveHost(') && l26.includes('dohTimeoutMs'),
-        probeDoh: m26.includes('dohTimeoutMs: 2000') && m26.includes('timeout: 4600'),
+        probeDoh: m26.includes('dohTimeoutMs: 1500') && m26.includes('timeout: 4600'), /* forward-relax v0.60 B6: dohTimeoutMs 2000→1500 (بودجهٔ بوت با retry) */
         badModels: m26.includes('const gemBadModels = new Set()') && m26.includes('gemChainPruned(') && m26.includes('gemMarkBad(mdl)'),
         netHint: m26.includes('const isNetFail') && m26.includes('اتصال به سرور برقرار نشد — چند لحظه بعد دوباره امتحان کن'),
         card: h26.includes('id="updCardWrap"') && a26.includes('function maybeUpdCard(') && a26.includes("'upd.cardTitle'") && c26.includes('#updCardWrap'),

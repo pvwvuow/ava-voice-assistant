@@ -31,10 +31,18 @@ const DEFAULT_SERVERS = SHECAN.concat(ELECTRO);
 /* v0.26 — لایهٔ دوم: DoH (DNS-over-HTTPS، RFC 8484 wireformat POST)
    بعضی ISPهای ایران UDP:53 به DNSهای شخص ثالث را کلاً می‌بندند؛ در آن حالت
    پرس‌وجوی UDP همه‌جا Timeout می‌خورد. DoH روی TCP:443 است و تقریباً هیچ‌وقت
-   بسته نیست. TLS شکن منقضی شده (تیر ۱۴۰۵) → rejectUnauthorized:false —
-   دقیقاً هم‌سطح اعتمادِ DNS یو‌دی‌پی (که خودش هم احراز هویت ندارد)؛
-   حتی اگر کسی آی‌پی دروغ بدهد، اتصال اصلی TLS با گواهی واقعی سرویس مقصد
-   اعتبارسنجی می‌شود و فقط «شکست می‌خورد» — هیچ داده‌ای لو نمی‌رود. */
+   بسته نیست.
+
+   rationale عمدیِ rejectUnauthorized:false (v0.60 — تقویت‌شده؛ TLS دست نخورده):
+   • گواهی شکن منقضی است (تیر ۱۴۰۵) و کل مسیر «دورزدن بدون UAC» به شکن تکیه دارد؛
+   • این اتصال فقط «کشف آی‌پی» است — همان اطلاعاتی که هر DNS یو‌دی‌پی معمولی
+     (بدون هیچ احراز هویتی) هم می‌بیند. هیچ راز/کوکی/توکنی به رزولور نمی‌رود؛
+   • اتصال‌های اصلی برنامه (HTTPS به گوگل/زت‌ای/گیت‌هاب و…) نشست‌های TLS جدای
+     با اعتبارسنجی گواهی کامل‌اند — اگر کسی جواب DoH را دروغ بدهد، حداکثر
+     «اتصال برقرار نشد» (DoS) می‌سازد؛ نمی‌تواند ترافیک برنامه را MITM کند
+     چون هر سرور واقعی گواهی معتبر خودش را می‌خواهد؛
+   • یعنی rejectUnauthorized:false این‌جا دقیقاً هم‌سطح اعتمادِ DNS یو‌دی‌پی
+     است، نه یک ضعف اضافه. */
 const DOH_ENDPOINTS = ['https://free.shecan.ir/dns-query'];
 
 /* میزبان‌هایی که برنامه واقعاً با آن‌ها «می‌شنود» و «حرف می‌زند» */
@@ -146,38 +154,60 @@ function queryOne(server, name, timeoutMs) {
   });
 }
 
-/* v0.26 — یک پرس‌وجوی DoH (wireformat POST) — همیشه resolve می‌شود */
+/* v0.26 — یک پرس‌وجوی DoH (wireformat POST) — همیشه resolve می‌شود
+   v0.60 (B6) — سقف زمانی «مطلق» با AbortController (~۳ ثانیه): گزینهٔ timeout
+   قبلی فقط «بی‌کاریِ سوکت» را می‌سنجید و پاسخ قطره‌قطره می‌توانست فراتر برود؛
+   حالا کل فراخوانی بعد از deadline قطع می‌شود (abort → fin(null) امن). */
 function queryDoH(endpoint, name, timeoutMs) {
   return new Promise((resolve) => {
     let done = false;
-    const fin = (v) => { if (!done) { done = true; try { req.destroy(); } catch (_) { /* noop */ } resolve(v); } };
+    let ac = null;
+    let killer = null;
+    let req = null;
+    const fin = (v) => {
+      if (done) return;
+      done = true;
+      if (killer) { clearTimeout(killer); killer = null; }
+      try { if (ac) ac.abort(); } catch (_) { /* noop */ }
+      try { if (req) req.destroy(); } catch (_) { /* noop */ }
+      resolve(v);
+    };
     let q;
     try { q = buildQuery((Math.random() * 0xffff) | 1, name); } catch (_) { resolve(null); return; }
     let u;
     try { u = new URL(String(endpoint || '')); } catch (_) { resolve(null); return; }
-    const req = https.request({
-      hostname: u.hostname,
-      port: Number(u.port) || 443,
-      path: u.pathname + (u.search || ''),
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/dns-message',
-        'Accept': 'application/dns-message',
-        'Content-Length': q.length,
-      },
-      timeout: Math.max(400, Number(timeoutMs) || 2500),
-      rejectUnauthorized: false, /* گواهی شکن منقضی است — هم‌سطح اعتماد UDP DNS */
-    }, (res) => {
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => {
-        try {
-          if (res.statusCode !== 200) return fin(null);
-          fin(parseA(Buffer.concat(chunks)));
-        } catch (_) { fin(null); }
+    /* B6 — ددلاین مطلق: min(آرگومان، ۳ ثانیه) — هرگز بیشتر از ~۳ ثانیه صبر نمی‌کنیم */
+    const deadlineMs = Math.max(400, Math.min(Number(timeoutMs) || 3000, 3000));
+    try {
+      ac = new AbortController();
+      killer = setTimeout(() => fin(null), deadlineMs);
+    } catch (_) { ac = null; /* نسخه‌های خیلی قدیم نود — سقف سوکتی قبلی می‌ماند */ }
+    try {
+      req = https.request({
+        hostname: u.hostname,
+        port: Number(u.port) || 443,
+        path: u.pathname + (u.search || ''),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/dns-message',
+          'Accept': 'application/dns-message',
+          'Content-Length': q.length,
+        },
+        timeout: Math.max(400, Number(timeoutMs) || 2500),
+        signal: ac ? ac.signal : undefined,
+        rejectUnauthorized: false, /* گواهی شکن منقضی است — rationale بالای فایل؛ هم‌سطح اعتماد UDP DNS */
+      }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          try {
+            if (res.statusCode !== 200) return fin(null);
+            fin(parseA(Buffer.concat(chunks)));
+          } catch (_) { fin(null); }
+        });
+        res.on('error', () => fin(null));
       });
-      res.on('error', () => fin(null));
-    });
+    } catch (_) { fin(null); return; }
     req.on('timeout', () => fin(null));
     req.on('error', () => fin(null));
     try { req.end(q); } catch (_) { fin(null); }
@@ -185,17 +215,25 @@ function queryDoH(endpoint, name, timeoutMs) {
 }
 
 /* پرس‌وجوی هم‌زمان به همهٔ سرورها — اولین جواب درست برنده است؛
-   v0.26 — اگر همهٔ UDPها خواب بودند، DoH شکن (TCP:443) امتحان می‌شود */
+   v0.26 — اگر همهٔ UDPها خواب بودند، DoH شکن (TCP:443) امتحان می‌شود؛
+   v0.60 (B6) — روی شکست DoH «یک» تلاش دوباره می‌رود (خطای لحظه‌ای شبکه/TLS
+   اغلب در تلاش دوم جواب می‌دهد) ولی فقط تا وقتی بودجهٔ زمانی (retryBudgetMs)
+   اجازه دهد تا مسیر CLI سنکرونِ بوت هرگز از سقف spawnSync رد نشود. */
 async function resolveHost(name, opts) {
   const o = opts || {};
   const servers = Array.isArray(o.servers) && o.servers.length ? o.servers : DEFAULT_SERVERS;
   const timeoutMs = Number(o.timeoutMs) || 1200;
+  const t0 = Date.now();
   const results = await Promise.all(servers.map((s) => queryOne(s, name, timeoutMs)));
   const udpOk = results.find(Boolean);
   if (udpOk) return udpOk;
   const dohs = Array.isArray(o.doh) ? o.doh : DOH_ENDPOINTS;
+  const retryBudgetMs = Number(o.retryBudgetMs) || 2400;
   for (const ep of dohs) {
-    const ip = await queryDoH(ep, name, Number(o.dohTimeoutMs) || 2500);
+    let ip = await queryDoH(ep, name, Number(o.dohTimeoutMs) || 2500);
+    if (!ip && (Date.now() - t0) < retryBudgetMs) {
+      ip = await queryDoH(ep, name, Number(o.dohTimeoutMs) || 2500); /* فقط یک تلاش دوباره */
+    }
     if (ip) return ip;
   }
   return null;
@@ -229,13 +267,39 @@ if (require.main === module) {
   const fsRead = (p) => {
     try { return require('fs').readFileSync(p, 'utf8'); } catch (_) { return ''; }
   };
+  /* B6 — فالبک رزولوشن سیستم: اگر UDP و DoH هر دو صفر جواب دادند، به‌جای
+     بی‌جوابیِ مطلق، dns.lookup سیستم (getaddrinfo) آخرین شانس است —
+     موازی و کوتاه (۵۰۰ms) تا سقف بوت نشکند. اگر سیستم هم جواب نداد،
+     همان مسیر قبلی (host بدون pin → کرومیوم/نود خودش سیستم را می‌پرسد) می‌ماند. */
+  const dnsMod = require('dns');
+  const systemLookup = (h, ms) => new Promise((res) => {
+    let fin = false;
+    const t = setTimeout(() => { if (!fin) { fin = true; res(null); } }, Math.max(200, Number(ms) || 500));
+    try {
+      dnsMod.lookup(String(h || ''), { family: 4 }, (err, ip) => {
+        if (fin) return;
+        fin = true; clearTimeout(t);
+        res(err ? null : String(ip || ''));
+      });
+    } catch (_) { if (!fin) { fin = true; clearTimeout(t); res(null); } }
+  });
   try {
     const req = JSON.parse(fsRead(process.argv[2]) || '{}');
     const hosts = Array.isArray(req.hosts) && req.hosts.length ? req.hosts : DEFAULT_HOSTS;
     const servers = Array.isArray(req.servers) && req.servers.length ? req.servers : DEFAULT_SERVERS;
     const timeoutMs = Number(req.timeoutMs) || 1300;
+    const t0 = Date.now();
     resolveHosts(hosts, { servers, timeoutMs })
-      .then((map) => finish({ ok: true, map }))
+      .then(async (map) => {
+        try {
+          if (Date.now() - t0 < 3300) {
+            const missing = hosts.filter((h) => !map[h]);
+            const sysAns = await Promise.all(missing.map(async (h) => [h, await systemLookup(h, 500)]));
+            sysAns.forEach(([h, ip]) => { if (ip && !map[h]) map[h] = ip; });
+          }
+        } catch (_) { /* فالبک سیستم هرگز کل پروش را نمی‌کشد */ }
+        finish({ ok: true, map });
+      })
       .catch(() => finish({ ok: false, map: {} }));
   } catch (_) {
     finish({ ok: false, map: {} });

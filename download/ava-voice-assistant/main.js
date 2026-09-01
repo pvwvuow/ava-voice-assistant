@@ -96,6 +96,23 @@ const MEDIA_MIME = {
   '.weba': 'audio/webm', '.webm': 'audio/webm', '.wma': 'audio/x-ms-wma',
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif',
 };
+/* v0.60 (B5) — allowlist «مشترکِ» پوشه‌های مجاز مدیا: userData + پوشه‌های
+   موزیک انتخابی کاربر (settings.musicDirs/musicDir). هم ava-media:// و هم
+   music:readHead از همین یک تابع استفاده می‌کنند تا دو مسیر هرگز واگرا نشوند. */
+function mediaDirAllowed(p) {
+  try {
+    const allowed = [];
+    try { allowed.push(app.getPath('userData')); } catch (_) { /* noop */ }
+    try {
+      const st0 = loadedSettings();
+      if (Array.isArray(st0.musicDirs)) allowed.push(...st0.musicDirs);
+      if (st0.musicDir) allowed.push(String(st0.musicDir));
+    } catch (_) { /* noop */ }
+    return allowed.some((d) => d && path.normalize(p).toLowerCase().startsWith(path.normalize(d).toLowerCase() + path.sep));
+  } catch (_) {
+    return false;
+  }
+}
 function serveMediaFile(reqUrl, req) {
   try {
     const u = new URL(reqUrl);
@@ -103,18 +120,10 @@ function serveMediaFile(reqUrl, req) {
     const p = decodeURIComponent(u.pathname).replace(/^\/+/, '');
     if (!path.isAbsolute(p)) return new Response('forbidden', { status: 403 });
     /* v0.47 — B21: allowlist — فقط پوشه‌های موزیک اسکن‌شدهٔ خود کاربر + userData؛
-       قبلاً هر path مطلقی استریم می‌شد (هرگز نباید از رندرر به فایل‌سیستم کامل برسد) */
-    {
-      const _allowed = [];
-      try { _allowed.push(app.getPath('userData')); } catch (_) { /* noop */ }
-      try {
-        const st0 = loadedSettings();
-        if (Array.isArray(st0.musicDirs)) _allowed.push(...st0.musicDirs);
-        if (st0.musicDir) _allowed.push(String(st0.musicDir));
-      } catch (_) { /* noop */ }
-      const _ok = _allowed.some((d) => d && path.normalize(p).toLowerCase().startsWith(path.normalize(d).toLowerCase() + path.sep));
-      if (!_ok) return new Response('forbidden', { status: 403 });
-    }
+       قبلاً هر path مطلقی استریم می‌شد (هرگز نباید از رندرر به فایل‌سیستم کامل برسد)
+       v0.60 (B5) — همان allowlist اکنون در mediaDirAllowed() مشترک است و
+       music:readHead هم از آن استفاده می‌کند */
+    if (!mediaDirAllowed(p)) return new Response('forbidden', { status: 403 });
     let st;
     try { st = fs.statSync(p); } catch (_) { return new Response('not found', { status: 404 }); }
     if (!st.isFile()) return new Response('not found', { status: 404 });
@@ -296,8 +305,10 @@ async function cloudFetch(url, opts) {
     const cfgPath = path.join(ud, 'dns-probe.json');
     try { fs.writeFileSync(probePath, fs.readFileSync(path.join(__dirname, 'lib', 'dns-bypass.js'))); } catch (_) { /* noop */ }
     /* v0.26 — dohTimeoutMs هم داده می‌شود تا اگر UDPها بسته بودند، DoH
-       (TCP:443) در همین پرس‌وجوی سنکرون فرصت نجات بدهد */
-    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300, dohTimeoutMs: 2000 })); } catch (_) { /* noop */ }
+       (TCP:443) در همین پرس‌وجوی سنکرون فرصت نجات بدهد؛
+       v0.60 (B6) — با اضافه‌شدن retry، بودجهٔ زمانی DoH ۱۵۰۰ms شد تا
+       بدترین حالت (۱۳۰۰ UDP + ۱۵۰۰ DoH + retry) زیر سقف ۴s کل CLI بماند */
+    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300, dohTimeoutMs: 1500 })); } catch (_) { /* noop */ }
     let out = '';
     try {
       const r = spawnSync(process.execPath, [probePath, cfgPath], {
@@ -337,7 +348,7 @@ setInterval(() => {
     const probePath = path.join(ud, 'dns-probe.js');
     const cfgPath = path.join(ud, 'dns-probe.json');
     if (!fs.existsSync(probePath)) return;
-    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300, dohTimeoutMs: 2500 })); } catch (_) { /* noop */ }
+    try { fs.writeFileSync(cfgPath, JSON.stringify({ hosts: DNS_HOSTS, timeoutMs: 1300, dohTimeoutMs: 1500 })); } catch (_) { /* noop */ } /* v0.60 B6: هم‌بودجه با بوت (retry-safe) */
     const ch = spawn(process.execPath, [probePath, cfgPath], {
       env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }), windowsHide: true,
     });
@@ -494,7 +505,49 @@ function createWindow() {
 
   win.on('maximize', () => win.webContents.send('win:maximized-changed', true));
   win.on('unmaximize', () => win.webContents.send('win:maximized-changed', false));
-  win.on('closed', () => { win = null; });
+  win.on('closed', () => {
+    win = null;
+    /* v0.60 (A20) — شبح‌شدن اپ: بستن پنجرهٔ اصلی قبلاً پنجره‌های مخفیِ helper
+       (zaiWin پل z.ai و ytWin یوتیوب) را زنده نگه می‌داشت → window-all-closed
+       هرگز آتش نمی‌شد و اپ بی‌پنجره/بی‌تری به کار ادامه می‌داد. حالا:
+       helperها destroy می‌شوند؛ اگر پنجرهٔ PiP باز باشد window-all-closed بعد
+       از بستن آن خودش quit می‌کند، وگرنه همین‌جا خروج. */
+    try { if (zaiWin && !zaiWin.isDestroyed()) zaiWin.destroy(); } catch (_) { /* noop */ }
+    try { if (ytWin && !ytWin.isDestroyed()) ytWin.destroy(); } catch (_) { /* noop */ }
+    try {
+      const st = (pipManager && typeof pipManager.getState === 'function') ? pipManager.getState() : null;
+      const pipOpen = !!(st && st.open);
+      if (!pipOpen) app.quit();
+      else actLog('main window closed — PiP window still open, app stays until it closes');
+    } catch (_) {
+      try { app.quit(); } catch (_2) { /* noop */ }
+    }
+  });
+
+  /* v0.60 (B1) — گارد will-attach-webview برای پنجرهٔ اصلی (هم‌الگوی
+     pipWindowManager:189). webviewTag:true فقط برای «یک» webview مشروع است:
+     پنل چت z.ai در index.html (src=https://chat.z.ai/، partition persist:ai).
+     هر webview دیگر با هر src دیگری preventDefault می‌شود و مهمانِ مجاز هم
+     همیشه بدون nodeIntegration/preload وصل می‌شود. */
+  win.webContents.on('will-attach-webview', (e, webPreferences, params) => {
+    try {
+      webPreferences.nodeIntegration = false;
+      webPreferences.contextIsolation = true;
+      delete webPreferences.preload;
+      let src = '';
+      try { src = String((params && params.src) || ''); } catch (_) { src = ''; }
+      let okSrc = false;
+      try {
+        const u = new URL(src);
+        const h = u.hostname.toLowerCase();
+        okSrc = u.protocol === 'ava:' || h === 'chat.z.ai' || h.endsWith('.z.ai');
+      } catch (_) { okSrc = false; }
+      if (!okSrc) {
+        try { e.preventDefault(); } catch (_) { /* noop */ }
+        try { actLog('main webview attach BLOCKED: ' + src.slice(0, 120)); } catch (_) { /* noop */ }
+      }
+    } catch (_) { try { e.preventDefault(); } catch (_2) { /* noop */ } }
+  });
 
   // برای دیباگ رابط کاربری، خط زیر را از کامنت خارج کنید:
   // win.webContents.openDevTools({ mode: 'detach' });
@@ -513,10 +566,41 @@ ipcMain.handle('win:is-maximized', () => (win ? win.isMaximized() : false));
 /* ---------- مجوز میکروفون + هویت کروم برای هر دو نشست ---------- */
 function setupMicPermission() {
   const allow = ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'];
-  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+  /* v0.60 (B4) — media/audioCapture فقط برای مببع برنامه (ava://app)؛
+     قبلاً هر سایتی (مثلاً ytWin یا هر صفحهٔ خارجیِ نشست پیش‌فرض) هم
+     بی‌قید مجاز بود. صفحات پارتیشن z.ai (persist:ai) هندلر اختصاصی خودشان
+     را در ادامه دارند و مثل قبل مجاز می‌مانند. بقیه با لاگ صادقانه رد می‌شوند. */
+  const originOf = (wc, details, requestingOrigin) => {
+    try {
+      if (typeof requestingOrigin === 'string' && requestingOrigin) return requestingOrigin;
+      if (details && typeof details === 'object') {
+        if (details.requestOrigin) return String(details.requestOrigin);
+        if (details.requestingUrl) return String(details.requestingUrl);
+      }
+      if (wc && !wc.isDestroyed() && typeof wc.getURL === 'function') return String(wc.getURL() || '');
+    } catch (_) { /* noop */ }
+    return '';
+  };
+  const mediaOriginOk = (wc, details, requestingOrigin) =>
+    /^ava:\/\//i.test(originOf(wc, details, requestingOrigin));
+  const mediaRefused = (wc, permission, details, requestingOrigin) => {
+    try {
+      actLog('permission DENIED (' + permission + ') for non-app origin: ' +
+        String(originOf(wc, details, requestingOrigin) || '?').slice(0, 120));
+    } catch (_) { /* noop */ }
+  };
+  session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
+    if ((permission === 'media' || permission === 'audioCapture') && !mediaOriginOk(wc, details)) {
+      mediaRefused(wc, permission, details);
+      callback(false);
+      return;
+    }
     callback(allow.includes(permission));
   });
-  session.defaultSession.setPermissionCheckHandler((_wc, permission) => allow.includes(permission));
+  session.defaultSession.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+    if ((permission === 'media' || permission === 'audioCapture') && !mediaOriginOk(wc, details, requestingOrigin)) return false;
+    return allow.includes(permission);
+  });
 
   /* نشست دائمی پنل چت z.ai — لاگین یک بار برای همیشه می‌ماند */
   let aiSes = null;
@@ -561,7 +645,18 @@ app.on('web-contents-created', (_ev, wc) => {
   try {
     wc.setWindowOpenHandler(({ url }) => {
       const u = String(url || '');
-      if (/^https:\/\/([^\/]*\.)?(z\.ai|zhipu\.ai|bigmodel\.cn|google\.com|googleusercontent\.com|accounts\.google\.[a-z.]+)/i.test(u)) {
+      /* v0.60 (B2) — تطبیق «دقیقِ» hostname با new URL + مرز نقطه:
+         regex پیشوندیِ قبلی https://google.com.evil.com و https://google.com@evil.com
+         را هم می‌پذیرفت (پسوند/@ بعد از دامنه به regex ربطی نداشت)؛ حالا
+         فقط زیردامنهٔ واقعی (dot-boundary) می‌گذرد. بقیهٔ رفتار عین قبل:
+         پاپ‌آپ مجاز = پنجرهٔ درون‌برنامه‌ای با نشست persist:ai؛ بقیهٔ لینک‌ها
+         به مرورگر پیش‌فرض سیستم می‌روند. */
+      let host = '';
+      try { host = new URL(u).hostname.toLowerCase(); } catch (_) { host = ''; }
+      const POPUP_HOSTS = ['z.ai', 'zhipu.ai', 'bigmodel.cn', 'google.com', 'googleusercontent.com'];
+      const hostOk = POPUP_HOSTS.some((h) => host === h || host.endsWith('.' + h)) ||
+        /^accounts\.google\.[a-z.]+$/.test(host);
+      if (hostOk && /^https:\/\//i.test(u)) {
         /* پاپ‌آپ لاگین OAuth از داخل webview z.ai → همان نشست دائمی persist:ai
            تا کوکی‌های گوگل و z.ai در همان پارتیشن بمانند و ورود کامل شود؛
            UA پاپ‌آپ هم از userAgentFallback (کروم واقعی) به ارث می‌رسد. */
@@ -598,6 +693,14 @@ const safeUrl = (u) => {
   return /^https?:\/\//i.test(s) ? s.replace(/["^|<>]/g, '') : null;
 };
 
+/* v0.60 (B8) — باز کردن لینک‌های https از مسیر shell.openExternal (هم‌الگوی
+   sys:open-url). قبلاً فرمان‌های فقط-URL با `start "" "URL"` از cmd.exe می‌گذشتند
+   (متاکراکترهای cmd سطح حملهٔ اضافی بود)؛ حالا خودِ main لینک را باز می‌کند و
+   یک فرمان بی‌آزار «ok» برمی‌گرداند تا قرارداد خروجی sys:run دست نخورد.
+   باز کردن پوشه‌ها (shell:Downloads)، فایل‌ها (hit.exe) و برنامه‌ها (start chrome)
+   عمداً روی `start` ماندند — فقط لینک‌های خالص https مهاجرت شدند. */
+const URL_OPEN_MARKER = 'powershell -NoProfile -Command "Write-Output ok"';
+
 /* v0.50 — اولین ویدیوی نتایج یوتیوب («پلی کن» = پخش واقعی، نه فقط صفحهٔ نتایج):
    صفحهٔ نتایج بدون جاوااسکریپت هم ytInitialData با videoId دارد؛
    با استک شبکهٔ کرومیوم (net.fetch) می‌رویم تا پراکسی سیستم و DNS مثل
@@ -626,19 +729,20 @@ const COMMANDS = {
   open_taskmgr:  { cmd: 'start taskmgr',               fa: 'تسک‌منیجر' },
   open_settings: { cmd: 'start ms-settings:',          fa: 'تنظیمات ویندوز' },
   open_paint:    { cmd: 'start mspaint',               fa: 'پینت' },
-  open_music:    { cmd: 'start https://music.youtube.com', fa: 'یوتیوب موزیک' },
-  open_youtube:  { cmd: 'start https://www.youtube.com',   fa: 'یوتیوب' },
+  open_music:    { cmd: () => { try { shell.openExternal('https://music.youtube.com'); } catch (_) { return null; } return URL_OPEN_MARKER; }, fa: 'یوتیوب موزیک' }, /* v0.60 B8 */
+  open_youtube:  { cmd: () => { try { shell.openExternal('https://www.youtube.com'); } catch (_) { return null; } return URL_OPEN_MARKER; }, fa: 'یوتیوب' }, /* v0.60 B8 */
   /* v0.38 — جستجوی مستقیم یوتیوب: «تو یوتیوب آهنگ X رو سرچ کن» */
-  youtube_search: { cmd: (a) => `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}"`, fa: 'جستجوی یوتیوب' },
+  /* v0.60 (B8) — بازکردن URL از shell.openExternal (بدون cmd.exe) */
+  youtube_search: { cmd: (a) => { try { shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}`); } catch (_) { return null; } return URL_OPEN_MARKER; }, fa: 'جستجوی یوتیوب' },
   /* v0.50 — «پلی/پخش کن» = پخشِ واقعی اولین نتیجه (لاگ کاربر v0.49:
      «آهنگ جدید شادمهر تو یوتیوب برام پلی کن» فقط صفحهٔ نتایج باز می‌شد).
      اولین ویدیو پیدا و مستقیم watch باز می‌شود؛ شکست شبکه/پارس →
      fallback صادقانه: صفحهٔ نتایج */
   youtube_play: {
-    cmd: (a) => `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}"`,
+    cmd: (a) => { try { shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}`); } catch (_) { return null; } return URL_OPEN_MARKER; }, /* v0.60 B8 */
     asyncCmd: async (a) => {
       const q = String(a || '').trim().slice(0, 120);
-      if (!q) return 'start "" "https://www.youtube.com"';
+      if (!q) { try { shell.openExternal('https://www.youtube.com'); } catch (_) { return null; } return URL_OPEN_MARKER; }
       const vid = await ytFirstVideoId(q);
       if (vid) {
         /* v0.51 — پلی یعنی پخش در پلیر خود آوا (خواستهٔ کاربر: «ویدیو پخش
@@ -649,9 +753,11 @@ const COMMANDS = {
             return 'powershell -NoProfile -Command "Write-Output ava_player"';
           }
         } catch (_) { /* فالبک مرورگر */ }
-        return 'start "" "https://www.youtube.com/watch?v=' + vid + '"';
+        try { shell.openExternal('https://www.youtube.com/watch?v=' + vid); } catch (_) { return null; } /* v0.60 B8 */
+        return URL_OPEN_MARKER;
       }
-      return 'start "" "https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '"';
+      try { shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`); } catch (_) { return null; } /* v0.60 B8 */
+      return URL_OPEN_MARKER;
     },
     fa: 'پخش یوتیوب',
   },
@@ -663,23 +769,30 @@ const COMMANDS = {
       const ok = pipManager.openUrl(q);
       if (ok) return 'powershell -NoProfile -Command "Write-Output pip_started"';
     }
-    return q
-      ? `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(q.slice(0, 120))}"`
-      : 'start "" "https://www.youtube.com"';
+    /* v0.60 (B8) — فالبک مرورگر از مسیر shell.openExternal */
+    try {
+      if (q) shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(q.slice(0, 120))}`);
+      else shell.openExternal('https://www.youtube.com');
+    } catch (_) { return null; }
+    return URL_OPEN_MARKER;
   }, fa: 'یوتیوب شناور' },
   open_downloads: { cmd: 'start "" "shell:Downloads"',  fa: 'پوشه دانلودها' },
   open_documents: { cmd: 'start "" "shell:Personal"',     fa: 'پوشه اسناد' },
 
   /* وب */
-  web_open:   { cmd: (a) => { const u = safeUrl(a); return u ? `start "" "${u}"` : null; }, fa: 'سایت' },
+  /* v0.60 (B8) — web_open/web_search از shell.openExternal(safeUrl(u)) —
+     هم‌الگوی sys:open-url؛ دیگر هیچ `start` لختِ URL از cmd.exe رد نمی‌شود */
+  web_open:   { cmd: (a) => { const u = safeUrl(a); if (!u) return null; try { shell.openExternal(u); } catch (_) { return null; } return URL_OPEN_MARKER; }, fa: 'سایت' },
   /* v0.42 — «سرچ کن» بدون عبارت دیگر صفحهٔ خالی نتایج گوگل باز نمی‌کند
      (گزارش کاربر: «میگه سرچ کن انجام نده») — خود گوگل باز می‌شود تا کاربر
      عبارتش را تایپ کند؛ عبارت‌دار مثل قبل مستقیم نتایج می‌رود */
   web_search: { cmd: (a) => {
     const q = String(a || '').trim();
-    return q
-      ? `start "" "https://www.google.com/search?q=${encodeURIComponent(q.slice(0, 200))}"`
-      : 'start "" "https://www.google.com"';
+    try {
+      if (q) shell.openExternal(`https://www.google.com/search?q=${encodeURIComponent(q.slice(0, 200))}`);
+      else shell.openExternal('https://www.google.com');
+    } catch (_) { return null; }
+    return URL_OPEN_MARKER;
   }, fa: 'جستجو' },
 
   /* پنجره‌ها و سیستم */
@@ -1196,7 +1309,7 @@ async function manualCheckLatest() {
   /* مسیر ۳: فید اتم — همیشه در دسترس */
   try {
     const xml = await ghRequest(`https://github.com/${owner}/${repo}/releases.atom`, { Accept: 'application/atom+xml, application/xml, text/xml, */*' });
-    const m = /\/tag\/(v?\d+\.\d+\.\d+)</.exec(xml);
+    const m = /\/tag\/(v?[0-9A-Za-z.+-]+)</.exec(xml);
     if (m) return { version: m[1].replace(/^v/, ''), url: null, size: 0, via: 'atom' };
   } catch (e) { updLog(`manual check via atom failed: ${(e && e.message) || e}`); }
   return { version: null, url: null, size: 0, via: 'none' };
@@ -1384,7 +1497,7 @@ function updLastPctSafe() {
   try { return Math.round((updLastProgress && updLastProgress.percent) || 0); } catch (_) { return 0; }
 }
 /* لایه ۳: دانلود مستقیم نصّاب داخل برنامه (بدون electron-updater) */
-let manualDl = null; // { file, version, url, active }
+let manualDl = null; // v0.60 (A19): { file, partFile, version, url, size, active, cancel, complete, received }
 let updLastProgress = null; /* v0.21 — آخرین progress برای محاسبهٔ درصد هنگام توقف */
 
 /* v0.21 — پارامتر cancelFlag: دانلود مستقیم هم قابل لغو شد (خواست کاربر) */
@@ -1442,46 +1555,79 @@ ipcMain.handle('updater:download-manual', async () => {
     if (cmpVersions(meta.version, app.getVersion()) <= 0) return { ok: true, latest: true };
     const url = meta.url || `https://github.com/${UPD_REPO.owner}/${UPD_REPO.repo}/releases/download/v${meta.version}/AVA-Setup-${meta.version}.exe`;
     const file = path.join(app.getPath('downloads'), `AVA-Setup-${meta.version}.exe`);
-    manualDl = { file, version: meta.version, url, active: true, cancel: false };
+    /* v0.60 (A19) — دانلود در فایل «.part» نوشته می‌شود و فقط بعد از کامل‌شدن
+       به نام نهایی rename می‌شود. قبلاً مستقیم روی مسیر نهایی می‌نوشت؛ لغو/قطعی
+       وسط راه یک نصّاب ناقص جا می‌گذاشت و updater:install فقط با existsSync
+       همان فایل شکسته را «سالم» می‌پنداشت و اجرا می‌کرد. سایز رسمی (از API)
+       هم برای صحت‌سنجی بعد از دانلود نگه داشته می‌شود. */
+    const partFile = file + '.part';
+    manualDl = { file, partFile, version: meta.version, url, size: meta.size || 0, active: true, cancel: false, complete: false };
     sendUI('updater:status', { state: 'downloading', percent: 0 });
-    await ghDownloadToFile(url, file, (pct) => sendUI('updater:status', { state: 'downloading', percent: pct, manual: true }), manualDl);
+    await ghDownloadToFile(url, partFile, (pct) => sendUI('updater:status', { state: 'downloading', percent: pct, manual: true }), manualDl);
+    /* A19 — صحت‌سنجی سایز قبل از rename: اگر سایز رسمی از API آمده باید دقیقاً
+       بخورد؛ وگرنه حداقل نصّاب واقعی ده‌ها مگابایت است (نه پاسخ خطای HTML) */
+    const st = fs.statSync(partFile);
+    if (manualDl.size && st.size !== manualDl.size) throw new Error(`incomplete download: got ${st.size} of ${manualDl.size} bytes`);
+    if (!manualDl.size && st.size < 1024) throw new Error('incomplete download: file too small');
+    fs.renameSync(partFile, file);
     manualDl.active = false;
-    updLog(`manual download complete: ${file} (${meta.via})`);
+    manualDl.complete = true;
+    manualDl.received = st.size;
+    updLog(`manual download complete: ${file} (${meta.via}${manualDl.size ? ', size verified ' + st.size : ', ' + st.size + ' bytes'})`);
     sendUI('updater:status', { state: 'ready-manual', version: meta.version });
     return { ok: true, file };
   } catch (e) {
-    if (manualDl) manualDl.active = false;
+    /* A19 — پاکسازی: فایل نیمه‌کاره حذف و manualDl.file خالی می‌شود تا
+       updater:install هرگز نصّاب شکسته را اجرا نکند */
+    if (manualDl) {
+      manualDl.active = false;
+      if (manualDl.partFile) { try { fs.unlinkSync(manualDl.partFile); } catch (_) { /* noop */ } }
+      manualDl.file = null;
+      manualDl.partFile = null;
+      manualDl.complete = false;
+    }
     const msg = String((e && e.message) || e);
     if (/cancel/i.test(msg)) {
-      updLog('manual download cancelled by user');
+      updLog('manual download cancelled by user — partial file removed');
       sendUI('updater:status', { state: 'canceled' });
       return { ok: false, cancelled: true };
     }
-    updLog(`manual download failed: ${msg}`);
+    updLog(`manual download failed: ${msg} — partial file removed`);
     sendUI('updater:status', { state: 'error', message: msg.slice(0, 160) });
     return { ok: false, error: msg };
   }
 });
 
 ipcMain.handle('updater:install', () => {
-  /* اگر نصّاب به‌صورت مستقیم دانلود شده، همان را اجرا کن */
-  if (manualDl && manualDl.file && fs.existsSync(manualDl.file)) {
-    updLog(`install via manually downloaded installer: ${manualDl.file}`);
-    /* v0.38.1 — openPath خطا را به‌صورت رشته resolve می‌کند؛ قبلاً در هر حال
-       ۱.۵ ثانیه بعد quit می‌شد — حتی وقتی نصّاب بلاک شده بود */
-    shell.openPath(manualDl.file).then((res) => {
-      const errStr = String(res || '');
-      if (errStr) {
-        updLog('installer open failed: ' + errStr.slice(0, 120));
-        actLog('updater: installer open failed: ' + errStr.slice(0, 120));
-        if (win && !win.isDestroyed()) {
-          try { win.show(); win.webContents.send('updater:status', { state: 'error', message: 'اجرای نصّاب ناموفق بود: ' + errStr.slice(0, 90) }); } catch (_) { /* noop */ }
+  /* اگر نصّاب به‌صورت مستقیم دانلود شده، همان را اجرا کن
+     v0.60 (A19) — فقط نصّابِ «کامل» (پرچم complete + سایز درست) اجرا می‌شود؛
+     نصّاب ناقص/خراب حذف و وضعیت پاک می‌شود تا مسیر autoUpdater برود */
+  if (manualDl && manualDl.file && manualDl.complete && fs.existsSync(manualDl.file)) {
+    let sizeOk = true;
+    try { sizeOk = !manualDl.size || fs.statSync(manualDl.file).size === manualDl.size; } catch (_) { sizeOk = false; }
+    if (!sizeOk) {
+      updLog('manual installer failed size verification — discarding');
+      try { fs.unlinkSync(manualDl.file); } catch (_) { /* noop */ }
+      manualDl.file = null;
+      manualDl.complete = false;
+    } else {
+      updLog(`install via manually downloaded installer: ${manualDl.file}`);
+      /* v0.38.1 — openPath خطا را به‌صورت رشته resolve می‌کند؛ قبلاً در هر حال
+         ۱.۵ ثانیه بعد quit می‌شد — حتی وقتی نصّاب بلاک شده بود */
+      shell.openPath(manualDl.file).then((res) => {
+        const errStr = String(res || '');
+        if (errStr) {
+          updLog('installer open failed: ' + errStr.slice(0, 120));
+          actLog('updater: installer open failed: ' + errStr.slice(0, 120));
+          if (win && !win.isDestroyed()) {
+            try { win.show(); win.webContents.send('updater:status', { state: 'error', message: 'اجرای نصّاب ناموفق بود: ' + errStr.slice(0, 90) }); } catch (_) { /* noop */ }
+          }
+        } else {
+          setTimeout(() => app.quit(), 1500);
         }
-      } else {
-        setTimeout(() => app.quit(), 1500);
-      }
-    });
-    return true;
+      });
+      return true;
+    }
   }
   if (autoUpdater && app.isPackaged) autoUpdater.quitAndInstall(false, true);
   return false;
@@ -1590,32 +1736,10 @@ ipcMain.handle('notes:save', (_e, arr) => {
   return writeJsonAtomic(f, arr.slice(0, 200)); /* v0.38.1 — اتمیک */
 });
 
-/* ============================================================
-   تایپ در برنامه فعال (حالت تایپ صوتی → خروجی پیست در هر برنامه)
-   متن به کلیپ‌بورد می‌رود و Ctrl+V در پنجره فعال زده می‌شود.
-   ============================================================ */
-ipcMain.handle('sys:type-text', (_e, text) => {
-  const t = String(text || '');
-  if (!t.trim()) return { ok: false, error: 'متن خالی است' };
-  if (t.length > 4000) return { ok: false, error: 'متن بیش از حد طولانی است' };
-  try {
-    const b64 = Buffer.from(t, 'utf16le').toString('base64');
-    const ps =
-      'powershell -NoProfile -Command "' +
-      `$t=[System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${b64}')); ` +
-      'Set-Clipboard -Value $t; ' +
-      "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; " +
-      '[W.N]::keybd_event(0x11,0,0,0); [W.N]::keybd_event(0x56,0,0,0); Start-Sleep -m 80; ' +
-      '[W.N]::keybd_event(0x56,0,2,0); [W.N]::keybd_event(0x11,0,2,0); Write-Output ok"';
-    return new Promise((resolve) => {
-      exec(ps, { windowsHide: true, timeout: 8000 }, (err) => {
-        resolve(err ? { ok: false, error: 'تایپ در برنامه فعال ممکن نشد' } : { ok: true });
-      });
-    });
-  } catch (e) {
-    return { ok: false, error: String((e && e.message) || e) };
-  }
-});
+/* v0.60 (A22) — هندلر مردهٔ 'sys:type-text' (با خط تیره) حذف شد؛ کانال زندهٔ
+   همین قابلیت 'sys:typeText' است (main.js/preload.js/renderer) و هیچ
+   فراخوانی‌کننده‌ای برای نسخهٔ خط‌تیره وجود نداشت (grep-راستی‌آزمایی شد).
+   منطق تایپ در برنامهٔ فعال حالا فقط در هندلر زنده است. */
 
 /* ============================================================
    مدیریت DNS ویندوز — با فرمان صوتی یا رابط کاربری
@@ -3869,7 +3993,30 @@ ipcMain.handle('ai:openai', async (_e, p) => {
 
 /* ---------- فرمان‌های سفارشی (پیشنهاد هوش مصنوعی + تأیید صریح کاربر) ----------
    رندرر قبلاً یک مودال تأیید با متن کامل اسکریپت نشان می‌دهد؛
-   این‌جا فقط اجرای مهاربندی‌شده PowerShell انجام می‌شود. */
+   این‌جا فقط اجرای مهاربندی‌شده PowerShell انجام می‌شود.
+   v0.60 (B3) — سخت‌سازی «دورِ» همین قابلیت (خودِ قابلیت عمداً آزاد می‌ماند):
+   ۱) فهرست سیاهِ ویرانگری (case-insensitive) روی اسکریپت ترکیب‌شده
+   ۲) سقف نرخ: حداکثر ۶ اجر در پنجرهٔ ۶۰ ثانیه‌ای غلتان
+   ۳) لاگ کامل هر اجر: طول + ۱۲۰ نویسهٔ اول (پاک‌سازی‌شده از کاراکتر کنترلی)
+   فیوچر: -ConstrainedLanguage گزینهٔ بعدی است — فعلاً نه، چون اسکریپت‌های
+   قانونی کاربر (COM/بدنه‌های Add-Type/…) می‌شکند و B3 نباید قابلیت را بکشد. */
+const CUSTOM_RUN_DENY_RE = new RegExp([
+  '(^|[\\s;&|(])format(\\.com)?(\\s|\\(|$)', /* format.com / format C: — اما Format-Table/List را نمی‌گیرد */
+  'Format-Volume',
+  'diskpart',
+  'Remove-Item\\s+-Recurse\\s+-Force\\s+[A-Za-z]:\\\\',
+  'rd\\s+/s',
+  'del\\s+/[sq]',
+  'reg\\s+delete',
+  'vssadmin',
+  'bcdedit',
+  'cipher\\s+/w',
+  'Invoke-WebRequest[\\s\\S]*-OutFile',
+  'DownloadFile',
+  'certutil\\s+-urlcache',
+  'bitsadmin\\s+/transfer',
+].join('|'), 'i');
+const customRunTimes = [];
 ipcMain.handle('custom:run', (_e, script) => {
   const s = String(script || '')
     .replace(/\r?\n/g, '; ')
@@ -3879,6 +4026,25 @@ ipcMain.handle('custom:run', (_e, script) => {
      دو-بک‌اسلش تولید می‌کرد و هر اسکریپت دارای " با «missing the terminator»
      می‌مرد (گزارش کاربر: «دستور هوش مصنوعی کاری نمی‌کند») */
   const cmdStr = `powershell -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(s, 'utf16le').toString('base64')}`;
+  /* B3-۱ — فهرست سیاه: دستورهای ویرانگر/دانلود-دراپر با لاگ صادقانه رد می‌شوند.
+     نکتهٔ طراحی: به‌جای throw، {ok:false,error} برمی‌گردد — رندرر (که مجاز به
+     دست‌زدن نیست) برای reject هیچ catch‌ای ندارد و استثنا «خطای خاموش» می‌شد؛
+     همین قرارداد در UI به‌صورت «اجرا نشد: …» نمایش داده می‌شود. */
+  const dm = CUSTOM_RUN_DENY_RE.exec(s);
+  if (dm) {
+    actLog(`custom:run REFUSED (deny-list: "${String(dm[0]).slice(0, 40)}") len=${s.length} head="${s.slice(0, 120).replace(/[\x00-\x1f\x22]/g, ' ')}"`);
+    return { ok: false, error: 'این اسکریپت شامل دستورهای خطرناک (فرمت/پاک‌سازی انبوه/دانلود فایل) است و اجرا نمی‌شود' };
+  }
+  /* B3-۲ — سقف نرخ: ۶ اجر در ۶۰ ثانیهٔ غلتان (حافظهٔ درون‌پردازشی) */
+  const now = Date.now();
+  while (customRunTimes.length && now - customRunTimes[0] > 60000) customRunTimes.shift();
+  if (customRunTimes.length >= 6) {
+    actLog(`custom:run REFUSED (rate cap 6/60s) len=${s.length} head="${s.slice(0, 120).replace(/[\x00-\x1f\x22]/g, ' ')}"`);
+    return { ok: false, error: 'تعداد اجرای فرمان‌های سفارشی زیاد است — حدود یک دقیقه صبر کنید' };
+  }
+  customRunTimes.push(now);
+  /* B3-۳ — لاگ کامل هر اجر (بدون متن خام چندخطی) */
+  actLog(`custom:run len=${s.length} head="${s.slice(0, 120).replace(/[\x00-\x1f\x22]/g, ' ')}"`);
   return new Promise((resolve) => {
     exec(cmdStr, { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 512 }, (err, stdout, stderr) => {
       if (err && !stdout) {
@@ -5051,6 +5217,17 @@ ipcMain.handle('music:readHead', (_e, p, max) => {
   try {
     const f = String(p || '');
     if (!path.isAbsolute(f)) return { ok: false };
+    /* v0.60 (B5) — قبلاً ۳MB اولِ «هر» مسیر مطلقی خوانده می‌شد؛ حالا فقط
+       فایل موزیکِ داخل همان allowlist پوشه‌های ava-media:// مجاز است.
+       ردشدن‌ها در activity.log ثبت می‌شوند. */
+    if (!mediaDirAllowed(f)) {
+      try { actLog('music:readHead DENIED (outside media allowlist): ' + f.slice(0, 120)); } catch (_) { /* noop */ }
+      return { ok: false };
+    }
+    if (!MUSIC_EXT_RE.test(path.basename(f))) {
+      try { actLog('music:readHead DENIED (not a music file): ' + f.slice(0, 120)); } catch (_) { /* noop */ }
+      return { ok: false };
+    }
     const st = fs.statSync(f);
     const n = Math.min(st.size, Math.max(64, Number(max) || 3 * 1024 * 1024 + 10));
     const fd = fs.openSync(f, 'r');
@@ -5163,9 +5340,15 @@ function pttStartWatcher(vks) {
       'Add-Type -TypeDefinition $s',
       '$keys=@(' + vks.join(',') + ')',
       '$prev=$false',
+      /* v0.60 (B7) — اگر AVA با taskkill مرد، این watcher تا ابد زنده می‌ماند؛
+         هر ~۵ ثانیه (۱۴۳ × ۳۵ms) بودنِ پدر چک می‌شود — نبود → exit */
+      '$pp=' + Number(process.pid || 0),
+      '$t=0',
       '[Console]::Out.WriteLine(\'ready\')',
       'while($true){',
       '  Start-Sleep -Milliseconds 35',
+      '  $t++',
+      '  if($t -ge 143){ $t=0; try{ Get-Process -Id $pp -ErrorAction Stop | Out-Null } catch { exit } }',
       '  $down=0',
       '  foreach($k in $keys){ if([AvaKeys]::GetAsyncKeyState($k) -band 0x8000){ $down++ } }',
       '  $all=($down -eq $keys.Count)',
@@ -5278,8 +5461,7 @@ app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
   /* v0.48 — مارکر بوت در JSONL + تایمر تله‌متری + بازپخش جلسهٔ قبل */
   try { logSessionMarker('boot', { electron: process.versions.electron, pid: process.pid }); } catch (_) { /* noop */ }
-  try {
-  } catch (_) { /* noop */ }
+  /* v0.60 (A22) — بلوک خالیِ بی‌مصرف try{}catch(_){} که این‌جا بود حذف شد. */
   app.on('before-quit', () => { try { logSessionMarker('quit', { uptimeS: Math.round(process.uptime()) }); } catch (_) { /* noop */ } });
   /* v0.35 — تور ایمنی کرش: رندرر اگر مرد (GPU درایور/OOM وسط بازی) به‌جای
      پنجرهٔ خالیِ معلق، خودکار یک‌بار ری‌لود می‌شود و علت در لاگ می‌ماند؛

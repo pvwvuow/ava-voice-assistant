@@ -147,11 +147,12 @@ function ruleK(src, id) {
     else if (main[k] === '}') { d--; if (!d) { end = k + 1; break; } }
   }
   const arrow = main.slice(main.indexOf('(', i), end);
-  const wsCmd = new Function('return (' + arrow + ')')();
-  ok(String(wsCmd('')).includes('start "" "https://www.google.com"'), 'web_search: عبارت خالی → صفحهٔ اصلی گوگل');
-  const withQ = String(wsCmd('قیمت دلار'));
-  ok(withQ.includes('google.com/search?q='), 'web_search: عبارت‌دار → نتایج جستجو');
-  ok(withQ.includes(encodeURIComponent('قیمت دلار')), 'web_search: عبارت سالم داخل URL');
+  /* v0.60 forward-relax (B8): بازکردن URL از `start ""` (cmd.exe) به shell.openExternal مهاجرت کرد —
+     فراخوانی زندهٔ cmd حذف و به پین سورس‌سطح تبدیل شد (URL/سقف ۲۰۰/عبارت‌گذاری همان است) */
+  ok(arrow.includes('shell.openExternal') && arrow.includes("else shell.openExternal('https://www.google.com')"),
+    'web_search: عبارت خالی → صفحهٔ اصلی گوگل (shell.openExternal)');
+  ok(arrow.includes('https://www.google.com/search?q='), 'web_search: عبارت‌دار → نتایج جستجو');
+  ok(arrow.includes('encodeURIComponent(q.slice(0, 200))'), 'web_search: عبارت سالم داخل URL');
   /* پاسخ صادقانهٔ رندرر */
   ok(app.includes("'گوگل باز شد — بگو چی رو برات سرچ کنم.'"), 'app: پاسخ «سرچ کن» خالی صادقانه است');
 }
