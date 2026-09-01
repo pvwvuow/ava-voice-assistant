@@ -149,6 +149,21 @@ contextBridge.exposeInMainWorld('ava', {
     save: (data) => ipcRenderer.invoke('learnings:save', data),
   },
 
+  /* v0.55 — ویجت شناور (آیکون + هالهٔ حالت + گفتهٔ کاربر/پاسخ آوا) */
+  widget: {
+    get: () => ipcRenderer.invoke('widget:get'),
+    config: (enabled) => ipcRenderer.send('widget:config', { enabled }),
+    update: (p) => ipcRenderer.send('widget:update', p || {}),
+    onState: (cb) => ipcRenderer.on('widget:state', (_e, s) => { try { cb(s); } catch (_) { /* noop */ } }),
+  },
+
+  /* v0.55 — تاریخچهٔ چت روی دیسک (لود تنبل — فقط وقتی کاربر سر می‌زند) */
+  chats: {
+    append: (p) => ipcRenderer.invoke('chats:append', p),
+    load: (p) => ipcRenderer.invoke('chats:load', p),
+    clear: () => ipcRenderer.invoke('chats:clear'),
+  },
+
   /* صدای گوینده (TTS) — v0.42: موتور عصبی مایکروسافت اِج (رایگان) + گوگل */
   tts: {
     google: (payload) => ipcRenderer.invoke('tts:google', payload),

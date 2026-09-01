@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>آوا — ویجت</title>
+<style>
+  /* ============================================================
+     ویجت شناور آوا — v0.55
+     آیکون مرکزی + هالهٔ حالت + گفتهٔ کاربر/پاسخ آوا (کوچک)
+     هیچ اسکریپت خارجی؛ فقط ipcRenderer مستقیم نیست — preload سبک دارد
+     ============================================================ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 300px; height: 178px; background: transparent; overflow: hidden; user-select: none; }
+  body {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    color: #eaf4ee; direction: rtl;
+  }
+  .wrap {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding: 10px 12px 12px;
+  }
+  /* ناحیهٔ درگ = کل حباب؛ دابل‌کلیک باز کردن برنامه */
+  .bubble {
+    position: relative;
+    width: 92px; height: 92px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 32% 28%, rgba(28,44,38,.94), rgba(10,16,14,.96));
+    border: 1px solid rgba(120,220,160,.22);
+    box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 0 22px rgba(52,211,153,.08);
+    -webkit-app-region: drag; cursor: grab;
+  }
+  .bubble img { width: 52px; height: 52px; pointer-events: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+  /* هالهٔ حالت — سبز: گوش دادن | کهربایی: پردازش | فیروزه‌ای: صحبت آوا */
+  .halo, .halo2 {
+    position: absolute; inset: -7px; border-radius: 50%;
+    border: 2px solid transparent; opacity: 0; pointer-events: none;
+    transition: opacity .35s ease;
+  }
+  body.listening .halo, body.listening .halo2 { opacity: 1; border-color: rgba(52,211,153,.85); }
+  body.listening .halo { animation: pulse 1.5s ease-out infinite; }
+  body.listening .halo2 { animation: pulse 1.5s .5s ease-out infinite; border-color: rgba(52,211,153,.45); }
+  body.processing .halo { opacity: 1; border-color: rgba(251,191,36,.8); animation: spin 2.4s linear infinite; border-style: dashed; }
+  body.speaking .halo { opacity: 1; border-color: rgba(94,234,212,.85); animation: pulse 1.9s ease-out infinite; }
+  @keyframes pulse {
+    0% { transform: scale(.92); box-shadow: 0 0 0 0 rgba(52,211,153,.35); }
+    70% { transform: scale(1.12); box-shadow: 0 0 0 16px rgba(52,211,153,0); }
+    100% { transform: scale(.92); box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .texts {
+    margin-top: 8px; width: 100%; max-height: 62px; overflow: hidden;
+    display: flex; flex-direction: column; gap: 4px;
+    opacity: 0; transform: translateY(-4px); transition: opacity .3s ease, transform .3s ease;
+    pointer-events: none;
+  }
+  .texts.show { opacity: 1; transform: none; }
+  .line {
+    font-size: 11.5px; line-height: 1.55; padding: 4px 10px; border-radius: 10px;
+    width: fit-content; max-width: 100%;
+    background: rgba(12,20,17,.82); border: 1px solid rgba(255,255,255,.07);
+    backdrop-filter: blur(6px);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .line.user { align-self: flex-start; border-color: rgba(52,211,153,.25); }
+  .line.ava { align-self: flex-end; border-color: rgba(94,234,212,.22); color: #d9f7ef; }
+  .line .who { font-size: 9px; opacity: .55; display: block; }
+  .hint {
+    position: absolute; bottom: 3px; font-size: 8.5px; color: rgba(230,255,242,.4);
+    -webkit-app-region: no-drag; letter-spacing: .3px;
+  }
+</style>
+</head>
+<body class="idle">
+  <div class="wrap">
+    <div class="bubble" id="bubble" title="آوا — دابل‌کلیک: باز کردن برنامه">
+      <div class="halo"></div><div class="halo2"></div>
+      <img src="../assets/icon.png" alt="آوا" draggable="false" />
+    </div>
+    <div class="texts" id="texts">
+      <div class="line user" id="lineUser" hidden><span class="who">شما</span><span id="txtUser"></span></div>
+      <div class="line ava" id="lineAva" hidden><span class="who">آوا</span><span id="txtAva"></span></div>
+    </div>
+    <div class="hint" id="hint">دابل‌کلیک = باز کردن آوا</div>
+  </div>
+  <script src="js/widgetRenderer.js"></script>
+</body>
+</html>

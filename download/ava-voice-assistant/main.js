@@ -4,7 +4,7 @@
  * فعال می‌شود، فرمان‌های پاور (خواب/خاموش/مانیتور)، فرم «DNS جدید» داخل صفحه
  * اصلی با انیمیشن، پل چت GLM با نشست واقعی کاربر، تنظیمات فایلی)
  */
-const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard, dialog, powerSaveBlocker } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, session, screen, shell, protocol, net, clipboard, dialog, powerSaveBlocker, Tray, Menu, nativeImage } = require('electron');
 const { exec, spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -39,6 +39,8 @@ if (!gotSingleInstanceLock) {
 
 /* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
 const pipManager = require('./pipWindowManager');
+/* v0.55 — ویجت شناور آوا (درخواست صریح کاربر): آیکون معلق + هالهٔ سبز گوش دادن + گفتهٔ کاربر/پاسخ آوا */
+const widgetManager = require('./widgetManager');
 
 /* ---------- پروتکل امن ava:// ----------
    رابط کاربری از ava://app بارگذاری می‌شود تا فایل‌های برنامه
@@ -495,6 +497,16 @@ function createWindow() {
   win.on('maximize', () => win.webContents.send('win:maximized-changed', true));
   win.on('unmaximize', () => win.webContents.send('win:maximized-changed', false));
   win.on('closed', () => { win = null; });
+  /* v0.55 — بستن = مخفی به ترِی (درخواست صریح کاربر: «وقتی کاربر برنامه را بست
+     برنامه همچنان در پس‌زمینه فعال باشه… اونجا باشه ک بتونه از اونجا مطلع بشه»)
+     خروج واقعی فقط از منوی ترِی (خروج) — isQuitting*/
+  win.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      try { win.hide(); } catch (_) { /* noop */ }
+      try { firstTrayNotice(); } catch (_) { /* noop */ }
+    }
+  });
 
   // برای دیباگ رابط کاربری، خط زیر را از کامنت خارج کنید:
   // win.webContents.openDevTools({ mode: 'detach' });
@@ -5327,6 +5339,10 @@ app.whenReady().then(() => {
      Ctrl+Shift+P روشن/خاموش PiP — Ctrl+Shift+جهت‌ها جابجایی — Plus/Minus اندازه */
   try { pipManager.init({ win }); } catch (e) { console.error('pip init:', e); }
 
+  /* v0.55 — ویجت شناور + ترِی (درخواست کاربر) */
+  try { widgetManager.init({ win }); } catch (e) { console.error('widget init:', e); }
+  try { createTray(); } catch (e) { console.error('tray init:', e); }
+
   /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود)
      v0.29.1 — + تشخیص عمیق: پراکسی سیستم + https واقعی به generativelanguage */
   try { setTimeout(netSelfCheck, 2500); } catch (_) { /* noop */ }
@@ -5396,11 +5412,122 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  app.quit(); // رفتار استاندارد ویندوز
+  /* v0.55 — بستن پنجره = پس‌زمینه (ترِی)؛ فقط «خروج» آشکار برنامه را می‌بندد */
+  if (isQuitting) app.quit();
 });
+
+app.on('before-quit', () => { isQuitting = true; });
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   try { pttStopHoldWatcher(); } catch (_) { /* noop */ } /* v0.51 — پروسهٔ PowerShell نگهبان PTT هم بسته شود */
   try { pipManager.flushPiPState(); } catch (_) { /* noop */ } /* v0.38.1 — آخرین ≤۳۰۰ms وضعیت PiP از دست نمی‌رود */
+  try { widgetManager.flushState(); } catch (_) { /* noop */ } /* v0.55 — وضعیت ویجت */
+  try { flushChats(); } catch (_) { /* noop */ } /* v0.55 — آخرین پیام‌های چت روی دیسک */
 });
+
+/* ============================================================
+   v0.55 — ترِی ویندوز + بستن به پس‌زمینه + تاریخچهٔ چت روی دیسک
+   (درخواست صریح کاربر: «وقتی برنامه را بست در پس‌زمینه فعال بماند —
+   اون پیکان پایینی ویندوز… از اونجا مطلع بشه» + «تاریخچهٔ چت‌ها،
+   لود تنبل — برنامه سنگین نشه»)
+   ============================================================ */
+let isQuitting = false;
+let tray = null;
+let trayNoticeShown = false;
+
+function firstTrayNotice() {
+  if (trayNoticeShown) return;
+  trayNoticeShown = true;
+  try {
+    if (tray && tray.displayBalloon) {
+      tray.displayBalloon({
+        iconType: 'info',
+        title: 'آوا در پس‌زمینه فعال ماند',
+        content: 'گوش دادن و فرمان‌ها کار می‌کنند. از همین آیکون: نمایش آوا، ویجت، خروج.',
+      });
+    }
+  } catch (_) { /* noop */ }
+}
+
+function createTray() {
+  if (tray) return;
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'));
+  tray = new Tray(icon.isEmpty() ? path.join(__dirname, 'assets', 'icon.ico') : icon);
+  tray.setToolTip('آوا — در پس‌زمینه فعال است (v0.55.0-beta)');
+  const rebuild = () => {
+    const widgetOn = !!(widgetManager.getState() && widgetManager.getState().enabled);
+    const menu = Menu.buildFromTemplate([
+      { label: 'نمایش آوا / Show Ava', click: () => { try { if (win && !win.isDestroyed()) { win.show(); win.focus(); } } catch (_) { /* noop */ } } },
+      { type: 'separator' },
+      { label: 'ویجت شناور (Floating widget)', type: 'checkbox', checked: widgetOn, click: (it) => { try { widgetManager.configure(it.checked); } catch (_) { /* noop */ } } },
+      { label: 'شروع/توقف گوش دادن', click: () => { try { if (win && !win.isDestroyed()) win.webContents.send('ava:toggle-listen', {}); } catch (_) { /* noop */ } } },
+      { type: 'separator' },
+      { label: 'خروج کامل / Quit', click: () => { isQuitting = true; try { app.quit(); } catch (_) { /* noop */ } } },
+    ]);
+    tray.setContextMenu(menu);
+  };
+  rebuild();
+  /* تغییر ویجت از تنظیمات هم منوی ترِی را به‌روز کند */
+  const _origConfigure = widgetManager.configure.bind(widgetManager);
+  widgetManager.configure = (enabled) => { _origConfigure(enabled); try { rebuild(); } catch (_) { /* noop */ } };
+  tray.on('click', () => { try { if (win && !win.isDestroyed()) { if (win.isVisible()) win.hide(); else { win.show(); win.focus(); } } } catch (_) { /* noop */ } });
+  tray.on('double-click', () => { try { if (win && !win.isDestroyed()) { win.show(); win.focus(); } } catch (_) { /* noop */ } });
+}
+
+/* ---------- v0.55 — تاریخچهٔ چت روی دیسک (ava-chats.json — اتمیک + لود تنبل) ----------
+   «نیاز نیس چت‌ها همیشه آماده لود باشه چون برنامه سنگین میشه — اگ کاربر سر زد لود بشه»:
+   renderer فقط وقتی نوار/چت باز می‌شود chats:load می‌زند؛ اینجا فقط فایل است. */
+const CHATS_FILE = () => path.join(app.getPath('userData'), 'ava-chats.json');
+let chatsCache = null;
+let chatsSaveTimer = null;
+function loadChatsRaw() {
+  if (chatsCache) return chatsCache;
+  try { chatsCache = JSON.parse(fs.readFileSync(CHATS_FILE(), 'utf8')) || null; } catch (_) { chatsCache = null; }
+  if (!chatsCache || typeof chatsCache !== 'object' || !Array.isArray(chatsCache.msgs)) chatsCache = { v: 1, msgs: [] };
+  return chatsCache;
+}
+function writeChatsNow() {
+  try {
+    if (!chatsCache) return;
+    const tmp = CHATS_FILE() + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(chatsCache), 'utf8');
+    fs.renameSync(tmp, CHATS_FILE());
+  } catch (_) { /* noop */ }
+}
+function flushChats() {
+  if (!chatsSaveTimer) return;
+  try { clearTimeout(chatsSaveTimer); } catch (_) { /* noop */ }
+  chatsSaveTimer = null;
+  writeChatsNow();
+}
+ipcMain.handle('chats:append', (_e, p) => {
+  try {
+    const msgs = loadChatsRaw().msgs;
+    const arr = Array.isArray(p) ? p : [p];
+    for (const m of arr) {
+      if (!m || typeof m !== 'object') continue;
+      const role = String(m.role || '').slice(0, 12);
+      const text = String(m.text || '').slice(0, 4000);
+      if (!role || !text) continue;
+      msgs.push({ role, text, at: Number(m.at) || Date.now(), via: String(m.via || '').slice(0, 24) });
+    }
+    if (msgs.length > 2000) chatsCache.msgs = msgs.slice(-2000); /* سقف حافظهٔ دیسک */
+    if (chatsSaveTimer) clearTimeout(chatsSaveTimer);
+    chatsSaveTimer = setTimeout(() => { chatsSaveTimer = null; writeChatsNow(); }, 700);
+    return { ok: true, total: chatsCache.msgs.length };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e).slice(0, 120) };
+  }
+});
+ipcMain.handle('chats:load', (_e, p) => {
+  try {
+    const all = loadChatsRaw().msgs;
+    const o = p || {};
+    const lim = Math.max(10, Math.min(400, Number(o.limit) || 120));
+    const off = Math.max(0, Math.min(all.length, Number(o.offset) || 0)); /* offset = چند پیام از آخر را رد کن */
+    const end = all.length - off;
+    return { ok: true, total: all.length, msgs: all.slice(Math.max(0, end - lim), end) };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e).slice(0, 120) };
+  }
+});
+ipcMain.handle('chats:clear', () => { try { chatsCache = { v: 1, msgs: [] }; writeChatsNow(); return { ok: true }; } catch (e) { return { ok: false, error: String(e).slice(0, 120) }; } });

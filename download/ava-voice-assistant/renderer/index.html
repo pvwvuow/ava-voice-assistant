@@ -608,6 +608,15 @@
                   <span class="set-info"><b data-i18n="set.app.top">همیشه روی همه پنجره‌ها</b><span data-i18n="set.app.topHint">پنجره آوا روی برنامه‌های دیگر باقی بماند</span></span>
                   <span class="sw"><input type="checkbox" id="optTop"/><i></i></span>
                 </label>
+                <!-- v0.55 — چت خودکار + ویجت شناور (درخواست کاربر) -->
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.app.chatAutoOpen">باز شدن خودکار چت با مکالمه</b><span data-i18n="set.app.chatAutoOpenHint">هر وقت با آوا حرف بزنی، ردوبدل به صورت متن در چت باز و ثبت می‌شود</span></span>
+                  <span class="sw"><input type="checkbox" id="optChatAutoOpen"/><i></i></span>
+                </label>
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.app.widget">ویجت شناور (آیکون معلق)</b><span data-i18n="set.app.widgetHint">آیکون آوا روی دسکتاپ؛ هنگام گوش دادن هالهٔ سبز دورش می‌رود و گفتهٔ تو + پاسخ آوا را کوچک می‌نویسد</span></span>
+                  <span class="sw"><input type="checkbox" id="optWidget"/><i></i></span>
+                </label>
                 <label class="set-row">
                   <span class="set-info"><b data-i18n="set.app.login">اجرای خودکار با ویندوز</b><span data-i18n="set.app.loginHint">آوا هنگام روشن شدن سیستم بالا بیاید</span></span>
                   <span class="sw"><input type="checkbox" id="optLogin"/><i></i></span>
@@ -694,16 +703,16 @@
         <!-- صفحه تاریخچه فرمان‌ها -->
         <section id="historyPage" class="settings" hidden>
           <header class="set-top">
-            <h2><svg class="ic"><use href="#i-history"/></svg> <span data-i18n="hist.title">تاریخچه فرمان‌ها</span></h2>
+            <h2><svg class="ic"><use href="#i-history"/></svg> <span data-i18n="hist.title">تاریخچهٔ گفتگو</span></h2>
             <button class="chip" id="btnHistoryBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
           </header>
           <div class="set-group">
             <div class="set-row">
-              <span class="set-info"><b data-i18n="hist.recent">فرمان‌های اخیر</b><span data-i18n="hist.recentHint">روی هر فرمان بزنی دوباره اجرا می‌شود</span></span>
+              <span class="set-info"><b data-i18n="hist.recent">مکالمه‌های اخیر</b><span data-i18n="hist.recentHint">مکالمات صوتی و چت به صورت متن — لود تنبل از دیسک</span></span>
               <button class="chip sm" id="btnHistoryClear"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="hist.clear">پاک‌سازی</span></button>
             </div>
-            <div id="historyList" class="history-list"></div>
-            <p class="set-note" id="historyEmpty" data-i18n="hist.empty">هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.</p>
+            <div id="historyList" class="history-list chat-hist"></div>
+            <p class="set-note" id="historyEmpty" data-i18n="hist.empty">هنوز گفتگویی ثبت نشده — با میکروفون حرف بزن یا در چت بنویس.</p>
           </div>
         </section>
 
@@ -1079,7 +1088,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.54.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.55.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

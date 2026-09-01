@@ -99,7 +99,7 @@
     'nav.chat': ['چت با هوش مصنوعی GLM (بدون کلید)', 'Chat with GLM AI (no API key)'],
     'nav.ext': ['افزونه‌ها — DNS Changer، پلیر موزیک و بیشتر', 'Extensions — DNS Changer, music player and more'],
     'nav.dnsExt': ['DNS Changer — مدیریت کامل DNS', 'DNS Changer — full DNS management'],
-    'nav.history': ['تاریخچه فرمان‌ها', 'Command history'], 'nav.plugins': ['افزونه‌ها — به‌زودی', 'Plugins — soon'],
+    'nav.history': ['تاریخچهٔ گفتگو', 'Chat history'], 'nav.plugins': ['افزونه‌ها — به‌زودی', 'Plugins — soon'],
     'nav.about': ['درباره آوا', 'About AVA'], 'nav.settings': ['تنظیمات', 'Settings'],
     'hero.sub': ['فرمانت را بگو تا برایت انجامش بدهم.', 'Say the word and I will do it for you.'],
     'hf.tip': ['حالت بی‌دست (Ctrl+Alt+A) — با گفتن «آوا …» فرمان بده', 'Hands-free (Ctrl+Alt+A) — start with "Ava …"'],
@@ -191,6 +191,10 @@
     'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
     'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
     'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
+    'set.app.chatAutoOpen': ['باز شدن خودکار چت با مکالمه', 'Auto-open chat during conversation'],
+    'set.app.chatAutoOpenHint': ['هر وقت با آوا حرف بزنی، ردوبدل به صورت متن در چت باز و ثبت می‌شود', 'When you talk to Ava, the exchange opens in chat and is kept as text'],
+    'set.app.widget': ['ویجت شناور (آیکون معلق)', 'Floating widget (floating icon)'],
+    'set.app.widgetHint': ['آیکون آوا روی دسکتاپ؛ هنگام گوش دادن هالهٔ سبز دورش می‌رود و گفتهٔ تو + پاسخ آوا را کوچک می‌نویسد', 'Ava icon on your desktop; green halo while listening, shows your words + Ava reply'],
     /* v0.34 — سلامت و تست بیدارباش + حالت ابری بدون بستهٔ آفلاین */
     'wake.alwaysCloudOn': ['بیدارباش همیشگی روشن شد — تا نصب بستهٔ آفلاین، تشخیص «آوا» با اینترنت انجام می‌شود', 'Always-on wake is on — until the offline pack installs, "Ava" detection uses the internet'],
     'wake.healthTitle': ['وضعیت بیدارباش', 'Wake word status'],
@@ -364,9 +368,9 @@
     'set.upd.manualDl': ['دانلود مستقیم نصّاب', 'Download installer directly'],
     'set.upd.download': ['دانلود نسخه جدید', 'Download the new version'], 'set.upd.pause': ['توقف', 'Pause'], 'set.upd.resume': ['ادامه دانلود', 'Resume download'], 'set.upd.cancel': ['لغو', 'Cancel'],
     'set.upd.note': ['بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.', 'Auto-check runs by itself, but downloading only when you want: hit “Download new version” whenever you like — pause or cancel anytime. Only changed parts are downloaded (delta update) and install is one click.'],
-    'hist.title': ['تاریخچه فرمان‌ها', 'Command history'], 'hist.recent': ['فرمان‌های اخیر', 'Recent commands'],
-    'hist.recentHint': ['روی هر فرمان بزنی دوباره اجرا می‌شود', 'Click any command to run it again'], 'hist.clear': ['پاک‌سازی', 'Clear'],
-    'hist.empty': ['هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.', 'No commands yet — try a suggestion or speak into the microphone.'],
+    'hist.title': ['تاریخچهٔ گفتگو', 'Chat history'], 'hist.recent': ['مکالمه‌های اخیر', 'Recent conversations'],
+    'hist.recentHint': ['مکالمات صوتی و چت به صورت متن — لود تنبل از دیسک', 'Voice & typed chats as text — lazily loaded from disk'], 'hist.clear': ['پاک‌سازی', 'Clear'],
+    'hist.empty': ['هنوز گفتگویی ثبت نشده — با میکروفون حرف بزن یا در چت بنویس.', 'No conversations yet — speak into the microphone or type in chat.'],
     'dict.title': ['تایپ صوتی', 'Voice typing'], 'dict.text': ['متن تایپ‌شده', 'Typed text'],
     'dict.textHint': ['هر چه بگویی اینجا نوشته می‌شود؛ علائم را هم با صدا بگو (نقطه، کاما، علامت سوال…)', 'Whatever you say is written here; speak punctuation out loud (period, comma…)'],
     'dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
@@ -392,7 +396,7 @@
     'nav.chat': ['چت با هوش مصنوعی GLM (بدون کلید)', 'Chat with GLM AI (no API key)'],
     'nav.ext': ['افزونه‌ها — DNS Changer، پلیر موزیک و بیشتر', 'Extensions — DNS Changer, music player and more'],
     'nav.dnsExt': ['DNS Changer — مدیریت کامل DNS', 'DNS Changer — full DNS management'],
-    'nav.history': ['تاریخچه فرمان‌ها', 'Command history'], 'nav.plugins': ['افزونه‌ها — به‌زودی', 'Plugins — soon'],
+    'nav.history': ['تاریخچهٔ گفتگو', 'Chat history'], 'nav.plugins': ['افزونه‌ها — به‌زودی', 'Plugins — soon'],
     'nav.about': ['درباره آوا', 'About AVA'], 'nav.settings': ['تنظیمات', 'Settings'],
     'hero.sub': ['فرمانت را بگو تا برایت انجامش بدهم.', 'Say the word and I will do it for you.'],
     'hf.tip': ['حالت بی‌دست (Ctrl+Alt+A) — با گفتن «آوا …» فرمان بده', 'Hands-free (Ctrl+Alt+A) — start with "Ava …"'],
@@ -484,6 +488,10 @@
     'toast.wakeAlwaysOn': ['بیدارباش همیشگی روشن شد — هر وقت «آوا» بگویی گوش می‌دهم (۱۰۰٪ آفلاین، داخل ویندوز)', 'Always-on wake word is on — say "Ava" anytime (100% offline, on-device)'],
     'toast.wakeAlwaysOff': ['بیدارباش همیشگی خاموش شد', 'Always-on wake word is off'],
     'set.stt.wakeAlways': ['بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)', 'Always-on wake word (even when listening is off)'],
+    'set.app.chatAutoOpen': ['باز شدن خودکار چت با مکالمه', 'Auto-open chat during conversation'],
+    'set.app.chatAutoOpenHint': ['هر وقت با آوا حرف بزنی، ردوبدل به صورت متن در چت باز و ثبت می‌شود', 'When you talk to Ava, the exchange opens in chat and is kept as text'],
+    'set.app.widget': ['ویجت شناور (آیکون معلق)', 'Floating widget (floating icon)'],
+    'set.app.widgetHint': ['آیکون آوا روی دسکتاپ؛ هنگام گوش دادن هالهٔ سبز دورش می‌رود و گفتهٔ تو + پاسخ آوا را کوچک می‌نویسد', 'Ava icon on your desktop; green halo while listening, shows your words + Ava reply'],
     /* v0.34 — سلامت و تست بیدارباش + حالت ابری بدون بستهٔ آفلاین */
     'wake.alwaysCloudOn': ['بیدارباش همیشگی روشن شد — تا نصب بستهٔ آفلاین، تشخیص «آوا» با اینترنت انجام می‌شود', 'Always-on wake is on — until the offline pack installs, "Ava" detection uses the internet'],
     'wake.healthTitle': ['وضعیت بیدارباش', 'Wake word status'],
@@ -663,9 +671,9 @@
     'set.upd.manualDl': ['دانلود مستقیم نصّاب', 'Download installer directly'],
     'set.upd.download': ['دانلود نسخه جدید', 'Download the new version'], 'set.upd.pause': ['توقف', 'Pause'], 'set.upd.resume': ['ادامه دانلود', 'Resume download'], 'set.upd.cancel': ['لغو', 'Cancel'],
     'set.upd.note': ['بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.', 'Auto-check runs by itself, but downloading only when you want: hit “Download new version” whenever you like — pause or cancel anytime. Only changed parts are downloaded (delta update) and install is one click.'],
-    'hist.title': ['تاریخچه فرمان‌ها', 'Command history'], 'hist.recent': ['فرمان‌های اخیر', 'Recent commands'],
-    'hist.recentHint': ['روی هر فرمان بزنی دوباره اجرا می‌شود', 'Click any command to run it again'], 'hist.clear': ['پاک‌سازی', 'Clear'],
-    'hist.empty': ['هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.', 'No commands yet — try a suggestion or speak into the microphone.'],
+    'hist.title': ['تاریخچهٔ گفتگو', 'Chat history'], 'hist.recent': ['مکالمه‌های اخیر', 'Recent conversations'],
+    'hist.recentHint': ['مکالمات صوتی و چت به صورت متن — لود تنبل از دیسک', 'Voice & typed chats as text — lazily loaded from disk'], 'hist.clear': ['پاک‌سازی', 'Clear'],
+    'hist.empty': ['هنوز گفتگویی ثبت نشده — با میکروفون حرف بزن یا در چت بنویس.', 'No conversations yet — speak into the microphone or type in chat.'],
     'dict.title': ['تایپ صوتی', 'Voice typing'], 'dict.text': ['متن تایپ‌شده', 'Typed text'],
     'dict.textHint': ['هر چه بگویی اینجا نوشته می‌شود؛ علائم را هم با صدا بگو (نقطه، کاما، علامت سوال…)', 'Whatever you say is written here; speak punctuation out loud (period, comma…)'],
     'dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
@@ -1396,6 +1404,7 @@
     /* v0.15 — افزونه‌ها و بهینه‌سازی */
     extDns: store.get('extDns', true),      /* DNS Changer پیش‌فرض روشن */
     extMusic: store.get('extMusic', false), /* موزیک تا کاربر فعالش نکند در ستون نمی‌آید */
+    chatAutoOpen: store.get('chatAutoOpen', true), /* v0.55 — شروع مکالمه صوتی = باز شدن چت */
     extDiscord: store.get('extDiscord', true), /* کنترل دیسکورد — به‌خواست کاربر روشن */
     noAnim: store.get('noAnim', false),
     noFx: store.get('noFx', false),
@@ -1697,7 +1706,26 @@
     body.classList.remove('state-idle', 'state-listening', 'state-processing', 'state-success');
     body.classList.add('state-' + s);
     if (orbIcon) orbIcon.setAttribute('href', s === 'listening' ? '#i-stop' : '#i-mic');
+    /* v0.55 — ویجت شناور تک‌نقطه‌ای حالت را می‌بیند (هالهٔ سبز گوش دادن و…) */
+    try {
+      const wst = s === 'listening' ? 'listening' : s === 'processing' ? 'processing' : s === 'success' ? 'speaking' : 'idle';
+      if (bridge && bridge.widget) bridge.widget.update({ state: wst });
+    } catch (_) { /* noop */ }
+    /* v0.55 — ورود به گوش دادن با کانتکست صوتی معلق = resume (باگ اکولایزر: میله‌های یخ‌زده) */
+    if (s === 'listening' && audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
   }
+
+  /* v0.55 — نگهبان وضعیت (باگ «is listening» دروغین): متنِ وضعیت هرگز برتر از
+     ماشین حالت نیست — اگر state=idle است ولی برچسب «گوش دادن» مانده (نوشتنِ
+     پراکنده بدون گارد در callbackهای ریسکی)، خودترمیم می‌شود */
+  setInterval(() => {
+    try {
+      if (state === 'idle' && statusText && /گوش دادن|Listening/i.test(statusText.textContent || '')) {
+        statusText.innerHTML = IDLE_HINT;
+        try { actLog('status watchdog: stale listening label reset'); } catch (_) { /* noop */ }
+      }
+    } catch (_) { /* noop */ }
+  }, 1500);
 
   /* ---------- خوش‌آمد بر اساس ساعت ---------- */
   greetTitle.textContent = greetingText();
@@ -1821,6 +1849,13 @@
       src.connect(analyser);
       micData = new Uint8Array(analyser.frequencyBinCount);
       micLive = true;
+      /* v0.55 — باگ اکولایزر (میله‌های یخ‌زده/بالا-پایین دروغین): اگر ترک میکروفون
+         بمیرد (تغییر دستگاه/قطع USB)، قبلاً هیچ‌کس micLive را false نمی‌کرد و
+         getByteFrequencyData تا ابد همان آخرین فریم را برمی‌گرداند. حالا مرگ ترک =
+         صفرسازی + نشستن میله‌ها */
+      try {
+        micStream.getTracks().forEach((tr) => { tr.onended = () => { micLive = false; if (micData) micData.fill(0); try { actLog('mic track ended — visualizer reset'); } catch (_) { /* noop */ } }; });
+      } catch (_) { /* noop */ }
       sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.on')}`;
       micStat.textContent = t('mic.active');
       listMicDevices();
@@ -1978,9 +2013,15 @@
     if (!active && idleSettled && !waveDirty) { schedFrame(250); return; }
     t0 += dt;
     /* طیف واقعی میکروفون فقط وقتی خوانده می‌شود که کاربر دکمه میکروفون را
-       زده باشد (حالت گوش دادن) — در حالت عادی اکولایزر کاملاً ثابت می‌ماند */
-    if (state === 'listening' && analyser && micData && micLive) {
-      try { analyser.getByteFrequencyData(micData); } catch (_) { /* noop */ }
+       زده باشد (حالت گوش دادن) — در حالت عادی اکولایزر کاملاً ثابت می‌ماند
+       v0.55 — + گارد کانتکست زنده: اگر audioCtx معلق/مرده باشد، getByteFrequencyData
+       همان فریم کهنه را برمی‌گرداند و میله‌ها «یخ» می‌زنند (باگ گزارش کاربر) —
+       دادهٔ کهنه هرگز نمایش داده نمی‌شود */
+    const micAlive = analyser && micData && micLive && audioCtx && audioCtx.state === 'running';
+    if (state === 'listening' && micAlive) {
+      try { analyser.getByteFrequencyData(micData); } catch (_) { micData.fill(0); }
+    } else if (state === 'listening' && micData && !micAlive) {
+      micData.fill(0); /* خودترمیمی: جلسه بدون میکروفون زنده = میله‌ها آرام */
     }
     /* انرژی هدف بر اساس حالت: گوش دادن = بلند، پردازش/موفق = موج ملایم، عادی = سکون */
     const target = state === 'listening' ? 0.88 : state === 'processing' ? 0.4 : state === 'success' ? 0.5 : 0.0;
@@ -4358,6 +4399,9 @@
   function typeText(el, txt) {
     clearInterval(typeTimer);
     el.textContent = '';
+    /* v0.55 — هر متنِ روی کارت پاسخ = یک ردوبدل صوتی → آینهٔ چت + دیسک + ویجت
+       (درخواست کاربر: مکالمات صوتی به صورت متن در چت/تاریخچه دیده شوند) */
+    if (el === rcReply) { try { voiceReplyShown(txt); } catch (_) { /* noop */ } }
     let i = 0;
     /* v0.19 — دو برابر سریع‌تر (۸ms و ۲ نویسه در هر تیک) — حس کندی حذف شود */
     typeTimer = setInterval(() => {
@@ -4365,6 +4409,150 @@
       el.textContent = txt.slice(0, i);
       if (i >= txt.length) { el.textContent = txt; clearInterval(typeTimer); }
     }, 8);
+  }
+
+  /* ============================================================
+     v0.55 — آینهٔ گفتار (درخواست صریح کاربر)
+     «منظورم از چت همون مکالمات صوتیه ک رد و بدل میشه و ما به صورت متن
+     ذخیره کردیم» + «وقتی کاربر مکالمه رو شروع کرد یک حالت چت باز بشه»
+     ------------------------------------------------------------
+     هر ردوبدل صوتی (typeText روی rcReply) به:
+       ۱) حباب‌های چت (DOM)  ۲) ava-chats.json روی دیسک (لود تنبل —
+       سقف ۲۰۰۰ پیام، نوشتن debounce اتمیک)  ۳) ویجت شناور (متن کوچک)
+       ۴) باز شدن خودکار نمای چت (تنظیم chatAutoOpen — فقط وقتی پنجره دیده می‌شود)
+     می‌رود. pushChatHist (حافظهٔ کوتاه AI) جداگانه در مسیرهای خودش می‌ماند.
+     ============================================================ */
+  function mirrorExchange(heard, reply, via) {
+    const u = String(heard || '').trim();
+    const r = String(reply || '').trim();
+    if (!u && !r) return;
+    try {
+      if (u) addMsg('user', u);
+      if (r) { const m = addMsg('bot', r); if (via) { const ch = document.createElement('span'); ch.className = 'msg-engine'; ch.textContent = via; m.appendChild(ch); } }
+    } catch (_) { /* noop */ }
+    try {
+      const arr = [];
+      if (u) arr.push({ role: 'user', text: u, via: via || '' });
+      if (r) arr.push({ role: 'assistant', text: r, via: via || '' });
+      if (bridge && bridge.chats && arr.length) bridge.chats.append(arr);
+    } catch (_) { /* noop */ }
+    try {
+      if (bridge && bridge.widget) {
+        if (u) bridge.widget.update({ user: u });
+        if (r) bridge.widget.update({ reply: r });
+      }
+    } catch (_) { /* noop */ }
+    try {
+      if (u && settings.chatAutoOpen && document.visibilityState === 'visible') showView('chat');
+    } catch (_) { /* noop */ }
+  }
+  function voiceReplyShown(text) {
+    try {
+      const heard = String(rcHeard.textContent || '').replace(/^«|»$/g, '').trim();
+      mirrorExchange(heard, text, '');
+    } catch (_) { /* noop */ }
+  }
+
+  /* ============================================================
+     v0.55 — قالب‌های آمادهٔ چت (درخواست صریح کاربر: ورودی/نمودار/آب‌وهوا/
+     رده‌بندی فوتبال) — بلوک CARD از AI:
+       <<<CARD>>>
+       {"type":"weather|chart|league|input","data":{...}}
+       <<<END>>>
+     پادتوهم: دادهٔ نمودار/جدول فقط از نتایج تحقیق (research) یا چیزی که
+     خود کاربر گفت — هرگز عدد/ترتیب از حافظه ساخته نمی‌شود.
+     ============================================================ */
+  function parseCard(text) {
+    const t = String(text || '');
+    const m = t.match(/<<<CARD>>>\s*([\s\S]*?)\s*<<<END>>>/);
+    if (!m) return { body: t.trim(), card: null };
+    let card = null;
+    try {
+      const j = JSON.parse(m[1].replace(/^```(?:json)?/i, '').replace(/```$/, '').trim());
+      if (j && ['weather', 'chart', 'league', 'input'].includes(String(j.type))) card = j;
+    } catch (_) { card = null; }
+    return { body: t.replace(m[0], '').trim(), card };
+  }
+  function faNum2(n) { try { return Number(n).toLocaleString('fa-IR'); } catch (_) { return String(n); } }
+  function renderRichCard(hostEl, card) {
+    if (!hostEl || !card) return null;
+    const d = card.data || {};
+    const el = document.createElement('div');
+    el.className = 'rich-card rich-' + card.type;
+    try {
+      if (card.type === 'weather') {
+        el.innerHTML = '<div class="rc-head"><span class="rc-ic">🌤️</span><b class="rc-city"></b><span class="rc-temp"></span></div><div class="rc-desc"></div><div class="rc-days"></div>';
+        el.querySelector('.rc-city').textContent = d.city || (LANG === 'en' ? 'Weather' : 'آب‌وهوا');
+        el.querySelector('.rc-temp').textContent = d.temp != null && d.temp !== '' ? faNum2(d.temp) + '°' : '';
+        el.querySelector('.rc-desc').textContent = d.desc || '';
+        const days = el.querySelector('.rc-days');
+        (Array.isArray(d.days) ? d.days.slice(0, 5) : []).forEach((x) => {
+          const c = document.createElement('div');
+          c.className = 'rc-day';
+          c.innerHTML = '<span class="d"></span><span class="hi"></span><span class="lo"></span>';
+          c.querySelector('.d').textContent = String(x.d || '').slice(0, 12);
+          c.querySelector('.hi').textContent = x.hi != null ? faNum2(x.hi) + '°' : '—';
+          c.querySelector('.lo').textContent = x.lo != null ? faNum2(x.lo) + '°' : '—';
+          days.appendChild(c);
+        });
+      } else if (card.type === 'chart') {
+        el.innerHTML = '<b class="rc-title"></b><div class="rc-bars"></div>';
+        el.querySelector('.rc-title').textContent = d.title || (LANG === 'en' ? 'Chart' : 'نمودار');
+        const bars = el.querySelector('.rc-bars');
+        const labels = Array.isArray(d.labels) ? d.labels : [];
+        const values = (Array.isArray(d.values) ? d.values : []).map((v) => Number(v) || 0);
+        const max = Math.max(1, ...values);
+        labels.slice(0, 8).forEach((lb, i) => {
+          const v = values[i] || 0;
+          const row = document.createElement('div');
+          row.className = 'rc-bar';
+          row.innerHTML = '<span class="lb"></span><div class="track"><i class="fill"></i></div><span class="vl"></span>';
+          row.querySelector('.lb').textContent = String(lb).slice(0, 18);
+          row.querySelector('.fill').style.width = Math.round((v / max) * 100) + '%';
+          row.querySelector('.vl').textContent = faNum2(v);
+          bars.appendChild(row);
+        });
+      } else if (card.type === 'league') {
+        el.innerHTML = '<b class="rc-title"></b><table class="rc-table"><thead><tr><th>#</th><th></th><th>بازی</th><th>تفاضل</th><th>امتیاز</th></tr></thead><tbody></tbody></table>';
+        el.querySelector('.rc-title').textContent = d.title || (LANG === 'en' ? 'Standings' : 'رده‌بندی');
+        const tb = el.querySelector('tbody');
+        (Array.isArray(d.rows) ? d.rows.slice(0, 10) : []).forEach((x) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td class="pos"></td><td class="team"></td><td></td><td></td><td class="pts"></td>';
+          tr.cells[0].textContent = faNum2(x.pos != null ? x.pos : tr.parentNode.children.length + 1);
+          tr.cells[1].textContent = String(x.team || '').slice(0, 24);
+          tr.cells[2].textContent = faNum2(x.pl != null ? x.pl : '—');
+          tr.cells[3].textContent = (x.gd > 0 ? '+' : '') + faNum2(x.gd != null ? x.gd : '—');
+          tr.cells[4].textContent = faNum2(x.pts != null ? x.pts : '—');
+          tb.appendChild(tr);
+        });
+      } else if (card.type === 'input') {
+        el.innerHTML = '<div class="rc-prompt"></div><form class="rc-inrow"><input class="rc-in" type="text" autocomplete="off"/><button class="chip sm" type="submit">ارسال</button></form>';
+        el.querySelector('.rc-prompt').textContent = d.prompt || (LANG === 'en' ? 'Your answer:' : 'پاسخ تو:');
+        const form = el.querySelector('form');
+        const inp = el.querySelector('.rc-in');
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const v = inp.value.trim();
+          if (!v) return;
+          inp.value = '';
+          handleChatSend(v);
+        });
+        setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (_) { /* noop */ } }, 250);
+      }
+    } catch (_) { return null; }
+    hostEl.appendChild(el);
+    try { chatMsgs.scrollTop = chatMsgs.scrollHeight; } catch (_) { /* noop */ }
+    return el;
+  }
+  /* کارت بعد از آینه‌شدن پاسخ صوتی به آخرین حبابِ آوا در چت می‌چسبد */
+  function attachCardToChat(card) {
+    if (!card) return;
+    try {
+      const bots = chatMsgs.querySelectorAll('.msg.bot');
+      const last = bots[bots.length - 1];
+      if (last) renderRichCard(last, card);
+    } catch (_) { /* noop */ }
   }
 
   /* ---------- اجرای فرمان ----------
@@ -5093,7 +5281,7 @@
          VAD/بافر ادامه می‌دهد (بدون شروع دوبارهٔ گوش دادن) */
       if (!ave.delivered && ave.lastTxt && (ave.spoke || ave.lastTxt.length >= 12)) aveDeliver(ave.lastTxt, 'web-onend', myEpoch);
     };
-    try { r.start(); ave.srLive = true; statusText.textContent = t('status.listening'); }
+    try { r.start(); ave.srLive = true; if (state === 'listening') statusText.textContent = t('status.listening'); }
     catch (_) {
       actLog('stt web start failed — buffer path stays armed (no re-listen)');
       ave.srLive = false; recActive = false;
@@ -7029,40 +7217,104 @@
     history = history.slice(0, 40);
     store.set('history', history);
   }
-  function renderHistory() {
+  /* ---------- تاریخچهٔ گفتگو (v0.55 — جایگزین تاریخچهٔ فرمان) ----------
+     درخواست کاربر: «به جای تاریخچهٔ کامند، تاریخچهٔ چت‌ها… نیاز نیس همیشه
+     آماده لود باشه چون برنامه سنگین میشه — اگ کاربر سر زد لود بشه»:
+     هر بار نمای باز/«بیشتر» شود فقط از دیسک خوانده می‌شود (ava-chats.json،
+     سقف ۲۰۰۰ پیام در فایل، debounce اتمیک) — حافظهٔ برنامه سبک می‌ماند. */
+  let chatHistOffset = 0;
+  let chatHistTotal = 0;
+  function chatHistTime(at) {
+    try { return (LANG === 'en' ? timeFmtEn : timeFmt).format(new Date(at || Date.now())); } catch (_) { return ''; }
+  }
+  function chatHistDayLabel(at) {
+    try {
+      const d = new Date(at || Date.now());
+      return (LANG === 'en' ? d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : d.toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+    } catch (_) { return ''; }
+  }
+  function appendChatHistRow(m, listEl, lastDay) {
+    const dl = chatHistDayLabel(m.at);
+    if (lastDay.v !== dl) { lastDay.v = dl; const sep = document.createElement('div'); sep.className = 'ch-day'; sep.textContent = dl; listEl.appendChild(sep); }
+    const it = document.createElement('div');
+    it.className = 'ch-row ' + (m.role === 'user' ? 'me' : 'ava');
+    const bub = document.createElement('div');
+    bub.className = 'ch-bub';
+    const tx = document.createElement('span'); tx.className = 'ch-txt'; tx.textContent = m.text;
+    const tm = document.createElement('span'); tm.className = 'ch-time'; tm.textContent = chatHistTime(m.at);
+    bub.appendChild(tx); bub.appendChild(tm);
+    it.appendChild(bub);
+    listEl.appendChild(it);
+  }
+  async function renderHistory(prependOld) {
     if (!historyList) return;
-    historyList.innerHTML = '';
-    if (historyEmpty) historyEmpty.hidden = history.length > 0;
-    history.forEach((h) => {
-      const it = document.createElement('div');
-      it.className = 'history-item';
-      const dot = document.createElement('i');
-      dot.className = 'h-ok ' + (h.ok ? 'ok' : 'fail');
-      const txt = document.createElement('span');
-      txt.className = 'h-txt';
-      txt.textContent = h.t;
-      const tm = document.createElement('span');
-      tm.className = 'h-time';
-      try { tm.textContent = (LANG === 'en' ? timeFmtEn : timeFmt).format(new Date(h.at || Date.now())); } catch (_) { tm.textContent = ''; }
-      it.appendChild(dot); it.appendChild(txt); it.appendChild(tm);
-      it.addEventListener('click', () => {
-        showView('home');
-        runCommand(h.t);
-      });
-      historyList.appendChild(it);
-    });
+    if (!bridge || !bridge.chats) {
+      if (historyEmpty) { historyEmpty.hidden = false; historyEmpty.textContent = LANG === 'en' ? 'Chat history is available in the desktop app.' : 'تاریخچهٔ گفتگو فقط در برنامهٔ دسکتاپ موجود است.'; }
+      return;
+    }
+    const r = await bridge.chats.load({ limit: 120, offset: chatHistOffset }).catch(() => null);
+    if (!r || !r.ok) { if (historyEmpty) historyEmpty.hidden = false; return; }
+    chatHistTotal = r.total || 0;
+    const msgs = (r.msgs || []).slice().reverse(); /* قدیمی → جدید */
+    if (!prependOld) {
+      historyList.innerHTML = '';
+      const lastDay = { v: '' };
+      msgs.forEach((m) => appendChatHistRow(m, historyList, lastDay));
+      historyList.scrollTop = historyList.scrollHeight;
+    } else {
+      const keep = historyList.scrollHeight;
+      const tmp = document.createElement('div');
+      const lastDay = { v: '' };
+      msgs.forEach((m) => appendChatHistRow(m, tmp, lastDay));
+      while (tmp.firstChild) historyList.insertBefore(tmp.firstChild, historyList.firstChild);
+      historyList.scrollTop = historyList.scrollHeight - keep; /* پرش نکند */
+    }
+    chatHistOffset = Math.min(chatHistTotal, chatHistOffset + msgs.length);
+    if (historyEmpty) historyEmpty.hidden = chatHistTotal > 0;
+    let more = document.getElementById('chMore');
+    if (chatHistOffset < chatHistTotal) {
+      if (!more) {
+        more = document.createElement('button');
+        more.id = 'chMore'; more.className = 'chip sm';
+        historyList.parentNode.insertBefore(more, historyList);
+        more.addEventListener('click', () => { try { more.textContent = LANG === 'en' ? 'Loading…' : 'در حال خواندن…'; renderHistory(true); } catch (_) { /* noop */ } });
+      }
+      more.hidden = false;
+      more.textContent = (LANG === 'en' ? 'Load older (' : 'خواندن قدیمی‌ترها (') + faNum2(chatHistTotal - chatHistOffset) + ')';
+    } else if (more) more.hidden = true;
   }
   if (btnHistory) btnHistory.addEventListener('click', () => {
+    chatHistOffset = 0; /* سر زدن = لود تازه از دیسک (لود تنبل) */
     renderHistory();
     showView('history');
   });
   if (btnHistoryBack) btnHistoryBack.addEventListener('click', () => showView('home'));
-  if (btnHistoryClear) btnHistoryClear.addEventListener('click', () => {
-    history = [];
-    store.set('history', history);
+  if (btnHistoryClear) btnHistoryClear.addEventListener('click', async () => {
+    try { if (bridge && bridge.chats) await bridge.chats.clear(); } catch (_) { /* noop */ }
+    chatHistOffset = 0; chatHistTotal = 0;
     renderHistory();
     toast(t('toast.histCleared'), '#i-trash');
   });
+
+  /* ---------- v0.55 — سوییچ‌های چت خودکار و ویجت شناور (تنظیمات › برنامه) ---------- */
+  const optChatAutoOpen = $('#optChatAutoOpen');
+  const optWidget = $('#optWidget');
+  if (optChatAutoOpen) {
+    optChatAutoOpen.checked = settings.chatAutoOpen !== false;
+    optChatAutoOpen.addEventListener('change', () => {
+      settings.chatAutoOpen = optChatAutoOpen.checked;
+      store.set('chatAutoOpen', settings.chatAutoOpen);
+    });
+  }
+  if (optWidget) {
+    try {
+      if (bridge && bridge.widget) bridge.widget.get().then((st) => { try { optWidget.checked = !!(st && st.enabled); } catch (_) { /* noop */ } }).catch(() => { optWidget.checked = false; });
+      else optWidget.checked = false;
+    } catch (_) { optWidget.checked = false; }
+    optWidget.addEventListener('change', () => {
+      try { if (bridge && bridge.widget) bridge.widget.config(optWidget.checked); } catch (_) { /* noop */ }
+    });
+  }
 
   /* ---------- تاگل‌های حالت بی‌دست ---------- */
   if (btnHandsFree) btnHandsFree.addEventListener('click', () => setHandsFree(!settings.handsFree));
@@ -7282,7 +7534,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.54.0-beta';
+  let appVersion = '0.55.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8466,6 +8718,10 @@
     '- music_play: value=اسم آهنگ یا خالی؛ music_pause\n' +
     /* v0.54 — سرچ یوتیوب ابزار درست گرفت (لاگ v0.53 ۱۶:۴۹: AI برای «همینو برام تو یوتیوب سرچ کن» open_url(https://www.youtube.com/result) می‌داد = صفحهٔ خالی) */
     '- yt_search: value=عنوانِ دقیق برای جستجو در یوتیوب (مثال: کاربر گفت «تو یوتیوب به سلامتیت رو سرچ کن» → act=yt_search و value=به سلامتیت) — برای سرچ یوتیوب هرگز open_url با آدرسِ دست‌ساز مثل youtube.com/result نده\n' +
+    /* v0.55 — قالب‌های آمادهٔ چت: کارت‌های زیبا به‌جای متن خام (ورودی/نمودار/آب‌وهوا/رده‌بندی) */
+    'قالب‌های چت (CARD): اگر پاسخ‌ات طبیعتاً در یک قالب جا می‌شود (آب‌وهوا، نمودار، جدول رده‌بندی، یا سؤالی که جواب کاربر را می‌خواهد)، علاوه بر reply این بلوک را بده — ولی دادهٔ نمودار/جدول/آب‌وهوا فقط از نتایج تحقیق (research) یا چیزی که کاربر گفت؛ هرگز عدد/رتبه/دما را از حافظه‌ات نساز:\n' +
+    '<<<CARD>>>\n{"type":"weather","data":{"city":"بجنورد","temp":"31","desc":"آفتابی","days":[{"d":"شنبه","hi":"33","lo":"22"}]}}\n<<<END>>>\n' +
+    'انواع دیگر: {"type":"chart","data":{"title":"…","labels":["الف","ب"],"values":[12,30]}} — {"type":"league","data":{"title":"لیگ برتر","rows":[{"pos":1,"team":"…","pl":5,"gd":7,"pts":13}]}} — {"type":"input","data":{"prompt":"متن سؤالی که جواب کاربر را می‌خواهد"}}؛ اگر جوابت سؤالی است که کاربر باید جواب بدهد type=input بده تا کادر ورودی آماده باشد.\n' +
     /* v0.51 — پادزهر توهم (لاگ v0.50: AI اسم «نازنین» را از حافظه‌اش ساخت و دوبار یاد گرفت) */
     '- research: value=عبارت تحقیق وب — فقط وقتی کاربر خواست «اول بفهم/تحقیق کن، بعد انجام بده» (مثل: اول ببین آهنگ جدید شادمهر چی هست بعد اسمشو سرچ کن)؛ نتایج واقعی وب به تو برمی‌گردد و دور بعد باید اکشن نهایی را فقط بر پایهٔ همان نتایج بدهی — هرگز اسم/عنوان را از حافظه‌ات نساز\n' +
     '- type_once: value=متنِ دقیقی که کاربر خواست در برنامهٔ فعال نوشته شود — برای هر درخواستِ نوشتن/تایپ (اینجا بنویس… / ببین بنویس… / اینو تایپ کن…)؛ value را عیناً و کامل بنویس (فقط واژه‌های فرمان مثل «اینجا بنویس» را حذف کن)؛ اگر کاربر متن را در گیومه گفت فقط همان داخل گیومه\n' +
@@ -8521,6 +8777,10 @@
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
     'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
+    /* v0.55 — chat templates (rich cards) — real data only, never invented numbers */
+    'Chat templates (CARD): if your reply naturally fits a template (weather, chart, league standings, or a question waiting for the user answer), besides the reply text emit this block — chart/league/weather data ONLY from research results or what the user said; NEVER invent numbers/ranks/temperatures from memory:\n' +
+    '<<<CARD>>>\n{"type":"weather","data":{"city":"Tehran","temp":"31","desc":"Sunny","days":[{"d":"Sat","hi":"33","lo":"22"}]}}\n<<<END>>>\n' +
+    'Other types: {"type":"chart","data":{"title":"…","labels":["A","B"],"values":[12,30]}} — {"type":"league","data":{"title":"League","rows":[{"pos":1,"team":"…","pl":5,"gd":7,"pts":13}]}} — {"type":"input","data":{"prompt":"the question that needs the user answer"}}; if your answer asks the user something, give type=input so the input box is ready.\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -8987,6 +9247,9 @@
   async function handleChatSend(v) {
     addMsg('user', v);
     pushChatHist('user', v);
+    /* v0.55 — چتِ نوشتاری هم در دیسک + ویجت آینه می‌شود */
+    try { if (bridge && bridge.chats) bridge.chats.append({ role: 'user', text: v, via: 'chat' }); } catch (_) { /* noop */ }
+    try { if (bridge && bridge.widget) bridge.widget.update({ user: v }); } catch (_) { /* noop */ }
     const typing = addMsg('bot', t('chat.thinking'));
     typing.classList.add('typing');
     chatBusy = true;
@@ -8999,12 +9262,17 @@
         addMsg('err', (r && r.error) || t('chat.noReply'));
       } else {
         /* پاسخ بدون خط فکر؛ بلوک RESEARCH قبلاً به دور دومِ داده‌محور تبدیل شده است */
-        const { reply, add } = parseAdd(_bt.body || r.text);
+        const _pc = parseCard(_bt.body || r.text);
+        const { reply, add } = parseAdd(_pc.body);
         pushChatHist('assistant', r.text);
         const msgEl = addMsg('bot', reply || '…');
         if (r.via) { const ch = document.createElement('span'); ch.className = 'msg-engine'; ch.textContent = r.via; msgEl.appendChild(ch); }
         speak(reply);
         if (add) renderCmdCard(msgEl, add);
+        if (_pc.card) renderRichCard(msgEl, _pc.card);
+        else if (/[؟?]\s*$/.test(String(reply || ''))) renderRichCard(msgEl, { type: 'input', data: { prompt: LANG === 'en' ? 'Your answer:' : 'پاسخ تو:' } }); /* آماده دریافت ورودی */
+        try { if (bridge && bridge.chats) bridge.chats.append({ role: 'assistant', text: reply || '', via: r.via || 'chat' }); } catch (_) { /* noop */ }
+        try { if (bridge && bridge.widget) bridge.widget.update({ reply: reply || '' }); } catch (_) { /* noop */ }
       }
     } catch (_) {
       typing.remove();
@@ -9255,7 +9523,8 @@
           return;
         }
         /* v0.52 — پاسخ متنی بدون خط فکر و بدون بلوک RESEARCH */
-        const { reply, add } = parseAdd(_bt.body || r.text);
+        const _pcV = parseCard(_bt.body || r.text);
+        const { reply, add } = parseAdd(_pcV.body);
         pushChatHist('user', cmd); pushChatHist('assistant', r.text);
         setState('success');
         statusText.textContent = t('ai.got');
@@ -9279,6 +9548,9 @@
             toast(t('toast.cmdAdded', { x: add.title }), '#i-plus');
           }
         }
+        /* v0.55 — قالب آماده: کارت AI یا اگر جواب سؤال بود، کادر ورودی آماده */
+        if (_pcV.card) attachCardToChat(_pcV.card);
+        else if (/[؟?]\s*$/.test(String(reply || ''))) attachCardToChat({ type: 'input', data: { prompt: LANG === 'en' ? 'Your answer:' : 'پاسخ تو:' } });
       } else {
         setState('success');
         statusText.textContent = r && r.needLogin ? t('ai.noConn') : t('ai.fail');

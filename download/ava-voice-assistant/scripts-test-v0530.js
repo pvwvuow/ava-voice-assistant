@@ -77,10 +77,10 @@ ok(appSrc.includes('learn skip: جملهٔ ارجاعی به تاریخچه — 
 ok(/همون\|همین\|همان/.test(appSrc) && /همینو\|اونو/.test(appSrc) && appSrc.includes('آخرین بار|قبلی'), 'regex گارد: همون/همین/همان + همینو/اونو + آخرین بار/قبلی');
 
 console.log('\n[6] نسخه (forward-relax ≥0.54)');
-ok(pkg.version === '0.54.0-beta', 'package.json → 0.54.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.54.0-beta</span>'), 'index.html abVersion');
-ok(appSrc.includes("let appVersion = '0.54.0-beta';"), 'app.js appVersion');
-ok(readme.includes('۰.۵۴.۰-بتا'), 'README بلاک ۰.۵۴ (ارقام فارسی)');
+ok(pkg.version === '0.55.0-beta', 'package.json → 0.55.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.55.0-beta</span>'), 'index.html abVersion');
+ok(appSrc.includes("let appVersion = '0.55.0-beta';"), 'app.js appVersion');
+ok(readme.includes('۰.۵۵.۰-بتا'), 'README بلاک ۰.۵۴ (ارقام فارسی)');
 
 console.log('\n======================');
 console.log('PASS=' + pass + '  FAIL=' + fail);
