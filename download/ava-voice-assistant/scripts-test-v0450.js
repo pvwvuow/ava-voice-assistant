@@ -131,8 +131,8 @@ ok(mainSrc.includes("--max-old-space-size=512") && mainSrc.includes('lastLocalSt
 
 /* ---------- ۱۰) نسخه ---------- */
 const pkg = JSON.parse(fs.readFileSync(path.join(R, 'package.json'), 'utf8'));
-ok(pkg.version === '0.45.0-beta', 'package.json version = 0.45.0-beta');
-ok(appSrc.includes("let appVersion = '0.45.0-beta';"), 'app.js appVersion = 0.45.0-beta');
+ok(/^0\.4[5-9]/.test(pkg.version), 'package.json version = 0.45+ (forward-relaxed)');
+ok(/^0\.4[5-9]/.test((appSrc.match(/let appVersion = '([^']+)';/) || [])[1] || ''), 'app.js appVersion = 0.45+ (forward-relaxed)');
 ok(idxSrc.includes('voiceUnderstand.js') && /voiceIntent\.js[\s\S]*?voiceUnderstand\.js[\s\S]*?app\.js/.test(idxSrc), 'index.html: ترتیب ماژول‌ها');
 
 console.log(`\nv0.45 logic overhaul: ${pass} passed, ${fail} failed`);

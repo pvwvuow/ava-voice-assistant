@@ -74,7 +74,7 @@ ok('i18n: wakeAlways + woke + needPack keys in both dictionaries', (appSrc.match
 /* ---- 4) Intent protocol: full Discord coverage ---- */
 ok('DO_ACTS include unmute/deafen/answer/decline', appSrc.includes("'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom'"));
 ok('executeDoActions handles the new acts', appSrc.includes("case 'discord_unmute':") && appSrc.includes("case 'discord_deafen':") && appSrc.includes("case 'discord_answer':") && appSrc.includes("case 'discord_decline':"));
-ok('AI prompts advertise the new acts (fa+en)', appSrc.includes('discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer') && appSrc.includes('discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.'));
+ok('AI prompts advertise the new acts (fa+en; v0.46 forward-relaxed for set_wake_word)', appSrc.includes('discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer') && appSrc.includes('discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom'));
 ok('voice: «ان/آن میوت/وصل کن» maps to real unmute (not blind toggle)', appSrc.includes("const unmute = /(ا|آ)ن\\s?میوت|وصل|روشن/.test(t0) && !/(بیصدا|بی\\s?صدا|قطع)/.test(t0);"));
 ok('voice: ALREADY results reported honestly', appSrc.includes("if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return unmute ? t('disc.alreadyOn') : t('disc.alreadyMuted');") && appSrc.includes("if (r && r.ok && /-ALREADY/.test(String(r.result || ''))) return t('disc.alreadyDeaf');"));
 

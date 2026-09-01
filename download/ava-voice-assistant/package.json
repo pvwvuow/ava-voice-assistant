@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.45.0-beta",
+  "version": "0.46.0-beta",
   "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۴۵: بازنگری کامل منطق پاسخ‌دهی و فرمان‌پذیری — نیت «بستن» (یوتیوب رو ببند)، پاسخ صادق در شکست، موزیکِ آگاه‌به‌آهنگ، دروازهٔ فهم-اول وبی + سبک‌سازی بیشتر RAM",
   "main": "main.js",
   "license": "MIT",

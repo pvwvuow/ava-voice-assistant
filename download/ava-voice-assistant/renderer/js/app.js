@@ -210,6 +210,10 @@
     'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
     'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
     'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود — حتی وقتی آوا مینیمایز است، پشت بازی‌ست یا مانیتور خاموش است (بدون توقف تایمر و صدا). با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود', 'Keeps the mic open and checks speech 100% on-device — even when Ava is minimized, behind a fullscreen game, or the monitor is off (timers and audio never throttle). Saying "Ava" plays the chime and starts listening'],
+    /* v0.46 — کلمهٔ بیدارباش قابل تغییر (در هر دو دیکشنری) */
+    'set.stt.wakeWordText': ['کلمهٔ بیدارباش (اسم صدازدن)', 'Wake word (call name)'],
+    'set.stt.wakeWordTextHint': ['اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود', 'If "Ava" is misheard or you prefer another name, change it here — phonetic matching adapts to any word'],
+    'toast.wakeWordSet': ['از این به بعد با گفتن «{x}» بیدار می‌شوم', 'From now on say "{x}" to wake me'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
     'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
@@ -489,6 +493,10 @@
     'dict.sysSpeak': ['تایپ شروع شد — هرچی بگی همین‌جا می‌نویسم', 'Typing started — whatever you say gets typed right here'],
     'dict.sysFail': ['تایپ در برنامه انجام نشد — پنجرهٔ مقصد را فعال نگه دار', 'Typing into the app failed — keep the target window active'],
     'set.stt.wakeAlwaysHint': ['میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز بررسی می‌شود — حتی وقتی آوا مینیمایز است، پشت بازی‌ست یا مانیتور خاموش است (بدون توقف تایمر و صدا). با گفتن «آوا» صدای بانمک پخش و گوش دادن شروع می‌شود', 'Keeps the mic open and checks speech 100% on-device — even when Ava is minimized, behind a fullscreen game, or the monitor is off (timers and audio never throttle). Saying "Ava" plays the chime and starts listening'],
+    /* v0.46 — کلمهٔ بیدارباش قابل تغییر (در هر دو دیکشنری) */
+    'set.stt.wakeWordText': ['کلمهٔ بیدارباش (اسم صدازدن)', 'Wake word (call name)'],
+    'set.stt.wakeWordTextHint': ['اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود', 'If "Ava" is misheard or you prefer another name, change it here — phonetic matching adapts to any word'],
+    'toast.wakeWordSet': ['از این به بعد با گفتن «{x}» بیدار می‌شوم', 'From now on say "{x}" to wake me'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
     'set.ai.gemTestBtn': ['تست اتصال', 'Test connection'],
@@ -1323,6 +1331,9 @@
     gemBase: store.get('gemBase', ''),
     /* v0.29 — بیدارباش همیشگی آفلاین: حتی وقتی گوش دادن خاموش است «آوا» شنیده می‌شود */
     wakeAlways: store.get('wakeAlways', false),
+    /* v0.46 — کلمهٔ بیدارباش قابل تغییر (خواستهٔ کاربر: «میتونم ویکورد رو تغییر بدم»)
+       همهٔ لایه‌های تطبیق (دقیق/آوانگار/ابری) برای هر کلمه‌ای عمومی کار می‌کنند */
+    wakeWordText: store.get('wakeWordText', 'آوا'),
     openaiModel: store.get('openaiModel', 'gpt-4o-mini'),
     /* v0.17 — موتورهای STT کلاس AI */
     whisperBase: store.get('whisperBase', 'https://api.groq.com/openai/v1'),
@@ -3158,8 +3169,34 @@
     if (/virgool/.test(host)) return 'https://virgool.io/search?q=' + enc;
     if (/namnak/.test(host)) return 'https://www.namnak.com/search/?q=' + enc;
     if (/varzesh3/.test(host)) return 'https://www.varzesh3.com/search?q=' + enc;
+    /* v0.46 — «ایمال سرچ کن موتور»: جستجوی بومی emalls — آدرس‌های «/جستجو/…»
+       که AI ساخته بود HTTP 500 می‌دادند (لاگ واقعی کاربر) */
+    if (/emalls/.test(host)) return 'https://emalls.ir/?s=' + enc;
     if (/downloadha|soft98/.test(host)) return 'https://www.google.com/search?q=' + encodeURIComponent('site:' + host + ' ' + q);
     return 'https://www.google.com/search?q=' + encodeURIComponent('site:' + host + ' ' + q);
+  }
+  /* v0.46 — URL ابریِ بدون عبارت ممنوع (لاگ واقعی: «برو به سایت ایمال سرچ کن
+     موتور» دو بار صفحهٔ اصلی/خراب emalls باز شد، عبارتِ «موتور» گم شده بود).
+     اگر AI برای درخواستِ جستجوی درون-سایتی open_urlِ بدون عبارت داد، همین‌جا
+     URL با فرمت بومی سایت بازسازی می‌شود — کلی و بدون دیکشنری مثال. */
+  function aiUrlWithQuery(url, cmd) {
+    try {
+      const u = String(url || '').trim();
+      if (!/^https?:\/\//i.test(u)) return u;
+      const und = (window.AVAUnderstand && AVAUnderstand.analyze) ? AVAUnderstand.analyze(cmd) : null;
+      if (!und || !und.searchVerb || !und.query || und.query.length < 2) return u;
+      const host = u.replace(/^https?:\/\//i, '').split(/[/?#]/)[0].toLowerCase();
+      const enc = encodeURIComponent(und.query);
+      if (/^(www\.)?(google|bing|duckduckgo)\./.test(host)) return u; /* خودش موتور جستجوست */
+      if (/youtube\./.test(host)) {
+        return /search_query=/.test(u) ? u : 'https://www.youtube.com/results?search_query=' + enc;
+      }
+      if (u.includes(und.query) || u.toLowerCase().includes(enc.toLowerCase())) return u;
+      if (/[?&](q|s|search|query|text|k|keyword|p)=/i.test(u)) return u; /* AI خودش عبارت گذاشته */
+      const native = siteSearchUrlFor(host, und.query);
+      if (native && !/site:/.test(native)) return native; /* فقط سایت‌های با جستجوی بومی */
+      return u + (u.includes('?') ? '&' : (u.endsWith('/') ? '' : '/') + '?') + 'q=' + enc;
+    } catch (_) { return url; }
   }
   /* deps پارسر — هر بار از وضعیت واقعی برنامه (حافظهٔ آخرین سایت) */
   function siteSearchDeps() {
@@ -4209,6 +4246,26 @@
        حالا cmd هم همان متنِ نرمال‌شده است تا همهٔ قوانین/برنامه‌ها/AI یک متن ببینند */
     raw = normFaFull(raw);
     cmd = raw;
+    /* ============================================================
+       v0.46 — «آوا»ی تنها فرمان نیست (لاگ واقعی: cmd «آوا» به Gemini
+       فرستاده می‌شد و جواب بی‌ربط می‌آمد). گفتنِ فقط اسم بیدارباش =
+       نجویدن؛ آوا جواب می‌دهد «بله؟» و گوش دادن باز می‌شود — بدون
+       هیچ تماس شبکه‌ای. (مسیر wake-session خودش قبل از اینجا می‌گیرد؛
+       این گارد برای مسیر کلید میان‌بر/بدون بی‌دست و تکرار داخل جلسه است.)
+       ============================================================ */
+    if (!(opts && opts.force)) {
+      const bwm = raw.match(AVAWake.prefixRe(wakeWordCfg()));
+      const bareWake = (bwm && !String(bwm[1] || '').trim()) || (raw.length <= 5 && /\b(?:ava|awa)\b/i.test(raw));
+      if (bareWake) {
+        wakeSessOpen();
+        setState('idle');
+        statusText.textContent = t('wake.sessOn');
+        playWakeChime();
+        speak(t('wake.yes'));
+        handsFreeRearm(1600);
+        return;
+      }
+    }
     /* ارسال گزارش عملکرد (v0.18) — «آوا گزارش بفرست» */
     if (/گزارش\s*(بفرست|بده|بگیر)|لاگ\s*(بفرست|بده)|گزارش\s*مشکل|ارسال\s*گزارش|send\s+log\s+report/i.test(raw)) {
       if (cmdBusyGuard()) return;
@@ -5048,7 +5105,14 @@
      «به سختی کلمه ava یا اوا رو تشخیص میده...ولی خود دستیار بهتره»).
      «او» و «اوهِ» تنها عمداً فعال نمی‌شوند (واژهٔ خیلی رایج = بیدارباش کاذب). */
   const WAKE_ACCEPT = new Set(['آوا', 'اوا', 'آوای', 'اوای', 'آبا', 'ابا', 'آوه', 'اوها', 'آو', 'اوب', 'اواو', 'اووا', 'آووا', 'اواا', 'اوبا']);
+  /* v0.46 — تطبیق به موتور سه‌لایهٔ voiceWake.js منتقل شد (دقیق + آوانگار +
+     نامزد ابری). این پوششِ سازگاری قدیمی است: T1∪T2 بدون وضعیت تکرار.
+     موتورِ کامل با nearMatch/tail در wakeCheck استفاده می‌شود. */
   function wakeHitText(txt) {
+    if (typeof window !== 'undefined' && window.AVAWake && typeof wakeWordCfg === 'function') {
+      const wm = AVAWake.match(txt, wakeWordCfg());
+      return !!(wm.t1 || wm.near);
+    }
     const s = normFaFull(txt).replace(/[\\|`^~]+/g, ' ');
     /* v0.38.1 — «java/جاوا» بیدارباش کاذب می‌ساخت (زیررشتهٔ ava)؛ اینک توکنِ کامل */
     if (/\b(?:ava|awa)\b/i.test(s)) return true;
@@ -5137,6 +5201,10 @@
   }
   function wakeLoopUsable() {
     return !!settings.wakeAlways && localReady() && !!(navigator.mediaDevices && (window.AudioContext || window.webkitAudioContext));
+  }
+  /* v0.46 — کلمهٔ بیدارباش فعال (قابل تغییر از تنظیمات یا فرمان صوتی) */
+  function wakeWordCfg() {
+    return (window.AVAWake && AVAWake.norm(settings.wakeWordText)) || 'اوا';
   }
   async function wakeLoopStart() {
     if (wakeLoop || !settings.wakeAlways) return;
@@ -5254,13 +5322,15 @@
     try {
       if (buf.length < 5) return; /* خیلی کوتاه */
       /* v0.36 — حذف سکوتِ سرِ صدا: whisper روی «آوا»ی بریده‌تازه خیلی دقیق‌تر است
-         (اولین فریمِ صوتی پیدا و تا یک چانک قبلش نگه داشته می‌شود) */
+         v0.46 — پیش‌نواز ۲ چانک (~۱۷۰ms): آغازِ نرمِ «آوا» (واکه) قبلاً زیر
+         آستانهٔ VAD می‌ماند و حرف اول بریده می‌شد → whisper «با/وا»ی ناقص
+         می‌شنید؛ گزارش کاربر: «خیلی سخت متوجه میشه» */
       let s0 = 0;
       const thrT = Math.max(0.004, L.floor * 1.8 + 0.0025);
       for (let i = 0; i < buf.length; i++) {
         const c = buf[i]; let sm = 0, nn = 0;
         for (let j = 0; j < c.length; j += 8) { sm += c[j] * c[j]; nn++; }
-        if (Math.sqrt(sm / Math.max(1, nn)) > thrT) { s0 = Math.max(0, i - 1); break; }
+        if (Math.sqrt(sm / Math.max(1, nn)) > thrT) { s0 = Math.max(0, i - 2); break; }
       }
       const buf2 = s0 > 0 ? buf.slice(s0) : buf;
       const rate = (audioCtx && audioCtx.sampleRate) || 48000;
@@ -5294,31 +5364,81 @@
         if (r && r.ok === false) actLog('wake-always cloud check fail: ' + String(r.error || '').slice(0, 60));
       }
       const txt = String((r && r.text) || '').trim();
-      actLog('wake-always heard: ' + txt.slice(0, 44));
-      /* v0.34 — وضعیت سلامت: آخرین شنیده همیشه دیده می‌شود؛ در حالت تست نتیجه صریح است */
-      if (txt) {
-        const heardTxt = t('wake.healthLast', { x: txt.slice(0, 30) });
-        const isWake = wakeHitText(txt);
-        if (Date.now() < wakeTestUntil) wakeHealthNote((isWake ? t('wake.testOk') : t('wake.testMiss', { x: txt.slice(0, 30) })));
-        else if (wakeLoop) wakeHealthNote((wakeLoop.engine === 'local' ? t('wake.healthLocal') : t('wake.healthCloud')) + ' — ' + heardTxt);
+      /* ============================================================
+         v0.46 — مغز سه‌لایهٔ بیدارباش (گزارش کاربر: «کلمهٔ ویکورد وقتی
+         میگم خیلی سخت متوجه میشه چون از آفلاین استفاده می‌کنه»)
+         لایه‌ها در voiceWake.js — با اسکلت آوایی (واحد لب‌سانی و/ب/ف/پ،
+         حذف ه/ح، فروپاشی تکرارها) هر تلفظ واقعی whisper را می‌گیرد:
+           T1 دقیق      → آوا/اوا/آبا/اوا جان/ava … بیدار فوری + دنبالهٔ فرمان
+           T2 آوانگار   → او با، اوه با، حو با، اوبا … بیدار فوری
+           T3 نامزد ابری→ پاو با، باو باو، اوربا … همان صدا به گوگل
+                           (سقف زمانی) — یا دو نامزد در ۱۲ ثانیه (تکرار کاربر)
+         + لاگ غیرتکراری و آمار دوره‌ای (سیلِ «[صول]» در لاگ کاربر)
+         ============================================================ */
+      L.stats = L.stats || { n: 0, heard: 0, near: 0, cloud: 0, wake: 0 };
+      L.stats.n++;
+      const wm = (window.AVAWake || { match: () => ({ t1: false, near: false, cloud: false, tail: '' }) }).match(txt, wakeWordCfg());
+      const fresh = txt && txt !== (L.lastHeard || '');
+      L.lastHeard = txt;
+      if (txt && (wm.t1 || wm.near || wm.cloud || fresh)) { actLog('wake-always heard: ' + txt.slice(0, 44)); L.stats.heard++; }
+      if (Date.now() - (L.statsAt || 0) > 600000) {
+        actLog('wake stats (10min): checks=' + L.stats.n + ' heard=' + L.stats.heard + ' near=' + L.stats.near + ' cloud=' + L.stats.cloud + ' wakes=' + L.stats.wake);
+        L.stats = { n: 0, heard: 0, near: 0, cloud: 0, wake: 0 };
+        L.statsAt = Date.now();
       }
-      if (txt && wakeHitText(txt)) {
+      const wakeNow = (tail) => {
+        L.stats.wake++;
         playWakeChime();
         wakeSessOpen();
         toast(t('wake.woke'), '#i-wave');
         statusText.textContent = t('wake.sessOn');
         L.coolUntil = Date.now() + 5000;
         /* v0.32 — سیری‌وار: «آوا به علی زنگ بزن» در یک نفس — فرمان بعد از اسم
-           همان‌جا اجرا می‌شود؛ قبلاً این فرمان دور ریخته می‌شد و کاربر باید
-           دوباره می‌گفت. اگر فقط اسم بود، گوش دادن شروع می‌شود. */
-        const wm = normFaFull(txt).match(WAKE_WORD_RE);
-        const tail = wm && wm[2] ? String(wm[2]).trim() : '';
+           همان‌جا اجرا می‌شود؛ اگر فقط اسم بود، گوش دادن شروع می‌شود. */
         if (tail && tail.length > 3) {
           actLog('wake-always: one-breath command → ' + tail.slice(0, 60));
           wakePickup(tail);
         } else {
           wakePickup('');
         }
+      };
+      /* تأیید ابری T3 — همان برش صوتی به گوگل؛ سقف ۸ ثانیه + امضای برش ۶۰ ثانیه */
+      const cloudVerify = async (why) => {
+        if (!(bridge && bridge.stt && bridge.stt.google)) return;
+        if (Date.now() - (L.lastCloudTry || 0) < 8000) return;
+        const sig = (txt || '').slice(0, 20);
+        if ((L.lastCloudSig || '') === sig && Date.now() - (L.lastCloudSigAt || 0) < 60000) return;
+        L.lastCloudTry = Date.now(); L.lastCloudSig = sig; L.lastCloudSigAt = Date.now();
+        L.stats.cloud++;
+        const r3 = await bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000, lang: settings.sttLang || 'fa-IR' }).catch(() => null);
+        const t3 = String((r3 && r3.text) || '').trim();
+        if (t3) actLog('wake-always cloud verify (' + why + '): ' + t3.slice(0, 40));
+        const wm3 = (window.AVAWake || { match: () => ({}) }).match(t3, wakeWordCfg());
+        if (wm3 && (wm3.t1 || wm3.near)) wakeNow(wm3.tail || '');
+      };
+      /* وضعیت سلامت: فقط رویدادهای معنادار (نه سیلِ نویز) — در حالت تست،
+         خوردن/نخوردن همیشه صریح گفته می‌شود */
+      if (txt && (wm.t1 || wm.near)) {
+        const heardTxt = t('wake.healthLast', { x: txt.slice(0, 30) });
+        if (Date.now() < wakeTestUntil) wakeHealthNote(t('wake.testOk'));
+        else if (wakeLoop) wakeHealthNote((wakeLoop.engine === 'local' ? t('wake.healthLocal') : t('wake.healthCloud')) + ' — ' + heardTxt);
+      } else if (txt && Date.now() < wakeTestUntil) {
+        wakeHealthNote(t('wake.testMiss', { x: txt.slice(0, 30) }));
+      }
+      if (wm.t1) {
+        wakeNow(wm.tail || '');
+      } else if (wm.near) {
+        L.stats.near++;
+        L.nearHits = (L.nearHits || []).filter((ts) => Date.now() - ts < 12000);
+        L.nearHits.push(Date.now());
+        if (L.nearHits.length >= 2) {
+          /* کاربر دارد تکرار می‌کند («آوا… آوا…») — تکرار = تأیید */
+          wakeNow('');
+        } else {
+          cloudVerify('near').catch(() => { /* noop */ });
+        }
+      } else if (wm.cloud) {
+        cloudVerify('miss').catch(() => { /* noop */ });
       }
     } catch (e) {
       actLog('wake-always check fail: ' + String((e && e.message) || e).slice(0, 80));
@@ -5411,7 +5531,8 @@
     let cmd = text;
     const wakeGate = settings.handsFree && settings.wakeWord && !dictation.active && !(opts && opts.force);
     if (wakeGate && !wakeSessActive()) {
-      const m = text.match(WAKE_WORD_RE);
+      /* v0.46 — RE پویا از کلمهٔ بیدارباش فعال (قابل تغییر) ساخته می‌شود */
+      const m = text.match(AVAWake.prefixRe(wakeWordCfg()));
       if (!m) {
         /* بدون کلمه بیدارباش → v0.27.1: کارت اقدام‌پذیر، نه دورریز بی‌صدا
            v0.28: پیام شفاهی یک‌بار در هر اجرا + کارت می‌ماند (ناپدید لحظه‌ای ندارد) */
@@ -5425,10 +5546,11 @@
         handsFreeRearm(2300); /* فرصت خواندن پیام — قبل از شروع دوبارهٔ گوش دادن */
         return;
       }
-      /* «آوا» شنیده شد → صدای بانمک + باز شدن حالت گفتگو */
+      /* «آوا» شنیده شد → صدای بانمک + باز شدن حالت گفتگو
+         v0.46 — prefixRe گروه ۱ = دنبالهٔ فرمان (اسم بیدارباش non-capturing است) */
       wakeSessOpen();
       playWakeChime();
-      cmd = (m[2] || '').trim();
+      cmd = String(m[1] || '').trim();
       if (!cmd) {
         setState('idle');
         statusText.textContent = t('wake.sessOn');
@@ -5438,8 +5560,8 @@
       }
     } else if (wakeGate && wakeSessActive()) {
       /* داخل حالت گفتگو: اسم لازم نیست — ولی اگر گفت، همان اول برداشته شود */
-      const m = text.match(WAKE_WORD_RE);
-      if (m && (m[2] || '').trim()) cmd = (m[2] || '').trim();
+      const m = text.match(AVAWake.prefixRe(wakeWordCfg()));
+      if (m && (m[1] || '').trim()) cmd = String(m[1] || '').trim();
     }
     /* v0.40 — گارد ضد-هذیان: زبالهٔ STT هرگز dispatch نمی‌شود (نه قوانین،
        نه هوش مصنوعی) — ریشهٔ «۳۶ ثانیه منتظر خطا ماند» در لاگ کاربر */
@@ -5497,6 +5619,8 @@
     if (optHandsFree) optHandsFree.checked = !!settings.handsFree;
     if (optWakeWord) optWakeWord.checked = !!settings.wakeWord;
     const owa = $('#optWakeAlways'); if (owa) owa.checked = !!settings.wakeAlways;
+    /* v0.46 — کلمهٔ بیدارباش قابل تغییر */
+    const owwt = $('#optWakeWordText'); if (owwt) owwt.value = String(settings.wakeWordText || 'آوا');
   }
 
   /* ============================================================
@@ -6431,6 +6555,25 @@
     store.set('wakeWord', settings.wakeWord);
     toast(settings.wakeWord ? t('toast.wakeOn') : t('toast.wakeOff'), '#i-wave');
   });
+  /* v0.46 — کلمهٔ بیدارباش قابل تغییر: ذخیره + اعمال فوری
+     (همهٔ لایه‌های تطبیق همان لحظه روی کلمهٔ جدید می‌روند) */
+  function wakeWordTextApply() {
+    const owwt2 = $('#optWakeWordText');
+    if (!owwt2) return;
+    const nw = String(owwt2.value || '').replace(/[^\s\u0600-\u06FFa-zA-Z]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 20);
+    if (!nw) { owwt2.value = String(settings.wakeWordText || 'آوا'); return; }
+    if (nw !== settings.wakeWordText) {
+      settings.wakeWordText = nw;
+      store.set('wakeWordText', nw);
+      toast(t('toast.wakeWordSet', { x: nw }), '#i-wave');
+      actLog('wake word set: ' + nw);
+    }
+  }
+  const optWakeWordTextEl = $('#optWakeWordText');
+  if (optWakeWordTextEl) {
+    optWakeWordTextEl.addEventListener('change', wakeWordTextApply);
+    optWakeWordTextEl.addEventListener('blur', wakeWordTextApply);
+  }
   /* v0.29 — بیدارباش همیشگی آفلاین */
   const optWakeAlways = $('#optWakeAlways');
   if (optWakeAlways) {
@@ -6576,7 +6719,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.45.0-beta';
+  let appVersion = '0.46.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7722,7 +7865,9 @@
     'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
     /* v0.44 — قانون «فهم-اول» (خواستهٔ صریح کاربر: «توی دیوار دنبال موتور بگرد،
        نره گوگل سرچ کنه» + «اول تحلیل کنه واقعاً بفهمه») */
-    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/search?q=…، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
+    'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/search?q=…، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
+    /* v0.46 — لاگ واقعی: AI برای «ایمال سرچ کن موتور» دو بار URLِ بی‌عبارت داد */
+    'قانون مهم ۶ (بسیار مهم): اگر درخواست، جستجوی درون-سایتی است، URL باز‌شده باید خودِ عبارت جستجو را داخلش داشته باشد (مثل divar.ir/search?q=موتور یا emalls.ir/?s=موتور) — باز کردن صفحهٔ اصلی سایت بدون عبارتِ جستجو یعنی مأموریتِ نیمه‌کاره و ممنوع است.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -7748,6 +7893,7 @@
     '- reminder_add: value=متن کامل با زمان (مثل: ۲۰ دقیقه دیگه چایی درست کن)\n' +
     '- note_show: value=بخشی از متن یک یادداشت ذخیره‌شدهٔ کاربر (یا خالی برای آخرین یادداشت) — یادداشت را برایش می‌خوانی\n' +
     '- discord_call: value=اسم مخاطب ذخیره‌شده؛ discord_mute؛ discord_unmute؛ discord_deafen؛ discord_hangup؛ discord_answer (جواب تماس)؛ discord_decline (رد تماس)\n' +
+    '- set_wake_word: value=کلمهٔ بیدارباش جدید (فقط یک کلمه، مثل آوا یا اسم کاربر) — کاربر بیدارباش را عوض می‌کند\n' +
     '- run_custom: value=عنوان فرمان سفارشی قبلی\n' +
     'اگر فقط سوال است، جواب متنی کوتاه بده و هیچ بلوکی ننویس؛ اگر هم کار و هم سوال است، بلوک DO با reply بده.';
   const AI_SYSTEM_EN =
@@ -7760,7 +7906,9 @@
     /* v0.39 — map differently-phrased requests onto real AVA commands */
     'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself.\n' +
     /* v0.44 — understand-first law (user: "توی دیوار دنبال موتور بگرد must not become a Google search") */
-    'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/search?q=…, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
+    'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/search?q=…, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, emalls.ir/?s=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
+    /* v0.46 — real log: AI returned query-less URLs twice for the same emalls request */
+    'Important rule 6 (critical): for an in-site search request the open_url MUST CONTAIN the search query itself (like divar.ir/search?q=motor or emalls.ir/?s=motor) — opening the site homepage without the query is a half-done mission and is forbidden.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -7774,7 +7922,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom.\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -7826,7 +7974,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show']; /* v0.39 +run_cmd؛ v0.42 +note_show */
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word */
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -7891,6 +8039,12 @@
           }
           case 'open_url': case 'web_search': {
             if (!bridge || !bridge.system) { outs.push(t('toast.onlyApp')); break; }
+            /* v0.46 — «سایت X سرچ کن Y» هرگز بدون عبارتِ Y باز نشود (لاگ واقعی:
+               emalls دو بار بدون «موتور» باز شد) — URLِ بی‌عبارت بازسازی می‌شود */
+            if (a.act === 'open_url') {
+              const fixed = aiUrlWithQuery(a.value, String(origCmd || ''));
+              if (fixed && fixed !== a.value) { actLog('ai open_url query-restore → ' + fixed.slice(0, 90)); a.value = fixed; }
+            }
             const r = await bridge.system.run(a.act === 'open_url' ? 'web_open' : 'web_search', a.value).catch(() => ({ ok: false }));
             outs.push(r && r.ok ? (a.act === 'open_url' ? (LANG === 'en' ? 'Opened the link.' : 'لینک را باز کردم.') : (LANG === 'en' ? 'Search opened.' : 'جستجو را باز کردم.')) : (LANG === 'en' ? 'Could not open it.' : 'باز نشد.'));
             break;
@@ -7935,6 +8089,22 @@
           }
           case 'music_pause': {
             if (typeof mAudio !== 'undefined' && mAudio) { mAudio.pause(); outs.push(LANG === 'en' ? 'Music paused.' : 'موزیک متوقف شد.'); }
+            break;
+          }
+          /* v0.46 — تغییر کلمهٔ بیدارباش با فرمان صوتی (خواستهٔ کاربر:
+             «میتونم ویکورد رو تغییر بدم») — همهٔ لایه‌های تطبیق فوراً
+             روی کلمهٔ جدید می‌روند؛ چیز دیگری ری‌استارت نمی‌خواهد */
+          case 'set_wake_word': {
+            const wNew = String(a.value || '').replace(/[^\s\u0600-\u06FFa-zA-Z]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 20);
+            if (wNew && (window.AVAWake ? AVAWake.norm(wNew) : wNew)) {
+              settings.wakeWordText = wNew;
+              store.set('wakeWordText', wNew);
+              const elWw = $('#optWakeWordText'); if (elWw) elWw.value = wNew;
+              actLog('wake word set (AI): ' + wNew);
+              outs.push(t('toast.wakeWordSet', { x: wNew }));
+            } else {
+              outs.push(LANG === 'en' ? 'Tell me the wake word — one word.' : 'کلمهٔ بیدارباش را بگو — فقط یک کلمه.');
+            }
             break;
           }
           case 'dns_set': case 'dns_reset': {

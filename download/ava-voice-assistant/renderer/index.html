@@ -323,6 +323,11 @@
                   <span class="set-info"><b data-i18n="set.stt.wakeAlways">بیدارباش همیشگی (حتی وقتی گوش دادن خاموش است)</b><span data-i18n="set.stt.wakeAlwaysHint">میکروفون باز می‌ماند و گفتار محیط ۱۰۰٪ داخل ویندوز با موتور آفلاین بررسی می‌شود؛ با گفتن «آوا» صدای بانمک پخش و گوش دادن خودکار شروع می‌شود — CPU فقط وقتی کسی حرف می‌زند کمی درگیر می‌شود</span></span>
                   <span class="sw"><input type="checkbox" id="optWakeAlways"/><i></i></span>
                 </label>
+                <!-- v0.46 — کلمهٔ بیدارباش قابل تغییر: اگر «آوا» درست شنیده نمی‌شود اسم دیگری بگذار -->
+                <label class="set-row">
+                  <span class="set-info"><b data-i18n="set.stt.wakeWordText">کلمهٔ بیدارباش (اسم صدازدن)</b><span data-i18n="set.stt.wakeWordTextHint">اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود</span></span>
+                  <input type="text" id="optWakeWordText" class="set-input" style="max-width:150px" maxlength="20" placeholder="آوا" autocomplete="off" spellcheck="false" />
+                </label>
                 <!-- v0.34 — وضعیت سلامت بیدارباش: کاربر دیگر در تاریکی نماند که چرا کار نمی‌کند -->
                 <div class="set-row col" id="wakeHealthRow">
                   <span class="set-info"><b data-i18n="wake.healthTitle">وضعیت بیدارباش</b><span id="wakeHealth" data-i18n="wake.healthIdle">خاموش — سوییچ بالا را روشن کن</span></span>
@@ -1057,7 +1062,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.45.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.46.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و
@@ -1079,6 +1084,7 @@
   <script src="js/voiceCommandParser.js"></script>
   <script src="js/voiceIntent.js"></script>
   <script src="js/voiceUnderstand.js"></script>
+  <script src="js/voiceWake.js"></script>
   <script src="js/capabilities.js"></script>
   <script src="js/types.js"></script>
   <script src="js/app.js"></script>

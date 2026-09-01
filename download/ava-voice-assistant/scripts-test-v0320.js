@@ -223,8 +223,8 @@ function makeGem(mockFetch, badSeed) {
   ok('suspended AudioContext auto-resume (loop alive-but-deaf class)', wSrc.includes("audioCtx.state === 'suspended'") && wSrc.includes('audioCtx.resume()'));
   ok('busy local-engine race: retry same audio after 1.2s instead of losing the wake',
      wSrc.includes('/مشغول/') && wSrc.includes('const tryStt =') && wSrc.match(/await tryStt\(\)/g).length >= 2);
-  ok('one-breath «آوا + فرمان»: tail extracted and handed to wakePickup(force)',
-     wSrc.includes('const wm = normFaFull(txt).match(WAKE_WORD_RE);') && wSrc.includes('wakePickup(tail)'));
+  ok('one-breath «آوا + فرمان»: tail from 3-tier engine (wm.tail) handed to wakePickup(force) — v0.46 forward-relaxed',
+     wSrc.includes("wakeNow(wm.tail || '')") && wSrc.includes('wakePickup(tail)'));
   ok('wakePickup waits for idle+no-TTS (dead-wake class killed)',
      wSrc.includes('function wakePickup(cmd)') && /if \(state === 'idle' && !wakeTtsBusy\(\) && !dictation\.active\) \{ run\(\); return; \}/.test(wSrc) && wSrc.includes('if (!wakeSessActive()) return;'));
   ok('buffer 30→47+ frames (~4s+, v0.36: 70 ≈ 6s) so the one-breath command fits', /wakeLoop\.chunks\.length > (47|70)/.test(wSrc));

@@ -82,8 +82,8 @@ ok('WAKE_ACCEPT set includes the user-requested variants (آبا، آوه، آو
 ok('wakeHitText uses tokens + accept set; latin ava/awa token-anchored; آواز/java rejected (v0.38.1)',
    appSrc.includes('function wakeHitText(txt)') && appSrc.includes('WAKE_ACCEPT.has(w)') &&
    appSrc.includes('/\\b(?:ava|awa)\\b/i') && appSrc.includes("/^(اوا|آوا)(ی|یی|ی\\s?جان|ی\\s?جون|جان|جون)?$/"));
-ok('wakeCheck trigger + test path both use wakeHitText (old substring matcher gone)',
-   (appSrc.match(/wakeHitText\(txt\)/g) || []).length === 3 && !appSrc.includes('/(آوا|اوا|ava)/i.test(normFaFull(txt))'));
+ok('wakeCheck uses the 3-tier engine (v0.46), wakeHitText kept as compat wrapper, old substring matcher gone',
+   (appSrc.match(/wakeHitText\(txt\)/g) || []).length === 1 && appSrc.includes('AVAWake.match(txt, wakeWordCfg())') && !appSrc.includes('/(آوا|اوا|ava)/i.test(normFaFull(txt))'));
 /* NEG CONTROL — اگر تطبیق به زیررشتهٔ ساده برگردد، «آبا» از دست می‌رود: هارنس باید بگیرد */
 {
   const sanity = (() => {
