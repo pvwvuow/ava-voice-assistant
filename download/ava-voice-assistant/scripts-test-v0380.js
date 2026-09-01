@@ -53,9 +53,12 @@ ok('pipRenderer: kind note → showEmpty با پیام', prSrc.includes("if (src
 ok('pipRenderer: emptyDefault — پیام قبلی نمی‌ماند', prSrc.includes('const emptyDefault') && prSrc.includes('msg || emptyDefault'));
 
 /* ---------- ۴) کنترل پلیر ---------- */
-ok('embed یوتیوب enablejsapi=1 دارد (وگرنه postMessage کار نمی‌کند)', prSrc.includes("'?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1'"));
+/* v0.51 — پلیر v2: webview بدون enablejsapi (رفع ارور ۱۵۳ یوتیوب) */
+ok('پلیر v2: webview بدون enablejsapi=1 (ارور ۱۵۳ ریشه‌کن شد)', !prSrc.includes('enablejsapi=1') && prSrc.includes('executeJavaScript'));
+
 ok('بدون bind تکراری btnClose/btnLock (باگ toggle دوبل زیپ)', (prSrc.match(/btnClose\.addEventListener/g) || []).length === 1 && (prSrc.match(/btnLock\.addEventListener/g) || []).length === 1);
-ok('togglePlay/toggleMute: یوتیوب postMessage، ویدیوی مستقیم vid (v0.38.1: sync با وضعیت واقعی پلیر)', prSrc.includes("'pauseVideo' : 'playVideo'") && prSrc.includes("'mute' : 'unMute'") && prSrc.includes('vid.muted = wantMute') && prSrc.includes('playerState'));
+ok('togglePlay/toggleMute: یوتیوب از executeJavaScript، ویدیوی مستقیم vid (v0.51: sync با وضعیت واقعی از داخل webview)', prSrc.includes('ytPlayPause') && prSrc.includes('ytSetMuted') && prSrc.includes('vid.muted = wantMute') && prSrc.includes('ytVideoState'));
+
 ok('pip.html: دکمه‌های ⏸ 🔊 و input pip-search با data-ui', phSrc.includes('id="btnPlay"') && phSrc.includes('id="btnMute"') && phSrc.includes('id="pipSearch"') && /id="pipSearch"[^>]*data-ui="1"/.test(phSrc));
 ok('pip.html: استایل .pip-search با راست‌چین', phSrc.includes('.bar .pip-search') && phSrc.includes('direction: rtl'));
 ok('tooltipهای فارسی حفظ شده‌اند (حذف نشده‌اند مثل زیپ)', phSrc.includes('بستن (بگو: بردارش)') && phSrc.includes('قفل کلیک'));

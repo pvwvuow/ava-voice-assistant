@@ -181,6 +181,9 @@ try {
   app.commandLine.appendSwitch('disable-renderer-backgrounding');
   app.commandLine.appendSwitch('disable-background-timer-throttling');
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  /* v0.51 — پلیر خود آوا: autoplay با صدا بدون نیاز به کلیک (پلی یعنی همان
+     لحظه پخش؛ قبلاً embed یوتیوب گاهی پاز شروع می‌شد) */
+  app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 } catch (_) { /* noop */ }
 
 /* ---------- v0.24 — دور زدن DNS فیلترشدهٔ ایران (شکن/الکترو) بدون UAC ----------
@@ -637,9 +640,18 @@ const COMMANDS = {
       const q = String(a || '').trim().slice(0, 120);
       if (!q) return 'start "" "https://www.youtube.com"';
       const vid = await ytFirstVideoId(q);
-      return vid
-        ? `start "" "https://www.youtube.com/watch?v=${vid}"`
-        : `start "" "https://www.youtube.com/results?search_query=${encodeURIComponent(q)}"`;
+      if (vid) {
+        /* v0.51 — پلی یعنی پخش در پلیر خود آوا (خواستهٔ کاربر: «ویدیو پخش
+           نمیشه در لانچر خودمون»)؛ پنجرهٔ شناور = webview بدون jsapi.
+           فقط اگر پنجره/پخش شناور نشد فالبک مرورگر */
+        try {
+          if (pipManager && typeof pipManager.openUrl === 'function' && pipManager.openUrl('https://www.youtube.com/watch?v=' + vid)) {
+            return 'powershell -NoProfile -Command "Write-Output ava_player"';
+          }
+        } catch (_) { /* فالبک مرورگر */ }
+        return 'start "" "https://www.youtube.com/watch?v=' + vid + '"';
+      }
+      return 'start "" "https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '"';
     },
     fa: 'پخش یوتیوب',
   },
@@ -1948,6 +1960,70 @@ const netErr = (e) => {
   }
   return m.slice(0, 140);
 };
+/* ============================================================
+   v0.51 — تحقیقِ وبِ واقعی برای فاز research هوش مصنوعی
+   (ریشهٔ توهم «نازنین» در لاگ v0.50: AI اسم آهنگ را از حافظهٔ
+   کهنه‌اش ساخت چون ابزار تحقیق نداشت. حالا نتایج واقعی وب به
+   دور دوم AI تزریق می‌شود تا اکشن نهایی داده‌محور باشد.)
+   DuckDuckGo HTML endpoint — بدون JS، پارسِ رجکسی پایدار، بدون کلید.
+   هر شکستی = '' → دور دوم صادقانه می‌گوید تحقیق ناموفق بود.
+   ============================================================ */
+function ddgDecode(s) {
+  return String(s || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+async function aiWebResearch(q) {
+  try {
+    const qq = encodeURIComponent(String(q || '').trim().slice(0, 150));
+    if (!qq) return '';
+    const ac = new AbortController();
+    const tId = setTimeout(() => ac.abort(), 9000);
+    const headers = {
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'accept-language': 'fa,en;q=0.8',
+    };
+    let rows = [];
+    /* پیش‌فرض: DuckDuckGo HTML endpoint */
+    try {
+      const r = await net.fetch('https://html.duckduckgo.com/html/?q=' + qq + '&kl=wt-wt', { signal: ac.signal, headers });
+      const t = await r.text();
+      const re = /<a[^>]+class="result__a"[^>]*>([\s\S]*?)<\/a>([\s\S]*?)(?=<a[^>]+class="result__a"|$)/g;
+      let m;
+      while ((m = re.exec(t)) && rows.length < 6) {
+        const title = ddgDecode(m[1]);
+        const sn = m[2].match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/);
+        const snippet = sn ? ddgDecode(sn[1]) : '';
+        if (title) rows.push(title + (snippet ? ' — ' + snippet.slice(0, 160) : ''));
+      }
+    } catch (_) { /* DDG ناموفق → Bing */ }
+    /* جایگزین: Bing RSS — خروجی XML تمیز و پایدار */
+    if (!rows.length) {
+      try {
+        const ac2 = new AbortController();
+        const t2id = setTimeout(() => ac2.abort(), 9000);
+        const r2 = await net.fetch('https://www.bing.com/search?q=' + qq + '&format=rss&count=8', { signal: ac2.signal, headers });
+        const x = await r2.text();
+        clearTimeout(t2id);
+        const itemRe = /<item>([\s\S]*?)<\/item>/g;
+        let it;
+        while ((it = itemRe.exec(x)) && rows.length < 6) {
+          const ti = ddgDecode((it[1].match(/<title>([\s\S]*?)<\/title>/) || [])[1]);
+          const de = ddgDecode((it[1].match(/<description>([\s\S]*?)<\/description>/) || [])[1]);
+          if (ti) rows.push(ti + (de ? ' — ' + de.slice(0, 160) : ''));
+        }
+      } catch (_) { /* هر دو ناموفق */ }
+    }
+    clearTimeout(tId);
+    return rows.slice(0, 6).map((s, i) => (i + 1) + ') ' + s).join('\n').slice(0, 1600);
+  } catch (_) { return ''; }
+}
+ipcMain.handle('ai:research', async (_e, q) => {
+  const out = await aiWebResearch(q);
+  return { ok: !!out, text: out };
+});
 ipcMain.handle('ai:chat', async (_e, p) => {
   const { base, key, model, messages, temperature } = p || {};
   const keys = splitKeys(key);
@@ -4987,6 +5063,158 @@ ipcMain.handle('music:readHead', (_e, p, max) => {
 });
 
 /* ---------- App lifecycle ---------- */
+/* ============================================================
+   v0.51 — Push-to-Talk قابل‌تنظیم (خواستهٔ کاربر: «کاربر بتونه یک دکمه
+   push to talk بزاره… به محض فشردن صدا گرفته شه و نیازی نیس اسم اوا رو
+   بگه… هر لحظه که دکمه رو ول کرد ضبط تموم شه… میتونه ترکیبی هم باشه»)
+   • کلید/ترکیب دلخواه در تنظیمات (Electron accelerator string)
+   • حالت hold: نگه‌داشتن = ضبط؛ رهاکردن = پایان + پردازش (تشخیص رهاشدن
+     روی ویندوز با PowerShell + GetAsyncKeyState — بدون هیچ ماژول نیتیو)
+   • حالت toggle: جایگزین (یک بار بزن شروع، دوباره بزن پایان)
+   • هیچ فوکوس‌دزدی: دیگر win.show() وسط کار کاربر اجرا نمی‌شود
+   ============================================================ */
+const pttSt = {
+  cfg: { enabled: true, combo: 'CommandOrControl+Shift+Space', mode: 'hold', fallback: 'CommandOrControl+Alt+Space' },
+  registered: '',
+  fallbackReg: '',
+  watchChild: null,
+  watchFile: '',
+};
+
+function pttReadCfg() {
+  try {
+    const c = (loadedSettings() || {}).ptt || {};
+    return {
+      enabled: c.enabled !== false,
+      combo: (typeof c.combo === 'string' && c.combo.trim()) ? c.combo.trim() : 'CommandOrControl+Shift+Space',
+      mode: c.mode === 'toggle' ? 'toggle' : 'hold',
+      fallback: (typeof c.fallback === 'string' && c.fallback.trim()) ? c.fallback.trim() : 'CommandOrControl+Alt+Space',
+    };
+  } catch (_) {
+    return { enabled: true, combo: 'CommandOrControl+Shift+Space', mode: 'hold', fallback: 'CommandOrControl+Alt+Space' };
+  }
+}
+
+/* accelerator → کدهای VK برای GetAsyncKeyState */
+function pttComboVks(combo) {
+  const KEYMAP = { control: 0x11, ctrl: 0x11, alt: 0x12, option: 0x12, altgr: 0xA5, shift: 0x10, space: 0x20, tab: 0x09, enter: 0x0D, return: 0x0D, backspace: 0x08, escape: 0x1B, esc: 0x1B, delete: 0x2E, del: 0x2E, insert: 0x2D, home: 0x24, end: 0x23, pageup: 0x21, pagedown: 0x22, up: 0x26, down: 0x28, left: 0x25, right: 0x27, plus: 0xBB, minus: 0xBD, comma: 0xBC, period: 0xBE, slash: 0xBF, backquote: 0xC0, '`': 0xC0, '[': 0xDB, ']': 0xDD, ';': 0xBA, "'": 0xDE, '\\': 0xDC, '=' : 0xBB };
+  const out = [];
+  for (const raw of String(combo || '').split('+')) {
+    const k = raw.trim().toLowerCase();
+    if (!k) continue;
+    if (k === 'commandorcontrol') { out.push(0x11); continue; } /* ویندوز = Ctrl */
+    if (k === 'command' || k === 'cmd' || k === 'super' || k === 'meta' || k === 'win') { out.push(0x5B); continue; }
+    const fm = k.match(/^f(\d{1,2})$/);
+    if (fm) { const n = parseInt(fm[1], 10); if (n >= 1 && n <= 24) { out.push(0x70 + n - 1); continue; } }
+    if (KEYMAP[k]) { out.push(KEYMAP[k]); continue; }
+    if (k.length === 1) { out.push(k.toUpperCase().charCodeAt(0)); continue; }
+  }
+  return [...new Set(out)];
+}
+
+function pttStopHoldWatcher() {
+  try { if (pttSt.watchChild && !pttSt.watchChild.killed) pttSt.watchChild.kill(); } catch (_) { /* noop */ }
+  pttSt.watchChild = null;
+  try { if (pttSt.watchFile) fs.unlinkSync(pttSt.watchFile); } catch (_) { /* noop */ }
+  pttSt.watchFile = '';
+}
+
+/* تشخیص رهاشدن کلید (hold): پروسهٔ PowerShell پایدار هر ۴۰ms وضعیت همهٔ
+   VKهای ترکیب را می‌خواند؛ اولین رهاشدن → «up» → پایان ضبط. حداکثر ۱۲۰s. */
+function pttStartHoldWatcher(vks) {
+  pttStopHoldWatcher();
+  if (process.platform !== 'win32' || !vks.length) {
+    /* غیر ویندوز: سقف ۳۰ ثانیه — هیچ ردیابی سراسری امنی بدون ماژول نیتیو نیست */
+    pttSt.watchChild = { killed: false, kill() { this.killed = true; clearTimeout(this.to); }, to: setTimeout(() => { try { sendUI('ava:ptt-up', { why: 'cap' }); } catch (_) { /* noop */ } }, 30000) };
+    return;
+  }
+  try {
+    const body = [
+      "$ErrorActionPreference='SilentlyContinue'",
+      "$s=@\"",
+      'using System;',
+      'using System.Runtime.InteropServices;',
+      'public class AvaKeys { [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int k); }',
+      '"@',
+      'Add-Type -TypeDefinition $s',
+      '$keys=@(' + vks.join(',') + ')',
+      'while($true){',
+      '  Start-Sleep -Milliseconds 40',
+      '  $down=0',
+      '  foreach($k in $keys){ if([AvaKeys]::GetAsyncKeyState($k) -band 0x8000){ $down++ } }',
+      '  if($down -lt $keys.Count){ Write-Output up; exit }',
+      '}',
+    ].join('\r\n');
+    const file = path.join(os.tmpdir(), 'ava-ptt-' + Date.now() + '.ps1');
+    fs.writeFileSync(file, body, 'utf8');
+    pttSt.watchFile = file;
+    const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', file], { windowsHide: true });
+    pttSt.watchChild = child;
+    child.stdout.on('data', (d) => {
+      if (/up/i.test(String(d || ''))) {
+        try { sendUI('ava:ptt-up', { why: 'release' }); } catch (_) { /* noop */ }
+        pttStopHoldWatcher();
+      }
+    });
+    const killer = setTimeout(() => {
+      try { sendUI('ava:ptt-up', { why: 'cap' }); } catch (_) { /* noop */ }
+      pttStopHoldWatcher();
+    }, 120000);
+    child.on('exit', () => {
+      clearTimeout(killer);
+      try { fs.unlinkSync(file); } catch (_) { /* noop */ }
+      if (pttSt.watchFile === file) pttSt.watchFile = '';
+      if (pttSt.watchChild === child) pttSt.watchChild = null;
+    });
+  } catch (_) { pttStopHoldWatcher(); }
+}
+
+/* ثبت/تازه‌سازی میانبر PTT از تنظیمات — در boot و بعد از هر تغییر تنظیمات */
+function pttRegister(win) {
+  try { if (pttSt.registered) globalShortcut.unregister(pttSt.registered); } catch (_) { /* noop */ }
+  try { if (pttSt.fallbackReg) globalShortcut.unregister(pttSt.fallbackReg); } catch (_) { /* noop */ }
+  pttStopHoldWatcher();
+  pttSt.registered = '';
+  pttSt.fallbackReg = '';
+  const cfg = pttReadCfg();
+  pttSt.cfg = cfg;
+  if (!cfg.enabled) { actLog('ptt: disabled in settings — shortcut not registered'); return false; }
+  const press = () => {
+    try {
+      if (!win || win.isDestroyed()) return;
+      if (pttSt.cfg.mode === 'hold') {
+        /* بدون win.show() — ضبط وسط کار کاربر شروع می‌شود، پنجره‌ای جلو نمی‌آید */
+        win.webContents.send('ava:ptt-down', {});
+        pttStartHoldWatcher(pttComboVks(pttSt.cfg.combo));
+      } else {
+        win.webContents.send('ava:toggle-listen');
+      }
+    } catch (_) { /* noop */ }
+  };
+  let ok = false;
+  try { ok = globalShortcut.register(cfg.combo, press); } catch (_) { ok = false; }
+  if (ok) {
+    pttSt.registered = cfg.combo;
+    actLog('ptt registered: ' + cfg.combo + ' (mode=' + cfg.mode + ')');
+    return true;
+  }
+  try { ok = globalShortcut.register(cfg.fallback, press); } catch (_) { ok = false; }
+  if (ok) {
+    pttSt.fallbackReg = cfg.fallback;
+    actLog('ptt combo OCCUPIED (' + cfg.combo + ') → fallback registered: ' + cfg.fallback);
+    return true;
+  }
+  actLog('ptt register FAILED: ' + cfg.combo + ' and fallback both occupied');
+  return false;
+}
+
+ipcMain.handle('ptt:reconfig', (e) => {
+  const win = e && e.sender ? BrowserWindow.fromWebContents(e.sender) : null;
+  const ok = pttRegister(win || BrowserWindow.getAllWindows()[0]);
+  return { ok, cfg: pttSt.cfg, registered: pttSt.registered || pttSt.fallbackReg };
+});
+ipcMain.handle('ptt:get', () => ({ cfg: pttSt.cfg, registered: pttSt.registered || pttSt.fallbackReg, ok: !!(pttSt.registered || pttSt.fallbackReg) }));
+
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
   /* v0.48 — مارکر بوت در JSONL + تایمر تله‌متری + بازپخش جلسهٔ قبل */
@@ -5045,31 +5273,15 @@ app.whenReady().then(() => {
   try { setTimeout(netSelfCheck, 2500); } catch (_) { /* noop */ }
   try { setTimeout(netDeepDiag, 5000); } catch (_) { /* noop */ }
 
-  // میانبر سراسری گوش دادن (Push-to-talk)
+  // میانبر سراسری گوش دادن (Push-to-talk) + حالت بی‌دست
   try {
-    /* v0.38.1 — برگشت register چک می‌شود: اگر برنامهٔ دیگری صاحب کلید است،
-       در activity.log صادقانه می‌رود (دیگر «میانبر ساکت» نداریم)
-       v0.47 — B13: شکست ثبت دیگر فقط لاگ نیست — fallback chord + اعلان کاربر
-       + تلاش مجدد دوره‌ای (کلیدِ اشغال‌شده ممکن است بعداً آزاد شود) */
+    /* v0.51 — PTT کامل: کلید قابل‌تنظیم (ترکیبی هم می‌شود) + حالت hold
+       (نگه‌دار=ضبط، رهاکن=پایان) + بدون دزدیدن فوکوس (قبلاً win.show()
+       وسط کارِ کاربر پنجرهٔ آوا را جلوی برنامهٔ فعال می‌کشید!)
+       v0.38.1/v0.47 — ثبتِ ناموفق صادقانه لاگ + fallback chord + تلاش مجدد */
+    const okPtt = pttRegister(win);
     const scFail = [];
-    let okPtt = globalShortcut.register('CommandOrControl+Shift+Space', () => {
-      if (win) {
-        if (win.isMinimized()) win.restore();
-        win.show();
-        win.webContents.send('ava:toggle-listen');
-      }
-    });
-    if (!okPtt) {
-      okPtt = globalShortcut.register('CommandOrControl+Alt+Space', () => {
-        if (win) {
-          if (win.isMinimized()) win.restore();
-          win.show();
-          win.webContents.send('ava:toggle-listen');
-        }
-      });
-      if (okPtt) actLog('shortcut fallback OK: Ctrl+Alt+Space for push-to-talk');
-    }
-    if (!okPtt) scFail.push('Ctrl+Shift+Space');
+    if (!okPtt) scFail.push(String((pttSt.cfg && pttSt.cfg.combo) || 'Ctrl+Shift+Space'));
     // میانبر سراسری حالت بی‌دست (گوش دائمی + کلمه بیدارباش)
     const okHf = globalShortcut.register('CommandOrControl+Alt+A', () => {
       if (win) {
@@ -5085,17 +5297,10 @@ app.whenReady().then(() => {
       const scRetry = setInterval(() => {
         try {
           const left = [];
-          if (!globalShortcut.isRegistered('CommandOrControl+Shift+Space')) left.push('ptt');
+          if (!pttSt.registered && !pttSt.fallbackReg) left.push('ptt');
           if (!globalShortcut.isRegistered('CommandOrControl+Alt+A')) left.push('hf');
           if (!left.length) { clearInterval(scRetry); actLog('shortcut retry: all shortcuts now registered'); return; }
-          if (left.includes('ptt')) {
-            const ok1 = globalShortcut.register('CommandOrControl+Shift+Space', () => {
-              if (win) { if (win.isMinimized()) win.restore(); win.show(); win.webContents.send('ava:toggle-listen'); }
-            });
-            if (!ok1) globalShortcut.register('CommandOrControl+Alt+Space', () => {
-              if (win) { if (win.isMinimized()) win.restore(); win.show(); win.webContents.send('ava:toggle-listen'); }
-            });
-          }
+          if (left.includes('ptt')) pttRegister(win);
           if (left.includes('hf')) {
             globalShortcut.register('CommandOrControl+Alt+A', () => {
               if (win) { if (win.isMinimized()) win.restore(); win.show(); win.webContents.send('ava:toggle-handsfree'); }
@@ -5137,5 +5342,6 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  try { pttStopHoldWatcher(); } catch (_) { /* noop */ } /* v0.51 — پروسهٔ PowerShell نگهبان PTT هم بسته شود */
   try { pipManager.flushPiPState(); } catch (_) { /* noop */ } /* v0.38.1 — آخرین ≤۳۰۰ms وضعیت PiP از دست نمی‌رود */
 });

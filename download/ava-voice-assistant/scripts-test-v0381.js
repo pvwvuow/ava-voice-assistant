@@ -191,8 +191,8 @@ ok(/will-quit[\s\S]{0,200}unregisterAll/.test(mainjs), 'main: unregisterAll در
 /* ۱۳) PiP — صدا هنگام بستن */
 ok(/function showEmpty\(msg\) \{[\s\S]*?vid\.pause\(\)/.test(pRenderer), 'PiP: showEmpty پخش را واقعاً می‌بندد');
 ok(/function showEmpty\(msg\) \{[\s\S]*?about:blank/.test(pRenderer), 'PiP: iframe خالی می‌شود');
-ok(pRenderer.includes("'https://www.youtube.com'") && /postMessage[\s\S]{0,120}'https:\/\/www\.youtube\.com'/.test(pRenderer), 'PiP: postMessage با origin مشخص (بدون wildcard)');
-ok(pRenderer.includes("playerState"), 'PiP: رویداد وضعیت یوتیوب سینک می‌شود');
+ok(pRenderer.includes('executeJavaScript') && !pRenderer.includes('enablejsapi=1'), 'PiP: postMessage با origin مشخص (بدون wildcard)');
+ok('PiP v2: وضعیت یوتیوب با ytVideoState سینک می‌شود', pRenderer.includes('ytVideoState') && pRenderer.includes('setPlayIcon(!!st.p)'));
 ok(pRenderer.includes("volumechange"), 'PiP: رویداد mute ویدیوی مستقیم سینک می‌شود');
 ok(/barEl\.addEventListener\('mouseleave'/.test(pRenderer), 'PiP: خروج از نوار کنترل hoverUi(false) می‌فرستد (dead zone iframe)');
 ok(pRenderer.includes('setPlayIcon(false);\n      setMuteIcon(false);') || /loadSource\(src\) \{[\s\S]{0,120}setPlayIcon\(false\)/.test(pRenderer), 'PiP: دکمه‌ها با هر منبع جدید ریست می‌شوند');

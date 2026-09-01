@@ -31,11 +31,26 @@
   const btnPlay = document.getElementById('btnPlay');
   const btnMute = document.getElementById('btnMute');
   const pipSearch = document.getElementById('pipSearch');
+  /* v0.51 — پلیر v2: نوار زمان واقعی + ±۱۰ ثانیه + فالبک یوتیوب */
+  const seekrow = document.getElementById('seekrow');
+  const seek = document.getElementById('seek');
+  const tCur = document.getElementById('tCur');
+  const tDur = document.getElementById('tDur');
+  const btnBack = document.getElementById('btnBack');
+  const btnFwd = document.getElementById('btnFwd');
+  const ytFallback = document.getElementById('ytFallback');
 
   let uiTimer = null;
   let dragging = false;
   let isPaused = false;
   let isMuted = false;
+  /* v0.51 — وضعیت پلیر یوتیوب در webview */
+  let ytActive = false;      /* آیا webview یوتیوب منبع دارد */
+  let ytCurId = '';          /* videoId فعلی برای فالبک */
+  let ytPoll = null;         /* تایمر نظرسنجی وضعیت ویدیو */
+  let ytNoVideoCount = 0;    /* پاس‌های پیاپی بدون <video> */
+  let ytSeekDrag = false;    /* کاربر در حال کشیدن نوار زمان است */
+  let ytLastState = null;    /* آخرین وضعیت واقعی از داخل webview */
 
   function showUI() {
     root.classList.add('show-ui');
@@ -44,13 +59,31 @@
   }
 
   /* ---------- منبع ویدیو + کنترل پلیر ---------- */
-  /* v0.38 — کنترل پلیر (پخش/توقف و قطع صدا) ----------
-     یوتیوب: دستور از طریق postMessage به iframe رسمی می‌رود (enablejsapi=1
-     در آدرس امبد فعال شده تا این پیام‌ها پذیرفته شوند). ویدیوی مستقیم:
-     مستقیم روی عنصر <video> */
-  function ytCommand(func) {
-    /* v0.38.1 — origin مقصد مشخص شد (قبلاً wildcard '*') */
-    try { yt.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), 'https://www.youtube.com'); } catch (_) { /* noop */ }
+  /* v0.51 — پلیر v2 (رفع ارور ۱۵۳ + کنترل حرفه‌ای) ----------
+     iframe + enablejsapi یوتیوبِ جدید را رد می‌کرد (Video player
+     configuration error / Error 153) و هیچ‌چیز پخش نمی‌شد.
+     حالا webview با embedِ ساده (بدون jsapi) → پخش قطعاً بالا می‌آید؛
+     کنترل (پلی/پاز/سیک/زمان/صدا) با executeJavaScript داخل همان
+     webview روی عنصر <video> واقعی اجرا می‌شود — بدون هیچ API گوگل. */
+  function ytEval(expr) {
+    try { return yt.executeJavaScript(expr, false); } catch (_) { return Promise.resolve(null); }
+  }
+  function ytVideoState() {
+    return ytEval('(function(){var v=document.querySelector("video");if(!v)return "no";' +
+      'try{return {t:v.currentTime||0,d:v.duration||0,p:!!v.paused,m:!!v.muted,vol:(v.volume==null?1:v.volume)}}catch(e){return "no"}})()');
+  }
+  function ytPlayPause(play) {
+    return ytEval('(function(){var v=document.querySelector("video");if(!v)return "no";try{' +
+      (play ? 'v.play();' : 'v.pause();') + 'return "ok"}catch(e){return "err"}})()');
+  }
+  function ytSetMuted(m) {
+    return ytEval('(function(){var v=document.querySelector("video");if(!v)return "no";try{v.muted=' + (m ? 'true' : 'false') + ';return "ok"}catch(e){return "err"}})()');
+  }
+  function ytSeekTo(t) {
+    return ytEval('(function(){var v=document.querySelector("video");if(!v)return "no";try{v.currentTime=' + Number(t) + ';return "ok"}catch(e){return "err"}})()');
+  }
+  function ytSeekBy(delta) {
+    return ytEval('(function(){var v=document.querySelector("video");if(!v)return "no";try{v.currentTime=Math.max(0,Math.min((v.duration||0),(v.currentTime||0)+' + Number(delta) + '));return "ok"}catch(e){return "err"}})()');
   }
   /* v0.38.1 — همگام‌سازی آیکون‌ها با وضعیت واقعی پلیر: قبلاً isPaused/isMuted
      کورکورانه flip می‌شدند و بعد از یک ویدیوی جدید اولین فشار دکمه مرده به‌نظر می‌رسید */
@@ -64,37 +97,94 @@
     btnMute.textContent = isMuted ? '🔇' : '🔊';
     btnMute.title = isMuted ? 'بازگرداندن صدا' : 'قطع صدا';
   }
-  function ytPause() { try { ytCommand('pauseVideo'); } catch (_) { /* noop */ } try { vid.pause(); } catch (_) { /* noop */ } }
+  function ytPause() { try { vid.pause(); } catch (_) { /* noop */ } if (ytActive) ytPlayPause(false); }
   function togglePlay() {
     const wantPause = !isPaused;
     setPlayIcon(wantPause);
-    if (ytWrap.style.display === 'block') ytCommand(wantPause ? 'pauseVideo' : 'playVideo');
+    if (ytActive) ytPlayPause(!wantPause);
     else { try { wantPause ? vid.pause() : vid.play().catch(() => {}); } catch (_) { /* noop */ } }
   }
   function toggleMute() {
     const wantMute = !isMuted;
     setMuteIcon(wantMute);
-    if (ytWrap.style.display === 'block') ytCommand(wantMute ? 'mute' : 'unMute');
+    if (ytActive) ytSetMuted(wantMute);
     else { try { vid.muted = wantMute; } catch (_) { /* noop */ } }
   }
+  /* v0.51 — نظرسنجی وضعیت واقعی ویدیو در webview: آیکون‌ها + نوار زمان */
+  function fmtTime(x) {
+    const t = Math.max(0, Math.floor(Number(x) || 0));
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s2 = t % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s2).padStart(2, '0');
+  }
+  function seekUiShow(on) { if (seekrow) seekrow.classList.toggle('hidden', !on); }
+  function ytStartPoll() {
+    ytStopPoll();
+    ytNoVideoCount = 0;
+    if (ytFallback) ytFallback.classList.remove('show');
+    seekUiShow(true);
+    ytPoll = setInterval(async () => {
+      if (!ytActive) return ytStopPoll();
+      let st = null;
+      try { st = await ytVideoState(); } catch (_) { st = null; }
+      if (!st || st === 'no') {
+        ytNoVideoCount += 1;
+        /* ~۶ ثانیه بدون <video> → embed بالا نیامده؛ فالبک صادقانه */
+        if (ytNoVideoCount === 14 && ytFallback && ytCurId) ytFallback.classList.add('show');
+        return;
+      }
+      ytNoVideoCount = 0;
+      if (ytFallback) ytFallback.classList.remove('show');
+      ytLastState = st;
+      setPlayIcon(!!st.p);
+      setMuteIcon(!!st.m);
+      if (!ytSeekDrag && seek) {
+        const d = Number(st.d) || 0, t = Number(st.t) || 0;
+        if (d > 0) {
+          seek.max = String(d);
+          seek.value = String(Math.min(t, d));
+          const pct = (t / d) * 100;
+          try { seek.style.setProperty('--p', pct.toFixed(2) + '%'); } catch (_) { /* noop */ }
+        }
+      }
+      if (tCur) tCur.textContent = fmtTime(st.t);
+      if (tDur) tDur.textContent = fmtTime(st.d);
+    }, 450);
+  }
+  function ytStopPoll() { if (ytPoll) { clearInterval(ytPoll); ytPoll = null; } }
   /* رویدادهای واقعی <video> */
   try {
     vid.addEventListener('play', () => setPlayIcon(false));
     vid.addEventListener('pause', () => setPlayIcon(true));
     vid.addEventListener('volumechange', () => setMuteIcon(!!vid.muted));
+    /* v0.51 — ویدیوی مستقیم هم نوار زمان واقعی دارد (پلیر یکپارچه) */
+    vid.addEventListener('timeupdate', () => {
+      if (ytActive || ytSeekDrag || !vid.duration) return;
+      seek.max = String(vid.duration);
+      seek.value = String(vid.currentTime || 0);
+      try { seek.style.setProperty('--p', ((vid.currentTime / vid.duration) * 100).toFixed(2) + '%'); } catch (_) { /* noop */ }
+      if (tCur) tCur.textContent = fmtTime(vid.currentTime);
+      if (tDur) tDur.textContent = fmtTime(vid.duration);
+    });
   } catch (_) { /* noop */ }
-  /* رویدادهای واقعی پلیر یوتیوب (infoDelivery → playerState: 1=play, 2=pause) */
+  /* v0.51 — کنترل‌های ترنسپورت: سیک + نوار زمان (یوتیوب از webview، مستقیم از <video>) */
   try {
-    window.addEventListener('message', (e) => {
-      try {
-        if (!/^https:\/\/(www\.)?youtube(-nocookie)?\.com$/.test(e.origin)) return;
-        const d = JSON.parse(e.data);
-        const ps = d && ((d.info && d.info.playerState) !== undefined ? d.info.playerState : (d.playerState !== undefined ? d.playerState : undefined));
-        if (ps === 1) setPlayIcon(false);
-        else if (ps === 2) setPlayIcon(true);
-        const muted = d && d.info && d.info.muted;
-        if (typeof muted === 'boolean') setMuteIcon(muted);
-      } catch (_) { /* پیام غیر-JSON یوتیوب — نادیده */ }
+    if (btnBack) btnBack.addEventListener('click', () => { showUI(); if (ytActive) ytSeekBy(-10); else { try { vid.currentTime = Math.max(0, (vid.currentTime || 0) - 10); } catch (_) {} } });
+    if (btnFwd) btnFwd.addEventListener('click', () => { showUI(); if (ytActive) ytSeekBy(10); else { try { vid.currentTime = (vid.currentTime || 0) + 10; } catch (_) {} } });
+    if (seek) {
+      seek.addEventListener('input', () => {
+        ytSeekDrag = true;
+        try { seek.style.setProperty('--p', ((Number(seek.value) / (Number(seek.max) || 1)) * 100).toFixed(2) + '%'); } catch (_) { /* noop */ }
+        if (tCur) tCur.textContent = fmtTime(seek.value);
+      });
+      seek.addEventListener('change', () => {
+        const t = Number(seek.value) || 0;
+        if (ytActive) ytSeekTo(t); else { try { vid.currentTime = t; } catch (_) {} }
+        ytSeekDrag = false;
+        showUI();
+      });
+    }
+    if (ytFallback) ytFallback.addEventListener('click', () => {
+      try { window.pipHost.openExternal('https://www.youtube.com/watch?v=' + ytCurId); } catch (_) { /* noop */ }
     });
   } catch (_) { /* noop */ }
 
@@ -116,9 +206,14 @@
   const emptyDefault = empty.querySelector('p').textContent; /* v0.38 — متن پیش‌فرض برای بازنشانی */
   function showEmpty(msg) {
     /* v0.38.1 — مخفی کردن صفحه نباید صدا را زنده بگذارد: پخش واقعاً متوقف
-       و iframe خالی می‌شود (قبلاً ویدیوی پنهان در بازی ادامه می‌داد) */
+       و webview خالی می‌شود (قبلاً ویدیوی پنهان در بازی ادامه می‌داد) */
     try { vid.pause(); } catch (_) { /* noop */ }
-    try { if (yt.getAttribute('src')) { yt.src = 'about:blank'; } } catch (_) { /* noop */ }
+    ytActive = false;
+    ytCurId = '';
+    ytStopPoll();
+    seekUiShow(false);
+    try { if (yt.getAttribute('src') && yt.getAttribute('src') !== 'about:blank') { yt.src = 'about:blank'; } } catch (_) { /* noop */ }
+    if (ytFallback) ytFallback.classList.remove('show');
     mediaWrap.classList.add('hidden');
     empty.classList.remove('hidden');
     empty.querySelector('p').textContent = msg || emptyDefault; /* پیام قبلی نماند */
@@ -131,20 +226,29 @@
       setMuteIcon(false);
       if (!src || src.kind === 'none') { showEmpty(); return; }
       if (src.kind === 'youtube' && src.videoId) {
-        /* امبد رسمی یوتیوب — sync کامل با پخش‌کنندهٔ اصلی محدود است؛
-           فقط زمان شروع (?start=) منتقل می‌شود */
+        /* v0.51 — پلیر v2: webview + embed ساده بدون enablejsapi.
+           ارور ۱۵۳ (Video player configuration error) ریشه‌اش enablejsapi
+           بدون origin معتبر بود — دیگر وجود ندارد. کنترل با executeJavaScript */
         const s = Math.max(0, Math.floor(src.start || 0));
         ytWrap.style.display = 'block';
         vid.removeAttribute('src');
         vid.load();
-        yt.src = 'https://www.youtube.com/embed/' + encodeURIComponent(src.videoId) +
-          '?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1' + (s ? '&start=' + s : '');
+        ytActive = true;
+        ytCurId = String(src.videoId);
+        seekUiShow(true);
+        yt.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(src.videoId) +
+          '?autoplay=1&playsinline=1&rel=0&modestbranding=1' + (s ? '&start=' + s : '');
         empty.classList.add('hidden');
         mediaWrap.classList.remove('hidden');
+        ytStartPoll();
         return;
       }
       if (src.kind === 'src' && src.url && /^https?:/i.test(src.url)) {
         ytWrap.style.display = 'none';
+        ytActive = false;
+        ytCurId = '';
+        ytStopPoll();
+        seekUiShow(true);
         yt.src = 'about:blank';
         vid.src = src.url;
         if (typeof src.volume === 'number') { try { vid.volume = Math.max(0, Math.min(1, src.volume)); } catch (_) {} }

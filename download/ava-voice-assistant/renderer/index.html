@@ -329,6 +329,18 @@
                   <span class="set-info"><b data-i18n="wake.healthTitle">وضعیت بیدارباش</b><span id="wakeHealth" data-i18n="wake.healthIdle">خاموش — سوییچ بالا را روشن کن</span></span>
                   <button class="btn ghost" id="btnWakeTest" data-i18n="wake.testBtn">تست بیدارباش</button>
                 </div>
+                <!-- v0.51 — Push-to-Talk: دکمهٔ فشاری قابل‌تنظیم (ترکیبی هم می‌شود) -->
+                <div class="set-row col" id="pttCard">
+                  <span class="set-info"><b data-i18n="set.ptt.title">دکمهٔ فشاری صحبت (Push-to-Talk)</b><span data-i18n="set.ptt.hint">تا وقتی دکمه را نگه داشته‌ای آوا گوش می‌دهد و به محض رهاکردن، ضبط تمام و فرمان اجرا می‌شود — بدون نیاز به گفتن «آوا» و بدون پرش پنجره. کلید ترکیبی هم قابل تنظیم است.</span></span>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <label class="sw" style="display:inline-flex;align-items:center;gap:6px" title="روشن/خاموش"><input type="checkbox" id="optPtt"/><i></i></label>
+                    <button class="chip" id="btnPttKey" style="display:inline-flex;align-items:center;gap:6px"><svg class="ic"><use href="#i-mic"/></svg><span id="pttKeyLabel">Ctrl+Shift+Space</span></button>
+                    <select id="optPttMode" class="set-select" style="max-width:190px">
+                      <option value="hold" data-i18n="set.ptt.hold">نگه‌دار و حرف بزن (hold)</option>
+                      <option value="toggle" data-i18n="set.ptt.toggle">یک بار بزن (toggle)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
             <!-- تایپ صوتی -->
@@ -1067,7 +1079,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.50.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.51.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

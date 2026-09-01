@@ -58,7 +58,8 @@
     /* ---- موزیک محلی — ممنوعهٔ یوتیوب/آپارات: ریشهٔ «توی یوتیوب آهنگ پلی کن
        که الکی پوشهٔ موزیک را باز می‌کرد» ---- */
     music_play: {
-      anchors: [/پخش|پلی\s?کن|بزن|شروع|play/i],
+      /* v0.51 — بذار/بزار/بیار/بگر هم فعلِ پخش‌اند (لاگ v0.50: «آهنگ X بذار») */
+      anchors: [/پخش|پلی\s?کن|بزن|بذار|بزار|بیار|بگیر|شروع|play/i],
       negatives: [/یوتیوب|youtube|آپارات|اپارات|aparat|دستور|فرمان|ببند|قطع|استاپ|استوپ|خاموش/i],
     },
     music_pause: { negatives: [/یوتیوب|youtube|آپارات|اپارات|aparat/i] },
@@ -227,6 +228,24 @@
      (ریشهٔ واقعی لاگ v0.49: «خوب همین آهنگ جدید شادمهر که چند لحظه پیش بهم
      گفتی چی بود را همون اسمو سرچ کن تو یوتیوب» → کل جمله در یوتیوب سرچ شد) */
   const GATE_CTX_RE = /(همین|همون|همان)[^.،؛؟?!]{0,40}?(گفتی|گفتم|میگفتی|بگو\s?بود|چی\s?بود|اسمش|اسمو|سرچ|پیدا)|(همین|همون|همان)\s?(قبلی|قبلیه|اخری|اخرین|آخرین)|(همین|همون|همان)\S{0,8}\s?که\s|چند\s?لحظه\s?(پیش|قبل)|همون\s?اسمو?|اسمشو?\s?ببین/;
+  /* v0.51 — کلاس «نفی در میان جمله» (لاگ v0.50 ساعت ۱۴:۳۹: «ببین اسم آهنگ
+     جدید شادمهر نازنین نیست» — تصحیحِ کاربر بود ولی «نیست» در هیچ کلاس
+     گیتی نبود و open_music در ۱۰۵ms اجرا شد!) */
+  const GATE_NEG_RE = /(نیست|نبود|نیستم|نمی\s?خوام|نمیخوام|نخیر|غلطه|غلط\s?بود)/;
+  /* v0.51 — کلاس «سؤالِ اطمینان» (لاگ v0.50 ساعت ۱۴:۳۸: «مطمئنی اسم آهنگ
+     جدید شاد نازنین» — سؤالِ اطمینان بود، هیچ کلاسی نگرفت و open_music
+     در ۱۱۳ms اجرا شد!) */
+  const GATE_SURE_RE = /(مطمئنی|مطمئن\s?هستی|مگه|درست\s?فهمیدی|درسته\s?[؟?]|واقعا\s?[؟?])/;
+  /* v0.51 — معکوس‌سازی بار اثبات (خواستهٔ صریح کاربر: «دونه‌دونه فیکس نکن،
+     کلی باید از ریشه فیکس شه»). سه نشت واقعی لاگ v0.50:
+       «مطمئنی اسم آهنگ …» / «… نازنین نیست» / «جدیدترین آهنگ شادمهر در ۲۰۲۶»
+     همگی open_music شدند چون گیتِ قدیم فقط «نشانهٔ منفی» شکار می‌کرد و
+     لیستش بی‌نهایت است. اصل جدید: اجرای کورِ خانوادهٔ اکشن فقط با
+     «فعلِ اجرای صریح» مجاز است (گذرنامهٔ مثبت). جمله‌ای که نه سؤال است
+     نه تصحیح نه ارجاعی، ولی فعلِ اجرا هم ندارد = خودِ درخواست/گفته است
+     نه فرمان → AI تصمیم می‌گیرد. این برای هر تعبیرِ آینده‌ای هم جواب
+     می‌دهد (فارسی/انگلیسی)، نه فقط این سه جمله. */
+  const GATE_EXEC_RE = /(باز\s?(کن|شو)|اجرا\s?کن|سرچش?\s?کن|سیرچش?\s?کن|جستجوش?\s?کن|پخشش?\s?کن|پلیش?\s?کن|پلاش\s?کن|پخش\s?کن|پلی\s?کن|بذار|بزار|بزن|بگرد|بگیر|بیار|ببند|بس\s?کن|خاموش\s?کن|قطع\s?کن|بعدی|قبلی|پاز|استاپ|استوپ|ادامه\s?بده|برو\s?(جلو|عقب)|شناور\s?کن|پین\s?کن|\b(play|search|find|open|pause|stop|next|previous|put\s+on|look\s?up)\b)/i;
 
   function gateType(cmd) {
     const s = String(cmd || '').trim();
@@ -235,14 +254,29 @@
     if (GATE_MULTI_RE.test(s)) return 'multi-step';
     if (GATE_CTX_RE.test(s)) return 'context';
     if (GATE_Q_RE.test(s) && !(GATE_IMP_RE.test(s) && !GATE_QSTRONG_RE.test(s))) return 'question';
+    if (GATE_SURE_RE.test(s)) return 'certainty';
+    if (GATE_NEG_RE.test(s)) return 'negation';
     if (GATE_FIND_RE.test(s) && !/(سرچ|جستجو)/.test(s)) return 'smart-find';
     const toks = s.split(/[\s\u200C]+/);
     if (!GATE_VERBISH_RE.test(s) && toks.length <= 3 && s.length <= 18) return 'noun-phrase';
     return '';
   }
+  /* خروجی کلاس گیت برای یک قانون خاص — '' یعنی مجاز به اجرای سریع */
+  function gateReason(cmd, ruleId) {
+    const id = String(ruleId || '');
+    if (!id || !GATE_FAMILY.has(id)) return '';
+    const s = String(cmd || '');
+    const g = gateType(s);
+    /* v0.51 — فعلِ اجرای صریح فقط کلاسِ ضعیفِ noun-phrase را رد می‌کند
+       («موزیک بعدی» = فرمانِ کنترل پخش است، نه چت) */
+    if (g === 'noun-phrase' && GATE_EXEC_RE.test(s)) return '';
+    if (g) return g;
+    /* v0.51 — وارونگی: خانوادهٔ اکشن بدون فعلِ اجرای صریح → 'no-verb' */
+    if (!GATE_EXEC_RE.test(s)) return 'no-verb';
+    return '';
+  }
   function blocksActionRule(cmd, ruleId) {
-    if (!ruleId || !GATE_FAMILY.has(String(ruleId))) return false;
-    return !!gateType(cmd);
+    return !!gateReason(cmd, ruleId);
   }
 
   /* ============================================================
@@ -300,7 +334,42 @@
     return !!(/پلی\s?کن|پخش\s?کن|پخشش\s?کن|پلاش\s?کن|بذار\s?(پخش|بزن)|بزن\s?دیگه/i.test(String(c || '')));
   }
 
-  const api = { arbitrate, candidatesText, TABLE, gateType, blocksActionRule, ytQueryOf, ytPlayVerb };
+  /* ============================================================
+     v0.51 — استخراج محتوای «دیکتهٔ یک‌باره» از جملهٔ کاربر
+     (خواستهٔ کاربر: «کاربر تو صفحهٔ تایپ تلگرامه یا گوگله… میگه آوا اینجا
+     بنویس "من فلان…" و شروع کنه به نوشتن در اون باکس — و نباید به یک
+     تعبیر خاص محدود بشه؛ ببین بنویس یا هرچیزی».)
+     سه لایه: ۱) گیومه‌دار (دقیق‌ترین) ۲) بعد از کولون ۳) برش بعد از
+     اولین «فعل نوشتن». خروجی '' یعنی محتوایی نیست → مسیر AI/حالت مودار.
+     ============================================================ */
+  const TYPE_ONCE_VERB_RE = /(بنویس|بنویشه|بنویش|بنویسش|تایپش?\s?کن|تایپش?کشار|دیکته\s?کن|\bwrite\b|\btype\s?(this|that|it)?\b)/i;
+  function typeOnceOf(c) {
+    let s = String(c || '').trim();
+    if (!s) return '';
+    /* ۱) گیومه‌دار: "…" یا «…» یا '…' — محتوای داخل گیومه، نه بیشتر */
+    const q = s.match(/["«'”]([\s\S]{1,400}?)["»'“]/);
+    if (q && q[1].trim()) return q[1].trim().slice(0, 300);
+    /* ۲) بعد از کولون: «اینجا بنویس: قرار ساعت ۵» */
+    const col = s.match(/[:：]\s*([\s\S]{1,400})$/);
+    if (col && col[1].trim()) return col[1].trim().slice(0, 300);
+    /* ۳) برش بعد از اولین فعلِ نوشتن */
+    const m = TYPE_ONCE_VERB_RE.exec(s);
+    if (!m) return '';
+    let rest = s.slice(m.index + m[0].length).replace(/^[\s:：،,]+/, '');
+    for (let i = 0; i < 3; i++) {
+      const r2 = rest.replace(/^(که|بین|که\s?بین|برام|برای\s*من|واسم|اینو|این\s*رو|یه|یک|لطفا|لطفاً)[\s«»"'”，,]*/i, '');
+      if (r2 === rest) break;
+      rest = r2;
+    }
+    /* اگر ادامهٔ جمله مقصد وب است («بنویس تو گوگل سرچ کن…») دیکته نیست */
+    if (/^(تو|توی|در)\s+(یوتیوب|گوگل|youtube|google)/i.test(rest)) return '';
+    rest = rest.replace(/[\s«»"'”“،,؛;:]+$/, '').trim();
+    /* فقط علائم/گیومه بی‌متن → محتوایی نیست */
+    if (!/[\p{L}\p{N}]/u.test(rest)) return '';
+    return rest.length >= 1 ? rest.slice(0, 300) : '';
+  }
+
+  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

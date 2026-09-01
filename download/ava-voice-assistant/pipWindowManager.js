@@ -162,6 +162,10 @@ function createPiPWindow(options) {
       nodeIntegration: false,
       spellcheck: false,
       backgroundThrottling: false, /* در بازی، تایمرها throttle نشوند */
+      /* v0.51 — پلیر v2: webview برای کنترل کامل پخش یوتیوب (play/pause/seek/
+         زمان/صدا با executeJavaScript) — iframe + enablejsapi ارور ۱۵۳ یوتیوب
+         می‌داد و هیچ‌چیز پخش نمی‌شد */
+      webviewTag: true,
     },
   });
 
@@ -179,6 +183,15 @@ function createPiPWindow(options) {
   pipWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   pipWin.webContents.on('will-navigate', (e, url) => {
     if (!ytEmbedAllowed.test(url)) { try { e.preventDefault(); } catch (_) {} log('NAV_BLOCK'); }
+  });
+  /* v0.51 — پلیر v2: iframe → webview (کنترل کامل پخش + رفع ارور ۱۵۳).
+     گارد امنیتی: فقط embed یوتیوب؛ هیچ nodeIntegration در مهمان */
+  pipWin.webContents.on('will-attach-webview', (e, webPreferences, params) => {
+    try {
+      webPreferences.nodeIntegration = false;
+      webPreferences.contextIsolation = true;
+      if (!ytEmbedAllowed.test(String((params && params.src) || ''))) { try { e.preventDefault(); } catch (_) {} log('WEBVIEW_BLOCK'); }
+    } catch (_) { try { e.preventDefault(); } catch (_) {} }
   });
 
   pipWin.once('ready-to-show', () => {
@@ -415,6 +428,12 @@ function registerIpc() {
   handle('pip:get-state', () => getState());
   /* کلیپ‌بورد از پروسهٔ اصلی — بدون پنجرهٔ مجوز مرورگر، برای «لینک یوتیوب کپی‌شده» */
   handle('pip:clip', () => { try { return String(clipboard.readText() || '').slice(0, 4000); } catch (_) { return ''; } });
+  /* v0.51 — پلیر: فالبک صادقانه «باز کردن در یوتیوب» از داخل پنجرهٔ شناور */
+  handle('pip:open-external', (_e, u) => {
+    const s = String(u || '');
+    if (!/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//i.test(s)) return { ok: false };
+    try { require('electron').shell.openExternal(s); return { ok: true }; } catch (_) { return { ok: false }; }
+  });
 
   /* پیام‌های صفحهٔ PiP */
   try {

@@ -89,7 +89,7 @@ ok(appSrc.includes('ایمالز=emalls.ir/?s=…') && appSrc.includes('emalls.i
 
 /* ---------- 8) set_wake_word ---------- */
 console.log('\n[8] set_wake_word — تغییر ویکورد با فرمان صوتی');
-ok(appSrc.includes("'run_cmd', 'note_show', 'set_wake_word']"), 'DO_ACTS + set_wake_word');
+ok(appSrc.includes("'set_wake_word', 'research', 'type_once']"), 'DO_ACTS + set_wake_word');
 ok(appSrc.includes("case 'set_wake_word': {"), 'executor case');
 ok(appSrc.includes('- set_wake_word: value=کلمهٔ بیدارباش جدید'), 'پرامپت فارسی');
 ok(appSrc.includes('set_wake_word(value=the new wake word, one word)'), 'پرامپت انگلیسی');

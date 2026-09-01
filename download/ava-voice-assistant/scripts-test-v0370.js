@@ -155,15 +155,15 @@ ok('pipPreload: پل امن صفحهٔ PiP (ready/close/hoverUi/dragStart/ctl/on
 
 ok('app.js: قانون PIP با AVAVoice.PIP_COMMAND_RE + pipVoiceReply + قانون HOW با __aiExtra', appSrc.includes('AVAVoice.PIP_COMMAND_RE') && appSrc.includes('pipVoiceReply') && appSrc.includes('__aiExtra: AVACapabilities.aiPromptAddon()'));
 ok('app.js: HOW قبل از PIP splice می‌شود (چجوری…پین کنم → راهنما نه پین!)', (() => { const m = appSrc.match(/const pipRules = \[[\s\S]*?\n    \];/); return !!m && m[0].indexOf('howToReply') < m[0].indexOf('AVAVoice.PIP_COMMAND_RE'); })());
-ok('app.js: dispatch fallback مانیفست را به aiHandleCommand می‌دهد', /aiHandleCommand\(cmd, (?:await aiFallbackCtx\(rule\)|rule && rule\.__aiExtra)\)/.test(appSrc)); /* v0.42: aiFallbackCtx شامل __aiExtra */
+ok('app.js: dispatch fallback مانیفست را به aiHandleCommand می‌دهد', /aiHandleCommand\(cmd, (?:await aiFallbackCtx\(rule, cmd\)|await aiFallbackCtx\(rule\)|rule && rule\.__aiExtra)\)/.test(appSrc)); /* v0.42: aiFallbackCtx شامل __aiExtra */
 ok('app.js: aiAsk/aiHandleCommand پارامتر extraCtx دارند', appSrc.includes('async function aiAsk(text, extraCtx)') && appSrc.includes('async function aiHandleCommand(cmd, extraCtx)'));
 ok('app.js: detectActiveVideo سه‌مسیره (video → webview → کلیپ‌بورد)', appSrc.includes('async function detectActiveVideo') && appSrc.includes("document.querySelectorAll('video')") && appSrc.includes("document.querySelector('webview')") && appSrc.includes('bridge.pipAPI.clipboard()'));
 ok('app.js: مسیر blob صادقانه است (قابل انتقال نیست)', appSrc.includes("kind: 'blob'") && appSrc.includes('انتقال مستقیم ممکن نیست'));
 ok('app.js: بدون AI هم fallback صادقانهٔ PiP دارد', appSrc.includes('اول یه ویدیو پین کن'));
 
-ok('pip.html: واترمارک + لوگو + data-ui + CSP امبد فقط یوتیوب', pipHtml.includes('assets/ava-logo.png') && (pipHtml.match(/data-ui="1"/g) || []).length >= 6 && /frame-src https:\/\/www\.youtube\.com/.test(pipHtml) && pipHtml.includes('btnLock') && pipHtml.includes('btnOpacity') && pipHtml.includes('grip'));
-ok('pipRenderer: hoverUi + dragStart/dragEnd + onSource YouTube embed', pipRendSrc.includes('hoverUi') && pipRendSrc.includes('dragStart') && pipRendSrc.includes('youtube.com/embed/') && pipRendSrc.includes('start='));
-ok('pipRenderer: زمان شروع یوتیوب با ?start= منتقل می‌شود (sync کامل محدود است)', pipRendSrc.includes("'&start=' + s") && /sync.*محدود|محدود.*sync/.test(pipRendSrc));
+ok('pip.html: واترمارک + لوگو + data-ui + CSP امبد فقط یوتیوب', pipHtml.includes('assets/ava-logo.png') && (pipHtml.match(/data-ui="1"/g) || []).length >= 6 && pipHtml.includes('<webview id="yt"') && pipHtml.includes('btnLock') && pipHtml.includes('btnOpacity') && pipHtml.includes('grip'));
+ok('pipRenderer: hoverUi + dragStart/dragEnd + onSource YouTube embed', pipRendSrc.includes('hoverUi') && pipRendSrc.includes('dragStart') && pipRendSrc.includes('youtube-nocookie.com/embed/') && pipRendSrc.includes('start='));
+ok('pipRenderer: زمان شروع یوتیوب با ?start= منتقل می‌شود (sync کامل محدود است)', pipRendSrc.includes("'&start=' + s") && /پلیر v2|v0.51/.test(pipRendSrc));
 
 /* ============ ۵) لوگو + اسکریپت‌ها + نسخه ============ */
 ok('لوگو: renderer/assets/ava-logo.png موجود (512px → >50KB)', (() => { try { const st = fs.statSync(path.join(__dirname, 'renderer/assets/ava-logo.png')); return st.size > 50 * 1024; } catch (_) { return false; } })());

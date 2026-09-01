@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src https: blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com;">
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src https: blob:;">
 <title>AVA PiP</title>
 <style>
   /* ============================================================
@@ -35,6 +35,11 @@
   /* ناحیهٔ ویدیو */
   .media { position: absolute; inset: 0; }
   .media video, .media iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0; background: #000; border-radius: 16px;
+  }
+  /* v0.51 — پلیر v2: webview یوتیوب (کنترل کامل پخش، بدون ارور ۱۵۳) */
+  .media webview {
     position: absolute; inset: 0; width: 100%; height: 100%;
     border: 0; background: #000; border-radius: 16px;
   }
@@ -107,15 +112,53 @@
   .bar .pip-search::placeholder { color: rgba(127,216,180,.55); }
   .bar .pip-search:focus { border-color: rgba(52,211,153,.75); background: rgba(4,35,26,.8); }
   .bar .x:hover { background: rgba(239,68,68,.4); color: #fff; }
+  /* v0.51 — ردیف پخش حرفه‌ای: نوار زمان واقعی + دکمه‌های ±۱۰ ثانیه */
+  .seekrow {
+    position: absolute; left: 0; right: 0; bottom: 35px; z-index: 10;
+    display: flex; align-items: center; gap: 7px;
+    padding: 4px 10px 2px;
+    background: linear-gradient(0deg, rgba(3,8,6,.72), transparent);
+    opacity: 0; transform: translateY(4px);
+    transition: opacity .18s ease, transform .18s ease;
+    font-size: 9.5px; font-weight: 700; color: #a7f3d0;
+    font-variant-numeric: tabular-nums;
+  }
+  .pip-root.show-ui .seekrow { opacity: 1; transform: none; }
+  .seekrow.hidden, .seekrow.hidden input { display: none; }
+  .seekrow input[type=range] {
+    flex: 1; height: 14px; -webkit-appearance: none; appearance: none;
+    background: transparent; cursor: pointer;
+  }
+  .seekrow input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 3px;
+    background: linear-gradient(90deg, rgba(52,211,153,.9) var(--p,0%), rgba(255,255,255,.18) var(--p,0%));
+  }
+  .seekrow input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 10px; height: 10px; margin-top: -3px;
+    border-radius: 50%; background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.8);
+  }
+  /* v0.51 — دکمهٔ فالبک وقتی embed یوتیوب بالا نیامد */
+  .yt-fallback {
+    position: absolute; top: 8px; right: 8px; z-index: 11;
+    display: none; padding: 4px 9px; border-radius: 8px;
+    border: 1px solid rgba(52,211,153,.5); background: rgba(4,35,26,.85);
+    color: #6ee7b7; font-size: 10px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .yt-fallback.show { display: block; }
+  .yt-fallback:hover { background: rgba(16,185,129,.3); color: #fff; }
 </style>
 </head>
 <body>
   <div class="pip-root" id="root">
-    <!-- ناحیهٔ ویدیو: یا <video> مستقیم یا iframe یوتیوب -->
+    <!-- ناحیهٔ ویدیو: یا <video> مستقیم یا webview یوتیوب (پلیر v2) -->
     <div class="media hidden" id="mediaWrap">
       <video id="vid" playsinline></video>
       <div id="ytWrap" style="position:absolute;inset:0;display:none">
-        <iframe id="yt" title="AVA PiP — YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        <!-- v0.51 — webview به‌جای iframe: بدون enablejsapi (رفع ارور ۱۵۳) +
+             کنترل کامل پخش با executeJavaScript -->
+        <webview id="yt" title="AVA PiP — YouTube" src="about:blank" allowfullscreen></webview>
+        <button class="yt-fallback" id="ytFallback" data-ui="1" title="پخش در یوتیوب">باز کردن در یوتیوب ↗</button>
       </div>
     </div>
 
@@ -137,6 +180,13 @@
     <div class="brand"><img src="assets/ava-logo.png" alt="" draggable="false"><span>AVA</span></div>
 
     <!-- نوار کنترل — data-ui = ناحیهٔ کلیک‌پذیر در حالت click-through -->
+    <div class="seekrow hidden" id="seekrow" data-ui="1">
+      <button id="btnBack" title="۱۰ ثانیه عقب" data-ui="1">⏪</button>
+      <span id="tCur">0:00</span>
+      <input type="range" id="seek" min="0" max="100" value="0" step="0.1" data-ui="1">
+      <span id="tDur">0:00</span>
+      <button id="btnFwd" title="۱۰ ثانیه جلو" data-ui="1">⏩</button>
+    </div>
     <div class="bar" id="bar" data-ui="1">
       <button class="x" id="btnClose" title="بستن (بگو: بردارش)" data-ui="1">✕</button>
       <button id="btnPlay" title="پخش/توقف" data-ui="1">⏸</button>

@@ -292,6 +292,15 @@
     'set.stt.note': ['بلندی صدای میکروفون خودکار نرمال می‌شود، آستانه تشخیص صدا برای هر میکروفون تطبیقی تنظیم می‌شود و اگر موتوری جواب نداد، همان صدا به موتور بعدی فرستاده می‌شود.', 'Microphone loudness is auto-normalized, the voice threshold adapts to your mic, and if one engine fails the same audio is retried on the next engine.'],
     'set.dict.start': ['شروع و پایان', 'Start and stop'],
     'set.dict.startHint': ['بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین', 'Say "Ava type" to start; "Ava done" or "stop typing" to finish — or use the button'],
+    /* v0.51 — Push-to-Talk */
+    'set.ptt.title': ['دکمهٔ فشاری صحبت (Push-to-Talk)', 'Push-to-Talk button'],
+    'set.ptt.hint': ['تا وقتی دکمه را نگه داشته‌ای آوا گوش می‌دهد و به محض رهاکردن، ضبط تمام و فرمان اجرا می‌شود — بدون نیاز به گفتن «آوا» و بدون پرش پنجره. کلید ترکیبی هم قابل تنظیم است.', 'While held, AVA listens; on release the recording ends and the command runs — no wake word and no window stealing. Combos supported.'],
+    'set.ptt.hold': ['نگه‌دار و حرف بزن (hold)', 'Hold to talk'],
+    'set.ptt.toggle': ['یک بار بزن (toggle)', 'Press once (toggle)'],
+    'set.ptt.press': ['کلید دلخواهت را فشار بده…', 'Press your key combo…'],
+    'set.ptt.set': ['کلید ذخیره شد:', 'Key saved:'],
+    'set.ptt.on': ['دکمهٔ فشاری صحبت روشن شد', 'Push-to-Talk enabled'],
+    'set.ptt.off': ['دکمهٔ فشاری صحبت خاموش شد', 'Push-to-Talk disabled'],
     'set.dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
     'set.dict.target': ['خروجی تایپ', 'Typing output'],
     'set.dict.targetHint': ['«کادر آوا»: متن در آوا نوشته و با دکمه کپی برمی‌دارد؛ «برنامه فعال»: همان‌جا که داری کار می‌کنی تایپ می‌شود (پیست خودکار)', '"AVA box": text is written here with a copy button; "Active app": typed directly into whatever app you use (auto paste)'],
@@ -582,6 +591,15 @@
     'set.stt.note': ['بلندی صدای میکروفون خودکار نرمال می‌شود، آستانه تشخیص صدا برای هر میکروفون تطبیقی تنظیم می‌شود و اگر موتوری جواب نداد، همان صدا به موتور بعدی فرستاده می‌شود.', 'Microphone loudness is auto-normalized, the voice threshold adapts to your mic, and if one engine fails the same audio is retried on the next engine.'],
     'set.dict.start': ['شروع و پایان', 'Start and stop'],
     'set.dict.startHint': ['بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین', 'Say "Ava type" to start; "Ava done" or "stop typing" to finish — or use the button'],
+    /* v0.51 — Push-to-Talk */
+    'set.ptt.title': ['دکمهٔ فشاری صحبت (Push-to-Talk)', 'Push-to-Talk button'],
+    'set.ptt.hint': ['تا وقتی دکمه را نگه داشته‌ای آوا گوش می‌دهد و به محض رهاکردن، ضبط تمام و فرمان اجرا می‌شود — بدون نیاز به گفتن «آوا» و بدون پرش پنجره. کلید ترکیبی هم قابل تنظیم است.', 'While held, AVA listens; on release the recording ends and the command runs — no wake word and no window stealing. Combos supported.'],
+    'set.ptt.hold': ['نگه‌دار و حرف بزن (hold)', 'Hold to talk'],
+    'set.ptt.toggle': ['یک بار بزن (toggle)', 'Press once (toggle)'],
+    'set.ptt.press': ['کلید دلخواهت را فشار بده…', 'Press your key combo…'],
+    'set.ptt.set': ['کلید ذخیره شد:', 'Key saved:'],
+    'set.ptt.on': ['دکمهٔ فشاری صحبت روشن شد', 'Push-to-Talk enabled'],
+    'set.ptt.off': ['دکمهٔ فشاری صحبت خاموش شد', 'Push-to-Talk disabled'],
     'set.dict.startBtn': ['شروع تایپ صوتی', 'Start voice typing'],
     'set.dict.target': ['خروجی تایپ', 'Typing output'],
     'set.dict.targetHint': ['«کادر آوا»: متن در آوا نوشته و با دکمه کپی برمی‌دارد؛ «برنامه فعال»: همان‌جا که داری کار می‌کنی تایپ می‌شود (پیست خودکار)', '"AVA box": text is written here with a copy button; "Active app": typed directly into whatever app you use (auto paste)'],
@@ -2827,8 +2845,12 @@
       {
         /* v0.43 — «کن» تنهایی از الگوی دوم حذف شد: «موزیک رو باز کن» را هم
            پخشِ موزیکِ محلی می‌گرفت (ریشهٔ بخشی از «الکی انجام میده»؛ باز کردن
-           پلیر موزیک الان مسیر درست خودش را دارد) */
-        k: new RegExp(`(?:پخش|بزن|پلی|شروع|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|play)`, 'i'),
+           پلیر موزیک الان مسیر درست خودش را دارد)
+           v0.51 — بذار/بزار/بیار/بگیر به فعل‌ها پیوست (لاگ v0.50: «آهنگ X بذار»
+           به هیچ‌کدام از فعل‌های music_play نمی‌خورد و می‌افتاد روی open_music
+           = باز شدن صفحهٔ اصلی YT Music بدون پخشِ هیچ آهنگی؛ engine آهنگ-آگاهِ
+           voiceMusicPlay خودش محلی/یوتیوب را انتخاب می‌کند) */
+        k: new RegExp(`(?:پخش|بزن|پلی|شروع|بذار|بزار|بیار|بگیر|play)[^.]{0,10}(?:${MUSIC_FA})|(?:${MUSIC_FA})[^.]{0,14}(پخش|بزن|پلی|شروع|بذار|بزار|بیار|بگیر|play)`, 'i'),
         id: 'music_play', t: 'پخش موزیک', i: '#i-music', r: (c) => voiceMusicPlay(c),
       },
       {
@@ -2885,8 +2907,8 @@
         r: (c) => {
           const q = ytQueryOf(c);
           return q
-            ? (LANG === 'en' ? `Playing "${q}" from YouTube.` : `«${q}» را از یوتیوب پخش می‌کنم.`)
-            : (LANG === 'en' ? 'YouTube is open.' : 'یوتیوب باز شد.');
+            ? (LANG === 'en' ? `Playing "${q}" in the AVA player.` : `«${q}» را در پلیر خود آوا پخش می‌کنم.`)
+            : (LANG === 'en' ? 'Opening YouTube.' : 'یوتیوب باز شد.');
         },
       },
       /* --- v0.38 — جستجوی مستقیم یوتیوب: «تو یوتیوب آهنگ X رو سرچ کن» ---
@@ -3062,6 +3084,20 @@
       },
       {
         k: AVAVoice.PIP_COMMAND_RE, id: 'pip', t: 'ویدیوی شناور', i: '#i-window', r: (c) => pipVoiceReply(c),
+      },
+      /* --- v0.51 — دیکتهٔ یک‌باره بدون «اینجا»: «ببین بنویس …» / «اینو تایپ کن …» /
+         «برام بنویس که …» — استخراج محتوا با voiceIntent.typeOnceOf؛ اگر محتوا
+         نبود (مثل «تایپ کن» تنهایی) AI_FALLBACK تا AI تعبیر کند یا حالت مودار بیاید.
+         «اینجا…» از قبل بالاتر (SYS_DICT_RE) زودتر گرفته می‌شود. */
+      {
+        k: /(بنویس|بنویشه|بنویش|بنویسش|تایپش?\s?کن|تایپش?کشار|دیکته\s?کن|\bwrite\s+(this|that|it)\b|\btype\s+(this|that|it)\b)/i,
+        id: 'type_once', t: 'نوشتن یک‌باره', i: '#i-type',
+        r: async (c) => {
+          const x = (typeof AVAIntent !== 'undefined' && AVAIntent.typeOnceOf) ? AVAIntent.typeOnceOf(c) : '';
+          if (!x) return AI_FALLBACK;
+          actLog('interpret: گفت «' + String(c).slice(0, 48) + '» | فهمید type_once', 'ui', { ev: 'interpret', via: 'rule', rule: 'type_once', q: x.slice(0, 40) });
+          return await typeOnceExec(x);
+        },
       },
     ];
     RULES.splice(1, 0, ...pipRules);
@@ -4491,8 +4527,24 @@
       _dispatchOutcome = 'dictation';
       return;
     }
-    /* v0.34 — «اینجا برام تایپ کن» قبل از تایپ معمولی: مقصد = همین برنامهٔ فعال */
-    if (SYS_DICT_RE.test(raw)) { startDictation(true); _dispatchOutcome = 'dict-start'; return; }
+    /* v0.34/v0.51 — «اینجا برام تایپ کن» دو رفتار دارد:
+       با محتوا («اینجا بنویس "سلام"») → دیکتهٔ یک‌باره: همان لحظه در
+       برنامهٔ فعال نوشته می‌شود و تمام؛
+       بدون محتوا («اینجا برام تایپ کن») → حالت تایپ صوتی (هرچه گفتی همان‌جا
+       نوشته می‌شود تا بگویی تمام). */
+    if (SYS_DICT_RE.test(raw)) {
+      const onceTxt = (typeof AVAIntent !== 'undefined' && AVAIntent.typeOnceOf) ? AVAIntent.typeOnceOf(raw) : '';
+      if (onceTxt) {
+        _dispatchOutcome = 'type-once';
+        actLog('interpret: گفت «' + raw.slice(0, 48) + '» | فهمید type_once', 'ui', { ev: 'interpret', via: 'rule', rule: 'type_once', q: onceTxt.slice(0, 40) });
+        const rep = await typeOnceExec(onceTxt);
+        typeText(rcReply, rep);
+        speak(rep);
+        pushChatHist('user', raw); pushChatHist('assistant', rep);
+        return;
+      }
+      startDictation(true); _dispatchOutcome = 'dict-start'; return;
+    }
     if (DICT_START_RE.test(raw) || wakeDictStart) { startDictation(); _dispatchOutcome = 'dict-start'; return; }
     /* v0.20 — نرمال‌سازی برای همهٔ قوانین (تایپ صوتی بالاتر خارج شد)
        v0.38.1 — ریشهٔ «خیلی از فرمان‌ها کاری نمی‌کنند» با whisper: خروجی STT
@@ -4657,10 +4709,12 @@
         }
       } catch (_) { /* noop */ }
     }
-    /* v0.49 — گیت نوع جمله: سوال/تصحیح/چندمرحله‌ای/بی‌فعل هرگز اکشنِ کور اجرا نمی‌کنند
-       (ریشهٔ «جدیدترین آهنگ شادمهر اسمش چیه» → open_music و «نه منظورم…» → yt_search در لاگ) */
+    /* v0.49/v0.51 — گیت نوع جمله: سوال/تصحیح/چندمرحله‌ای/ارجاعی/بی‌فعلِ اجرا هرگز
+       اکشنِ کور اجرا نمی‌کنند (ریشهٔ سه نشت لاگ v0.50: «مطمئنی اسم آهنگ…»،
+       «…نازنین نیست»، «جدیدترین آهنگ شادمهر در ۲۰۲۶» — همگی open_music شدند).
+       v0.51 = وارونگی بار اثبات: اجرای سریعِ خانوادهٔ اکشن فقط با فعلِ اجرای صریح. */
     if (rule && aiConnected() && typeof AVAIntent !== 'undefined' && AVAIntent.blocksActionRule && AVAIntent.blocksActionRule(cmd, rule.id)) {
-      const _gt = AVAIntent.gateType(cmd);
+      const _gt = (AVAIntent.gateReason ? AVAIntent.gateReason(cmd, rule.id) : AVAIntent.gateType(cmd)) || 'unknown';
       actLog('sentence-gate: «' + cmd.slice(0, 60) + '» → ' + _gt + ' → AI decides (no blind ' + (rule.id || '?') + ')', 'ui', { ev: 'gate', gtype: _gt, blocked: rule.id || '?' });
       rule = null;
     }
@@ -5733,11 +5787,22 @@
            سیلِ نویز پشتهٔ لاگ دستی کاربر را بی‌استفاده می‌کرد */
         const _toks = String(txt).trim().split(/[\s\u200C]+/);
         const _real = _toks.filter((tk) => tk.length > 1 && !/^(از|او|اوه|ایه|ای|آ|اِ|هوم|ببب|مه|تن|اون|این|ا|ه|ی|و|که|q|aba|ava)$/i.test(tk));
-        if (String(txt).trim().length >= 6 && _real.length >= 1) { actLog('wake-always heard: ' + txt.slice(0, 44)); L.stats.heard++; }
+        /* v0.51 — نویز-دایت ۲ (لاگ v0.50: «راااااا…»، «اههههههه»، «ربما ربما
+           ربما رب» هنوز تک‌خط لاگ می‌شدند):
+           ۱) کش‌قاف حرفی (یک حرف ۳+ بار پشت‌سرهم) = صرفه/خنده/زمزمه، نه گفتار
+           ۲) جملهٔ تک‌مفهومِ تکراری (بعد از فروپاشی تکرارها ≤۲ واژهٔ یکتا و
+              یک واژه ۳+ بار) = همهمهٔ محیط */
+        const _noRun = _toks.every((tk) => !/(.)\1{2,}/.test(tk));
+        const _freq = {};
+        for (const tk of _toks) { const c = tk.replace(/(.)\1+/g, '$1'); _freq[c] = (_freq[c] || 0) + 1; }
+        const _uniq = Object.keys(_freq).length;
+        const _repNoise = _uniq <= 2 && _toks.length >= 3 && Object.values(_freq).some((n) => n >= 3);
+        if (!_noRun || _repNoise) { L.stats.noisy = (L.stats.noisy || 0) + 1; }
+        else if (String(txt).trim().length >= 6 && _real.length >= 1) { actLog('wake-always heard: ' + txt.slice(0, 44)); L.stats.heard++; }
       }
       if (Date.now() - (L.statsAt || 0) > 600000) {
-        actLog('wake stats (10min): checks=' + L.stats.n + ' heard=' + L.stats.heard + ' near=' + L.stats.near + ' cloud=' + L.stats.cloud + ' wakes=' + L.stats.wake);
-        L.stats = { n: 0, heard: 0, near: 0, cloud: 0, wake: 0 };
+        actLog('wake stats (10min): checks=' + L.stats.n + ' heard=' + L.stats.heard + ' noisy=' + (L.stats.noisy || 0) + ' near=' + L.stats.near + ' cloud=' + L.stats.cloud + ' wakes=' + L.stats.wake);
+        L.stats = { n: 0, heard: 0, noisy: 0, near: 0, cloud: 0, wake: 0 };
         L.statsAt = Date.now();
       }
       const wakeNow = (tail) => {
@@ -6205,6 +6270,32 @@
   }
 
   /* ============================================================
+     v0.51 — دیکتهٔ یک‌باره: «اینجا بنویس "سلام خوبی"» / «ببین بنویس …» /
+     «اینو تایپ کن …» — همان لحظه در برنامهٔ فعال نوشته می‌شود، بدون حالت
+     مودار. تعبیر مهم نیست: هم مسیر محلی سریع (voiceIntent.typeOnceOf)
+     داریم هم act هوشمند type_once برای هر تعبیر دیگری.
+     موتور تایپ همان SendInput UNICODE با فوکوس تاییدشده است (v0.34).
+     ============================================================ */
+  async function typeOnceExec(text) {
+    const txt = String(text || '').trim();
+    if (!txt) return LANG === 'en' ? 'Nothing to type — say the text after "write".' : 'چیزی برای نوشتن نگفتی — بعد از «بنویس» متنش را بگو.';
+    let hwnd = lastFgHwnd || 0;
+    if (!hwnd) { try { await refreshFg(); hwnd = lastFgHwnd || 0; } catch (_) { /* noop */ } }
+    try {
+      if (bridge && bridge.system && bridge.system.typeText) {
+        const r = await bridge.system.typeText(txt, hwnd || 0);
+        if (r && r.ok) {
+          actLog('type_once OK (' + txt.length + ' chars, hwnd=' + (hwnd || 0) + ')');
+          return LANG === 'en' ? 'Typed it.' : 'نوشتم.';
+        }
+        actLog('type_once failed: ' + String((r && r.error) || 'fail').slice(0, 90));
+        return (r && r.error) || (LANG === 'en' ? "Couldn't type into the app." : 'تایپ در برنامه انجام نشد.');
+      }
+    } catch (_) { /* noop */ }
+    return LANG === 'en' ? "Couldn't type into the app." : 'تایپ در برنامه انجام نشد.';
+  }
+
+  /* ============================================================
      مدیریت DNS (v0.8) — پایگاه DNSهای معروف + پروفایل‌های نام‌دار
      بی‌نهایت، قابل ویرایش — اعمال واقعی با تأیید مدیر (UAC)
      فرمان صوتی: «دی ان اس جدید»، «دی اناس شماره ۱»، «دی ان اس الکترو»،
@@ -6666,6 +6757,34 @@
       statusText.innerHTML = IDLE_HINT;
     }
   }
+  /* ============================================================
+     v0.51 — Push-to-Talk (خواستهٔ کاربر: دکمهٔ قابل‌تنظیم؛ تا نگه‌داشته
+     ضبط می‌کند، به محض رهاکردن همان‌چه گفته شد پردازش می‌شود؛ بدون
+     نیاز به گفتن «آوا» و بدون پرش پنجرهٔ آوا جلوی برنامهٔ فعال)
+     کلید/ترکیب و حالت hold/toggle در تنظیمات › بیدارباش.
+     ============================================================ */
+  function pttStart() {
+    if (state === 'processing') return;
+    if (state === 'listening') return; /* از قبل ضبط — ادامه می‌دهد */
+    /* فشردن دکمه = اجازهٔ صریح گفتار؛ مثل کلیک دستی، جلسه باز است */
+    if (settings.handsFree && settings.wakeWord) wakeSessOpen();
+    startListening();
+  }
+  function pttStop() {
+    if (state !== 'listening' || !ave) { return; }
+    /* تحویلِ فوری (نه لغو): stop() بدون کشتنِ جلسه → فاینال برمی‌گردد؛
+       اگر تا ۱۴۰۰ms فاینال نیامد، همان متن میان‌یادِ آخر تحویل می‌شود */
+    try { rec.onend = null; rec.stop(); } catch (_) { /* noop */ }
+    try { if (ave.tPttFlush) clearTimeout(ave.tPttFlush); } catch (_) { /* noop */ }
+    ave.tPttFlush = setTimeout(() => {
+      try {
+        if (!ave || ave.delivered) return;
+        const txt = String(ave.srFinal || ave.srGotText || ave.lastTxt || '').trim();
+        if (txt) aveDeliver(txt, 'ptt-flush', ave.myEpoch);
+        else stopListening();
+      } catch (_) { /* noop */ }
+    }, 1400);
+  }
   const toggleListen = () => {
     /* فیکس v0.13: کلیک حین اجرای فرمان قبلی → هیچ تغییر وضعیتی اتفاق
        نمی‌افتد ولی فیدبک واضح می‌دهیم (قبلاً ریپل می‌خورد و هیچ — حس «گیر کردن») */
@@ -6879,6 +6998,9 @@
     }
   });
   if (bridge && bridge.voice) bridge.voice.onToggleListen(toggleListen);
+  /* v0.51 — Push-to-Talk: پایین/بالا شدن دکمهٔ فشاری */
+  if (bridge && bridge.voice && bridge.voice.onPttDown) bridge.voice.onPttDown(() => pttStart());
+  if (bridge && bridge.voice && bridge.voice.onPttUp) bridge.voice.onPttUp(() => pttStop());
 
   /* ---------- آیتم‌های قفل‌شده سایدبار ---------- */
   document.querySelectorAll('.rail-item.locked').forEach((b) =>
@@ -6974,6 +7096,52 @@
     wakeTestUntil = Date.now() + 11000;
     wakeHealthNote(t('wake.testHint'));
     try { speak(t('wake.testHint')); } catch (_) { /* noop */ }
+  });
+
+  /* ---------- v0.51 — Push-to-Talk: کلید قابل‌تعویض (ترکیبی هم می‌شود) + حالت ---------- */
+  const optPtt = $('#optPtt');
+  const btnPttKey = $('#btnPttKey');
+  const pttKeyLabel = $('#pttKeyLabel');
+  const optPttMode = $('#optPttMode');
+  settings.ptt = (settings.ptt && typeof settings.ptt === 'object') ? settings.ptt : {};
+  const pttComboLabel = (acc) => String(acc || 'CommandOrControl+Shift+Space').replace(/CommandOrControl/g, 'Ctrl').trim();
+  function pttRefreshUi() {
+    if (optPtt) optPtt.checked = settings.ptt.enabled !== false;
+    if (optPttMode) optPttMode.value = settings.ptt.mode === 'toggle' ? 'toggle' : 'hold';
+    if (pttKeyLabel) pttKeyLabel.textContent = pttComboLabel(settings.ptt.combo);
+  }
+  pttRefreshUi();
+  async function pttSave(reRegister) {
+    store.set('ptt', settings.ptt);
+    if (reRegister && bridge && bridge.ptt) { try { await bridge.ptt.reconfig(); } catch (_) { /* noop */ } }
+  }
+  if (optPtt) optPtt.addEventListener('change', () => { settings.ptt.enabled = !!optPtt.checked; pttSave(true); toast(settings.ptt.enabled ? t('set.ptt.on') : t('set.ptt.off'), '#i-mic'); });
+  if (optPttMode) optPttMode.addEventListener('change', () => { settings.ptt.mode = optPttMode.value === 'toggle' ? 'toggle' : 'hold'; pttSave(true); });
+  if (btnPttKey) btnPttKey.addEventListener('click', () => {
+    if (pttKeyLabel) pttKeyLabel.textContent = t('set.ptt.press');
+    const done = (acc) => {
+      window.removeEventListener('keydown', onKey, true);
+      if (acc) {
+        settings.ptt.combo = acc;
+        pttSave(true);
+        toast(t('set.ptt.set') + ' ' + pttComboLabel(acc), '#i-mic');
+      }
+      pttRefreshUi();
+    };
+    const onKey = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (e.key === 'Escape') { done(null); return; }
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return; /* فقط توأمان ثبت می‌شوند */
+      let acc = '';
+      if (e.ctrlKey || e.metaKey) acc += 'CommandOrControl+';
+      if (e.altKey) acc += 'Alt+';
+      if (e.shiftKey) acc += 'Shift+';
+      let keyName = e.key === ' ' ? 'Space' : (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+      keyName = keyName.replace(/^Arrow/, '');
+      const okName = /^(F\d{1,2}|Space|Tab|Enter|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Plus|Minus|Comma|Period|Slash|Backquote|Up|Down|Left|Right)$/.test(keyName) || keyName.length === 1;
+      if (okName) { acc += keyName; done(acc); }
+    };
+    window.addEventListener('keydown', onKey, true);
   });
   if (bridge && bridge.voice && bridge.voice.onToggleHandsFree) {
     bridge.voice.onToggleHandsFree(() => setHandsFree(!settings.handsFree));
@@ -7101,7 +7269,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.50.0-beta';
+  let appVersion = '0.51.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8244,8 +8412,12 @@
     'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/s/{شهر-با-حروف-انگلیسی}?q=… — شهرِ خواسته‌شده را به اسلاگ لاتینِ خودِ دیوار تبدیل کن: بجنورد=bojnurd، تهران=tehran، مشهد=mashhad، اصفهان=isfahan، شیراز=shiraz، تبریز=tabriz، کرج=karaj، قم=qom، اهواز=ahvaz، رشت=rasht، کرمان=kerman، یزد=yazd، همدان=hamedan، …؛ شهر نگفته=tehran؛ هرگز /s/<city>/<دسته‌بندی>/ بساز نکن چون ۴۰۴ می‌شود)، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
     /* v0.46 — لاگ واقعی: AI برای «ایمال سرچ کن موتور» دو بار URLِ بی‌عبارت داد */
     'قانون مهم ۶ (بسیار مهم): اگر درخواست، جستجوی درون-سایتی است، URL باز‌شده باید خودِ عبارت جستجو را داخلش داشته باشد (مثل divar.ir/search?q=موتور یا emalls.ir/?s=موتور) — باز کردن صفحهٔ اصلی سایت بدون عبارتِ جستجو یعنی مأموریتِ نیمه‌کاره و ممنوع است.\n' +
-    /* v0.49 — درخواست چندمرحله‌ای/اکتشافی (لاگ: «آهنگ جدید شادمهر رو برام پیدا کن») */
-    'قانون مهم ۷ (بسیار مهم): اگر درخواست چند مرحله دارد (اول X را بفهم، بعد Y را سرچ کن / اول ببین اسمش چیه بعد پخش کن) یا فعلِ «پیدا کن» دارد (مثل «آهنگ جدید فلانی رو برام پیدا کن»)، توالی act در همان بلوک DO بده (حداکثر ۳): مرحلهٔ اول اطلاعات (web_search با عبارتِ دقیق)، بعد مرحلهٔ اجرا. اگر اجرای مرحلهٔ دوم بدون دیدن نتیجهٔ اول ممکن نیست، در reply صادقانه بگو اول چه چیزی را جستجو کردی تا کاربر نتیجه را ببیند و بعدش را بگوید — هرگز یک کارِ نامرتبط جایگزین نکن.\n' +
+    /* v0.49/v0.51 — درخواست چندمرحله‌ای/اکتشافی؛ از v0.51 وابسته به «آهنگ/ترانه/موسیقی/موزیک/ویدیو/فیلم/song|music|video» + «بذار/بزار/بزن/پخش/پلی/بیار/بگیر/play|put on» → آنگاه yt_play نتیجه‌گیری می‌کند */
+    'قانون مهم ۷ (بسیار مهم): اگر درخواست چند مرحله دارد (اول X را بفهم، بعد Y را سرچ کن / اول ببین اسمش چیه بعد پخش کن) یا فعلِ «پیدا کن» دارد (مثل «آهنگ جدید فلانی رو برام پیدا کن»)، اگر هر دو مرحله بدون دیدن نتیجه قابل اجرا هستند توالی act را در همان بلوک DO بده (حداکثر ۳)؛ ولی اگر مرحلهٔ دوم نیازمند «دیدن نتیجهٔ اول» است (اسم واقعی/عدد/جزئیات)، قانون مهم ۸ را اجرا کن (act=research) — هرگز اسم/عنوان را از حافظه‌ات نساز و هرگز یک کارِ نامرتبط جایگزین نکن.\n' +
+    /* v0.51 — قانون مهم ۸: پادزهر توهم در درخواست‌های «اول تحقیق بعد انجام بده» */
+    'قانون مهم ۸ (بسیار مهم): اگر کاربر خواست اول تحقیق/فهمیدن و بعد انجام دادن (مثل: اول ببین آهنگ جدید شادمهر چی هست بعد اسمشو تو گوگل سرچ کن)، هرگز اسم یا عنوان را از حافظه‌ات نساز — در بلوک DO فقط act=research با value=عبارتِ تحقیق بده؛ نتایج واقعی وب به تو برمی‌گردد تا در دور بعد اکشن نهایی را فقط بر پایهٔ همان نتایج بدهی. اگر نتایج به سؤال جواب نداد، صادقانه بگو که چی پیدا نشد.\n' +
+    /* v0.51 — دیکتهٔ یک‌باره (خواستهٔ کاربر: در هر برنامه‌ای که آمادهٔ تایپ است بنویسد؛ محدود به یک تعبیر نیست) */
+    'قانون مهم ۹ (مهم): اگر کاربر خواست متنی «همان‌جا که هست» نوشته/تایپ شود (اینجا بنویس… / ببین بنویس… / اینو تایپ کن… / هر تعبیر دیگری از نوشتن)، با act=type_once بده و value را متنِ عیناً خواسته‌شده بگذار (فقط واژه‌های فرمانی حذف شوند؛ متنِ داخل گیومه عیناً). برای شروع حالت تایپ صوتیِ پیوسته هنوز run_cmd(dict) می‌تواند استفاده شود.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -8266,6 +8438,9 @@
     '- vol_up / vol_down / vol_mute؛ vol_set: value=عدد 0 تا 100\n' +
     '- media_next / media_prev / media_toggle (پلیر سیستم)\n' +
     '- music_play: value=اسم آهنگ یا خالی؛ music_pause\n' +
+    /* v0.51 — پادزهر توهم (لاگ v0.50: AI اسم «نازنین» را از حافظه‌اش ساخت و دوبار یاد گرفت) */
+    '- research: value=عبارت تحقیق وب — فقط وقتی کاربر خواست «اول بفهم/تحقیق کن، بعد انجام بده» (مثل: اول ببین آهنگ جدید شادمهر چی هست بعد اسمشو سرچ کن)؛ نتایج واقعی وب به تو برمی‌گردد و دور بعد باید اکشن نهایی را فقط بر پایهٔ همان نتایج بدهی — هرگز اسم/عنوان را از حافظه‌ات نساز\n' +
+    '- type_once: value=متنِ دقیقی که کاربر خواست در برنامهٔ فعال نوشته شود — برای هر درخواستِ نوشتن/تایپ (اینجا بنویس… / ببین بنویس… / اینو تایپ کن…)؛ value را عیناً و کامل بنویس (فقط واژه‌های فرمان مثل «اینجا بنویس» را حذف کن)؛ اگر کاربر متن را در گیومه گفت فقط همان داخل گیومه\n' +
     '- screenshot / lock / monitor_off / minimize_all / recycle_empty؛ sys_sleep: فقط با درخواست صریح کاربر (برنامه تأیید می‌گیرد)\n' +
     '- dns_set: value=اسم پروفایل DNS؛ dns_reset (بدون value)\n' +
     '- reminder_add: value=متن کامل با زمان (مثل: ۲۰ دقیقه دیگه چایی درست کن)\n' +
@@ -8289,6 +8464,10 @@
     'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/s/{city-in-english}?q=… — transliterate the city the user named: Bojnord=bojnurd, Tehran=tehran, Mashhad=mashhad, Isfahan=isfahan, Shiraz=shiraz, Tabriz=tabriz, Karaj=karaj, Qom=qom, Ahvaz=ahvaz, Rasht=rasht; no city named = tehran; never build /s/<city>/<category>/ because it 404s, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, emalls.ir/?s=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
     /* v0.46 — real log: AI returned query-less URLs twice for the same emalls request */
     'Important rule 6 (critical): for an in-site search request the open_url MUST CONTAIN the search query itself (like divar.ir/search?q=motor or emalls.ir/?s=motor) — opening the site homepage without the query is a half-done mission and is forbidden.\n' +
+    /* v0.51 — anti-hallucination research phase (user log v0.50: AI invented the song name «نازنین» twice) */
+    'Important rule 7 (critical, anti-hallucination): when the user asks you to FIRST find out / research and THEN act (e.g. "first see what the new song is called, then search it"), NEVER invent names or titles from memory — reply with a DO block containing ONLY act=research (value=the research query). Real web results come back to you in the next turn; then give the final actions based ONLY on those results. If the results do not answer it, say honestly that nothing was found.\n' +
+    /* v0.51 — one-shot dictation (user: type into whatever box is focused; any phrasing) */
+    'Important rule 8: when the user wants text WRITTEN right where they are (اینجا بنویس… / ببین بنویس… / type this… / any write phrasing), reply with act=type_once and value=the exact text verbatim (strip only the command words; if the text was quoted, keep only the quoted part). Continuous voice-typing mode is still run_cmd(dict).\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -8302,7 +8481,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word).\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -8354,7 +8533,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word */
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word', 'research', 'type_once']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word؛ v0.51 +research (فاز تحقیق) +type_once (دیکتهٔ یک‌باره) */
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -8467,6 +8646,11 @@
             if (idx < 0) { outs.push(LANG === 'en' ? 'No tracks — pick a folder first.' : 'هنوز آهنگی نیست — اول پوشه انتخاب کن.'); break; }
             playTrack(idx);
             outs.push(LANG === 'en' ? 'Playing.' : 'پخش می‌کنم.');
+            break;
+          }
+          case 'type_once': {
+            /* v0.51 — دیکتهٔ یک‌باره: متن عیناً در برنامهٔ فعالِ ثبت‌شده نوشته می‌شود */
+            outs.push(await typeOnceExec(a.value));
             break;
           }
           case 'music_pause': {
@@ -8889,6 +9073,58 @@
            کاری انجام شود، اجرای واقعی با کد محلی و مسیرهای امن آوا است */
         const doRes = parseDo(r.text);
         if (doRes.do) {
+          /* v0.51 — فاز تحقیق (ریشهٔ توهم «نازنین» لاگ v0.50): اگر AI خواست اول
+             تحقیق کند (act=research)، نتایج واقعی وب گرفته می‌شود و دور دوم AI
+             با دادهٔ واقعی اکشن نهایی می‌دهد. برنامه‌های تحقیقی یاد گرفته نمی‌شوند
+             (قابل اجرای آفلاین نیستند) — صادقانه لاگ می‌شود. حلقه بیش از یک دور
+             نیست: دور دوم هر research ای بدهد فیلتر می‌شود. */
+          const _rAct = doRes.do.actions.find((a) => a && a.act === 'research');
+          const _rDone = extraCtx && String(extraCtx).indexOf('[نتایج واقعی وب') >= 0;
+          if (_rAct && !_rDone && bridge && bridge.ai && bridge.ai.research) {
+            const _rq = String(_rAct.value || '').trim().slice(0, 150);
+            actLog('ai research: «' + _rq + '» → وب‌گردی واقعی، بعد دور دوم');
+            const _rr = await bridge.ai.research(_rq).catch(() => null);
+            const _resTxt = (_rr && _rr.text) || '';
+            const _ctx2 = (extraCtx || '') +
+              '\n[نتایج واقعی وب برای «' + _rq + '»]' +
+              (_resTxt ? '\n' + _resTxt : '\n(تحقیق وب ناموفق بود — صادقانه بگو و هیچ action نساز)') +
+              '\n[پایان نتایج — حالا فقط بر پایهٔ همین نتایج بلوک DO نهایی بده؛ act=research دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز]';
+            const _r2 = await aiAsk(cmd, _ctx2);
+            if (_r2 && _r2.ok) {
+              const _do2 = parseDo(_r2.text);
+              if (_do2.do) {
+                const _acts2 = _do2.do.actions.filter((a) => a && a.act !== 'research');
+                actLog('ai DO(final): ' + (_acts2.map((a) => a.act + (a.value ? '(' + a.value.slice(0, 24) + ')' : '')).join(' + ') || '(بدون اکشن)'));
+                const _rep2 = _acts2.length ? await executeDoActions(_acts2, cmd) : '';
+                const _fin2 = [_do2.do.reply, _rep2].filter(Boolean).join(' — ');
+                actLog('learn skip: برنامهٔ تحقیقی (research) قابل اجرای آفلاین نیست');
+                pushChatHist('user', cmd); pushChatHist('assistant', _fin2);
+                setState('success');
+                statusText.textContent = t('ai.got');
+                rcTag.textContent = t('tag.aiDo') + (_r2.via ? ' · ' + _r2.via : '');
+                typeText(rcReply, _fin2 || '…');
+                speak(_fin2);
+                pushHistory(cmd, true);
+                handsFreeRearm();
+                cmdBusy = false;
+                setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+                return;
+              }
+              const _txt2 = parseAdd(_r2.text).reply || _r2.text;
+              pushChatHist('user', cmd); pushChatHist('assistant', _txt2);
+              setState('success');
+              statusText.textContent = t('ai.got');
+              rcTag.textContent = t('tag.ai') + (_r2.via ? ' · ' + _r2.via : '');
+              typeText(rcReply, _txt2 || '…');
+              speak(_txt2);
+              pushHistory(cmd, true);
+              handsFreeRearm();
+              cmdBusy = false;
+              setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+              return;
+            }
+            actLog('research round-2 failed → مسیر عادی DO');
+          }
           actLog('ai DO: ' + doRes.do.actions.map((a) => a.act + (a.value ? '(' + a.value.slice(0, 24) + ')' : '')).join(' + '));
           const actReply = await executeDoActions(doRes.do.actions, cmd); /* v0.39 — cmd برای run_cmd */
           /* v0.47 — یادگیری از عمل‌های موفق هوش مصنوعی (فقط عمل‌های امنِ whitelist) */

@@ -108,6 +108,8 @@ contextBridge.exposeInMainWorld('ava', {
     /* v0.39 — فهرست کامل مدل‌های چتِ جمنای برای انتخابگر تنظیمات */
     gemModels: (payload) => ipcRenderer.invoke('ai:gemmodels', payload),
     openai: (payload) => ipcRenderer.invoke('ai:openai', payload),
+    /* v0.51 — فاز تحقیق: وب‌گردی واقعی (DuckDuckGo) برای دور دوم AI */
+    research: (q) => ipcRenderer.invoke('ai:research', q),
   },
 
   /* اسکنر برنامه‌های نصب‌شده (v0.12) — Start Menu + بازی‌های Steam
@@ -233,5 +235,14 @@ contextBridge.exposeInMainWorld('ava', {
   voice: {
     onToggleListen: (cb) => ipcRenderer.on('ava:toggle-listen', () => cb()),
     onToggleHandsFree: (cb) => ipcRenderer.on('ava:toggle-handsfree', () => cb()),
+    /* v0.51 — Push-to-Talk: پایین‌آوردن/رهاکردن دکمه (hold mode) */
+    onPttDown: (cb) => ipcRenderer.on('ava:ptt-down', () => cb()),
+    onPttUp: (cb) => ipcRenderer.on('ava:ptt-up', () => cb()),
+  },
+
+  /* v0.51 — تنظیمات Push-to-Talk: ثبت دوبارهٔ میانبر سراسری بعد از تغییر */
+  ptt: {
+    reconfig: () => ipcRenderer.invoke('ptt:reconfig'),
+    get: () => ipcRenderer.invoke('ptt:get'),
   },
 });

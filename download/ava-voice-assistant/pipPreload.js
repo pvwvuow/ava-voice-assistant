@@ -30,4 +30,6 @@ contextBridge.exposeInMainWorld('pipHost', {
   onSource: (cb) => ipcRenderer.on('pip:source', (_e, s) => cb(s)),
   /* تغییر وضعیت (شفافیت/قفل/اندازه از صدا یا میانبر) */
   onState: (cb) => ipcRenderer.on('pip:state', (_e, s) => cb(s)),
+  /* v0.51 — فالبک «باز کردن در یوتیوب» (فقط URL یوتیوب — سمت main هم گارد دارد) */
+  openExternal: (u) => ipcRenderer.invoke('pip:open-external', String(u || '')),
 });

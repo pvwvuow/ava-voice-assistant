@@ -1460,7 +1460,7 @@ app.whenReady().then(async () => {
         detect: a37.includes('async function detectActiveVideo') && a37.includes("kind: 'blob'") && a37.includes('bridge.pipAPI.clipboard()'),
         how: a37.includes('__aiExtra: AVACapabilities.aiPromptAddon()') && /aiHandleCommand\(cmd, (?:await aiFallbackCtx\((?:rule, cmd|rule)\)|rule && rule\.__aiExtra)\)/.test(a37) && fs.existsSync(path.join(__dirname, 'renderer/js/capabilities.js')),
         bridge: pl37.includes('pipAPI: {') && ['show', 'hide', 'move', 'resize', 'setOpacity', 'setClickThrough', 'setAlwaysOnTop', 'reset', 'getState'].every((k) => pl37.includes(k)),
-        ui: ph37.includes('assets/ava-logo.png') && (ph37.match(/data-ui="1"/g) || []).length >= 6 && pr37.includes('youtube.com/embed/') && pr37.includes('hoverUi'),
+        ui: ph37.includes('assets/ava-logo.png') && (ph37.match(/data-ui="1"/g) || []).length >= 6 && /youtube(-nocookie)?\.com\/embed\//.test(pr37) && pr37.includes('hoverUi'),
         order: h37.indexOf('js/voiceCommandParser.js') > -1 && h37.indexOf('js/voiceCommandParser.js') < h37.indexOf('js/app.js') && h37.indexOf('js/capabilities.js') < h37.indexOf('js/app.js'),
         ver: /^0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a37) && />v0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?</.test(h37),
       };
@@ -1491,7 +1491,7 @@ app.whenReady().then(async () => {
       const v38 = {
         cmds: m38.includes('youtube_search:') && m38.includes('pip_youtube:') && m38.includes("typeof c.cmd === 'function'") && m38.includes('pipManager.openUrl'),
         openUrl: pm38.includes('function openUrl(u)') && pm38.includes('openUrl,') && pm38.includes('pip:host:search') && pm38.includes("{ kind: 'note'") && pm38.includes('results?search_query='),
-        player: pr38.includes('enablejsapi=1') && (pr38.match(/btnClose\.addEventListener/g) || []).length === 1 && (pr38.match(/btnLock\.addEventListener/g) || []).length === 1 && pr38.includes("kind === 'note'") && pr38.includes('emptyDefault'),
+        player: !pr38.includes('enablejsapi=1') && (pr38.match(/btnClose\.addEventListener/g) || []).length === 1 && (pr38.match(/btnLock\.addEventListener/g) || []).length === 1 && pr38.includes("kind === 'note'") && pr38.includes('emptyDefault'),
         ui: ph38.includes('id="btnPlay"') && ph38.includes('id="btnMute"') && ph38.includes('id="pipSearch"') && ph38.includes('.pip-search') && pl38.includes('search: (q)'),
         errors: m38.includes('429 سهمیهٔ همین مدل است') && m38.includes('سرویس هوش مصنوعی موقتاً شلوغ است') && m38.includes("actLog('gemini-chat fail: tried models ") && !m38.includes('مدل‌های امتحان‌شده: ') && !m38.includes('هیچ کلید Gemini جواب نداد'), /* v0.39: failover markers refreshed */
         voice: a38.includes('const ytQueryOf') && a38.includes("run: 'pip_youtube'") && a38.includes("run: 'youtube_search'") && a38.indexOf("run: 'pip_youtube'") < a38.indexOf('AVAVoice.PIP_COMMAND_RE'),
