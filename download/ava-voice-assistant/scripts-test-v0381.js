@@ -218,7 +218,7 @@ ok(/KEY_BUSY:Ctrl\+Shift\+P/.test(pwm), 'PiP: اشغال Ctrl+Shift+P لاگ م�
 
 /* ۱۵) app — بقیه فیکس‌ها */
 ok(/mAudio\.play\(\)\.catch\(\(\) => \{/.test(app), 'app: play() بدون unhandled rejection');
-ok(/\(LANG === 'en' \? timeFmtEn : timeFmt\)\.format\(new Date\(h\.at \|\| Date\.now\(\)\)\)/.test(app), 'app: تاریخچه زمان واقعی هر آیتم را نشان می‌دهد');
+ok(/\(LANG === 'en' \? timeFmtEn : timeFmt\)\.format\(new Date\((h\.)?at \|\| Date\.now\(\)\)\)/.test(app), 'app: تاریخچه زمان واقعی هر آیتم را نشان می‌دهد (forward-relaxed: v0.55 تاریخچهٔ گفتگو)');
 ok(!/const btnDcSettings = \$\('#btnDcSettings'\)/.test(app), 'app: بایندینگ مردهٔ btnDcSettings حذف شد');
 ok(idx.includes('id="remList"') && idx.includes('id="btnRemClear"'), 'index: کارت یادآوری‌ها در تنظیمات');
 ok(app.includes('renderRemList'), 'app: رندر فهرست یادآوری‌ها wired شد');
@@ -227,7 +227,7 @@ ok(/bridge\.reminders\.clear\(\)/.test(app), 'app: پاک کردن همهٔ یا
 ok(!app.includes('ویژوالایزر زنده، ویجت') , 'app: ادعای ویژوالایزر زنده از توضیح موزیک حذف شد (بوم ندارد — ریسک سکوت WebAudio)');
 ok(/یورو|ارو\(\?!\[\\u0600-\\u06FF\]\)|euro/.test(app) && !/ارو\\b/.test(app), 'app: alias یورو با lookahead (ب مرده حذف شد)');
 ok(/^0\.(38|39|[4-9][0-9])\./.test(pkg.version), 'نسخه 0.38.x+ در package.json (forward-regex)');
-ok(/0\.38\.1-beta|0\.39\.0-beta|0\.[4-9][0-9]\.0-beta/.test(app), 'نسخه در app.js (forward-regex)');
+ok(/0\.38\.1-beta|0\.39\.0-beta|0\.[4-9][0-9]\.[01]-beta/.test(app), 'نسخه در app.js (forward-regex)');
 
 console.log('');
 console.log(`RESULT: ${pass}/${pass + fail}`);

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0550.js — doctest v0.55.0-beta — ۸ درخواست کاربر
+/* scripts-test-v0550.js — doctest v0.55.1-beta — ۸ درخواست کاربر
    ۱) ویجت شناور (آیکون + هالهٔ سبز + گفتهٔ کاربر/پاسخ آوا)
    ۲) ترِی + بستن = پس‌زمینه
    ۳) باگ «is listening» دروغین → نگهبان وضعیت
@@ -7,7 +7,7 @@
    ۵) چت خودکار (آینهٔ مکالمه صوتی)
    ۶) تاریخچهٔ چت روی دیسک با لود تنبل (جایگزین تاریخچهٔ فرمان)
    ۷) باگ اکولایزر (دادهٔ کهنه/کانتکست مرده)
-   ۸) نسخه 0.55.0-beta
+   ۸) نسخه 0.55.1-beta
 */
 const fs = require('fs');
 const path = require('path');
@@ -99,11 +99,11 @@ ok(appSrc.includes('tr.onended = () => { micLive = false; if (micData) micData.f
 ok(appSrc.includes("if (state === 'listening' && micData && !micAlive)") && appSrc.includes('micData.fill(0); /* خودترمیمی'), 'خودترمیمی حلقهٔ رندر');
 ok(appSrc.includes("audioCtx.resume()") && appSrc.includes("if (s === 'listening' && audioCtx && audioCtx.state === 'suspended')"), 'resume هنگام ورود به گوش دادن');
 
-console.log('\n[8] نسخه 0.55.0-beta');
-ok(appSrc.includes("let appVersion = '0.55.0-beta';"), 'app.js');
-ok(pkg.version === '0.55.0-beta', 'package.json');
-ok(htmlSrc.includes('<span id="abVersion">v0.55.0-beta</span>'), 'index.html');
-ok(readme.includes('۰.۵۵.۰-بتا') && readme.includes('ویجت شناور + ترِی'), 'README: ۰.۵۵.۰-بتا');
+console.log('\n[8] نسخه 0.55.1-beta');
+ok(appSrc.includes("let appVersion = '0.55.1-beta';"), 'app.js');
+ok(pkg.version === '0.55.1-beta', 'package.json');
+ok(htmlSrc.includes('<span id="abVersion">v0.55.1-beta</span>'), 'index.html');
+ok(readme.includes('۰.۵۵.۱-بتا') && readme.includes('ویجت شناور + ترِی'), 'README: ۰.۵۵.۱-بتا');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

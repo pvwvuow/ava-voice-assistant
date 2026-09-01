@@ -40,7 +40,12 @@ if (!gotSingleInstanceLock) {
 /* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
 const pipManager = require('./pipWindowManager');
 /* v0.55 — ویجت شناور آوا (درخواست صریح کاربر): آیکون معلق + هالهٔ سبز گوش دادن + گفتهٔ کاربر/پاسخ آوا */
-const widgetManager = require('./widgetManager');
+let widgetManager = null;
+try { widgetManager = require('./widgetManager'); }
+catch (e) { /* v0.55.1 — اگر فایلی در بسته‌بندی جا افتاد، آوا باید باز شود نه کرش (درسِ ارورِ جاوااسکریپتِ نصاب) */
+  console.error('widget require failed (degraded, no floating widget):', e && e.message);
+  widgetManager = { init() {}, configure() {}, update() {}, getState() { return null; }, flushState() {} };
+}
 
 /* ---------- پروتکل امن ava:// ----------
    رابط کاربری از ava://app بارگذاری می‌شود تا فایل‌های برنامه
@@ -5454,7 +5459,7 @@ function createTray() {
   if (tray) return;
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'));
   tray = new Tray(icon.isEmpty() ? path.join(__dirname, 'assets', 'icon.ico') : icon);
-  tray.setToolTip('آوا — در پس‌زمینه فعال است (v0.55.0-beta)');
+  try { tray.setToolTip('آوا — در پس‌زمینه فعال است (v' + app.getVersion() + ')'); } catch (_) { /* noop */ }
   const rebuild = () => {
     const widgetOn = !!(widgetManager.getState() && widgetManager.getState().enabled);
     const menu = Menu.buildFromTemplate([

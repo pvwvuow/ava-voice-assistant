@@ -1,8 +1,8 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.55.0-beta",
-  "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۵۱: گیت v3 (بار اثبات معکوس — خانوادهٔ اکشن فقط با فعلِ اجرای صریح) + فاز تحقیق AI (وب‌گردی واقعی، پایان توهم اسم‌ها) + دیکتهٔ یک‌باره با هر تعبیری + پلیر v2 (رفع ارور ۱۵۳ یوتیوب، کنترل کامل پخش در خود آوا) + Push-to-Talk قابل‌تنظیم",
+  "version": "0.55.1-beta",
+  "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۵۵.۱: ویجت شناور + ترِی و بستن به پس‌زمینه + تاریخچهٔ گفتگو + قالب‌های چت + فیکس اضطراری بسته‌بندی (باز نشدن برنامه بعد از نصب)",
   "main": "main.js",
   "license": "MIT",
   "author": {
@@ -44,6 +44,7 @@
       "pipPreload.js",
       "pipCore.js",
       "pipWindowManager.js",
+      "widgetManager.js",
       "preload.js",
       "renderer/**/*",
       "assets/**/*",

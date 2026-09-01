@@ -72,11 +72,11 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
   ok(!/ghp_[A-Za-z0-9]{20,}/.test(mainSrc + appSrc + preloadSrc + htmlSrc + dnsSrc + intentSrc), 'هیچ ghp_… واقعی در سورس نیست');
 
   /* ---------- 6) نسخه ---------- */
-  console.log('\n[6] نسخه 0.55.0-beta');
-  ok(pkg.version === '0.55.0-beta', 'package.json 0.55.0-beta');
-  ok(htmlSrc.includes('<span id="abVersion">v0.55.0-beta</span>'), 'index.html abVersion');
-  ok(appSrc.includes("let appVersion = '0.55.0-beta';"), 'app.js appVersion');
-  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۵۵.۰-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
+  console.log('\n[6] نسخه 0.55.1-beta');
+  ok(pkg.version === '0.55.1-beta', 'package.json 0.55.1-beta');
+  ok(htmlSrc.includes('<span id="abVersion">v0.55.1-beta</span>'), 'index.html abVersion');
+  ok(appSrc.includes("let appVersion = '0.55.1-beta';"), 'app.js appVersion');
+  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۵۵.۱-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
 
   console.log('\n==========================================');
   console.log('scripts-test-v0480(relaxed): ' + pass + ' passed, ' + fail + ' failed');

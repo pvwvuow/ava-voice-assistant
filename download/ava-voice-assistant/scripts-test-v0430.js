@@ -218,7 +218,7 @@ ok(main.includes('setTimeout(() => { try { scanAllApps().catch(() => {}); } catc
    ۷) نسخه
    ============================================================ */
 ok(/^0\.[45][0-9]*\./.test(pkg.version), 'package.json: نسخهٔ 0.4x+ (forward-relaxed) — got ' + pkg.version);
-ok(/appVersion = '0\.[45][0-9]*\.0-beta'/.test(app), 'app.js: نسخهٔ beta (forward-relaxed)');
+ok(/appVersion = '0\.[45][0-9]*\.[01]-beta'/.test(app), 'app.js: نسخهٔ beta (forward-relaxed)');
 ok(/v0\.[45][0-9]*\.0-beta|abVersion">v0\.[45]/.test(idx), 'index.html: نسخهٔ beta (forward-relaxed)');
 ok(app.includes('v0.43') || app.includes('v0.43 —'), 'app.js: کامنت‌های v0.43');
 
