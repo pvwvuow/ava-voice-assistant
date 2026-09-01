@@ -116,6 +116,11 @@
     'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
     'set.nav.ext': ['افزونه‌ها', 'Extensions'],
     'set.nav.perf': ['بهینه‌سازی', 'Optimization'],
+    'set.navg.speak': ['گفتار', 'Speech'], 'set.navg.voice': ['صدا و هوش', 'Voice & AI'],
+    'set.navg.connect': ['اتصال‌ها', 'Integrations'], 'set.navg.system': ['سیستم', 'System'],
+    'set.sub.appLook': ['زبان و ظاهر', 'Language & theme'], 'set.sub.appRun': ['پنجره و شروع', 'Window & startup'],
+    'set.sub.appMem': ['یادآوری و یادگیری', 'Reminders & learning'], 'set.sub.appMisc': ['عیب‌یابی و پیوندها', 'Diagnostics & links'],
+    'set.ptt.onoff': ['روشن/خاموش', 'On/off'],
     'set.ext.dns': ['افزونهٔ DNS Changer', 'DNS Changer extension'],
     'set.ext.dnsHint': ['با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند', 'When on, its button stays in the side rail and opens full DNS management'],
     'set.ext.music': ['افزونهٔ پلیر موزیک', 'Music player extension'],
@@ -409,6 +414,11 @@
     'set.nav.app': ['برنامه', 'App'], 'set.nav.update': ['به‌روزرسانی', 'Updates'],
     'set.nav.ext': ['افزونه‌ها', 'Extensions'],
     'set.nav.perf': ['بهینه‌سازی', 'Optimization'],
+    'set.navg.speak': ['گفتار', 'Speech'], 'set.navg.voice': ['صدا و هوش', 'Voice & AI'],
+    'set.navg.connect': ['اتصال‌ها', 'Integrations'], 'set.navg.system': ['سیستم', 'System'],
+    'set.sub.appLook': ['زبان و ظاهر', 'Language & theme'], 'set.sub.appRun': ['پنجره و شروع', 'Window & startup'],
+    'set.sub.appMem': ['یادآوری و یادگیری', 'Reminders & learning'], 'set.sub.appMisc': ['عیب‌یابی و پیوندها', 'Diagnostics & links'],
+    'set.ptt.onoff': ['روشن/خاموش', 'On/off'],
     'set.ext.dns': ['افزونهٔ DNS Changer', 'DNS Changer extension'],
     'set.ext.dnsHint': ['با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند', 'When on, its button stays in the side rail and opens full DNS management'],
     'set.ext.music': ['افزونهٔ پلیر موزیک', 'Music player extension'],
@@ -7282,7 +7292,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.54.0-beta';
+  let appVersion = '0.57.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

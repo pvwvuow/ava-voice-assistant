@@ -685,10 +685,17 @@ body.has-card #wave { height: 0; opacity: 0; }
   to { opacity: 1; transform: none; }
 }
 .set-nav {
-  width: 158px; flex-shrink: 0;
-  display: flex; flex-direction: column; gap: 3px;
+  width: 172px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 2px;
   padding: 8px 4px;
   border-inline-start: 1px solid rgba(255, 255, 255, 0.07);
+}
+/* v0.57 — برچسب گروه‌های ناوبری (گفتار / صدا و هوش / اتصال‌ها / سیستم) */
+.set-nav-group {
+  padding: 10px 11px 3px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.3px;
+  color: var(--text3);
+  user-select: none;
 }
 .set-nav-item {
   display: flex; align-items: center; gap: 9px;
@@ -728,11 +735,23 @@ body.has-card #wave { height: 0; opacity: 0; }
   padding: 10px 2px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
-.set-row:first-of-type { border-top: none; }
+.set-row.first { border-top: none; }
 .set-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .set-info b { font-size: 13px; font-weight: 700; color: var(--text); }
 .set-info span { font-size: 11px; color: var(--text2); line-height: 1.7; }
 .set-row.col { flex-direction: column; align-items: stretch; gap: 8px; }
+/* v0.57 — زیرتیتر داخل پنل‌های چند-موضوعی + ابزارک‌های بدون استایل inline */
+.set-subhead {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.3px;
+  color: var(--acc2); opacity: 0.95;
+  padding: 10px 2px 0;
+  user-select: none;
+}
+.set-subhead + .set-row { border-top: none; }
+.ptt-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ptt-controls .sw { display: inline-flex; align-items: center; }
+.set-input.w150 { max-width: 150px; }
+.set-select.w190 { max-width: 190px; }
 .upd-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .upd-progress { height: 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .upd-progress i {
@@ -797,6 +816,7 @@ body.has-card #wave { height: 0; opacity: 0; }
     padding: 4px 2px 8px;
   }
   .set-nav-item { width: auto; flex-shrink: 0; padding: 7px 10px; }
+  .set-nav-group { display: none; } /* v0.57 — در ناوبری افقی موبایل برچسب گروه معنا ندارد */
 }
 
 /* ============================================================
@@ -1560,6 +1580,8 @@ html[dir="ltr"][data-theme="light"] #rail { background: linear-gradient(90deg, r
 [data-theme="light"] .set-nav-item:hover { background: rgba(38, 22, 92, 0.06); color: var(--text); }
 [data-theme="light"] .set-nav-item.active { background: linear-gradient(135deg, rgba(139, 92, 246, 0.16), rgba(109, 40, 217, 0.08)); color: #6d28d9; box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.25); }
 [data-theme="light"] .set-row { border-top: 1px solid rgba(38, 22, 92, 0.07); }
+[data-theme="light"] .set-row.first { border-top: none; }
+[data-theme="light"] .set-subhead + .set-row { border-top: none; }
 [data-theme="light"] .set-select, [data-theme="light"] .set-input, [data-theme="light"] .dict-box {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(38, 22, 92, 0.13);

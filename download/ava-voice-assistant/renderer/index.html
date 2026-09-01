@@ -236,7 +236,7 @@
             <div class="set-panes">
 <!-- میکروفون -->
               <div class="set-pane active" data-pane="mic">
-                <div class="set-row">
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.mic.input">ورودی میکروفون</b><span id="micStat" data-i18n="set.mic.checking">دسترسی میکروفون بررسی می‌شود…</span></span>
                   <select id="optMic" class="set-select"><option value="" data-i18n="set.mic.default">پیش‌فرض ویندوز</option></select>
                 </div>
@@ -250,7 +250,7 @@
 
             <!-- تشخیص گفتار -->
               <div class="set-pane" data-pane="stt">
-                <div class="set-row">
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.stt.engine">موتور تشخیص گفتار</b><span data-i18n="set.stt.engineHint">«خودکار»: اول موتور وب زنده؛ بعد آفلاین داخلی و سریع‌ترین‌های ابری — Whisper، گوگل رایگان، GLM و آخر Gemini</span></span>
                   <select id="optSttEngine" class="set-select">
                     <option value="auto" data-i18n="set.stt.auto">خودکار (پیشنهادی)</option>
@@ -281,7 +281,7 @@
                 
                 <details class="set-adv">
                   <summary data-i18n="set.adv.stt">سرور Whisper، کلید گوگل و دمو (پیشرفته — همان پیش‌فرض‌ها برای اکثر مردم کافی است)</summary>
-                <div class="set-row col">
+                <div class="set-row col first">
                   <span class="set-info"><b data-i18n="set.stt.wbase">آدرس سرور Whisper (سازگار با OpenAI)</b><span data-i18n="set.stt.wbaseHint">پیش‌فرض: Groq — whisper-large-v3-turbo رایگان و بسیار سریع است؛ آدرس OpenAI یا سرور محلی whisper.cpp هم می‌گذاری</span></span>
                   <input type="text" id="optWhisperBase" class="set-input" dir="ltr" value="https://api.groq.com/openai/v1" autocomplete="off" spellcheck="false" />
                 </div>
@@ -307,7 +307,7 @@
               <!-- بیدارباش (v0.36) — جدا از تشخیص گفتار تا هر پنل کوچک و واضح بماند -->
               <div class="set-pane" data-pane="wake">
                 <p class="set-note" data-i18n="set.wake.note">بیدارباش یعنی آوا همیشه گوش می‌دهد که کی داری حرف می‌زنی — حتی وقتی برنامه مینیمایز باشد یا در بازی هستی. با گفتن «آوا» (یا تلفظ‌های نزدیک مانند «آبا») آمادهٔ گوش دادن می‌شود.</p>
-<label class="set-row">
+                <label class="set-row first">
                   <span class="set-info"><b data-i18n="set.stt.handsFree">حالت بی‌دست (گوش دائمی)</b><span data-i18n="set.stt.handsFreeHint">آوا همیشه گوش می‌دهد؛ فقط وقتی کلمه «آوا» را بگویی فرمان را اجرا می‌کند — میانبر: Ctrl+Alt+A</span></span>
                   <span class="sw"><input type="checkbox" id="optHandsFree"/><i></i></span>
                 </label>
@@ -322,7 +322,7 @@
                 <!-- v0.46 — کلمهٔ بیدارباش قابل تغییر: اگر «آوا» درست شنیده نمی‌شود اسم دیگری بگذار -->
                 <label class="set-row">
                   <span class="set-info"><b data-i18n="set.stt.wakeWordText">کلمهٔ بیدارباش (اسم صدازدن)</b><span data-i18n="set.stt.wakeWordTextHint">اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود</span></span>
-                  <input type="text" id="optWakeWordText" class="set-input" style="max-width:150px" maxlength="20" placeholder="آوا" autocomplete="off" spellcheck="false" />
+                  <input type="text" id="optWakeWordText" class="set-input w150" maxlength="20" placeholder="آوا" autocomplete="off" spellcheck="false" />
                 </label>
                 <!-- v0.34 — وضعیت سلامت بیدارباش: کاربر دیگر در تاریکی نماند که چرا کار نمی‌کند -->
                 <div class="set-row col" id="wakeHealthRow">
@@ -332,10 +332,10 @@
                 <!-- v0.51 — Push-to-Talk: دکمهٔ فشاری قابل‌تنظیم (ترکیبی هم می‌شود) -->
                 <div class="set-row col" id="pttCard">
                   <span class="set-info"><b data-i18n="set.ptt.title">دکمهٔ فشاری صحبت (Push-to-Talk)</b><span data-i18n="set.ptt.hint">تا وقتی دکمه را نگه داشته‌ای آوا گوش می‌دهد و به محض رهاکردن، ضبط تمام و فرمان اجرا می‌شود — بدون نیاز به گفتن «آوا» و بدون پرش پنجره. کلید ترکیبی هم قابل تنظیم است.</span></span>
-                  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                    <label class="sw" style="display:inline-flex;align-items:center;gap:6px" title="روشن/خاموش"><input type="checkbox" id="optPtt"/><i></i></label>
-                    <button class="chip" id="btnPttKey" style="display:inline-flex;align-items:center;gap:6px"><svg class="ic"><use href="#i-mic"/></svg><span id="pttKeyLabel">Ctrl+Shift+Space</span></button>
-                    <select id="optPttMode" class="set-select" style="max-width:190px">
+                  <div class="ptt-controls">
+                    <label class="sw" data-i18n-tip="set.ptt.onoff" title="روشن/خاموش"><input type="checkbox" id="optPtt"/><i></i></label>
+                    <button class="chip" id="btnPttKey"><svg class="ic"><use href="#i-mic"/></svg><span id="pttKeyLabel">Ctrl+Shift+Space</span></button>
+                    <select id="optPttMode" class="set-select w190">
                       <option value="hold" data-i18n="set.ptt.hold">نگه‌دار و حرف بزن (hold)</option>
                       <option value="toggle" data-i18n="set.ptt.toggle">یک بار بزن (toggle)</option>
                     </select>
@@ -345,7 +345,7 @@
 
             <!-- تایپ صوتی -->
               <div class="set-pane" data-pane="dict">
-                <div class="set-row">
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.dict.start">شروع و پایان</b><span data-i18n="set.dict.startHint">بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین</span></span>
                   <button class="chip" id="btnDictStart"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.dict.startBtn">شروع تایپ صوتی</span></button>
                 </div>
@@ -371,7 +371,7 @@
 
             <!-- صدا و پاسخ گفتاری -->
               <div class="set-pane" data-pane="voice">
-                <label class="set-row">
+                <label class="set-row first">
                   <span class="set-info"><b data-i18n="set.voice.tts">پاسخ گفتاری (TTS)</b><span data-i18n="set.voice.ttsHint">آوا جواب‌ها را با صدای بلند بخواند</span></span>
                   <span class="sw"><input type="checkbox" id="optTts"/><i></i></span>
                 </label>
@@ -399,7 +399,7 @@
 
             <!-- هوش مصنوعی GLM -->
               <div class="set-pane" data-pane="ai">
-                <div class="set-row">
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.ai.nokey">اتصال بدون کلید API</b><span data-i18n="set.ai.nokeyHint">از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — پیام‌ها مستقیم به چت حسابت می‌روند و جوابش برمی‌گردد</span></span>
                   <button class="chip" id="btnGoZai"><svg class="ic"><use href="#i-globe"/></svg><span data-i18n="set.ai.login">ورود به حساب GLM</span></button>
                 </div>
@@ -439,7 +439,7 @@
                 <p class="set-note" id="gemTestOut" hidden></p>
                 <details class="set-adv">
                   <summary data-i18n="set.adv.ai">رله، مدل‌ها و کلید OpenAI (پیشرفته)</summary>
-                <div class="set-row col">
+                <div class="set-row col first">
                   <span class="set-info"><b data-i18n="set.ai.gemBase">آدرس رلهٔ جمنای (پیشرفته — اختیاری)</b><span data-i18n="set.ai.gemBaseHint">اگر گوگل منطقهٔ تو را محدود کرده («location is not supported»)، آدرس پایهٔ یک پروکسی/ورکر شخصی را بگذار (مثل https://my-worker.workers.dev) تا درخواست‌های جمنای از سرور خودت رد شوند؛ خالی = مستقیم گوگل</span></span>
                   <input type="text" id="optGemBase" class="set-input" dir="ltr" placeholder="خالی = مستقیم googleapis.com" autocomplete="off" />
                 </div>
@@ -494,7 +494,7 @@
 
             <!-- دیسکورد (v0.17) — مخاطبین و اجرای بک‌گراند -->
               <div class="set-pane" data-pane="discord">
-                <label class="set-row">
+                <label class="set-row first">
                   <span class="set-info"><b data-i18n="ext.discord">کنترل دیسکورد با صدا</b><span data-i18n="ext.discordHint">زنگ زدن به دوستان، قطع تماس، میوت و جواب تماس — با کلیدهای میان‌بر دیسکورد</span></span>
                   <span class="sw"><input type="checkbox" id="extDiscordOpt"/><i></i></span>
                 </label>
@@ -517,7 +517,7 @@
                 </div>
                 <details class="set-adv">
                   <summary data-i18n="set.dc.adv">مخاطبین، روش تماس و مکان دکمه (پیشرفته)</summary>
-<div class="set-row col">
+                  <div class="set-row col first">
                   <span class="set-info"><b data-i18n="set.dc.contacts">مخاطبین دیسکورد</b><span data-i18n="set.dc.contactsHint">برای دوستانی که آی‌دی‌شان عجیب/سخت است یک اسم ساده ذخیره کن؛ بعد با «به فلانی زنگ بزن» مستقیم تماس می‌گیرد. آی‌دی: در دیسکورد Settings › Advanced › Developer Mode را روشن کن، بعد روی مخاطب راست‌کلیک و Copy User ID</span></span>
                   <form id="dcAddForm" class="tc-add" autocomplete="off">
                     <input type="text" id="dcName" class="set-input" data-i18n-ph="set.dc.namePh" placeholder="اسم ساده (مثلاً: علی)" maxlength="40" />
@@ -552,7 +552,7 @@
 
             <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
               <div class="set-pane" data-pane="ext">
-                <div class="set-row">
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.ext.dns">افزونهٔ DNS Changer</b><span data-i18n="set.ext.dnsHint">با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند</span></span>
                   <span class="sw"><input type="checkbox" id="extDnsOpt"/><i></i></span>
                 </div>
@@ -570,7 +570,7 @@
 
             <!-- بهینه‌سازی (v0.15) -->
               <div class="set-pane" data-pane="perf">
-                <div class="set-row">
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.perf.anim">انیمیشن‌ها</b><span data-i18n="set.perf.animHint">همهٔ حرکت‌ها ساکت می‌شوند — برای لپ‌تاپ‌های ضعیف و باتری کمتر</span></span>
                   <span class="sw"><input type="checkbox" id="optNoAnim"/><i></i></span>
                 </div>
@@ -588,7 +588,8 @@
 
             <!-- برنامه -->
               <div class="set-pane" data-pane="app">
-                <div class="set-row">
+                <div class="set-subhead" data-i18n="set.sub.appLook">زبان و ظاهر</div>
+                <div class="set-row first">
                   <span class="set-info"><b data-i18n="set.app.lang">زبان برنامه / App language</b><span data-i18n="set.app.langHint">کل رابط کاربری و پاسخ‌های آوا به این زبان نشان داده می‌شود</span></span>
                   <select id="optLang" class="set-select">
                     <option value="fa" data-i18n="set.app.fa">فارسی</option>
@@ -604,6 +605,7 @@
                     <option value="darklite" data-i18n="set.app.darklite">سبک تیره (سیستم ضعیف)</option>
                   </select>
                 </div>
+                <div class="set-subhead" data-i18n="set.sub.appRun">پنجره و شروع</div>
                 <label class="set-row">
                   <span class="set-info"><b data-i18n="set.app.top">همیشه روی همه پنجره‌ها</b><span data-i18n="set.app.topHint">پنجره آوا روی برنامه‌های دیگر باقی بماند</span></span>
                   <span class="sw"><input type="checkbox" id="optTop"/><i></i></span>
@@ -612,16 +614,13 @@
                   <span class="set-info"><b data-i18n="set.app.login">اجرای خودکار با ویندوز</b><span data-i18n="set.app.loginHint">آوا هنگام روشن شدن سیستم بالا بیاید</span></span>
                   <span class="sw"><input type="checkbox" id="optLogin"/><i></i></span>
                 </label>
-<label class="set-row">
+                <label class="set-row">
                   <span class="set-info"><b data-i18n="set.app.safe">حالت امن (اگر برنامه درست کار نمی‌کند)</b><span data-i18n="set.app.safeHint">افکت‌های سنگین (شیشه، گرادیان، انیمیشن) خاموش می‌شوند تا روی هر سیستمی برنامه سالم کار کند</span></span>
                   <span class="sw"><input type="checkbox" id="optSafeMode"/><i></i></span>
                 </label>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.app.errCopy">گزارش خطاها</b><span data-i18n="set.app.errCopyHint">اگر چیزی کار نمی‌کند، این دکمه گزارش کامل خطاها را کپی می‌کند تا بفرستی</span></span>
-                  <button class="chip" id="btnCopyErrors"><svg class="ic"><use href="#i-copy"/></svg><span data-i18n="set.app.errCopyBtn">کپی گزارش</span></button>
-                </div>
                 <!-- v0.38.1 — لیست یادآوری‌ها: قبلاً فقط با صدا ثبت می‌شدند و کاربر
                      هیچ‌جایی فهرست/حذف‌شان را نداشت (handlers بلااستفاده بودند) -->
+                <div class="set-subhead" data-i18n="set.sub.appMem">یادآوری و یادگیری</div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="rem.uiTitle">یادآوری‌های فعال</b><span data-i18n="rem.uiHint">با صدا ثبت می‌شوند: «۲۰ دقیقه دیگه یادم بنداز چایی» — سر وقت آوا خبرت می‌کند</span></span>
                   <div class="dc-list" id="remList"></div>
@@ -638,6 +637,11 @@
                     <button class="chip" id="btnLearnClear" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="learn.uiClear">پاک کردن همه</span></button>
                   </div>
                 </div>
+                <div class="set-subhead" data-i18n="set.sub.appMisc">عیب‌یابی و پیوندها</div>
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.app.errCopy">گزارش خطاها</b><span data-i18n="set.app.errCopyHint">اگر چیزی کار نمی‌کند، این دکمه گزارش کامل خطاها را کپی می‌کند تا بفرستی</span></span>
+                  <button class="chip" id="btnCopyErrors"><svg class="ic"><use href="#i-copy"/></svg><span data-i18n="set.app.errCopyBtn">کپی گزارش</span></button>
+                </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.app.links">پیوندها</b><span data-i18n="set.app.linksHint">ریپو و دانلود آخرین نسخه در مرورگر باز می‌شود</span></span>
                   <div class="set-links">
@@ -650,7 +654,7 @@
 
             <!-- به‌روزرسانی -->
               <div class="set-pane" data-pane="update">
-                <label class="set-row">
+                <label class="set-row first">
                   <span class="set-info"><b data-i18n="set.upd.auto">بررسی خودکار هنگام شروع</b><span data-i18n="set.upd.autoHint">۱۲ ثانیه بعد از باز شدن برنامه، نسخه جدید چک شود</span></span>
                   <span class="sw"><input type="checkbox" id="optAutoUpdate"/><i></i></span>
                 </label>
@@ -671,21 +675,25 @@
                 </div>
                 <p class="set-note" data-i18n="set.upd.note">بررسی خودکار انجام می‌شود، ولی دانلود فقط وقتی که خودت بخواهی: هر وقت خواستی «دانلود نسخه جدید» را بزن، هر وقت خواستی «توقف» یا «لغو» کن — فقط بخش‌های تغییرکرده دانلود می‌شود (آپدیت دلتا) و نصب هم با یک کلیک.</p>
               </div>
-</div>
+            </div>
 
-            <!-- ناوبری لیستی — سمت چپ -->
+            <!-- ناوبری گروهی — سمت چپ (گفتار / صدا و هوش / اتصال‌ها / سیستم) -->
             <nav class="set-nav" id="setNav" aria-label="بخش‌های تنظیمات">
-                            <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
-              <button class="set-nav-item " data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
-              <button class="set-nav-item " data-pane="wake" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.wake">بیدارباش</span></button>
-              <button class="set-nav-item " data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
-              <button class="set-nav-item " data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
-              <button class="set-nav-item " data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
-              <button class="set-nav-item " data-pane="discord" type="button"><svg class="ic"><use href="#i-smile"/></svg><span data-i18n="set.nav.discord">دیسکرد</span></button>
-              <button class="set-nav-item " data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
-              <button class="set-nav-item " data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
-              <button class="set-nav-item " data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
-              <button class="set-nav-item " data-pane="update" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.nav.update">به‌روزرسانی</span></button>
+              <div class="set-nav-group" data-i18n="set.navg.speak">گفتار</div>
+              <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
+              <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
+              <button class="set-nav-item" data-pane="wake" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.wake">بیدارباش</span></button>
+              <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
+              <div class="set-nav-group" data-i18n="set.navg.voice">صدا و هوش</div>
+              <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
+              <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
+              <div class="set-nav-group" data-i18n="set.navg.connect">اتصال‌ها</div>
+              <button class="set-nav-item" data-pane="discord" type="button"><svg class="ic"><use href="#i-disc"/></svg><span data-i18n="set.nav.discord">دیسکورد</span></button>
+              <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
+              <div class="set-nav-group" data-i18n="set.navg.system">سیستم</div>
+              <button class="set-nav-item" data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
+              <button class="set-nav-item" data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
+              <button class="set-nav-item" data-pane="update" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.nav.update">به‌روزرسانی</span></button>
             </nav>
 
           </div>
@@ -1079,7 +1087,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.54.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.57.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

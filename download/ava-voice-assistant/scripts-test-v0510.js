@@ -152,8 +152,8 @@ const RULES = [
 
   console.log('\n[۱۰] نسخه');
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-  ok(pkg.version === '0.54.0-beta', 'package.json → 0.54.0-beta');
-  ok(pkg.description.includes('۰.۵۱') && pkg.description.includes('ارور ۱۵۳'), 'description → ۰.۵۱');
+  ok(pkg.version === '0.57.0-beta', 'package.json → 0.57.0-beta');
+  ok(pkg.description.includes('۰.۵۷') && pkg.description.includes('تنظیمات'), 'description → ۰.۵۱');
 
   console.log('\n==========================================');
   console.log('scripts-test-v0510: ' + pass + ' passed, ' + fail + ' failed');
