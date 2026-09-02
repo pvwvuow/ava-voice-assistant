@@ -127,6 +127,13 @@
 
     /* ---------- مخاطبین (آداپتور settings.msgContacts) ---------- */
     /* آیتم: {id, name, app, handle, aliases?} — سازگار با UI پنل موجود */
+    /* v0.71 — آپ‌سرتِ مخاطب — ریشهٔ لاگ 0.70: «Pouria» بعد «Pourya» دو فکت
+       ساخت ولی رکورد مخاطب هرگز به‌روز نشد؛ و ذخیرهٔ دوباره با نام کامل‌تر
+       («پوریا» → «پوریا رحمانی») رکورد تکراری می‌ساخت. حالا:
+       • کلید تطبیق = نام + هر مستعار (فارسی/لاتین) در همان اپ
+       • مستعارها ادغام می‌شوند (املای قدیم + جدید هر دو سرچ‌پذیر می‌مانند)
+       • نامِ بلندتر (پوریا → پوریا رحمانی) جایگزین نام کوتاه‌تر می‌شود
+       • handle تازه اگر داده شد جایگزین می‌شود */
     function addContact(list, c) {
       const name = String((c && (c.name || c.nameFa)) || (c && c.nameEn) || '').replace(/\s+/g, ' ').trim().slice(0, 60);
       const app = String(c && c.app || '').trim().toLowerCase();
@@ -134,11 +141,37 @@
       if (!name || !app) return null;
       if (!Array.isArray(list)) return null;
       const n = normFa(name);
-      const dup = list.find((x) => normFa(x && x.name) === n && String(x.app) === app);
-      if (dup) { if (handle) dup.handle = handle; if (Array.isArray(c.aliases)) dup.aliases = c.aliases.slice(0, 6); return dup.id; }
+      const newAls = (Array.isArray(c && c.aliases) ? c.aliases : []).map((a) => String(a || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+      const dup = list.find((x) => {
+        if (!x || String(x.app) !== app) return false;
+        const oldN = normFa(x && x.name);
+        if (oldN && oldN === n) return true;
+        /* تطبیق پیشوندی واژه‌مرز — «میلاد» و «میلاد قدوسی» یک آدم‌اند
+           (ریشهٔ لاگ: شماره ذخیره شد با «پوریا»، بعد «پوریا رحمانی» رکورد دوم ساخت) */
+        if (oldN && oldN.length >= 3 && (n.indexOf(oldN + ' ') === 0 || oldN.indexOf(n + ' ') === 0)) return true;
+        const als = Array.isArray(x.aliases) ? x.aliases : [];
+        if (als.some((a) => normFa(a) === n)) return true;
+        /* تطبیق لاتینِ بی‌حس‌وحالت — ریشهٔ دود-تست: علی→Ali قبلاً شکسته بود */
+        return newAls.some((a) => normFa(a) && (normFa(a) === oldN || (als.some((b2) => normFa(b2) === normFa(a)))));
+      });
+      if (dup) {
+        if (handle) dup.handle = handle;
+        /* نام بلندتر برنده است (پوریا → پوریا رحمانی) */
+        const oldN = normFa(dup && dup.name);
+        if (oldN && n.length > oldN.length && n.indexOf(oldN) === 0) dup.name = name;
+        const merged = [];
+        const _push = (v) => { const s = String(v || '').replace(/\s+/g, ' ').trim(); if (s && merged.every((m2) => m2.toLowerCase() !== s.toLowerCase())) merged.push(s); };
+        merged.push(String(dup.name || ''));
+        (Array.isArray(dup.aliases) ? dup.aliases : []).forEach(_push);
+        newAls.forEach(_push);
+        dup.aliases = merged.filter((m2) => normFa(m2) !== normFa(dup.name)).slice(0, 6);
+        dup.at = Date.now();
+        return dup.id;
+      }
       const id = 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
-      const _als = Array.isArray(c.aliases) ? c.aliases.slice(0, 6) : (c && c.nameEn ? [String(c.nameEn).trim()].filter(Boolean) : []);
-      list.push({ id, name, app, handle, aliases: _als });
+      const _als = newAls.slice(0, 6);
+      if (!_als.length && c && c.nameEn) _als.push(String(c.nameEn).trim());
+      list.push({ id, name, app, handle, aliases: _als.filter((a) => normFa(a) !== normFa(name)) });
       return id;
     }
     function findContact(list, app, name) {

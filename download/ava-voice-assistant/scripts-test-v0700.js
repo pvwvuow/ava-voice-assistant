@@ -134,7 +134,7 @@ ok(appSrc.indexOf('search: !(opts && opts.noSearch)') > 0, 'app: aiAsk — noSea
 ok(mainSrc.indexOf("Send-Combo 'ctrl,k'") > 0 && mainSrc.indexOf('Read-TgBest') > 0, 'main: تلگرام Ctrl+K + انتخاب UIA');
 ok(mainSrc.indexOf("Send-Combo 'ctrl,f'") === -1, 'main: Ctrl+F در اسکریپت تلگرام حذف شد');
 ok(mainSrc.indexOf("'down' = 0x28") > 0 && mainSrc.indexOf("'k' = 0x4B") > 0, 'main: VKNAME تلگرام k/down');
-ok(pkg.version === '0.70.0-beta', 'نسخهٔ 0.70.0-beta');
+ok(/^0\.[7-9][0-9]?\.0-beta$/.test(pkg.version), 'package.json = 0.70/0.71-beta'); /* v0.71 forward-relax */
 
 /* ================= سلامت سینتکس ================= */
 section('node --check');

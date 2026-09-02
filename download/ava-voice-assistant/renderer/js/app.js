@@ -5109,6 +5109,28 @@
             } catch (_) { /* noop */ }
             if (/(انگلیسی|لاتین)/i.test(raw) && AVAMessaging.noteLatinOf) { try { const _lv = AVAMessaging.noteLatinOf(raw); if (_lv && _lv.out) _pushV(_lv.out); } catch (_) { /* noop */ } }
             if (!AVAMessaging.phoneLike(_mp.target)) { try { const _fl = AVAMessaging.faToLatin(_mp.target); if (_fl && _fl.length >= 3) _pushV(_fl); } catch (_) { /* noop */ } }
+            /* v0.71 (R3) — واریانت از فکت‌های حافظه + قانون «انگلیسی سرچ کن» — ریشهٔ لاگ:
+               «Milad Ghodousi این اسمو هم یادت باشه…انگلیسی سرچ کنی» فکتش ذخیره شد ولی
+               لاین قطعی فکت‌ها را نمی‌خواند → فقط «میلاد» سرچ شد → ERR:TG_NO_MATCH ×۲ */
+            try {
+              const _mem2 = avaMem();
+              if (_mem2) {
+                await _mem2.load();
+                const _fh = _mem2.findFacts(_mp.target, 4);
+                let _latinFirst = /(انگلیسی|لاتین)\s*(سرچ|جستجو|تایپ|بنویس|بگرد)/i.test(raw);
+                for (const _fx of _fh) {
+                  const _ft = String(_fx && _fx.text || '');
+                  if (/(انگلیسی|لاتین)\s*(سرچ|جستجو|تایپ|بگرد)/.test(_ft)) _latinFirst = true;
+                  (String(_ft).match(/[A-Za-z][A-Za-z0-9_'’\-]*(?:\s+[A-Za-z][A-Za-z0-9_'’\-]*)+/g) || []).forEach(_pushV);
+                }
+                if (_latinFirst) {
+                  const _lat = _vs.filter((x) => /[A-Za-z]/.test(x));
+                  const _fao = _vs.filter((x) => !/[A-Za-z]/.test(x));
+                  _vs.length = 0; _lat.forEach(_pushV); _fao.forEach(_pushV);
+                  try { actLog('messaging variants latin-first (taught rule): ' + _vs.join(' | ').slice(0, 90)); } catch (_) { /* noop */ }
+                }
+              }
+            } catch (_) { /* noop */ }
             const _uname = (_mp.app === 'telegram' && AVAMessaging.isLatinUsername(_handle)) ? _handle.replace(/^@/, '') : (AVAMessaging.isLatinUsername(_mp.target) ? _mp.target.replace(/^@/, '') : '');
             const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname, variants: _vs }).catch(() => null) : null;
             if (r && r.error && /NO_MATCH/.test(String(r.error))) {
@@ -7982,7 +8004,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.70.0-beta';
+  let appVersion = '0.71.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10009,7 +10031,21 @@
     if (!_greet && window.AVACore) {
       try { const t = window.AVACore.turnsCtx(6); if (t) ctx += '\n' + t; const e = window.AVACore.entityCtx(); if (e) ctx += '\n' + e; } catch (_) { /* noop */ }
     }
-    if (teach) ctx += '\n[این جمله آموزش/حافظه است: فقط memory_save و در صورت نیاز contact_save بده؛ هیچ عمل اجرایی و هرگز ارسال پیام]';
+    if (teach) {
+      ctx += '\n[این جمله آموزش/حافظه است: فقط memory_save و در صورت نیاز contact_save بده؛ هیچ عمل اجرایی و هرگز ارسال پیام]';
+      /* v0.71 — راهنمای استخراج قطعی: مقادیر مستقیم از جملهٔ کاربر — مغز فقط کپی می‌کند */
+      try {
+        const _h = (typeof teachContactHints === 'function') ? teachContactHints(cmd) : null;
+        if (_h) {
+          const _hp = [];
+          if (_h.nameFa) _hp.push('nameFa="' + _h.nameFa + '"');
+          if (_h.nameEn) _hp.push('nameEn="' + _h.nameEn + '"');
+          if (_h.app) _hp.push('app="' + _h.app + '"');
+          if (_h.handle) _hp.push('handle="' + _h.handle + '"');
+          if (_hp.length) ctx += '\n[راهنمای مخاطب — در contact_save همین مقادیر را عیناً کپی کن: ' + _hp.join(' ') + (!_h.app ? ' (اپ گفته نشده → telegram)' : '') + ']';
+        }
+      } catch (_) { /* noop */ }
+    }
     try {
       const m = avaMem();
       if (m) {
@@ -10018,6 +10054,15 @@
         if (f) ctx += '\n' + f;
         const cl = m.contactsCtx(Array.isArray(settings.msgContacts) ? settings.msgContacts : []);
         if (cl) ctx += '\n' + cl;
+        /* v0.71 — بلوک «آخرین ذخیره‌سازی‌ها» — ریشهٔ لاگ: «به جای آی وای گذاشتم»
+           بی‌اکشن ماند چون مغز نمی‌دانست آخرین ذخیره چه بود */
+        const _rf = (m.data && Array.isArray(m.data.facts)) ? m.data.facts.slice(0, 3) : [];
+        const _rc = Array.isArray(settings.msgContacts) ? settings.msgContacts.slice(-2) : [];
+        if (_rf.length || _rc.length) {
+          ctx += '\n[آخرین ذخیره‌سازی‌ها — اگر جملهٔ کاربر اصلاح/ادامهٔ همین‌ها بود (مثل «به جای فلان گذاشتم»)، همان act ذخیره را با مقدار اصلاح‌شده دوباره بده]';
+          if (_rc.length) ctx += '\nمخاطب‌های اخیر: ' + _rc.map((c) => c.name + ((Array.isArray(c.aliases) && c.aliases.length) ? ' (' + c.aliases.join('/') + ')' : '') + ' - ' + c.app).join('؛ ');
+          if (_rf.length) ctx += '\nفکت‌های اخیر: ' + _rf.map((ff) => ff.text).join(' | ');
+        }
       }
     } catch (_) { /* noop */ }
     /* دور ۱ — JSON */
@@ -10067,6 +10112,57 @@
     return ok ? (LANG === 'en' ? `Noted: "${stored.slice(0, 90)}".` : `یادداشت شد: «${stored.slice(0, 90)}».`) : t('notes.saveFail');
   }
 
+  /* ============================================================
+     v0.71 — استخراج قطعی مخاطب از جملهٔ آموزش (teachContactHints)
+     ------------------------------------------------------------
+     ریشهٔ لاگ 0.70: مغز flash-lite در ۳ از ۴ ذخیرهٔ مخاطب، contact_save
+     با فیلدهای خالی داد («+98 937 298 9120 این شماررو به اسم پوریا…» و
+     «Milad Ghodousi این اسمو هم یادت باشه…») → مخاطب هرگز ثبت نشد و
+     واریانت انگلیسی سرچ هرگز ساخته نشد → تجربهٔ «حافظه نداره».
+     این استخراج (۱) راهنمای پرامپت است و (۲) فالبک قطعیِ ذخیره وقتی
+     مغز باز هم فیلد خالی داد.
+     ============================================================ */
+  function teachContactHints(raw) {
+    const s = String(raw || '').replace(/\u200c/g, ' ').trim();
+    if (!s) return null;
+    const hints = { nameEn: '', nameFa: '', phone: '', handle: '', app: '' };
+    const APP_MAP = { 'تلگرام': 'telegram', 'telegram': 'telegram', 'دیسکورد': 'discord', 'دیسبورد': 'discord', 'discord': 'discord', 'واتساپ': 'whatsapp', 'واتس اپ': 'whatsapp', 'whatsapp': 'whatsapp', 'روبیکا': 'rubika', 'rubika': 'rubika', 'ایتا': 'eitaa', 'eitaa': 'eitaa' };
+    const am = s.match(/(تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)/i);
+    if (am) hints.app = APP_MAP[String(am[1]).toLowerCase().replace(/\s+/g, ' ')] || '';
+    const pm = s.match(/\+?\d[\d\s\-()]{7,}\d/);
+    if (pm) hints.phone = pm[0].replace(/[\s\-()]/g, '');
+    const um = s.match(/@([a-zA-Z0-9_]{3,30})/) || s.match(/(?:یوزرنیم|یوزر|user\s?name|user)\s+@?([a-zA-Z0-9_]{3,30})/i);
+    if (um) hints.handle = '@' + um[1];
+    /* نام لاتین: دنبالهٔ ۲+ واژه (Milad Ghodousi) اول؛ تک‌واژه فقط در جملهٔ آموزش نام.
+       توکنِ یوزرنیم نام نیست — از نام‌های لاتین حذف می‌شود. */
+    const _isUname = (t) => hints.handle && t.replace(/^@/, '').toLowerCase() === hints.handle.replace(/^@/, '').toLowerCase();
+    const seqs = (s.match(/[A-Za-z][A-Za-z0-9_'’\-]*(?:\s+[A-Za-z][A-Za-z0-9_'’\-]*)+/g) || []).map((x) => x.trim()).filter((x) => !_isUname(x));
+    const seqCands = seqs.filter((x) => x.length >= 4 && !/^(telegram|discord|whatsapp|rubika|eitaa)$/i.test(x));
+    if (seqCands.length) hints.nameEn = seqCands.sort((a, b) => b.length - a.length)[0];
+    if (!hints.nameEn && /(یادت|ذخیره|سیو|سَیو|save|اسمو|اسمشو)/i.test(s)) {
+      const words = s.match(/[A-Za-z][A-Za-z0-9_]{2,20}/g) || [];
+      const wc = words.filter((x) => x.length >= 3 && !_isUname(x) && !/^(telegram|discord|whatsapp|rubika|eitaa|the|and|for|ok)$/i.test(x));
+      if (wc.length) hints.nameEn = wc[0];
+    }
+    if (!hints.handle && hints.phone) hints.handle = hints.phone;
+    /* نام فارسی: «به اسم X» / «اسم X رو» / «به X پیام» */
+    const faPats = [
+      /به\s+اسم\s+([\u0600-\u06FF][\u0600-\u06FF\s]{1,30}?)(?=\s+(?:یادت|ذخیره|سیو|هر|برای|توی|تو\s|در\s)|[،,.!؟?]|$)/,
+      /اسم\s+(?:این\s+)?([\u0600-\u06FF][\u0600-\u06FF]{1,20}?)(?:\s+(?:رو|را)\b|\s+(?:یادت|ذخیره|سیو)|[،,.!؟?]|$)/,
+      /([\u0600-\u06FF][\u0600-\u06FF]{2,20})\s+(?:رو|را)\s+(?:تو|توی|در)\s+(?:تلگرام|telegram|دیسکورد|discord|واتس ?اپ|whatsapp|روبیکا|ایتا)/,
+      /به\s+([\u0600-\u06FF][\u0600-\u06FF]{2,20})(?=\s+(?:پیام|مسیج|دم))/,
+    ];
+    for (const fp of faPats) {
+      const m2 = s.match(fp);
+      if (m2 && m2[1]) {
+        hints.nameFa = m2[1].replace(/\s+/g, ' ').replace(/\s+(یادت|بمونه|باشه|ذخیره|سیو)$/, '').trim();
+        break;
+      }
+    }
+    if (!hints.nameEn && !hints.nameFa && !hints.phone && !hints.handle) return null;
+    return hints;
+  }
+
   async function executeBrainNewActs(actions, cmd) {
     const outs = [];
     const m = avaMem();
@@ -10091,16 +10187,35 @@
           const ok = rem ? await m.persist() : false;
           outs.push(ok ? (LANG === 'en' ? `Forgot: "${String(rem.text).slice(0, 60)}".` : `فراموش شد: «${String(rem && rem.text).slice(0, 60)}».`) : (LANG === 'en' ? 'Nothing like that in memory.' : 'چیزی شبیه این تو حافظه‌م نبود.'));
         } else if (a.act === 'contact_save') {
-          const p = a.params || {};
+          const p = (a.params && typeof a.params === 'object') ? a.params : {};
           if (!Array.isArray(settings.msgContacts)) settings.msgContacts = [];
-          const name = String(p.nameFa || p.name || '').trim() || String(p.nameEn || '').trim();
-          const id = (window.AVAMemory && m) ? m.addContact(settings.msgContacts, { name, app: p.app, handle: p.handle, aliases: [String(p.nameEn || '').trim()].filter(Boolean) }) : null;
+          /* v0.71 — نجاتِ فیلدهای خالی (R1): مغز flash-lite در ۳ از ۴ ذخیرهٔ لاگ،
+             contact_save خالی داد؛ فیلدها مستقیم از جملهٔ کاربر استخراج می‌شوند */
+          let _nmFa = String(p.nameFa || p.name || '').trim();
+          let _nmEn = String(p.nameEn || '').trim();
+          let _app = String(p.app || '').trim().toLowerCase();
+          let _hdl = String(p.handle || '').trim();
+          if (!_nmFa && !_nmEn && !_hdl) {
+            try {
+              const _h = (typeof teachContactHints === 'function') ? teachContactHints(cmd) : null;
+              if (_h) {
+                _nmFa = _h.nameFa; _nmEn = _h.nameEn; _hdl = _h.handle || '';
+                if (_h.app) _app = _h.app;
+                actLog('brain contact_save salvage-from-sentence: nameFa=' + _nmFa + ' nameEn=' + _nmEn + ' handle=' + _hdl);
+              }
+            } catch (_) { /* noop */ }
+          }
+          if (!_app) _app = 'telegram';
+          const name = _nmFa || _nmEn;
+          const id = (window.AVAMemory && m && name) ? m.addContact(settings.msgContacts, { name, app: _app, handle: _hdl, aliases: [_nmEn].filter(Boolean) }) : null;
           let ok = false;
           if (id) { try { store.set('msgContacts', settings.msgContacts); ok = true; } catch (_) { ok = false; } }
-          try { if (window.AVACore && window.AVACore._state) window.AVACore._state.entities.person = String(p.nameEn || name).slice(0, 80); } catch (_) { /* noop */ }
-          actLog('brain contact_save id=' + String(id) + ' ok=' + String(ok) + ' ' + name + '/' + String(p.app || '') + '/' + String(p.nameEn || ''));
+          if (ok) { try { if (window.AVACore && window.AVACore._state) window.AVACore._state.entities.person = String(_nmEn || name).slice(0, 80); } catch (_) { /* noop */ } }
+          actLog('brain contact_save id=' + String(id) + ' ok=' + String(ok) + ' ' + name + '/' + _app + '/' + _nmEn);
           try { msgContactsRender(); } catch (_) { /* noop */ }
-          outs.push(ok ? (LANG === 'en' ? `Contact saved: ${name}${p.nameEn ? ' (' + p.nameEn + ')' : ''}.` : `مخاطب ذخیره شد: ${name}${p.nameEn ? ' (' + p.nameEn + ')' : ''}.`) : (LANG === 'en' ? 'Could not save the contact.' : 'ذخیرهٔ مخاطب انجام نشد.'));
+          if (ok) outs.push(LANG === 'en' ? `Contact saved: ${name}${_nmEn ? ' (' + _nmEn + ')' : ''}.` : `مخاطب ذخیره شد: ${name}${_nmEn ? ' — انگلیسی: ' + _nmEn : ''}.`);
+          else if (name || _hdl) outs.push(LANG === 'en' ? 'Could not save the contact — try again.' : 'ذخیرهٔ مخاطب انجام نشد — یک بار دیگر بگو: «به اسم ' + String(name || _hdl).slice(0, 20) + ' تو تلگرام ذخیره کن».');
+          else outs.push(LANG === 'en' ? 'I could not figure out the contact name — say: "save Pouria on telegram".' : 'نتونستم اسم مخاطب را بفهمم — این شکلی بگو: «پوریا رو تو تلگرام ذخیره کن».');
         } else if (a.act === 'contact_list') {
           const _all = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
           outs.push(_all.length ? (LANG === 'en' ? 'Contacts: ' : 'مخاطبینت: ') + _all.slice(0, 8).map((c) => `«${c.name}» (${c.app})`).join('، ') : (LANG === 'en' ? 'No saved contacts yet.' : 'هنوز مخاطبی ذخیره نکردیم.'));

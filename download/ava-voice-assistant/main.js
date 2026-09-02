@@ -5417,6 +5417,7 @@ const TG_PS_BODY = `param(
   [string]$Text = '',
   [string]$Username = '',
   [string]$Variants = '',
+  [string]$VariantsB64 = '',
   [int]$WaitMs = 25000,
   [int]$Test = 0
 )
@@ -5531,31 +5532,63 @@ function Test-TgMatch($title, $cand) {
 # v0.70 — خواندن نتایج سرچِ گلوبال با UIA و انتخاب بهترین تطبیق نام —
 # به‌جای Enter کورکورانهٔ اولین نتیجه (ریشهٔ لاگ: پیام به غریبه رفت)
 function Read-TgBest($cand) {
+  # v0.71 (R5) — ریشهٔ DBG:UIA_MISS در هر ۵ ارسال لاگ 0.70: پنجرهٔ نتایج Ctrl+K
+  # یک پاپ‌آپِ تاپ‌لول جدا از پنجرهٔ اصلی است و در درختِ پنجرهٔ اصلی دیده نمی‌شود.
+  # حالا: همهٔ پنجره‌های تاپ‌لولِ همان پروسهٔ تلگرام (پاپ‌آپ‌ها اول) + پنجرهٔ اصلی؛
+  # سقف امن برای سرعت؛ بهترین امتیاز برمی‌گردد (اندیسِ نتیجه برای ناوبری کیبورد).
   $best = -1; $bestScore = 0
   try {
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
-    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    $pidTg = 0
+    try { [AvaTg2.W]::GetWindowThreadProcessId($hwnd, [ref]$pidTg) | Out-Null } catch { }
+    $roots = @()
+    if ($pidTg -gt 0) {
+      try {
+        $allWin = [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
+        foreach ($w in $allWin) {
+          try {
+            if ($w.Current.ProcessId -ne $pidTg) { continue }
+            $isMain = $false
+            try { $isMain = ([int64]$w.Current.NativeWindowHandle -eq [int64]$hwnd) } catch { }
+            if (-not $isMain) { $roots = @($roots) + @($w) } # پاپ‌آپ‌ها اول
+          } catch { }
+        }
+      } catch { }
+    }
+    try { $mainEl = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd); if ($mainEl) { $roots = @($roots) + @($mainEl) } } catch { }
     $lc = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List)
-    $lists = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $lc)
-    foreach ($l in $lists) {
-      $items = $l.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
-      if ($items.Count -lt 2) { continue }
-      $i = 0
-      foreach ($it in $items) {
-        $nm = ''
-        try { $nm = $it.Current.Name } catch { }
-        $i++
-        if (-not $nm) { continue }
-        $sc = 0
-        if ($nm -eq $cand) { $sc = 100 }
-        elseif ($nm.ToLower().StartsWith($cand.ToLower())) { $sc = 80 }
-        elseif ($nm.ToLower().Contains($cand.ToLower())) { $sc = 60 }
-        if ($sc -gt $bestScore) { $bestScore = $sc; $best = $i - 1 }
+    foreach ($r in $roots) {
+      if (-not $r) { continue }
+      $lists = $null
+      try { $lists = $r.FindAll([System.Windows.Automation.TreeScope]::Descendants, $lc) } catch { }
+      if (-not $lists) { continue }
+      $nL = 0
+      foreach ($l in $lists) {
+        $nL++
+        if ($nL -gt 14) { break }
+        $items = $null
+        try { $items = $l.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition) } catch { }
+        if (-not $items -or $items.Count -lt 1) { continue }
+        $i = 0
+        foreach ($it in $items) {
+          $i++
+          if ($i -gt 60) { break }
+          $nm = ''
+          try { $nm = $it.Current.Name } catch { }
+          if (-not $nm) { continue }
+          $sc = 0
+          if ($nm -eq $cand) { $sc = 100 }
+          elseif ($nm.ToLower().StartsWith($cand.ToLower())) { $sc = 80 }
+          elseif ($nm.ToLower().Contains($cand.ToLower())) { $sc = 60 }
+          if ($sc -gt $bestScore) { $bestScore = $sc; $best = $i - 1 }
+        }
+        if ($bestScore -ge 100) { break }
       }
-      break
+      if ($bestScore -ge 100) { break }
     }
   } catch { return -1 }
+  if ($best -ge 0) { Write-Output ('DBG:UIASCORE=' + $bestScore) }
   return $best
 }
 
@@ -5627,6 +5660,11 @@ if (-not $clipOk) { Write-Output 'ERR:CLIP'; exit }
 $fg = Focus-TgHard
 Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
 if (-not $fg) { Write-Output 'ERR:NOFOCUS'; exit }
+# v0.71 (R6) — عنوان پنجره قبل از سرچ: تطبیقِ «تیترِ بدون تغییر» دیگر شاهد نیست
+$tb0 = New-Object System.Text.StringBuilder 512
+try { [AvaTg2.W]::GetWindowText($hwnd, $tb0, 512) | Out-Null } catch { }
+$title0 = $tb0.ToString().Trim()
+Write-Output ('DBG:TITLE0=' + $title0)
 # گام ۲ — باز کردن چت مخاطب
 if ($Username) {
   # نام کاربری لاتین معتبر: مسیر رسمی tg://resolve — چت مستقیم باز می‌شود
@@ -5640,9 +5678,18 @@ if ($Username) {
   # حالا: هر واریانت امتحان می‌شود؛ تیترِ پنجره باید با نام جور دربیاد؛
   # وگرنه Esc و واریانت بعدی؛ هیچ → ERR:TG_NO_MATCH بدون هیچ ارسالی.
   $variants = @()
-  try { if ($Variants) { $variants = @($Variants -split '\\|' | Where-Object { $_ -and $_.Trim() }) } } catch { }
+  try {
+    if ($VariantsB64) {
+      # v0.71 (R4) — واریانت‌ها با Base64 JSON می‌آیند. ریشهٔ باگ: آرگومانِ حاوی «|»
+      # به powershell.exe -File سالم نمی‌رسید و $Variants خالی می‌شد (لاگ: رندرر
+      # variants=5 فرستاد ولی DBG:VARIANS فقط $nm بود). Base64 نویسهٔ خاص ندارد.
+      $vjson = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($VariantsB64))
+      $variants = @(($vjson | ConvertFrom-Json) | ForEach-Object { [string]$_ } | Where-Object { $_ -and $_.Trim() })
+    } elseif ($Variants) { $variants = @($Variants -split '\\|' | Where-Object { $_ -and $_.Trim() }) }
+  } catch { }
   if ($variants.Count -eq 0) { $variants = @($nm) }
   if ($variants -notcontains $nm) { $variants = @($nm) + $variants }
+  Write-Output ('DBG:VARN=' + $variants.Count)
   Write-Output ('DBG:VARIANTS=' + ($variants -join ' , '))
   $opened = $false
   $usedVar = ''
@@ -5662,21 +5709,30 @@ if ($Username) {
     Send-Combo 'ctrl,v'
     Start-Sleep -Milliseconds 1500
     # v0.70 — انتخاب نتیجه با UIA (بهترین تطبیق)؛ نشد → اولین نتیجه با Enter
-    $pick = Read-TgBest $v
-    if ($pick -ge 0) {
-      Write-Output ('DBG:UIAPICK=' + $pick)
-      for ($d = 0; $d -le $pick; $d++) { Send-Combo 'down'; Start-Sleep -Milliseconds 120 }
+    $uiaPick = Read-TgBest $v
+    if ($uiaPick -ge 0) {
+      Write-Output ('DBG:UIAPICK=' + $uiaPick)
+      for ($d = 0; $d -le $uiaPick; $d++) { Send-Combo 'down'; Start-Sleep -Milliseconds 120 }
       Send-Combo 'enter'
     } else {
       Write-Output 'DBG:UIA_MISS'
       Send-Combo 'enter'
     }
-    Start-Sleep -Milliseconds 1200
-    $tb2 = New-Object System.Text.StringBuilder 512
-    try { [AvaTg2.W]::GetWindowText($hwnd, $tb2, 512) | Out-Null } catch { }
-    $title2 = $tb2.ToString().Trim()
+    # v0.71 (R6) — تیتر ممکن است با تأخیر به‌روز شود → تا ~۲ ثانیه نظرسنجی
+    Start-Sleep -Milliseconds 700
+    $title2 = ''
+    for ($pt = 0; $pt -lt 6; $pt++) {
+      $tb2 = New-Object System.Text.StringBuilder 512
+      try { [AvaTg2.W]::GetWindowText($hwnd, $tb2, 512) | Out-Null } catch { }
+      $title2 = $tb2.ToString().Trim()
+      if ($title2 -ne $title0) { break }
+      Start-Sleep -Milliseconds 220
+    }
     Write-Output ('DBG:TRY=' + $v + ' TITLE=' + $title2)
-    if (Test-TgMatch $title2 $v) { $opened = $true; $usedVar = $v; break }
+    # پذیرش دوگانه: (تیتر عوض شد و جور است) یا (UIA نتیجهٔ هم‌نام دید و تیتر جور است)
+    # تیترِ بدون تغییر بدون شاهد UIA = مبهم → هیچ ارسالی (ریشهٔ ارسال اشتباه به چتِ باز)
+    if (($title2 -ne $title0) -and (Test-TgMatch $title2 $v)) { $opened = $true; $usedVar = $v; break }
+    if (($uiaPick -ge 0) -and (Test-TgMatch $title2 $v)) { $opened = $true; $usedVar = $v; break }
     try { Send-Combo 'esc'; Start-Sleep -Milliseconds 250 } catch { }
   }
   if (-not $opened) {
@@ -5736,8 +5792,12 @@ function runTgPs(nm, msgText, username, testMode, variants) {
     actLog(`telegram ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'msg');
     return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت تلگرام ممکن نشد' });
   }
+  /* v0.71 (R4) — واریانت‌ها به‌صورت Base64 JSON — «|» در argv به powershell.exe
+     -File سالم نمی‌رسید و همهٔ واریانت‌ها جز $nm گم می‌شدند (لاگ 0.70) */
+  let varsB64 = '';
+  try { varsB64 = Buffer.from(JSON.stringify(safeVars), 'utf8').toString('base64'); } catch (_) { varsB64 = ''; }
   const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
-    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-Variants', safeVars.join('|'), '-WaitMs', '25000', '-Test', testMode ? '1' : '0'];
+    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-VariantsB64', varsB64, '-Variants', safeVars.join('|'), '-WaitMs', '25000', '-Test', testMode ? '1' : '0'];
   const t0 = Date.now();
   return new Promise((resolve) => {
     let stdout = '', stderr = '', killed = false;
