@@ -46,18 +46,18 @@ ok('Enter key for newlines, control chars skipped', typeBody.includes('$code -eq
 
 console.log('\n[2] T1: type-anywhere wiring — renderer → preload → main');
 ok('bridge.system.typeText now EXISTS (was the dead-button class)',
-   preloadSrc.includes('typeText: (text, hwnd) => ipcRenderer.invoke(\'sys:typeText\''));
+   preloadSrc.includes('typeText: (text, hwnd'));
 ok('bridge.system.saveFg exists', preloadSrc.includes("saveFg: () => ipcRenderer.invoke('sys:savefg')"));
 ok('single typeText definition (no duplicate key overriding the new engine)',
    (preloadSrc.match(/typeText:/g) || []).length === 1);
 ok('sys:typeText + sys:savefg IPC handlers in main.js',
    mainSrc.includes("ipcMain.handle('sys:typeText'") && mainSrc.includes("ipcMain.handle('sys:savefg'"));
 ok('renderer: dictTarget apps path passes the captured hwnd',
-   appSrc.includes('bridge.system.typeText(delta, dictation.hwnd || 0)'));
+   appSrc.includes('bridge.system.typeText(delta, dictation.hwnd || 0, dictation.pid || 0)'));
 ok('renderer: fg window tracked on blur + reset on focus',
    appSrc.includes("window.addEventListener('blur'") && appSrc.includes("window.addEventListener('focus'"));
 ok('renderer: startDictation(system) captures the target window BEFORE any focus steal',
-   /function startDictation\(system\) \{[\s\S]{0,400}lastFgHwnd/.test(appSrc));
+   /async function startDictation\(system\) \{[\s\S]{0,500}refreshFg\(\)/.test(appSrc));
 ok('honest typing failure toast (throttled, not silent)',
    appSrc.includes('type-into-app failed') && appSrc.includes('dict.sysFail'));
 

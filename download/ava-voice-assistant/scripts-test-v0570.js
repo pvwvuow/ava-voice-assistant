@@ -143,11 +143,11 @@ ok(appSrc.includes("if (!setPanes.some((p) => p.dataset.pane === id)) id = 'mic'
 ok(!htmlSrc.includes('data-i18n="disc.hint"'), 'کلید یتیم disc.hint همچنان غایب (پین v0360)');
 
 console.log('\n[7] نسخه 0.63.0-beta');
-ok(appSrc.includes("let appVersion = '0.63.0-beta';"), 'app.js: 0.63.0-beta');
-ok(pkg.version === '0.63.0-beta', 'package.json: 0.63.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.63.0-beta</span>'), 'index.html: v0.63.0-beta');
-ok(readme.includes('۰.۶۳.۰-بتا') && readme.includes('هستهٔ فهم'), 'README: ۰.۶۲.۰-بتا');
-ok(pkg.description.includes('۰.۶۳') && pkg.description.includes('پلیر'),
+ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js: ' + (appSrc.match(/let appVersion = '[^']+/) || [''])[0]); /* v0.64 forward-relax */
+ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json: ' + pkg.version); /* v0.64 forward-relax */
+ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html: ' + ((htmlSrc.match(/abVersion">([^<]+)/) || [])[1] || '?')); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.۶[۳-۹]\\.۰-بتا').test(readme) && readme.includes('هستهٔ فهم'), 'README: بلوک نسخهٔ جاری'); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.۶[۳-۹]').test(pkg.description) && pkg.description.includes('پلیر'),
    'description: ۰.۶۲ (forward-relax v0.61)');
 
 console.log('\n-----------------------------');

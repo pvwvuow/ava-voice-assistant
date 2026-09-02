@@ -2761,6 +2761,11 @@
         k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی|پلی\s?کن|پخش|نگه\s?دار)|(ویدیو|فیلم|کلیپ)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب|پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن|نگه\s?دار|ببند)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن)\s*(پلیر|مدیا|ویدیو|فیلم|کلیپ)/i,
         id: 'player_ctl', t: 'کنترل پلیر', i: '#i-music',
         r: async (c) => {
+          /* v0.64 — گاردِ جملهٔ مرکب: «اولین ویدیو شادمهر رو کپی کن و توی پلیری که
+             داره پخش می‌کنه اونجا پخش کن» توسط کلیدواژهٔ پخش‌کن ربوده می‌شد و
+             در ۱۲ms به play_pauseِ بی‌اثر تبدیل می‌شد (لاگ v0.63). جمله‌ای که
+             غیر از یک فعلِ کنترلی خواستهٔ دیگری هم دارد → مغز AI. */
+          if (/(کپی|سرچ|جستجو|بگرد|پیدا\s?کن|اولین|دومین|سومین|چهارمین|بعد\s?(از|ش)|بعدش|تحلیل|بررسی|لینک|توی\s?(اون\s)?پلیر|همزمان|دوتا|سه\s?تا)/i.test(c)) return AI_FALLBACK;
           if (!bridge || !bridge.player || !bridge.player.ctl) return LANG === 'en' ? 'Player control is only available inside the app.' : 'کنترل پلیر فقط داخل خود نرم‌افزار کار می‌کند.';
           const num = (() => { const m = faToEn(c).match(/\d+/); return m ? Math.min(600, parseInt(m[0], 10) || 0) : 0; })();
           let action = '', arg = 0;
@@ -4450,6 +4455,30 @@
           try { actLog('ctx-resolve: «' + cmd.slice(0, 48) + '» → «' + vcText.slice(0, 48) + '» (' + _vc.resolved.map((r) => r.domain + '=' + r.to).join(', ') + ')', 'ui', { ev: 'ctx', resolved: _vc.resolved }); } catch (_) { /* noop */ }
         }
         if (_vc.lane === 'brain' && aiConnected()) {
+          /* v0.64 — لَینِ قطعیِ «بنویس»: فرمانِ خالصِ نوشتن هرگز به چتِ AI نمی‌رود
+             (لاگ v0.51: «…بررسی می‌کنم برام بنویس» → AI فقط جواب حرف زد و هیچ
+             چیزی تایپ نشد). فقط فرمانِ خالص: فعل نوشتن + محتوای قابل استخراج،
+             بدون فعل پژوهشیِ دیگر و بدون سؤال. ترکیبی (اول تحقیق کن بعد بنویس)
+             → مغز AI می‌رود (قانون ۱۲ پرامپت، آخرین act=type_once). */
+          const _to = (typeof AVAIntent !== 'undefined' && AVAIntent.typeOnceOf) ? AVAIntent.typeOnceOf(vcText) : '';
+          const _pureType = !!_to
+            && !/(سرچ|جستجو|پیدا|بگرد|تحلیل|بررسی|دنبال|بخون|ترجمه|خلاصه|تحقیق|پخش|اجرا|باز\s?کن|برو\s?به)/i.test(vcText)
+            && !/[؟?]/.test(vcText);
+          if (_pureType) {
+            try { actLog('lane=type-once (deterministic): «' + vcText.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'type-once', q: _to.slice(0, 60) }); } catch (_) { /* noop */ }
+            _dispatchOutcome = 'type-once';
+            const _typeRep = await typeOnceExec(_to);
+            setState('success');
+            statusText.textContent = t('status.done');
+            rcTag.textContent = t('tag.done');
+            typeText(rcReply, _typeRep);
+            speak(_typeRep);
+            pushHistory(cmd, true);
+            try { if (window.AVACore) window.AVACore.recordTurn({ utterance: vcText, via: 'type-once', intent: 'type_once', reply: _typeRep }); } catch (_) { /* noop */ }
+            cmdBusy = false;
+            setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+            return;
+          }
           try { actLog('lane=brain (direct-AI, reason=' + _vc.reason + '): «' + vcText.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'brain', reason: _vc.reason }); } catch (_) { /* noop */ }
           _dispatchOutcome = 'ai-brain';
           await aiHandleCommand(vcText, await aiBrainCtx());
@@ -5861,23 +5890,44 @@
      در همان برنامه‌ای که باز است). علائم نگارشی صوتی + فرمان‌های
      سفارشی تعریف‌شدنی در تنظیمات.
      ============================================================ */
-  const dictation = { active: false, busy: false, hwnd: 0, oneShotApps: false };
+  const dictation = { active: false, busy: false, hwnd: 0, pid: 0, oneShotApps: false };
   /* v0.34 — پنجرهٔ فعالِ خارج از آوا: هنگام blur ثبت می‌شود تا «تایپ در برنامهٔ فعال»
      بداند کجا بنویسد؛ فرمان صوتی هم قبل از هر تمرکزگیری دوباره ثبت می‌کند */
   let lastFgHwnd = 0;
+  let lastFgPid = 0;
+  let lastFgAt = 0;
   let fgProbeBusy = false;
+  let _probe = { hwnd: 0, pid: 0, self: false };
+  function fgNow() { return { hwnd: _probe.hwnd, pid: _probe.pid, self: _probe.self }; }
   async function refreshFg() {
-    if (fgProbeBusy || !bridge || !bridge.system || !bridge.system.saveFg) return;
+    if (fgProbeBusy || !bridge || !bridge.system || !bridge.system.saveFg) return fgNow();
     fgProbeBusy = true;
     try {
       const r = await bridge.system.saveFg();
-      if (r && r.ok && r.hwnd) lastFgHwnd = Number(r.hwnd) || 0;
-    } catch (_) { /* noop */ }
+      if (r && r.ok && r.hwnd) {
+        if (r.self) {
+          /* v0.64 — پنجرهٔ فعال خودِ آوا است؛ مقصدِ تایپ نیست و کشِ بیرونی
+             دست نمی‌خورد (کاربر موقع گفتن فرمان معمولاً در برنامهٔ خودش است) */
+          _probe = { hwnd: 0, pid: 0, self: true };
+        } else {
+          _probe = { hwnd: Number(r.hwnd) || 0, pid: Number(r.pid) || 0, self: false };
+          lastFgHwnd = _probe.hwnd; lastFgPid = _probe.pid; lastFgAt = Date.now();
+        }
+      } else _probe = { hwnd: 0, pid: 0, self: false };
+    } catch (_) { _probe = { hwnd: 0, pid: 0, self: false }; }
     fgProbeBusy = false;
-    return lastFgHwnd;
+    return fgNow();
+  }
+  /* v0.64 — کشِ تازه‌سنج: hwndی کهن‌تر از این عمر یعنی کاربر صفحه/برنامه را
+     عوض کرده یا hwnd بازیافت شده — ریشهٔ «تایپ در صفحهٔ چت قدیمی» همین
+     hwndِ منجمد بود که فقط لحظهٔ blur آوا ثبت می‌شد */
+  function lastFgRecent(maxAge) {
+    if (!lastFgHwnd || !lastFgAt) return null;
+    if (Date.now() - lastFgAt > (maxAge || 45000)) return null;
+    return { hwnd: lastFgHwnd, pid: lastFgPid };
   }
   window.addEventListener('blur', () => { setTimeout(() => { if (!document.hasFocus()) refreshFg(); }, 250); });
-  window.addEventListener('focus', () => { lastFgHwnd = 0; });
+  window.addEventListener('focus', () => { lastFgHwnd = 0; lastFgPid = 0; lastFgAt = 0; _probe = { hwnd: 0, pid: 0, self: false }; });
 
   /* علائم نگارشی داخلی — کلمه‌ای که گفته شود همان علامت ثبت می‌شود
      زبان گفتار فارسی: علائم فارسی؛ زبان گفتار انگلیسی: علائم انگلیسی */
@@ -6000,9 +6050,17 @@
        فوکوس تاییدشده روی پنجرهٔ ثبت‌شده) — قبلی پیست Ctrl+V بود بدون بازیابی
        فوکوس و در پنجرهٔ اشتباه می‌نشست + کلیپ‌بورد کاربر را نابود می‌کرد */
     if ((settings.dictTarget === 'apps' || dictation.oneShotApps) && delta.trim() && bridge && bridge.system && bridge.system.typeText) {
-      bridge.system.typeText(delta, dictation.hwnd || 0).then((r) => {
+      bridge.system.typeText(delta, dictation.hwnd || 0, dictation.pid || 0).then((r) => {
         if (!r || !r.ok) {
           actLog('type-into-app failed: ' + String((r && r.error) || 'fail').slice(0, 90));
+          if (r && r.stale) {
+            /* v0.64 — hwnd بازیافت/عوض شده؛ هرگز در پنجرهٔ اشتباه نمی‌نویسیم —
+               از این‌جا مقصد «پنجرهٔ فعالِ لحظهٔ تایپ» می‌شود */
+            dictation.hwnd = 0; dictation.pid = 0;
+            dictation._staleAt = Date.now();
+            toast('پنجرهٔ مقصد عوض شده یا بسته شده — از این به بعد در پنجرهٔ فعال می‌نویسم.', '#i-info');
+            return;
+          }
           if (!dictation._typeErrAt || Date.now() - dictation._typeErrAt > 10000) {
             dictation._typeErrAt = Date.now();
             toast((r && r.error) || t('dict.sysFail'), '#i-info');
@@ -6013,17 +6071,18 @@
     rearmDictation();
   }
 
-  function startDictation(system) {
+  async function startDictation(system) {
     dictation.active = true;
     /* v0.34 — مقصد تایپ: اگر «برنامهٔ فعال» است، پنجرهٔ فعال همین حالا ثبت شود —
-       قبل از هر تمرکزگیری؛ همان‌جایی که کاربر بود و می‌خواهد همان‌جا نوشته شود */
+       قبل از هر تمرکزگیری؛ همان‌جایی که کاربر بود و می‌خواهد همان‌جا نوشته شود
+       v0.64 — کاوشِ تازه + پینِ PID (hwndی منجمد = تایپ در صفحهٔ قدیمی) */
     dictation.oneShotApps = !!system && settings.dictTarget !== 'apps';
-    dictation.hwnd = 0;
+    dictation.hwnd = 0; dictation.pid = 0;
     if (settings.dictTarget === 'apps' || system) {
-      dictation.hwnd = lastFgHwnd || 0;
-      if (!dictation.hwnd && !(document.hasFocus() && lastFgHwnd)) {
-        refreshFg().then(() => { dictation.hwnd = lastFgHwnd || 0; });
-      }
+      let tgt = { hwnd: 0, pid: 0 };
+      try { const f = await refreshFg(); if (f && f.hwnd && !f.self) tgt = { hwnd: f.hwnd, pid: f.pid }; } catch (_) { /* noop */ }
+      if (!tgt.hwnd) { const c = lastFgRecent(45000); if (c) tgt = c; }
+      dictation.hwnd = tgt.hwnd || 0; dictation.pid = tgt.pid || 0;
     }
     showView('dict');
     updateDictToggleUI();
@@ -6039,7 +6098,7 @@
   function stopDictation(voice = false) {
     dictation.active = false;
     dictation.oneShotApps = false;
-    dictation.hwnd = 0;
+    dictation.hwnd = 0; dictation.pid = 0;
     updateDictToggleUI();
     dictInterim.textContent = '';
     dictStatus.textContent = voice ? t('dict.offVoice') : t('dict.offSilent');
@@ -6067,18 +6126,32 @@
   async function typeOnceExec(text) {
     const txt = String(text || '').trim();
     if (!txt) return LANG === 'en' ? 'Nothing to type — say the text after "write".' : 'چیزی برای نوشتن نگفتی — بعد از «بنویس» متنش را بگو.';
-    let hwnd = lastFgHwnd || 0;
-    if (!hwnd) { try { await refreshFg(); hwnd = lastFgHwnd || 0; } catch (_) { /* noop */ } }
+    if (!bridge || !bridge.system || !bridge.system.typeText) return t('toast.onlyApp');
+    /* v0.64 — مقصد = پنجرهٔ فعالِ «لحظهٔ فرمان» با کاوشِ تازه؛ hwndی منجمدِ
+       blur-محور حذف شد (ریشهٔ «تایپ در صفحهٔ چت قدیمی»: کاربر از صفحهٔ قبلی
+       به جدید رفته بود بدون آنکه از آوا رد شود). اگر کاوشِ تازه خودِ آوا بود،
+       کشِ تازه‌سنجِ ۴۵ثانیه‌ای؛ اگر هیچ‌کدام نبود — خطای صادقانه، نه حدس. */
+    let tgt = { hwnd: 0, pid: 0 };
     try {
-      if (bridge && bridge.system && bridge.system.typeText) {
-        const r = await bridge.system.typeText(txt, hwnd || 0);
-        if (r && r.ok) {
-          actLog('type_once OK (' + txt.length + ' chars, hwnd=' + (hwnd || 0) + ')');
-          return LANG === 'en' ? 'Typed it.' : 'نوشتم.';
-        }
-        actLog('type_once failed: ' + String((r && r.error) || 'fail').slice(0, 90));
-        return (r && r.error) || (LANG === 'en' ? "Couldn't type into the app." : 'تایپ در برنامه انجام نشد.');
+      const f = await refreshFg();
+      if (f && f.hwnd && !f.self) tgt = { hwnd: f.hwnd, pid: f.pid };
+    } catch (_) { /* noop */ }
+    if (!tgt.hwnd) { const c = lastFgRecent(45000); if (c) tgt = c; }
+    if (!tgt.hwnd) {
+      return LANG === 'en'
+        ? 'I could not see which window to type into — click once inside the target app, then say "write" again.'
+        : 'مقصد تایپ مشخص نشد — توی برنامهٔ مقصد یک‌بار کلیک کن و دوباره بگو «بنویس».';
+    }
+    try {
+      const r = await bridge.system.typeText(txt, tgt.hwnd, tgt.pid || 0);
+      if (r && r.ok) {
+        actLog('type_once OK (' + txt.length + ' chars, hwnd=' + (tgt.hwnd || 0) + (r.pname ? ', dest=' + r.pname : '') + ')');
+        return LANG === 'en'
+          ? ('Typed it' + (r.pname ? ' into ' + r.pname : '') + '.')
+          : ('نوشتم' + (r.pname ? ' توی ' + r.pname : '') + '.');
       }
+      actLog('type_once failed: ' + String((r && r.error) || 'fail').slice(0, 90));
+      return (r && r.error) || (LANG === 'en' ? "Couldn't type into the app." : 'تایپ در برنامه انجام نشد.');
     } catch (_) { /* noop */ }
     return LANG === 'en' ? "Couldn't type into the app." : 'تایپ در برنامه انجام نشد.';
   }
@@ -7083,7 +7156,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.63.0-beta';
+  let appVersion = '0.64.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8254,7 +8327,8 @@
     'قانون مهم ۱۰ (بسیار مهم): اگر کاربر با ارجاع به گذشته حرف زد (همینو، همونو، اونو، همون، همونی که گفتی/سرچ کردی/پخش کردی، آخرین بار، قبلی، «همون آهنگ جدیدشو»)، مرجع را اول از «تاریخچهٔ همین گفتگو» بردار — مخصوصاً عنوانی که خودت چند پیام قبل در جواب گفتی. بعد از حلِ مرجع حتماً اکشن بده: پخش = music_play با عنوانِ حل‌شده؛ سرچ در یوتیوب = yt_search؛ سرچ گوگل = web_search. اگر مرجع در تاریخچه نبود، act=research بده یا صادقانه بپرس — هرگز عنوان را از حافظه‌ات نساز. این قانون هرگز مجوزِ رد کردن یا بی‌جواب گذاشتنِ خواستهٔ کاربر نیست.\n' +
     /* v0.63 — نگاشت مستقیم کنترل پخش (لاگ v0.62: «ببند/پین کن/ببر بالا سمت راست/
        بزرگتر کن» یا بی‌اکشن ماندند یا fullscreen اشتباه زده شد) */
-    'قانون مهم ۱۱ (بسیار مهم): هر درخواستِ کنترلِ ویدیو/پلیر = بلوک DO با act=video_ctl: «ببند/بخوابون»=close؛ «پین کن/همیشه رویر/بیفته جلو»=pin؛ «دیگه رویر نباشه»=unpin؛ «ببر بالا سمت راست»=move:top-right؛ «ببر گوشه پایین چپ»=move:bottom-left؛ «ببر وسط»=move:center؛ «بزرگتر کن/ابعادشو زیاد کن»=grow؛ «کوچکتر کن»=shrink؛ «برو جلو ۳۰ ثانیه»=seek:30؛ «۱۰ ثانیه عقب»=seek:-10؛ «پاز کن»=play_pause؛ «ادامه بده/پلی کن»=play_pause؛ «بعدی/پاس کن»=next؛ «فول اسکرین کن»=fullscreen؛ صدای ویدیو=volume_up/volume_down. فرمانِ اجرایی هرگز بدونِ بلوک DO نمی‌ماند — این کارها هرگز سوال یا گفتگو نیستند.\n' +
+    'قانون مهم ۱۱ (بسیار مهم): هر درخواستِ کنترلِ ویدیو/پلیر = بلوک DO با act=video_ctl: «ببند/بخوابون»=close؛ «پین کن/همیشه رویر/بیفته جلو»=pin؛ «دیگه رویر نباشه»=unpin؛ «ببر بالا سمت راست»=move:top-right؛ «ببر گوشه پایین چپ»=move:bottom-left؛ «ببر وسط»=move:center؛ «بزرگتر کن/ابعادشو زیاد کن»=grow؛ «کوچکتر کن»=shrink؛ «برو جلو ۳۰ ثانیه»=seek:30؛ «۱۰ ثانیه عقب»=seek:-10؛ «پاز کن»=play_pause؛ «ادامه بده/پلی کن»=play_pause؛ «بعدی/پاس کن»=next؛ «فول اسکرین کن»=fullscreen؛ صدای ویدیو=volume_up/volume_down. فرمانِ اجرایی هرگز بدونِ بلوک DO نمی‌ماند — این کارها هرگز سوال یا گفتگو نیستند. تنها استثنا: «شفافیت/کمرنگ/اپسیتی/شفاف کردن» ویدیو در پلیر سیستم ممکن نیست — بدونِ DO صادقانه بگو پلیر امکان شفاف‌سازی ندارد و هرگز shrink/grow جای آن نزن (لاگ v0.63: «کمرنگ کن» → shrink اشتباه شد).\n' +
+    'قانون مهم ۱۲ (بسیار مهم): «بنویس X» / «تایپ کن X» / «برام بنویس که X» = بلوک DO با act=type_once و value=دقیقاً همان X — هرگز جوابِ چت نده و هرگز خودت متن را بازنویسی/خلاصه نکن. اگر درخواست چندمرحله‌ای بود (اول تحقیق/سرچ کن، بعد بنویس)، آخرین act باید type_once با متن نهایی باشد؛ پاسخِ بدونِ type_once وقتی کاربر «بنویس/تایپ کن» گفته ممنوع است (لاگ v0.51: «بررسی می‌کنم برام بنویس» → فقط جواب حرف زده شد و هیچ چیزی تایپ نشد).\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -8328,7 +8402,8 @@
        عوض کرده باشد (حل‌گر ارجاع AVACore). به‌روزشدگی متن مطابق همین منابع. */
     'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the conversation history and the entity list attached to this message (تاریخچهٔ همین گفتگو / موجودیت‌های آخرین گفتگو) — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: video/song play = video_play (or music_play for the local music library) with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the attached history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
     /* v0.63 — EN mirror of قانون ۱۱: player/video control mapping + never-leave-a-command rule */
-    'Important rule 10 (critical): EVERY video/player control request = a DO block with act=video_ctl: "close it"=close؛ "pin / always on top"=pin؛ "stop being on top"=unpin؛ "move it to the top right"=move:top-right؛ "move to bottom left"=move:bottom-left؛ "center it"=move:center؛ "make it bigger"=grow؛ "make it smaller"=shrink؛ "forward 30 seconds"=seek:30؛ "back 10 seconds"=seek:-10؛ "pause/resume"=play_pause؛ "skip/next"=next؛ "fullscreen"=fullscreen؛ video volume=volume_up/volume_down. Making the video bigger/smaller is NEVER fullscreen. An understood command must NEVER remain without a DO block — these are never questions or chat.\n' +
+    'Important rule 10 (critical): EVERY video/player control request = a DO block with act=video_ctl: "close it"=close؛ "pin / always on top"=pin؛ "stop being on top"=unpin؛ "move it to the top right"=move:top-right؛ "move to bottom left"=move:bottom-left؛ "center it"=move:center؛ "make it bigger"=grow؛ "make it smaller"=shrink؛ "forward 30 seconds"=seek:30؛ "back 10 seconds"=seek:-10؛ "pause/resume"=play_pause؛ "skip/next"=next؛ "fullscreen"=fullscreen؛ video volume=volume_up/volume_down. Making the video bigger/smaller is NEVER fullscreen. An understood command must NEVER remain without a DO block — these are never questions or chat. Sole exception: video opacity/transparency ("make it faded/transparent") is impossible for system players — answer honestly WITHOUT a DO that the player cannot do it; never substitute grow/shrink.\n' +
+    'Important rule 11: "write X" / "type X" = a DO block with act=type_once and value=the exact X — NEVER answer in chat instead of typing, never rewrite or summarize X yourself. In a multi-step request (first search/find, then type) the LAST act must be type_once with the final text; a reply without type_once after a "write/type" request is forbidden.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -8342,7 +8417,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests; if the user means the link they COPIED, value=__clipboard__ so AVA reads the clipboard; never a bare youtube.com without a video id), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=always on top, grow=bigger, shrink=smaller, move=window position, seek=jump seconds), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests; if the user means the link they COPIED, value=__clipboard__ so AVA reads the clipboard; never a bare youtube.com without a video id; if a full YouTube URL appears in the user message, copy it character-for-character into value — never shorten it to youtube.com), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=always on top, grow=bigger, shrink=smaller, move=window position, seek=jump seconds), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -8591,6 +8666,20 @@
               }
             }
             if (!vq) { outs.push(LANG === 'en' ? 'No title was given to play.' : 'عنوانی برای پخش داده نشد.'); break; }
+            /* v0.64 — ترمیمِ URL از متن کاربر: AI گاهی به‌جای لینک کاملِ داخل جمله،
+               youtube.com نمونه‌وار را می‌دهد (لاگ v0.63: سه بار
+               video_play(https://www.youtube.com/) درحالی‌که URL واقعی در پیام
+               بود). اگر خودِ جمله لینک شناسه‌دار دارد، همان اصل حرف اول را می‌زند. */
+            const _urlInCmd = String(origCmd || '').match(/https?:\/\/[^\s"'<>]+/i);
+            if (_urlInCmd && _urlInCmd[0]) {
+              const _u = _urlInCmd[0].replace(/[.,؛»)\]]+$/, '');
+              const _uId = /(?:watch\?v=|youtu\.be\/|shorts\/|live\/|embed\/|\/v\/)/i.test(_u);
+              const _vId = /(?:watch\?v=|youtu\.be\/|shorts\/|live\/|embed\/|\/v\/)/i.test(vq);
+              if (_uId && (!_vId || vq !== _u)) {
+                actLog('video_play url-repair: «' + String(vq).slice(0, 60) + '» → لینکِ اصلیِ جمله');
+                vq = _u;
+              }
+            }
             if (!bridge || !bridge.player || !bridge.player.open) { outs.push(t('toast.onlyApp')); break; }
             try {
               const res = await bridge.player.open({ player: 'default', kind: 'query', src: vq });
@@ -8616,7 +8705,11 @@
                 grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.',
                 move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: 'پرش انجام شد.',
               }[pr.action];
-              outs.push(res && res.ok ? (LANG === 'en' ? `Done (${pr.action}).` : (_lbl || 'انجام شد.')) : (LANG === 'en' ? `Could not: ${res && res.error || ''}` : `انجام نشد: ${res && res.error || ''}`));
+              /* v0.64 — چند ویدیو همزمان؟ اقدام روی همه اعمال شد — شمرده بگو */
+              const _cnt = (res && res.ok && res.count && res.count > 1)
+                ? (LANG === 'en' ? ' (on ' + res.count + ' players)' : ' (روی ' + faNum(String(res.count)) + ' پلیر)')
+                : '';
+              outs.push(res && res.ok ? ((LANG === 'en' ? `Done (${pr.action}).` : (_lbl || 'انجام شد.')) + _cnt) : (LANG === 'en' ? `Could not: ${res && res.error || ''}` : `انجام نشد: ${res && res.error || ''}`));
             } catch (_) { outs.push(LANG === 'en' ? 'Control failed.' : 'کنترل پلیر ممکن نشد.'); }
             break;
           }

@@ -121,7 +121,7 @@ ok(appSrc.indexOf('res.noVideoId') >= 0 && appSrc.indexOf('این آدرس یو�
 /* ---------- [4] main — موتور کنترل پنجره ---------- */
 section('[4] main — موتور کنترل پنجرهٔ پلیر');
 ok(/const PLAYER_PROC_RE = 'potplayer\|mpv\|mpc\|wmplayer\|vlc\|kmplayer\|gom\|bsplayer\|smplayer'/.test(mainSrc), 'PLAYER_PROC_RE — پلیرهای شناخته‌شده');
-ok(/function playerWindowCtl\(kind, arg\)/.test(mainSrc), 'playerWindowCtl تعریف شده');
+ok(/function playerWindowCtl\(kind, arg/.test(mainSrc), 'playerWindowCtl تعریف شده'); /* v0.64 — پارامتر سوم all (broadcast) */
 ok(/'topmost'\) act = "\[W\.N\]::SetWindowPos\(\$h,\[IntPtr\]\(-1\)/.test(mainSrc), 'pin = HWND_TOPMOST (-1)');
 ok(/'notopmost'\) act = "\[W\.N\]::SetWindowPos\(\$h,\[IntPtr\]\(-2\)/.test(mainSrc), 'unpin = HWND_NOTOPMOST (-2)');
 ok(/PostMessage\(\$h,0x0010/.test(mainSrc), 'close = WM_CLOSE (0x0010) + خاتمهٔ پشتیبان');
@@ -130,7 +130,7 @@ ok(/\[Math\]::Max\(260,\[int\]\(\$w\*0\.85\)\)/.test(mainSrc), 'shrink = کوچ�
 ok(/\$wa=\[System\.Windows\.Forms\.Screen\]::PrimaryScreen\.WorkingArea/.test(mainSrc), 'move — محاسبه از WorkingArea');
 ok(/playerCtl\.lastWinProc = String\(toks\.slice\(2\)/.test(mainSrc), 'کش پروسس پلیر یافت‌شده (lastWinProc)');
 ok(/if \(a === 'pin' \|\| a === 'unpin' \|\| a === 'move' \|\| a === 'grow' \|\| a === 'shrink'\)/.test(mainSrc), 'سیم‌کشی ۵ اکشن پنجره در player:ctl');
-ok(/const wr = await playerWindowCtl\('close'\)/.test(mainSrc), 'closeِ پلیر بیگانه (خودِ کاربر باز کرده)');
+ok(/const wr = await playerWindowCtl\('close'\)|closeAllVideoPlayers\(\)/.test(mainSrc), 'closeِ پلیر بیگانه (خودِ کاربر باز کرده)'); /* v0.64 — بستن همهٔ پلیرها هم مجاز */
 ok(/const VK = \{ left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0x46, f11: 0x7A, enter: 0x0D \}/.test(mainSrc), 'VK.enter اضافه شد');
 ok(/\/potplayer\/\.test\(nm\)\) \{ fgKeys\(\[VK\.enter\]\)/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه: پات‌پلیر=Enter');
 ok(/\/mpv\|vlc\|mpc\/\.test\(nm\)\) \{ fgKeys\(\[\VK\.f\]\)/.test(mainSrc.replace('\\', '\\')), 'فول‌اسکرین پلیر-آگاه: mpv/vlc/mpc=F');
@@ -181,10 +181,10 @@ ok(/rcTag\.textContent = t\('tag\.aiDo'\) \+ \(_rEff\.via \? ' · ' \+ _rEff\.vi
 
 /* ---------- [8] نسخه ---------- */
 section('[8] نسخهٔ 0.63.0-beta در ۴ جای رسمی');
-ok(pkg.version === '0.63.0-beta', 'package.json → ' + pkg.version);
-ok(/appVersion\s*=\s*'0\.63\.0-beta'/.test(appSrc), 'app.js appVersion');
-ok(/abVersion[^0-9]*0\.63\.0-beta/.test(idxSrc), 'index.html abVersion');
-ok(readmeSrc.indexOf('۰.۶۳.۰-بتا') >= 0, 'README تیتر/بلاک ۰.۶۳.۰-بتا');
+ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json → ' + pkg.version); /* v0.64 forward-relax */
+ok(new RegExp("appVersion\\s*=\\s*'" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "'").test(appSrc), 'app.js appVersion'); /* v0.64 forward-relax */
+ok(new RegExp('abVersion[^0-9]*0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?').test(idxSrc), 'index.html abVersion'); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.۶[۳-۹]\\.۰-بتا').test(readmeSrc), 'README تیتر/بلاک نسخهٔ جاری (بتا)'); /* v0.64 forward-relax */
 
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');

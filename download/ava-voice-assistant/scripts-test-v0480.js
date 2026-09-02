@@ -73,10 +73,10 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 
   /* ---------- 6) نسخه ---------- */
   console.log('\n[6] نسخه 0.63.0-beta');
-  ok(pkg.version === '0.63.0-beta', 'package.json 0.63.0-beta');
-  ok(htmlSrc.includes('<span id="abVersion">v0.63.0-beta</span>'), 'index.html abVersion');
-  ok(appSrc.includes("let appVersion = '0.63.0-beta';"), 'app.js appVersion');
-  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۶۳.۰-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
+  ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json ' + pkg.version); /* v0.64 forward-relax */
+  ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html abVersion'); /* v0.64 forward-relax */
+  ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js appVersion'); /* v0.64 forward-relax */
+  ok(new RegExp('۰\\.۶[۳-۹]\\.۰-بتا').test(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
 
   console.log('\n==========================================');
   console.log('scripts-test-v0480(relaxed): ' + pass + ' passed, ' + fail + ' failed');

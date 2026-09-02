@@ -96,10 +96,10 @@ if (LEARN_RE) {
 ok(appSrc.includes("actLog('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست: '"), 'لاگ صادقانهٔ learn skip');
 
 console.log('\n[7] نسخه 0.63.0-beta');
-ok(appSrc.includes("let appVersion = '0.63.0-beta';"), 'app.js: 0.63.0-beta');
-ok(pkg.version === '0.63.0-beta', 'package.json: 0.63.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.63.0-beta</span>'), 'index.html: v0.63.0-beta');
-ok(readme.includes('۰.۶۳.۰-بتا') && readme.includes('مفعولِ ارجاعی'), 'README: ۰.۶۲.۰-بتا (بلوک ۰.۵۴ در تاریخچه مانده)');
+ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js: ' + (appSrc.match(/let appVersion = '[^']+/) || [''])[0]); /* v0.64 forward-relax */
+ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json: ' + pkg.version); /* v0.64 forward-relax */
+ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html: ' + ((htmlSrc.match(/abVersion">([^<]+)/) || [])[1] || '?')); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.۶[۳-۹]\\.۰-بتا').test(readme) && readme.includes('مفعولِ ارجاعی'), 'README: بلوک نسخهٔ جاری (بلوک ۰.۵۴ در تاریخچه مانده)'); /* v0.64 forward-relax */
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

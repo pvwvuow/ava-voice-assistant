@@ -3714,8 +3714,10 @@ function fgKeys(seq) {
    پنجرهٔ پلیر با اسکن پروسس + user32 (همان زیرساخت PowerShell تک‌خطی بقیهٔ main)
    — بدون باینری بومی جدید، برای هر پلیر شناخته‌شده‌ای کار می‌کند. */
 const PLAYER_PROC_RE = 'potplayer|mpv|mpc|wmplayer|vlc|kmplayer|gom|bsplayer|smplayer';
-function playerWindowCtl(kind, arg) {
-  /* kind: topmost|notopmost|move|grow|shrink|close — arg: برای move موقعیت نام‌دار */
+function playerWindowCtl(kind, arg, all) {
+  /* kind: topmost|notopmost|move|grow|shrink|close — arg: برای move موقعیت نام‌دار
+     v0.64 — all=true: اقدام روی «همهٔ» پنجره‌های پلیر ویدیو اعمال می‌شود
+     (لاگ کاربر: دو-سه ویدیو همزمان باز است؛ تک‌پنجره‌ی First-1 بقیه را گم می‌کرد) */
   const pos = String(arg == null ? 'center' : arg).toLowerCase().replace(/[_/]/g, '-');
   const XY = {
     'top-left': '($wa.X+12),($wa.Y+12)',
@@ -3747,32 +3749,76 @@ function playerWindowCtl(kind, arg) {
   const prio = known
     ? "$pn='" + known + "'; $p=Get-Process -Name $pn -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}|Select-Object -First 1; "
     : '';
-  const psAll =
-    "$ErrorActionPreference='SilentlyContinue'; " +
-    "Add-Type -Namespace W -Name N -MemberDefinition '" + IMP + "'; " +
-    "Add-Type -AssemblyName System.Windows.Forms; " +
-    "$wa=[System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; " +
-    "$p=$null; " + prio +
-    "if(-not $p){ $p=Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Select-Object -First 1 } " +
-    "if(-not $p){ Write-Output 'NOWIN' } else { " +
+  const body =
     "$h=$p.MainWindowHandle; " +
     "if([W.N]::IsIconic($h)){ [W.N]::ShowWindow($h,9)|Out-Null } " +
     "$r=New-Object ('W.N+R'); [W.N]::GetWindowRect($h,[ref]$r)|Out-Null; " +
     "$w=[Math]::Max(1,$r.Rt-$r.L); $hh=[Math]::Max(1,$r.B-$r.T); " +
-    act + " }";
+    act;
+  const head =
+    "$ErrorActionPreference='SilentlyContinue'; " +
+    "Add-Type -Namespace W -Name N -MemberDefinition '" + IMP + "'; " +
+    "Add-Type -AssemblyName System.Windows.Forms; " +
+    "$wa=[System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; ";
+  const psAll = all
+    ? head +
+      "$pn='" + (known || '') + "'; " +
+      "$ps=@(" + (known
+        ? "Get-Process -Name $pn -ErrorAction SilentlyContinue"
+        : "Get-Process|Where-Object{$_.ProcessName -match '" + PLAYER_PROC_RE + "'}") +
+      ")|Where-Object{$_.MainWindowHandle -ne 0}; " +
+      "if(-not $ps -or @($ps).Count -eq 0){ Write-Output 'NOWIN' } else { foreach($p in $ps){ " + body + " } Write-Output ('DONE ' + @($ps).Count) }"
+    : head + "$p=$null; " + prio +
+      "if(-not $p){ $p=Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Select-Object -First 1 } " +
+      "if(-not $p){ Write-Output 'NOWIN' } else { " + body + " }";
   return new Promise((resolve) => {
     exec(
       `powershell -NoProfile -Command "${psAll.replace(/"/g, '\\"')}"`,
-      { windowsHide: true, timeout: 9000 },
+      { windowsHide: true, timeout: (all && kind === 'close') ? 15000 : 9000 },
       (err, so) => {
         const out = String(so || '').trim();
         if (out.indexOf('NOWIN') >= 0) return resolve({ ok: false, error: 'پنجرهٔ پلیری پیدا نشد' });
+        const cnt = (out.match(/OK /g) || []).length;
         if (out.indexOf('OK') === 0 || out.indexOf(' OK') > 0) {
           const toks = out.split(/\s+/);
-          if (toks.length >= 3) playerCtl.lastWinProc = String(toks.slice(2).join(' ') || '').toLowerCase();
-          return resolve({ ok: true, out });
+          if (toks.length >= 3 && !all) playerCtl.lastWinProc = String(toks.slice(2).join(' ') || '').toLowerCase();
+          return resolve({ ok: true, out, count: all ? Math.max(1, cnt) : 1 });
         }
         resolve({ ok: false, error: 'کنترل پنجره ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+/* v0.64 — شمارش پلیرهای ویدیوی در حال اجرا (برای پاسخ صادقانهٔ «پلیر باز نیست»
+   و جلوگیری از فرستادن کلید مدیا به برنامهٔ فعال کاربر وقتی هیچ پلیری نیست) */
+let _vpScanAt = 0, _vpScanCount = -1;
+function runningVideoPlayers() {
+  if (Date.now() - _vpScanAt < 5000 && _vpScanCount >= 0) return Promise.resolve(_vpScanCount);
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "@(Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '${PLAYER_PROC_RE}'}).Count"`,
+      { windowsHide: true, timeout: 7000 },
+      (err, so) => {
+        const n = parseInt(String(so || '').trim(), 10);
+        _vpScanAt = Date.now();
+        _vpScanCount = isNaN(n) ? 0 : n;
+        resolve(_vpScanCount);
+      }
+    );
+  });
+}
+/* v0.64 — تک‌لاین ویدیو: قبل از پخش ویدیوی جدید، همهٔ پلیرهای ویدیوی باز
+   بسته می‌شوند تا دو-سه ویدیو با صدای روی‌هم پخش نشود (لاگ کاربر: چند
+   ویدیوی همزمان). همهٔ نمونه‌های هر exe ویدیویی بسته می‌شوند. */
+function closeAllVideoPlayers() {
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "$ps=@(Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '${PLAYER_PROC_RE}'}|Group-Object ProcessName); foreach($g in $ps){ taskkill /IM \\"$($g.Name)\\" /F | Out-Null; Write-Output $g.Name }"`,
+      { windowsHide: true, timeout: 12000 },
+      (err, so) => {
+        const names = String(so || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        _vpScanAt = Date.now(); _vpScanCount = 0;
+        resolve({ ok: true, killed: names, count: names.length });
       }
     );
   });
@@ -3808,13 +3854,21 @@ ipcMain.handle('player:ctl', async (_e, p) => {
     if (mpvMap[a]) { const ok = await mpvSend(mpvMap[a]); if (ok) { if (a === 'close') playerCtl.player = null; return { ok: true, via: 'mpv-ipc' }; } }
   }
   /* ۲.۵) v0.63 — کنترل پنجرهٔ پلیر: pin/unpin/move/grow/shrink — برای هر پلیری
-     (حتی پلیری که خودِ کاربر باز کرده) با یافتن پنجره از اسکن پروسس */
+     (حتی پلیری که خودِ کاربر باز کرده) با یافتن پنجره از اسکن پروسس
+     v0.64 — broadcast: روی «همهٔ» پنجره‌های پلیر اعمال می‌شود (لاگ کاربر:
+     دو-سه ویدیو همزمان — اقدام تک‌پنجره‌ای بقیه را گم می‌کرد) */
   if (a === 'pin' || a === 'unpin' || a === 'move' || a === 'grow' || a === 'shrink') {
-    const wr = await playerWindowCtl(a === 'pin' ? 'topmost' : a === 'unpin' ? 'notopmost' : a, p && p.arg);
-    if (wr.ok) return { ok: true, via: 'win-ctl' };
+    const wr = await playerWindowCtl(a === 'pin' ? 'topmost' : a === 'unpin' ? 'notopmost' : a, p && p.arg, true);
+    if (wr.ok) return { ok: true, via: 'win-ctl', count: wr.count || 1 };
     return { ok: false, error: wr.error || 'کنترل پنجره ممکن نشد' };
   }
-  /* ۳) کلیدهای مدیای جهانی / کلیدهای پنجرهٔ فعال */
+  /* ۳) کلیدهای مدیای جهانی / کلیدهای پنجرهٔ فعال
+     v0.64 — هیچ پلیری باز نیست؟ کلید مدیا/فوکوس به برنامهٔ فعال کاربر
+     می‌رفت (تایپ حروف اضافه/پرش در ادیتور!) — حالا پاسخ صادقانه برمی‌گردد */
+  if ((MEDIA_KEYS[a] || a === 'seek' || a === 'fullscreen' || a === 'volume_up' || a === 'volume_down' || a === 'play_pause' || a === 'stop') && !playerCtl.player) {
+    const nOpen = await runningVideoPlayers();
+    if (!nOpen) return { ok: false, noPlayer: true, error: 'پلیری باز نیست — اول ویدیو یا آهنگ را پخش کن' };
+  }
   if (MEDIA_KEYS[a]) { fgKeys([`0x${MEDIA_KEYS[a]}`]); return { ok: true, via: 'media-keys' }; }
   if (a === 'seek') {
     /* هر فشار فلش ≈ ۵ ثانیه در بیشتر پلیرها — تا ۸ فشار در یک سیشل */
@@ -3840,12 +3894,14 @@ ipcMain.handle('player:ctl', async (_e, p) => {
       const nm = path.basename(playerCtl.exe);
       exec(`taskkill /IM "${nm}" /F`, { windowsHide: true, timeout: 5000 }, () => {});
       playerCtl.player = null;
+      /* v0.64 — نمونه‌های دیگرِ همان پلیر (دو-سه ویدیوی همزمان) هم بسته شوند */
+      await closeAllVideoPlayers();
       return { ok: true, via: 'taskkill' };
     }
     /* v0.63 — پلیری که خودِ کاربر باز کرده (لاگ v0.62: پات‌پلیرِ دستی بسته نشد)
-       — WM_CLOSE به پنجرهٔ پلیر یافته‌شده، بعد در صورت ماندن، خاتمهٔ پروسس */
-    const wr = await playerWindowCtl('close');
-    if (wr.ok) { playerCtl.player = null; return { ok: true, via: 'win-ctl' }; }
+       v0.64 — «ببند» یعنی همهٔ پلیرهای ویدیو (تک‌لاین ویدیو) */
+    const cr = await closeAllVideoPlayers();
+    if (cr.count > 0) { playerCtl.player = null; return { ok: true, via: 'win-ctl', count: cr.count }; }
     return { ok: false, error: 'پلیری باز نیست' };
   }
   return { ok: false, error: 'این اقدام برای پلیر فعلی ممکن نیست' };
@@ -3866,6 +3922,12 @@ async function playerLaunch(player, src, opts) {
     const r = await resolveYtStream(feed);
     if (!r.ok) return { ok: false, player, error: r.error || 'استریم یوتیوب استخراج نشد', ytFail: true };
     feed = r.url;
+  }
+  /* v0.64 — تک‌لاین ویدیو: پخشِ جدید جایگزین قبلی است — پلیرهای ویدیوی باز
+     همین‌جا بسته می‌شوند (بعد از حل موفق استریم، تا خطای حل چیزی را نبندد).
+     لاگ کاربر: دو-سه ویدیو همزمان با صدای روی‌هم باز می‌شد. */
+  if (!(opts && opts.keepExisting)) {
+    try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
   }
   try {
     if (player === 'vlc') {
@@ -3903,6 +3965,9 @@ async function playerLaunchYt(player, src) {
   }
   const r = await playerLaunch(player, src, { ytdl: true });
   if (r.ok) return r;
+  /* v0.64 — فالبک مرورگر هم جایگزین است: پلیرهای قبلی بسته شوند تا دو لاین
+     صدا همزمان نشود (فقط وقتی استریم حل نشد اینجا می‌رسیم) */
+  try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
   try { shell.openExternal(src); return { ok: true, via: 'browser-fallback', player, fa: 'مرورگر', note: r.error || '' }; }
   catch (_) { return { ok: false, player, noYtdl: true, error: r.error || 'پخش ممکن نشد' }; }
 }
@@ -3931,12 +3996,15 @@ ipcMain.handle('player:open', async (_e, p) => {
     : (d.player || wanted);
   const entry = scan.list.find((x) => x.id === player);
   if (d.action === 'browser') {
-    /* پلیر پیش‌فرض/خواسته‌شده یوتیوب را نمی‌فهمد → همان ویدیو در مرورگر */
+    /* پلیر پیش‌فرض/خواسته‌شده یوتیوب را نمی‌فهمد → همان ویدیو در مرورگر
+       v0.64 — تک‌لاین: پلیرهای قبلی بسته می‌شوند */
+    try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
     try { shell.openExternal(src); } catch (_) { /* noop */ }
     return { ok: true, via: 'browser', player, fa: (entry && entry.fa) || 'مرورگر' };
   }
   if (d.action === 'os-default') {
     /* فایل محلی با انتخاب خود ویندوز (همان پلیر پیش‌فرض کاربر) باز می‌شود */
+    try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
     try { await shell.openPath(src); } catch (_) { /* noop */ }
     return { ok: true, via: 'os-default', player: 'uwp', fa: 'پلیر پیش‌فرض ویندوز' };
   }
@@ -5164,7 +5232,8 @@ ipcMain.handle('discord:cmd', async (_e, p) => {
 const TYPE_PS_BODY = `param(
   [string]$Action = 'savefg',
   [string]$TxtFile = '',
-  [long]$Focus = 0
+  [long]$Focus = 0,
+  [long]$ExpectPid = 0
 )
 $ErrorActionPreference = 'Stop'
 # فقط کامنت # — هیچ اسلش-ستاره، هیچ گیومهٔ کج، هیچ بک‌تیک (قانون بدنه‌های پاورشل آوا)
@@ -5224,9 +5293,14 @@ function New-Ki([int]$wvk, [int]$scan, [int]$flags) {
 switch ($Action) {
   'savefg' {
     # پنجرهٔ فعال الان چیست — در لحظهٔ شروع تایپ صوتی ثبت می‌شود
+    # v0.64 — PID پنجره هم ثبت می‌شود: hwndها در ویندوز بازیافت می‌شوند؛
+    # hwnd کهنه ممکن است به پنجرهٔ یک برنامهٔ کاملاً دیگر اشاره کند —
+    # مقایسهٔ PID هویت پنجره را قطعی می‌کند (ریشهٔ «تایپ در صفحهٔ قدیمی»)
     try {
       $fg = [AvaType.W]::GetForegroundWindow()
-      Write-Output ('FG=' + $fg.ToInt64().ToString())
+      $fp = 0
+      [void][AvaType.W]::GetWindowThreadProcessId($fg, [ref]$fp)
+      Write-Output ('FG=' + $fg.ToInt64().ToString() + ';PID=' + $fp.ToString())
     } catch { Write-Output 'ERR:NOUSER32' }
   }
   'type' {
@@ -5236,6 +5310,13 @@ switch ($Action) {
     try { $text = [System.IO.File]::ReadAllText($TxtFile) } catch { Write-Output 'ERR:NOTEXT'; exit }
     if (-not $text.Length) { Write-Output 'ERR:NOTEXT'; exit }
     if (-not (Restore-Focus2 $Focus)) { Write-Output 'ERR:NOFOCUS'; exit }
+    # v0.64 — پین هویت پنجره: اگر hwnd به پروسهٔ دیگری بازیافت شده باشد تایپ
+    # هرگز انجام نمی‌شود (خطای صادقانه به‌جای نوشته‌شدن در پنجرهٔ اشتباه)
+    $vp = 0
+    if ($Focus -gt 0) {
+      [void][AvaType.W]::GetWindowThreadProcessId([IntPtr]$Focus, [ref]$vp)
+      if ($ExpectPid -gt 0 -and $vp -gt 0 -and $vp -ne $ExpectPid) { Write-Output ('ERR:STALE:' + $vp); exit }
+    }
     Start-Sleep -Milliseconds 250
     $size = [System.Runtime.InteropServices.Marshal]::SizeOf([type][AvaType.INPUT])
     $batch = New-Object 'System.Collections.Generic.List[AvaType.INPUT]'
@@ -5261,12 +5342,15 @@ switch ($Action) {
       if ($batch.Count -ge 32) { & $flushBatch }
     }
     & $flushBatch
-    Write-Output ('OK:TYPED:' + $typed)
+    # v0.64 — نام پروسهٔ مقصد در پاسخ: کاربر می‌فهمد متن به کجا رفت
+    $pn2 = ''
+    try { $p2 = Get-Process -Id $vp -ErrorAction SilentlyContinue; if ($p2) { $pn2 = $p2.ProcessName } } catch { }
+    Write-Output ('OK:TYPED:' + $typed + ':' + $pn2)
   }
   default { Write-Output 'ERR:UNKNOWN' }
 }`;
 
-function runTypePs(psAction, txtFile, focusArg) {
+function runTypePs(psAction, txtFile, focusArg, expectPid) {
   return new Promise((resolve) => {
     let psFile = '';
     try {
@@ -5277,7 +5361,7 @@ function runTypePs(psAction, txtFile, focusArg) {
       return resolve({ ok: false, error: 'نوشتن اسکریپت تایپ ممکن نشد' });
     }
     const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
-      '-Action', psAction, '-TxtFile', String(txtFile || ''), '-Focus', String(focusArg || 0)];
+      '-Action', psAction, '-TxtFile', String(txtFile || ''), '-Focus', String(focusArg || 0), '-ExpectPid', String(expectPid || 0)];
     const t0 = Date.now();
     let child = null;
     try { child = spawn('powershell.exe', args, { windowsHide: true }); }
@@ -5294,8 +5378,12 @@ function runTypePs(psAction, txtFile, focusArg) {
       const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
       const out = lines.pop() || '';
       actLog(`type ${psAction} -> ${out || (killed ? 'TIMEOUT' : 'EMPTY')} (${Date.now() - t0}ms)`, 'type');
-      if (/^FG=/.test(out)) return resolve({ ok: true, hwnd: Number(out.slice(3)) || 0 });
-      if (/^OK:TYPED:/.test(out)) return resolve({ ok: true, typed: Number(out.slice(9)) || 0 });
+      /* v0.64 — FG=hwnd;PID=pid | OK:TYPED:n:pname | ERR:STALE:pid */
+      let mFG = out.match(/^FG=(\d+)(?:;PID=(\d+))?/);
+      if (mFG) return resolve({ ok: true, hwnd: Number(mFG[1]) || 0, pid: Number(mFG[2]) || 0 });
+      let mTY = out.match(/^OK:TYPED:(\d+)(?::([^:\r\n]*))?/);
+      if (mTY) return resolve({ ok: true, typed: Number(mTY[1]) || 0, pname: String(mTY[2] || '').trim() });
+      if (/^ERR:STALE/.test(out)) return resolve({ ok: false, stale: true, error: 'پنجرهٔ مقصد عوض شده یا بسته شده — توی برنامهٔ مقصد یک‌بار کلیک کن و دوباره بگو' });
       if (/^ERR:NOFOCUS/.test(out)) return resolve({ ok: false, error: 'فوکوس به پنجرهٔ مقصد برنگشت — پنجرهٔ مقصد را یک‌بار فعال کن و دوباره امتحان کن' });
       if (/^ERR:NOTEXT/.test(out)) return resolve({ ok: false, error: 'متنی برای تایپ وجود ندارد' });
       if (/^ERR:NOUSER32/.test(out)) return resolve({ ok: false, error: 'این قابلیت فقط داخل ویندوز کار می‌کند' });
@@ -5311,11 +5399,14 @@ function runTypePs(psAction, txtFile, focusArg) {
 
 ipcMain.handle('sys:savefg', async () => {
   if (process.platform !== 'win32') return { ok: false, error: 'تایپ در برنامه‌ها فقط داخل ویندوز کار می‌کند' };
-  return runTypePs('savefg', '', 0);
+  const r = await runTypePs('savefg', '', 0);
+  /* v0.64 — اگر پنجرهٔ فعال خودِ آوا باشد، رندرر نباید آن را مقصد تایپ بگیرد */
+  if (r && r.ok && r.pid && Number(r.pid) === Number(process.pid)) r.self = true;
+  return r;
 });
 
 ipcMain.handle('sys:typeText', async (_e, p) => {
-  const { text, hwnd } = p || {};
+  const { text, hwnd, expectPid } = p || {};
   const t = String(text || '');
   if (!t.trim()) return { ok: false, error: 'متنی برای تایپ وجود ندارد' };
   if (process.platform !== 'win32') return { ok: false, error: 'تایپ در برنامه‌ها فقط داخل ویندوز کار می‌کند' };
@@ -5327,7 +5418,7 @@ ipcMain.handle('sys:typeText', async (_e, p) => {
   } catch (e) {
     return { ok: false, error: 'نوشتن فایل موقت تایپ ممکن نشد' };
   }
-  const r = await runTypePs('type', f, Number(hwnd) || 0);
+  const r = await runTypePs('type', f, Number(hwnd) || 0, Number(expectPid) || 0);
   try { fs.unlinkSync(f); } catch (_) { /* noop */ }
   return r;
 });

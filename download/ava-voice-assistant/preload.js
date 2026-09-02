@@ -47,7 +47,7 @@ contextBridge.exposeInMainWorld('ava', {
        در همان پنجره با فوکوس تاییدشده (مستقل از layout کیبورد، بدون دست‌زدن به
        کلیپ‌بورد — قبلی پیست Ctrl+V بود و در پنجرهٔ اشتباه می‌نشست) */
     saveFg: () => ipcRenderer.invoke('sys:savefg'),
-    typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText', { text, hwnd }),
+    typeText: (text, hwnd, expectPid) => ipcRenderer.invoke('sys:typeText', { text, hwnd, expectPid }), /* v0.64 — پین PID مقصد */
     /* v0.61 — خواندن کلیپ‌بورد (جایگزین pip:clip پس از حذف پنجرهٔ شناور) */
     clipboard: () => ipcRenderer.invoke('sys:clipboard'),
     /* v0.35 — بیدارباش در مینیمایز/بازی: جلوگیری از suspend شدن اپ تا حلقهٔ

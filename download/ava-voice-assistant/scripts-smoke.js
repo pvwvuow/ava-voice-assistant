@@ -1359,7 +1359,7 @@ app.whenReady().then(async () => {
         wake: a34.includes("const engine = localReady() ? 'local' : 'cloud';") && a34.includes("bridge.stt.google({ pcm: new Uint8Array(pcm16.buffer), rate: 16000") && a34.includes('function kickWakePackDownload()') && !/if \(!localReady\(\)\) \{ setTimeout\(wakeBootRetry/.test(a34),
         health: a34.includes('wakeTestUntil = Date.now() + 11000') && a34.includes("function wakeHealthNote(txt)") && (a34.match(/'wake\.healthCloud':/g) || []).length >= 1,
         type: t34.length > 3000 && t34.includes('SendInput') && t34.includes('Restore-Focus2') && t34.includes('function New-Ki') && !t34.includes('`') && !/[\u2018\u2019\u201C\u201D]/.test(t34) && !t34.includes('/*'),
-        wire: p34.includes("typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText'") && (p34.match(/typeText:/g) || []).length === 1 && p34.includes("saveFg: () => ipcRenderer.invoke('sys:savefg')") && m34.includes("ipcMain.handle('sys:typeText'") && m34.includes("ipcMain.handle('sys:savefg'"),
+        wire: p34.includes("typeText: (text, hwnd") && (p34.match(/typeText:/g) || []).length === 1 && p34.includes("saveFg: () => ipcRenderer.invoke('sys:savefg')") && m34.includes("ipcMain.handle('sys:typeText'") && m34.includes("ipcMain.handle('sys:savefg'"),
         sys: a34.indexOf('const SYS_DICT_RE') > -1 && a34.indexOf('SYS_DICT_RE.test(raw)') < a34.indexOf('DICT_START_RE.test(raw)') && a34.includes('dictation.oneShotApps = !!system'),
         ver: /^0\.(3[4-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[4-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a34),
       };

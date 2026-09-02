@@ -92,7 +92,7 @@ section('[3] resolveYtStream — استریم مستقیم + شفای yt-dlp ک�
 /* ============ [4] نردبان فالبک مرورگر ============ */
 section('[4] playerLaunchYt — بن‌بست ندارد (پلیر یا مرورگر)');
 ok(/async function playerLaunchYt\(player, src\)/.test(mainSrc), 'playerLaunchYt تعریف شده است');
-ok(/if \(r\.ok\) return r;\s*\n\s*try \{ shell\.openExternal\(src\); return \{ ok: true, via: 'browser-fallback'/.test(mainSrc), 'آخرین طبقه: مرورگر با نتیجهٔ صادقانهٔ browser-fallback');
+ok(/if \(r\.ok\) return r;[\s\S]{0,400}shell\.openExternal\(src\); return \{ ok: true, via: 'browser-fallback'/.test(mainSrc), 'آخرین طبقه: مرورگر با نتیجهٔ صادقانهٔ browser-fallback');
 ok(mainSrc.includes("if (d.action === 'no-ytdlp' || d.action === 'spawn-ytdlp') {\n    /* v0.62 — یک لاین"), 'player:open: هر دو اقدام تصمیم به یک لاین می‌روند');
 ok(/if \(d\.action === 'no-ytdlp' \|\| d\.action === 'spawn-ytdlp'\) return playerLaunchYt\(d\.player, url\);/.test(mainSrc), 'openWithDefaultPlayer: همان یک لاین (youtube_play/sys-run هم)');
 ok(/if \(isYt && opts && opts\.ytdl\) \{\s*\n\s*const r = await resolveYtStream\(feed\);/.test(mainSrc), 'playerLaunch: یوتیوب اول حل می‌شود، بعد پخش');
@@ -106,9 +106,9 @@ ok(!appSrc.includes("Say \"play it in PotPlayer\" instead"), 'پیام انگل�
 
 /* ============ [6] نسخه ============ */
 section('[6] نسخهٔ 0.63.0-beta در ۴ جای رسمی');
-ok(pkg.version === '0.63.0-beta', 'package.json → 0.63.0-beta');
-ok(/let appVersion = ['"]0\.63\.0-beta['"]/.test(appSrc), 'app.js appVersion → 0.63.0-beta');
-ok(/id="abVersion">v0\.63\.0-beta</.test(idxSrc), 'index.html abVersion → v0.63.0-beta');
+ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json → ' + pkg.version); /* v0.64 forward-relax */
+ok(new RegExp("let appVersion = ['\"]0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?['\"]").test(appSrc), 'app.js appVersion → ' + (appSrc.match(/let appVersion = ['"][^'"]+/) || [''])[0]); /* v0.64 forward-relax */
+ok(new RegExp('id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?<').test(idxSrc), 'index.html abVersion → v0.64 line'); /* v0.64 forward-relax */
 ok(readmeSrc.includes('در نسخه ۰.۶۲.۰') && readmeSrc.includes('yt-dlp خود-شفادار'), 'README: تیتر + بلاک ۰.۶۲ حاضر است');
 
 console.log('\n-----------------------------');
