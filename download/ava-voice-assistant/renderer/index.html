@@ -199,6 +199,11 @@
           <!-- آخرین فرمان و پاسخ -->
           <div class="response-card glass" id="respCard">
             <span class="rc-tag" id="rcTag">آماده</span>
+            <!-- v0.65 — نشانگر کوچک «آوا داره فکر می‌کنه» (فقط در سفرهای AI) -->
+            <div class="think-chip" id="thinkChip" hidden>
+              <span class="tdots"><i></i><i></i><i></i></span>
+              <span id="thinkTxt">آوا داره فکر می‌کنه…</span>
+            </div>
             <div class="rc-row">
               <span class="rc-avatar"><svg class="ic"><use href="#i-mic"/></svg></span>
               <p id="rcHeard"></p>
@@ -375,6 +380,10 @@
                   <span class="set-info"><b data-i18n="set.voice.tts">پاسخ گفتاری (TTS)</b><span data-i18n="set.voice.ttsHint">آوا جواب‌ها را با صدای بلند بخواند</span></span>
                   <span class="sw"><input type="checkbox" id="optTts"/><i></i></span>
                 </label>
+                <div class="set-row">
+                  <span class="set-info"><b>صدای بانمکِ «انجام شد»</b><span>وقتی کارت انجام شد یک «تِرینگ!» کوچولو بیاد</span></span>
+                  <span class="sw"><input type="checkbox" id="optDoneSound"/><i></i></span>
+                </div>
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.voice.engine">موتور صدا</b><span data-i18n="set.voice.engineHint">«اِج» (پیشنهادی): صدای عصبی رایگان مایکروسافت — طبیعی‌ترین فارسی؛ «گوگل»: صدای گوگل‌ترنسلیت؛ «ویندوز»: آفلاین</span></span>
                   <select id="optTtsEngine" class="set-select">
@@ -1087,7 +1096,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.64.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.65.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

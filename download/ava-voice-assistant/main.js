@@ -1161,6 +1161,42 @@ ipcMain.handle('learnings:save', (_e, data) => {
     return { ok: true };
   } catch (e) { return { ok: false, error: String((e && e.message) || e).slice(0, 120) }; }
 });
+
+/* ============================================================
+   v0.65 — حافظهٔ «آموخته‌های صریح کاربر» (TEACH)
+   کاربر مستقیم درس می‌دهد: «یاد بگیر وقتی گفتم X یعنی Y» →
+   جفت‌های (عبارت→فرمان) در ava-taught.json؛ پارس/مچ در voiceLearn.js
+   ============================================================ */
+const TAUGHT_FILE = () => path.join(app.getPath('userData'), 'ava-taught.json');
+let taughtCache = null;
+function loadTaught() {
+  if (taughtCache) return taughtCache;
+  try { taughtCache = JSON.parse(fs.readFileSync(TAUGHT_FILE(), 'utf8')) || null; } catch (_) { taughtCache = null; }
+  if (!taughtCache || typeof taughtCache !== 'object' || !Array.isArray(taughtCache.items)) taughtCache = { v: 1, items: [] };
+  return taughtCache;
+}
+ipcMain.handle('learnings:loadTaught', () => ({ ok: true, data: loadTaught() }));
+ipcMain.handle('learnings:saveTaught', (_e, data) => {
+  try {
+    if (!data || typeof data !== 'object' || !Array.isArray(data.items)) return { ok: false, error: 'bad-shape' };
+    if (data.items.length > 100) data.items = data.items.slice(0, 100);
+    /* سانیتی‌زیشن: هر آیتم فقط فیلدهای شناخته‌شده */
+    taughtCache = {
+      v: 1,
+      items: data.items.map((x) => ({
+        id: String((x && x.id) || ('t' + Date.now().toString(36))).slice(0, 24),
+        k: String((x && x.k) || '').slice(0, 120),
+        phrase: String((x && x.phrase) || '').slice(0, 100),
+        command: String((x && x.command) || '').slice(0, 220),
+        at: Number((x && x.at) || Date.now()),
+        used: Number((x && x.used) || 0),
+        lastHit: Number((x && x.lastHit) || 0),
+      })).filter((x) => x.k && x.command),
+    };
+    writeJsonAtomic(TAUGHT_FILE(), taughtCache);
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e).slice(0, 120) }; }
+});
 ipcMain.handle('reminders:remove', (_e, id) => {
   reminders = reminders.filter((r) => r.id !== Number(id));
   saveReminders();

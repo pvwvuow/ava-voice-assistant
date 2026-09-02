@@ -537,6 +537,18 @@
     'pow.confirmRestartText': ['کامپیوتر تا ۱۰ ثانیه دیگر ری‌استارت می‌شود. مطمئنی؟', 'The PC will restart in 10 seconds. Are you sure?'],
     'cf.cancelled': ['بی‌خیال؛ اجرا نشد.', 'Skipped; nothing ran.'],
     'ai.asking': ['سوالت را از هوش مصنوعی می‌پرسم…', 'Asking the AI for you…'], 'ai.got': ['جواب آمد', 'Answer arrived'],
+    /* v0.65 — نشانگر فکر کردن + یادگیری صریح */
+    'ai.thinking': ['آوا داره فکر می‌کنه…', 'Ava is thinking…'],
+    'teach.tag': ['📚 یادگرفته', '📚 taught'],
+    'teach.status': ['درس یاد گرفتم', 'Lesson learned'],
+    'teach.saved': ['یاد گرفتم! از این به بعد هر وقت بگی «{x}» همینو می‌کنم: {y}', 'Got it! From now on, "{x}" means: {y}'],
+    'teach.updated': ['به‌روز شد! قانونِ «{x}» الان یعنی: {y}', 'Updated! "{x}" now means: {y}'],
+    'teach.bad': ['نتونستم این رو یاد بگیرم — این شکلی بگو: «یاد بگیر وقتی گفتم فلان، یعنی فلان».', "I couldn't learn that — say it like: \"teach me: when I say X, it means Y\"."],
+    'teach.forgot': ['فراموش شد ✓ («{x}» از حافظه پاک شد؛ {n} چیز دیگه یادمه)', 'Forgotten ✓ ("{x}" cleared; {n} left)'],
+    'teach.notFound': ['توی چیزهایی که یاد گرفتم همچین چیزی نداشتم.', "I don't have that in my learned list."],
+    'teach.cleared': ['همه یاد گرفته‌ها پاک شد ✓ ({n} مورد)', 'All learned items cleared ✓ ({n} items)'],
+    'teach.list': ['{n} چیز ازت یاد گرفتم:', 'I have learned {n} things from you:'],
+    'teach.empty': ['هنوز هیچ چیزی بهم یاد ندادی — بگو «یاد بگیر وقتی گفتم فلان یعنی فلان».', "You haven't taught me anything yet — say \"teach me: when I say X it means Y\"."],
     'ai.fail': ['پاسخی نرسید', 'No answer arrived'], 'ai.noConn': ['اتصال AI برقرار نیست', 'AI connection is down'],
     'ai.err': ['اتصال به هوش مصنوعی برقرار نشد.', 'Could not reach the AI.'],
     'weather.reply': ['آب‌وهوای {city}: {desc}، دما حدود {temp} درجه (احساس واقعی {feels})، رطوبت {hum}٪ و باد {wind} کیلومتر بر ساعت.', 'Weather in {city}: {desc}, around {temp} degrees (feels like {feels}), humidity {hum}% and wind {wind} km/h.'],
@@ -1058,6 +1070,8 @@
   };
   const settings = {
     tts: store.get('tts', true),
+    /* v0.65 — صدای کوچکِ بانمکِ پایانِ کار (WebAudio سنتز — بدون فایل) */
+    doneSound: store.get('doneSound', true),
     voiceURI: store.get('voiceURI', ''),
     ttsEngine: store.get('ttsEngine', 'edge'), /* v0.42 — اِج پیش‌فرض */
     edgeVoice: store.get('edgeVoice', 'dilara'), /* v0.43 — صدای اِج: دلارا/فرید */
@@ -1415,6 +1429,49 @@
     body.classList.remove('state-idle', 'state-listening', 'state-processing', 'state-success');
     body.classList.add('state-' + s);
     if (orbIcon) orbIcon.setAttribute('href', s === 'listening' ? '#i-stop' : '#i-mic');
+  }
+
+  /* ============================================================
+     v0.65 — صدای کوچکِ بانمکِ «انجام شد!»
+     ------------------------------------------------------------
+     درخواست کاربر: «وقتی درخواست انجام شد یک صدای کوچولو بانمک بیاد»
+     • WebAudio سنتزِ سه‌نتِ اسپارکل (سُل۵→دو۶→می۶، مثلثیِ نرم) —
+       متمایز از چایم بیدارباش (می۵→لا۵→دویس۶، سینوسی)
+     • فقط جای موفقیت صدا زده می‌شود (نه خطا) + ترمز ۱٫۲ ثانیه‌ای
+     • خاموش/روشن از تنظیمات › صدا (doneSound)
+     ============================================================ */
+  let _doneSfxAt = 0;
+  function playDoneSound() {
+    if (!settings.doneSound) return;
+    const now = Date.now();
+    if (now - _doneSfxAt < 1200) return; /* دوبارِ پشت‌سرهم ممنوع */
+    _doneSfxAt = now;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ac = playDoneSound._ac || (playDoneSound._ac = new AC());
+      if (ac.state === 'suspended') { ac.resume().catch(() => { /* noop */ }); }
+      const t0 = ac.currentTime + 0.02;
+      const lp = ac.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 6500; lp.Q.value = 0.4;
+      const master = ac.createGain();
+      master.gain.setValueAtTime(0.8, t0);
+      lp.connect(master); master.connect(ac.destination);
+      /* سه نت بالاروندهٔ شاد + هارمونیک ظریف — «تِرینگ!» کوچولو */
+      [[783.99, 0.0, 0.22], [1046.5, 0.085, 0.24], [1318.51, 0.17, 0.34]].forEach(([f, off, dur]) => {
+        [[f, 'triangle', 0.11], [f * 2, 'sine', 0.028]].forEach(([ff, type, vol]) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(ff, t0 + off);
+          g.gain.setValueAtTime(0.0001, t0 + off);
+          g.gain.exponentialRampToValueAtTime(vol, t0 + off + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + dur);
+          o.connect(g); g.connect(lp);
+          o.start(t0 + off); o.stop(t0 + off + dur + 0.06);
+        });
+      });
+    } catch (_) { /* noop — هیچ‌وقت بوت را نکشد */ }
   }
 
   /* ---------- خوش‌آمد بر اساس ساعت ---------- */
@@ -3270,6 +3327,85 @@
   }
 
   /* ============================================================
+     v0.65 — آموخته‌های صریح کاربر (TEACH STORE)
+     ------------------------------------------------------------
+     «یاد بگیر وقتی گفتم X یعنی Y» → ava-taught.json (userData)
+     • ذخیره‌گاه جدا از self-learning تا نارضایتیِ AI با درسِ صریح کاربر قاطی نشود
+     • بازنویسیِ قطعی پیش از همهٔ لَین‌ها: X → Y (حتی آفلاین، حتی بدون AI)
+     ============================================================ */
+  let taughtStore = { v: 1, items: [] };
+  let taughtLoaded = false;
+  async function taughtLoad() {
+    if (taughtLoaded) return taughtStore;
+    taughtLoaded = true;
+    try {
+      if (bridge && bridge.learnings && bridge.learnings.loadTaught) {
+        const r = await bridge.learnings.loadTaught();
+        if (r && r.ok && r.data && Array.isArray(r.data.items)) taughtStore = r.data;
+      }
+    } catch (_) { /* noop */ }
+    if (!taughtStore || !Array.isArray(taughtStore.items)) taughtStore = { v: 1, items: [] };
+    return taughtStore;
+  }
+  async function taughtPersist() {
+    try {
+      if (bridge && bridge.learnings && bridge.learnings.saveTaught) {
+        await bridge.learnings.saveTaught(JSON.parse(JSON.stringify(taughtStore)));
+      }
+    } catch (_) { /* noop */ }
+  }
+
+  /* ---------- هندلرهای لَین آموزش (قطعی — هرگز به AI نمی‌روند) ---------- */
+  function _teachReplyShell(original, rep, tagKey) {
+    setState('success');
+    statusText.textContent = t('teach.status');
+    body.classList.add('has-card');
+    rcHeard.textContent = `«${original}»`;
+    respCard.classList.remove('show');
+    void respCard.offsetWidth;
+    respCard.classList.add('show');
+    rcTag.textContent = t(tagKey);
+    typeText(rcReply, rep);
+    speak(rep);
+    pushChatHist('user', original); pushChatHist('assistant', rep);
+    pushHistory(original, true);
+    playDoneSound();
+    handsFreeRearm();
+    _dispatchOutcome = 'teach';
+    setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4200);
+  }
+  async function teachHandle(tp, original) {
+    const st = await taughtLoad();
+    const res = AVALearn.taughtSave(st, tp.phrase, tp.command);
+    await taughtPersist();
+    actLog('teach-save: «' + String(tp.phrase).slice(0, 48) + '» → «' + String(tp.command).slice(0, 60) + '»', 'ui', { ev: 'teach', save: true, updated: !!res.updated, n: st.items.length });
+    const key = res.updated ? 'teach.updated' : 'teach.saved';
+    _teachReplyShell(original, t(key, { x: tp.phrase, y: tp.command }), 'teach.tag');
+  }
+  async function teachForgetHandle(tf, original) {
+    const st = await taughtLoad();
+    const res = AVALearn.taughtDrop(st, tf.key, tf.all);
+    await taughtPersist();
+    actLog('teach-forget: ' + (tf.all ? 'ALL' : String(tf.key).slice(0, 48)), 'ui', { ev: 'teach', forget: true, removed: res.removed || 0 });
+    let rep;
+    if (res.all) rep = t('teach.cleared', { n: res.removed });
+    else if (res.removed) rep = t('teach.forgot', { x: res.removedPhrase || tf.key, n: st.items.length });
+    else rep = t('teach.notFound');
+    _teachReplyShell(original, rep, 'teach.tag');
+  }
+  async function teachListHandle(original) {
+    const st = await taughtLoad();
+    const items = st.items.slice()
+      .sort((a, b) => ((b.used || 0) * 1e12 + (b.at || 0)) - ((a.used || 0) * 1e12 + (a.at || 0)))
+      .slice(0, 8);
+    const rep = !st.items.length
+      ? t('teach.empty')
+      : t('teach.list', { n: st.items.length }) + '\n' + items.map((x, i) => (i + 1) + '. «' + (x.phrase || x.k) + '» ← ' + x.command).join('\n');
+    actLog('teach-list: n=' + st.items.length, 'ui', { ev: 'teach', list: true });
+    _teachReplyShell(original, rep, 'teach.tag');
+  }
+
+  /* ============================================================
      v0.42 — عکسِ لحظه‌ایِ وضعیت آوا برای هوش مصنوعی (خواستهٔ کاربر:
      «gemini یا ai پس‌زمینه … درخواست‌های پس‌زمینه و ذخیره‌شدهٔ کاربر
      رو بتونه ببینه») — تایمرهای فعال، یادآوری‌ها، یادداشت‌های ذخیره‌شده،
@@ -4272,6 +4408,7 @@
         const rep = await typeOnceExec(onceTxt);
         typeText(rcReply, rep);
         speak(rep);
+        if (/نوشتم/.test(rep)) playDoneSound(); /* v0.65 — صدای کوچکِ انجام‌شد */
         pushChatHist('user', raw); pushChatHist('assistant', rep);
         return;
       }
@@ -4288,6 +4425,7 @@
         const rep = await typeOnceExec(onceTxt);
         typeText(rcReply, rep);
         speak(rep);
+        if (/نوشتم/.test(rep)) playDoneSound(); /* v0.65 — صدای کوچکِ انجام‌شد */
         pushChatHist('user', raw); pushChatHist('assistant', rep);
         return;
       }
@@ -4299,6 +4437,30 @@
        حالا cmd هم همان متنِ نرمال‌شده است تا همهٔ قوانین/برنامه‌ها/AI یک متن ببینند */
     raw = normFaFull(raw);
     cmd = raw;
+    /* ============================================================
+       v0.65 — لَینِ یادگیریِ صریح (TEACH) — پیش از همهٔ لَین‌ها
+       کاربر مستقیم درس می‌دهد؛ سپس عبارتِ آموخته به فرمانِ آموخته‌شده
+       بازنویسی و اجرا می‌شود (قطعی، آفلاین، بدون AI). درسِ تازه هرگز
+       به مغز AI نمی‌رود تا «جواب چت» نشود.
+       ============================================================ */
+    if (typeof AVALearn !== 'undefined' && AVALearn.teachParse && !(opts && opts.fromTeach)) {
+      const _tw = AVALearn.wakeStrip ? AVALearn.wakeStrip(raw) : raw;
+      const _tp = AVALearn.teachParse(_tw);
+      if (_tp) { await teachHandle(_tp, raw); return; }
+      const _tf = AVALearn.forgetParse ? AVALearn.forgetParse(_tw) : null;
+      if (_tf) { await teachForgetHandle(_tf, raw); return; }
+      if (/^\s*(?:چه\s+چیز(?:ایی|هایی)\s+یاد|لیست\s+یاد|فهرست\s+یاد|یاد\s*گرفته\s*ها|یادگیری\s*ها)\b/.test(_tw)) { await teachListHandle(raw); return; }
+      const _tst = await taughtLoad();
+      const _tm = AVALearn.taughtMatch(_tst, _tw);
+      if (_tm && _tm.command) {
+        _tm.used = (_tm.used || 0) + 1;
+        _tm.lastHit = Date.now();
+        await taughtPersist();
+        actLog('teach-hit: «' + String(_tw).slice(0, 48) + '» → «' + String(_tm.command).slice(0, 60) + '»', 'ui', { ev: 'teach', hit: true, id: _tm.id || '' });
+        raw = String(_tm.command);
+        cmd = raw;
+      }
+    }
     /* ============================================================
        v0.46 — «آوا»ی تنها فرمان نیست (لاگ واقعی: cmd «آوا» به Gemini
        فرستاده می‌شد و جواب بی‌ربط می‌آمد). گفتنِ فقط اسم بیدارباش =
@@ -4535,6 +4697,7 @@
         rcTag.textContent = t('tag.done');
         typeText(rcReply, appReply);
         speak(appReply);
+        if (!/پیدا نکردم|not found/i.test(appReply)) playDoneSound(); /* v0.65 */
         pushHistory(cmd, !/پیدا نکردم|not found/i.test(appReply));
         try { if (window.AVACore) window.AVACore.recordTurn({ utterance: vcText, via: 'app-open', intent: 'open_app', reply: appReply }); } catch (_) { /* noop */ }
         /* v0.47 — B02: قفلِ busy بلافاصله آزاد شود */
@@ -4587,6 +4750,7 @@
         statusText.textContent = t('status.done');
         typeText(rcReply, reply);
         speak(reply);
+        if (!/انجام نشد|Could not|Couldn't|پیدا نشد|نشده/.test(String(reply))) playDoneSound(); /* v0.65 — فقط موفقیت */
         if (rule && rule.t) toast(rule.t, rule.i || '#i-info');
         /* v0.39 — پیشنهاد زمینه‌ای: کاربر درگیر یوتیوب/ویدیو/موسیقی بود → کارت فرمان‌ها */
         if (rule && rule.id && SUGGEST_TRIGGERS.has(rule.id)) maybeSuggestCommands('video');
@@ -7156,7 +7320,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.64.0-beta';
+  let appVersion = '0.65.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -7522,6 +7686,7 @@
     const osm = $('#optSafeMode');
     if (osm) osm.checked = !!settings.safeMode;
     optTts.checked = !!settings.tts;
+    const ods = $('#optDoneSound'); if (ods) ods.checked = settings.doneSound !== false; /* v0.65 */
     optAutoUpdate.checked = !!settings.autoUpdate;
     if (optDemo) optDemo.checked = !!settings.demoMode;
     optSttEngine.value = settings.sttEngine || 'auto';
@@ -7777,6 +7942,14 @@
       stopGoogleSpeak();
       if (window.speechSynthesis) speechSynthesis.cancel();
     }
+  });
+
+  /* v0.65 — صدای کوچکِ بانمکِ پایان کار: خاموش/روشن */
+  const optDoneSoundEl = $('#optDoneSound');
+  if (optDoneSoundEl) optDoneSoundEl.addEventListener('change', () => {
+    settings.doneSound = optDoneSoundEl.checked;
+    store.set('doneSound', settings.doneSound);
+    if (settings.doneSound) playDoneSound(); /* نمونهٔ زنده هنگام روشن‌کردن */
   });
 
   optAutoUpdate.addEventListener('change', () => {
@@ -9073,7 +9246,33 @@
   /* ---------- مسیریابی سوالات پیچیده به هوش مصنوعی ----------
      اگر متن، فرمان شناخته‌شده نبود و اتصال AI برقرار بود،
      آوا خودش از GLM می‌پرسد، جواب را می‌گوید و فرمان جدید پیشنهادی را با تأیید اضافه می‌کند. */
+
+  /* ============================================================
+     v0.65 — نشانگر کوچکِ «آوا داره فکر می‌کنه…»
+     ------------------------------------------------------------
+     درخواست کاربر: «AI وقتی داره فکر می‌کنه حالت thinking رو نشون
+     بده که کاربر بدونه آوا داره فکر می‌کنه نه اینکه هنگ کرده»
+     • چیپ کوچکِ آبیِ پالس‌دار در کارت پاسخ — فقط در سفرهای AI
+     • دور «تمام» شاخه‌های خروجی (موفق/شکست/خطا/ترمیم/پژوهش) بسته
+       می‌شود — رپر try/finally هیچ مسیر فراری ندارد
+     ============================================================ */
+  function thinkChipSet(on) {
+    try {
+      const el = document.getElementById('thinkChip');
+      if (!el) return;
+      el.hidden = !on;
+      if (on) {
+        const tx = document.getElementById('thinkTxt');
+        if (tx) tx.textContent = t('ai.thinking');
+      }
+    } catch (_) { /* noop */ }
+  }
   async function aiHandleCommand(cmd, extraCtx) {
+    thinkChipSet(true);
+    try { return await aiHandleCommandRun(cmd, extraCtx); }
+    finally { thinkChipSet(false); }
+  }
+  async function aiHandleCommandRun(cmd, extraCtx) {
     setState('processing');
     statusText.textContent = t('ai.asking');
     body.classList.add('has-card');
@@ -9123,6 +9322,7 @@
               rcTag.textContent = t('learn.tag');
               typeText(rcReply, fin);
               speak(fin);
+              playDoneSound(); /* v0.65 — بازپخش موفق آفلاین */
               pushHistory(cmd, true);
               handsFreeRearm();
               cmdBusy = false;
@@ -9241,6 +9441,7 @@
                 rcTag.textContent = t('tag.aiDo') + (_r2.via ? ' · ' + _r2.via : '');
                 typeText(rcReply, _fin2 || '…');
                 speak(_fin2);
+                if (!/انجام نشد|باز نشد|Could not|Couldn't|پیدا نشد/.test(String(_fin2))) playDoneSound(); /* v0.65 */
                 pushHistory(cmd, true);
                 handsFreeRearm();
                 cmdBusy = false;
@@ -9277,6 +9478,7 @@
           rcTag.textContent = t('tag.aiDo') + (_rEff.via ? ' · ' + _rEff.via : '');
           typeText(rcReply, finalReply || '…');
           speak(finalReply);
+          if (!/انجام نشد|باز نشد|Could not|Couldn't|پیدا نشد/.test(String(finalReply))) playDoneSound(); /* v0.65 — فقط موفقیتِ واقعی */
           pushHistory(cmd, true);
           handsFreeRearm();
           cmdBusy = false;
@@ -9292,6 +9494,7 @@
         rcTag.textContent = (add ? t('tag.aiCmd') : t('tag.ai')) + (r.via ? ' · ' + r.via : '');
         typeText(rcReply, reply || '…');
         speak(reply);
+        playDoneSound(); /* v0.65 — پاسخ گفتاری هم «انجام شد» است */
         if (add) {
           const okGo = await askConfirm({
             title: LANG === 'en' ? 'New command suggested' : 'فرمان جدید پیشنهاد شد',
@@ -10193,6 +10396,7 @@
   rearmPersistedTimers();
   /* v0.47 — حافظهٔ یادگیری از فایل بیاید + میراث aiCmdMap منتقل شود */
   loadLearnStore().then(() => { try { renderLearnList(); } catch (_) { /* noop */ } }).catch(() => { /* noop */ });
+  taughtLoad().catch(() => { /* noop */ }); /* v0.65 — آموخته‌های صریح کاربر از اول در حافظه */
   /* v0.38.1 — فهرست یادآوری‌ها در شروع هم پر شود */
   try { renderRemList(); } catch (_) { /* noop */ }
   /* گرم کردن کش برنامه‌های سیستم در پس‌زمینه — اولین «باز کن» سریع باشد */

@@ -149,6 +149,9 @@ contextBridge.exposeInMainWorld('ava', {
   learnings: {
     load: () => ipcRenderer.invoke('learnings:load'),
     save: (data) => ipcRenderer.invoke('learnings:save', data),
+    /* v0.65 — آموخته‌های صریح کاربر (TEACH: «یاد بگیر وقتی گفتم X یعنی Y») */
+    loadTaught: () => ipcRenderer.invoke('learnings:loadTaught'),
+    saveTaught: (data) => ipcRenderer.invoke('learnings:saveTaught', data),
   },
 
   /* صدای گوینده (TTS) — v0.42: موتور عصبی مایکروسافت اِج (رایگان) + گوگل */

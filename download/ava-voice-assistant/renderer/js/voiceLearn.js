@@ -202,7 +202,142 @@
     } catch (_) { return []; }
   }
 
-  const api = { norm, lev, safeActs, learn, match, isRepeatHit, revise, markUsed, dropKey, summary, examplesForAi, MAX_LEARN, REPEAT_WINDOW, MAX_REVISE, LEARN_ACTS_OK };
+  /* ============================================================
+     v0.65 — یادگیریِ صریح (TEACH): کاربر مستقیم به آوا درس می‌دهد
+     ------------------------------------------------------------
+     درخواست کاربر: «روی یاد دادن به آوا از ریشه خوب کار کن»
+     • «یاد بگیر وقتی گفتم X یعنی Y» → جفتِ (X→Y) در ava-taught.json
+     • دفعات بعد X پیش از همهٔ لَین‌ها (حتی AI) به Y بازنویسی می‌شود —
+       قطعی، آفلاین، بدون حدس
+     • مطمئن‌ترین مچ: دقیق → لوانشتینِ محافظه‌کارانه (نویز STT)
+     ============================================================ */
+  const MAX_TAUGHT = 100;
+
+  /* بریدنِ پیشوند بیدارباشِ سبک («آوا، ...» / «ava ...») برای مچ تمیزتر */
+  function wakeStrip(s) {
+    return String(s || '')
+      .replace(/^\s*(?:[اآا]وا|ava|awa)\s*[،,:\-!]?\s*/i, '')
+      .trim();
+  }
+
+  function _edgeTrim(s) { return String(s || '').replace(/[\s.!?،,؛;:ـ]+$/g, '').replace(/^[\s،,؛;:]+/g, '').trim(); }
+
+  /* پارس جملات یاد دادن — خروجی {phrase, command} یا null
+     شکل‌ها:
+       یاد بگیر وقتی گفتم X یعنی Y      | یاد بگیر X یعنی Y
+       هر وقت(ی) گفتم X یعنی Y          | وقتی گفتم X بشه Y
+       یادت باشه( که) وقتی گفتم X یعنی Y | X رو یاد بگیر یعنی Y  */
+  function teachParse(text) {
+    let s = wakeStrip(text);
+    if (!s || s.length < 7) return null;
+    const n = norm(s);
+    if (!/(یاد بگیر|یاد کن|یادت باشه|یادت باشد|هر وقت|وقتی گفتم|وقتی میگم|وقتی می گم)/.test(n)) return null;
+    const TEACH_RE = /(?:یاد\s*(?:بگیر|کن)\s*[:،,]?\s*(?:که\s*)?(?:هر\s*وقتی?\s*|وقتی\s*)?(?:گفتم\s*|میگم\s*|می\s*گم\s*)?|یادت\s*(?:باشه|باشد)\s*[:،,]?\s*(?:که\s*)?(?:هر\s*وقتی?\s*|وقتی\s*)?(?:گفتم\s*|میگم\s*|می\s*گم\s*)?|هر\s*وقت(?:ی)?\s*(?:که\s*)?(?:گفتم|میگم|می\s*گم)\s*|وقتی\s*(?:که\s*)?(?:گفتم|میگم|می\s*گم)\s*)(.+?)\s*(?:یعنی|بشه|بفهم(?:ی|م)?|انجام\s*بده)\s*(.+)/i;
+    const P4_RE = /^(.+?)\s*(?:رو|را)\s*یاد\s*(?:بگیر|کن)\s*(?:که\s*)?(?:یعنی|بشه)\s*(.+)$/i;
+    let m = s.match(TEACH_RE);
+    if (!m) m = s.match(P4_RE);
+    if (!m) return null;
+    const phrase = _edgeTrim(m[1]);
+    const command = _edgeTrim(m[2]);
+    if (!phrase || !command) return null;
+    if (phrase.length < 2 || phrase.length > 80) return null;
+    if (command.length < 2 || command.length > 200) return null;
+    const np = norm(phrase);
+    if (/یعنی/.test(np)) return null; /* X نباید خودش «یعنی» داشته باشد — مبهم */
+    /* یادگیریِ زنجیره‌ای ممنوع: Y خودش جملهٔ یاد دادن نیست */
+    if (/(یاد بگیر|یادت باشه|یاد کن)/.test(norm(command))) return null;
+    if (/^(آوا|ava)$/.test(np)) return null;
+    return { phrase, command };
+  }
+
+  /* پارس جملات فراموش کردن — {key, all} یا null
+     «فراموش کن X» | «X رو فراموش کن» | «یادگیری X رو پاک کن» | «همه رو فراموش کن» */
+  function forgetParse(text) {
+    const s = wakeStrip(text);
+    if (!s) return null;
+    const n = norm(s);
+    if (!/(فراموش|از یاد ببر|یادگیری)/.test(n)) return null;
+    let m = s.match(/^(?:فراموش\s*کن|از\s*یاد\s*ببر|یادگیری(?:‌ها)?(?:\s*رو|\s*را)?\s*پاک\s*کن)\s*[:،]?\s*(.+)$/i);
+    if (!m) m = s.match(/^(.+?)\s*(?:رو|را)\s*(?:فراموش\s*کن|از\s*یاد\s*ببر|از\s*حافظه\s*پاک\s*کن)$/i);
+    if (!m) return null;
+    const key = _edgeTrim(m[1]);
+    if (!key || key.length > 80) return null;
+    const nk = norm(key);
+    const all = /^(همه|همه رو|همه را|همه شون|همه‌شون|همیش|همه یادگیری ها|همه یادگیری‌ها)$/.test(nk);
+    return { key, all };
+  }
+
+  /* ذخیرهٔ جفتِ آموخته — همان عبارت = به‌روزرسانی؛ سقف LRU=۱۰۰ */
+  function taughtSave(store, phrase, command) {
+    const st = store && typeof store === 'object' ? store : { v: 1, items: [] };
+    if (!Array.isArray(st.items)) st.items = [];
+    const k = norm(phrase);
+    const c = String(command || '').trim();
+    if (!k || k.length < 2 || !c) return { changed: false, reason: 'bad-key' };
+    let e = st.items.find((x) => x.k === k);
+    if (e) {
+      e.command = c; e.at = Date.now();
+      return { changed: true, entry: e, updated: true };
+    }
+    e = { id: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), k, phrase: String(phrase).trim(), command: c, at: Date.now(), used: 0, lastHit: 0 };
+    st.items.push(e);
+    while (st.items.length > MAX_TAUGHT) {
+      let worst = 0;
+      for (let i = 1; i < st.items.length; i++) {
+        const a = st.items[i], b = st.items[worst];
+        const sa = (a.used || 0) * 1e12 + (a.at || 0);
+        const sb = (b.used || 0) * 1e12 + (b.at || 0);
+        if (sa < sb) worst = i;
+      }
+      st.items.splice(worst, 1);
+    }
+    return { changed: true, entry: e, updated: false };
+  }
+
+  /* مچِ آموخته: دقیق → لوانشتینِ محافظه‌کارانه (نویز تشخیص گفتار) */
+  function taughtMatch(store, cmd) {
+    const st = store && Array.isArray(store.items) ? store : { items: [] };
+    const k = norm(wakeStrip(cmd));
+    if (!k || k.length < 2 || !st.items.length) return null;
+    let e = st.items.find((x) => x.k === k);
+    if (e) return e;
+    /* v0.65.1 — نویز STT روی عبارت‌های کوتاهِ ≥۸ نویسه هم پوشش داده شود
+       (تست واقعی: «سلام دنیا» → شنیده‌شد «سلام دنیی»)؛ خیلی کوتاه‌ها دقیق */
+    const tol = k.length >= 18 ? 2 : (k.length >= 8 ? 1 : 0);
+    if (tol > 0) {
+      for (const x of st.items) {
+        if (Math.abs(x.k.length - k.length) > tol) continue;
+        if (lev(x.k, k) <= tol) return x;
+      }
+    }
+    return null;
+  }
+
+  /* فراموشی: با کلید (شامل‌سنجی دوطرفهٔ محتاطانه) یا همه */
+  function taughtDrop(store, key, all) {
+    const st = store && Array.isArray(store.items) ? store : { items: [] };
+    if (all) { const n = st.items.length; st.items = []; return { all: true, removed: n }; }
+    const k = norm(key);
+    if (!k) return { all: false, removed: 0 };
+    let ix = st.items.findIndex((x) => x.k === k);
+    let removedPhrase = '';
+    if (ix < 0) {
+      let best = -1, bestD = Infinity;
+      for (let i = 0; i < st.items.length; i++) {
+        const x = st.items[i];
+        if (!(x.k.includes(k) || k.includes(x.k))) continue;
+        const d = Math.abs(x.k.length - k.length);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      ix = best;
+    }
+    if (ix == null || ix < 0) return { all: false, removed: 0 };
+    removedPhrase = st.items[ix].phrase || st.items[ix].k;
+    st.items.splice(ix, 1);
+    return { all: false, removed: 1, removedPhrase };
+  }
+
+  const api = { norm, lev, safeActs, learn, match, isRepeatHit, revise, markUsed, dropKey, summary, examplesForAi, teachParse, forgetParse, taughtSave, taughtMatch, taughtDrop, wakeStrip, MAX_LEARN, REPEAT_WINDOW, MAX_REVISE, LEARN_ACTS_OK, MAX_TAUGHT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVALearn = api;
 })(typeof window !== 'undefined' ? window : null);
