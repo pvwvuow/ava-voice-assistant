@@ -446,6 +446,78 @@
   }
 
   /* ============================================================
+     v0.74 — videoCtlOf: گرامر کامل فارسی/انگلیسی کنترل پلیر ویدیو
+     ------------------------------------------------------------
+     خواستهٔ کاربر: «اون کامند هایی ک ب اوا یاد داده بودیم رو کامل بیار بررسی کن
+     ببین کدومارو انجام میده کدوما رو ن (مخصوصا برای کنترل ویدیو پلیر)».
+     لاگ 0.72: «ویدیو رو بر بالا سمت راست» → مغز → اقدامِ پلیر ناشناخته؛
+     videoCtlParse قدیمی فقط توکن‌های تکی (ببند/پاز/پین/بزرگتر…) را می‌فهمید.
+     این تابع جملهٔ کامل را می‌فهمد و همیشه توکن استاندارد برمی‌گرداند:
+       {action, arg} — action ∈ play_pause|stop|next|prev|close|fullscreen|
+       pin|unpin|grow|shrink|move|seek|volume_up|volume_down
+     خروجی null = این جمله کنترل پلیر نیست (نزد لاین‌های دیگر برود).
+     ============================================================ */
+  function videoCtlOf(rawCmd) {
+    /* ارقام فارسی/عربی → لاتین («۳۰ ثانیه» باید seek:30 بدهد) */
+    const s = String(rawCmd || '').replace(/[\u200c\u200f]/g, ' ').replace(/[«»"']/g, ' ').toLowerCase()
+      .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+      .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .trim();
+    if (!s) return null;
+    /* گارد: جملهٔ مرکب با خواستهٔ دیگر کنترل پلیر نیست (هم‌سوی گارد قاعدهٔ player_ctl) */
+    if (/(کپی|سرچ|جستجو|بگرد|پیدا\s?کن|تحلیل|بررسی|لینک\s*بده|دانلود)/i.test(s)) return null;
+    /* مختصات/جهت — «ببر بالا سمت راست» / «بیار پایین چپ» / «ببر وسط» */
+    const hasMoveVerb = /(ببر|ببرش|بیار|بیارش|بکش|بکوب|منتقل\s*کن|جابجا\s*کن|جابه\s*جا\s*کن|ببرش\s*ببر)/i.test(s);
+    const dirUp = /بالا|top/i.test(s);
+    const dirDown = /پایین|bottom|پائین/i.test(s);
+    const dirLeft = /چپ|left/i.test(s);
+    const dirRight = /راست|right/i.test(s);
+    const dirCenter = /وسط|مرکز|center/i.test(s);
+    if (hasMoveVerb && (dirUp || dirDown || dirLeft || dirRight || dirCenter)) {
+      let pos = 'center';
+      if (dirUp && dirRight) pos = 'top-right';
+      else if (dirUp && dirLeft) pos = 'top-left';
+      else if (dirDown && dirRight) pos = 'bottom-right';
+      else if (dirDown && dirLeft) pos = 'bottom-left';
+      else if (dirUp) pos = 'top';
+      else if (dirDown) pos = 'bottom';
+      else if (dirLeft) pos = 'left';
+      else if (dirRight) pos = 'right';
+      else pos = 'center';
+      return { action: 'move', arg: pos };
+    }
+    /* «ببر بالا سمت راست» بدون فعل ببر هم: جهت‌ها + کنترل‌واژهٔ پنجره/ویدیو */
+    if (!hasMoveVerb && (dirUp || dirDown) && (dirLeft || dirRight) && /(ویدیو|فیلم|کلیپ|پلیر|پنجره|سمت)/i.test(s)) {
+      const pos = dirUp ? (dirRight ? 'top-right' : 'top-left') : (dirRight ? 'bottom-right' : 'bottom-left');
+      return { action: 'move', arg: pos };
+    }
+    /* همیشه‌رویر (پین) / برداشتن پین */
+    if (/(پین|رویر?|سنجاق)[^.]{0,12}(دربیار|بردار|بلند\s*کن|لغو|خارج|نزن)/i.test(s) || /از\s*(حالت\s*)?(پین|روییر?|همیشه\s*رویر?)/i.test(s)) return { action: 'unpin', arg: 0 };
+    if (/(پین|روییر?|سنجاق|همیشه\s*رویر?)[^.]{0,10}(کن|بزن|بکن)|همیشه\s*(روی\s*)?صفحه|always\s*on\s*top/i.test(s)) return { action: 'pin', arg: 0 };
+    /* بزرگ/کوچک کردن پنجره (هرگز fullscreen نیست — قانون ۱۱) */
+    if (/(بزرگ(تر|ترش)?(ش)?|بزرگ کن|بکش\s*بزرگ)[^.]{0,6}کن/i.test(s) || /بزرگترش?\s*کن/i.test(s)) return { action: 'grow', arg: 0 };
+    if (/(کوچک(تر|ترش)?|کوچیک(تر|ترش)?)(ش)?\s*کن/i.test(s) || /کوچیکترش?\s*کن/i.test(s)) return { action: 'shrink', arg: 0 };
+    /* پرش زمانی — «برو جلو ۳۰ ثانیه» / «بپر عقب» */
+    const seekM = s.match(/(?:برو|بپر|ببر|برو\s*ببر)?\s*(جلو|عقب|فوروارد|ریویند|forward|rewind)/i);
+    if (seekM) {
+      const numM = s.match(/(\d+)\s*(ثانیه|ثانیه‌ای|سانیه|sec|s\b)?/i);
+      const n = numM ? Math.min(300, parseInt(numM[1], 10) || 0) : 0;
+      const back = /عقب|ریویند|rewind/i.test(seekM[1]);
+      return { action: 'seek', arg: back ? -(n || 10) : (n || 10) };
+    }
+    /* فول‌اسکرین */
+    if (/(فول\s?اسکرین|تمام\s?صفحه|fullscreen|full\s?screen)/i.test(s)) return { action: 'fullscreen', arg: 0 };
+    /* بستن */
+    if (/ببند|بس\s?بند|بسش\s?کن|بخوابون|خاموشش?\s?کن|قطعش?\s?کن|استاپش|استوپش|پایانش?\s?بده|close/i.test(s)) return { action: 'close', arg: 0 };
+    /* بعدی/قبلی */
+    if (/بعدی|بعد|next/i.test(s)) return { action: 'next', arg: 0 };
+    if (/قبلی|قبل|prev/i.test(s)) return { action: 'prev', arg: 0 };
+    /* پخش/توقف */
+    if (/پاز|نگه\s?دار|توقف|استاپ|استوپ|پلی\s?کن|پخش\s?کن|پخش|play|pause/i.test(s)) return { action: 'play_pause', arg: 0 };
+    return null;
+  }
+
+  /* ============================================================
      v0.66 — PTT: تشخیص تعارض کلید + لیست کلیدهای پیشنهادی امن
      ------------------------------------------------------------
      خواستهٔ صریح کاربر: «یک لیست از دکمه‌های پوش تو تالک پیشنهادی هم بزار که
@@ -490,7 +562,7 @@
     { acc: 'Alt+Q', fa: 'Alt+Q' },
   ];
 
-  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, playerTargetOf, videoUrlLane, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
+  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, playerTargetOf, videoUrlLane, videoCtlOf, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

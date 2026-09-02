@@ -1718,7 +1718,12 @@ ipcMain.handle('msg:send', async (_e, p) => {
   if (!text) return { ok: false, error: 'متن پیام پیدا نشد' };
   const variants = Array.isArray(p && p.variants) ? p.variants : [];
   actLog(`msg:send app=${app} name=${name.slice(0, 24)} text=${text.slice(0, 40)} variants=${variants.length}`, 'msg', { ev: 'msg-send', app });
-  if (app === 'discord') return runDiscordPs('msgsend', 'fg', name, 46, 52, text);
+  if (app === 'discord') {
+    /* v0.74 — واریانت‌های حافظه (اسم ذخیره‌شدهٔ لاتین اول) به موتور دیسکورد هم
+       می‌رسند؛ ریشهٔ شکایت «چرا از ذخیره استفاده نمیکنه برای سرچ مخاطب تو پیام
+       رسان ها»: اینجا فقط name (اسم گفتاری) به runDiscordPs می‌رفت */
+    return runDiscordPs('msgsend', 'fg', name, 46, 52, text, variants);
+  }
   if (app === 'telegram') return runTgPs(name, text, username, false, variants);
   return { ok: false, error: 'این پیام‌رسان اتوماسیون دسکتاپ ندارد' };
 });
@@ -4607,7 +4612,8 @@ const DISCORD_PS_BODY = `param(
   [int]$Dy = 52,
   [int]$WaitMs = 6000,
   [int]$Retries = 1,
-  [string]$Text = ''
+  [string]$Text = '',
+  [string]$Req = ''
 )
 $ErrorActionPreference = 'Stop'
 # v0.29.1 — خطاهای ران‌تایم پاورشل به کدپیج کنسول ویندوز می‌روند؛ متن فارسی به
@@ -5257,29 +5263,105 @@ switch ($Action) {
   'msgsend' {
     # v0.35 — فرمان جدید: «به علی پیام بده که فردا میام» — مخاطب با Quick Switcher
     # باز می‌شود (همان مسیر امتحان‌شدهٔ تماس)، بعد متن پیام در کادر پیام پیست و
-    # با Enter واقعی فرستاده می‌شود. هر گام تایید صادقانه دارد:
-    #   کلیپ‌بورد تاییدشده، فوکوس تاییدشده، و بعد از ارسال جستجوی متن پیام در
-    #   درخت UIA — پیدا شد = OK:MSGSENT، نشد = OK:MSGSENT-UNVERIFIED (دروغ نمی‌گوییم)
+    # با Enter واقعی فرستاده می‌شود.
+    # v0.74 — بازنویسی ریشه‌ای: واریانت‌های حافظه (اسم ذخیره‌شده، لاتین اول) واقعاً
+    # در سوییچر امتحان می‌شوند و نتیجهٔ سوییچر با UIA راستی‌آزمایی می‌شود.
+    #   ریشهٔ لاگ 0.73: این مسیر فقط $Name (اسم گفتاری فارسی «علی») را سرچ می‌کرد و
+    #   واریانت‌های ذخیره‌شده (ali-hk|Ali) هرگز استفاده نمی‌شدند → سرچِ نامطمئن و
+    #   OK:MSGSENT-UNVERIFIED دروغ‌حالت‌نما. شکایت کاربر: «چرا از ذخیره استفاده
+    #   نمیکنه برای سرچ مخاطب تو پیام رسان ها».
+    #   صادقانه: هیچ واریانتی نتیجه نداد و درخت UIA زنده بود → ERR:NOMATCH (هیچی ارسال نمی‌شود).
+    #   هر گام تایید صادقانه دارد: کلیپ‌بورد تاییدشده، فوکوس تاییدشده، و بعد از
+    #   ارسال جستجوی متن پیام در درخت UIA.
+    $vars = @()
+    if ($Req) {
+      $ReqObj = $null
+      try {
+        $rawReq = Get-Content -LiteralPath $Req -Raw -Encoding UTF8
+        $ReqObj = $rawReq | ConvertFrom-Json
+      } catch { Write-Output 'ERR:REQ'; exit }
+      if (-not $ReqObj) { Write-Output 'ERR:REQ'; exit }
+      if ($ReqObj.name) { $Name = [string]$ReqObj.name }
+      if ($ReqObj.text) { $Text = [string]$ReqObj.text }
+      if ($ReqObj.variants) { $vars = @($ReqObj.variants | ForEach-Object { [string]$_ }) }
+    }
     $name = ($Name -replace '[''"]', '')
     foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $name = $name.Replace([string]$cq, '') }
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
     $msg = ('' + $Text).Trim()
     if (-not $msg) { Write-Output 'ERR:NOTEXT'; exit }
-    # گام ۱ — باز کردن DM مخاطب با کلیپ‌بوردِ تاییدشده (متن پیام فعلاً نگه داشته می‌شود)
-    try { Set-Clipboard -Value $name -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
-    $clipOk = $false
-    try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $name) } catch { $clipOk = $false }
-    if (-not $clipOk) { Write-Output 'ERR:CLIP'; exit }
+    $vars = @($vars | ForEach-Object { $v = ([string]$_) -replace '[''"]', ''; foreach ($cq2 in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $v = $v.Replace([string]$cq2, '') }; $v.Trim() } | Where-Object { $_ })
+    if ($vars -notcontains $name) { $vars = @($name) + @($vars) }
+    if ($vars.Count -gt 6) { $vars = @($vars[0..5]) }
+    function Test-DcSwitchHit([string]$needle) {
+      # نتیجهٔ سوییچر: عناصرِ حاوی واریانت؛ فیلد ورودی سوییچر (Edit/Document) حذف می‌شود
+      # و تعداد کل عناصر درخت برای تشخیص کوری (دسترس‌پذیری خاموش) ثبت می‌شود.
+      $script:LastTreeCount = 0
+      $hit = 0
+      try {
+        $win2 = Get-DcWin
+        if ($win2) {
+          $all = $win2.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+          $script:LastTreeCount = @($all).Count
+          foreach ($el in $all) {
+            $en = ''
+            try { $en = $el.Current.Name } catch { }
+            if (-not $en) { continue }
+            $ct = ''
+            try { $ct = [string]$el.Current.ControlType.ProgrammaticName } catch { }
+            if ($ct -match 'Edit|Document') { continue }
+            if ($en.IndexOf($needle, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { $hit++ }
+          }
+        }
+      } catch { return 0 }
+      return $hit
+    }
     $fg = Focus-DcHard
     Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
     if (-not $fg) { Write-Output 'ERR:NOFOCUS'; exit }
-    Send-Combo 'ctrl,k'
-    Start-Sleep -Milliseconds 1000
-    Send-Combo 'ctrl,v'
-    Start-Sleep -Milliseconds 900
-    Send-Combo 'enter'
-    Start-Sleep -Milliseconds 1700
-    # گام ۲ — پیست متن پیام در کادر پیام (بعد از باز شدن DM فوکوس خودکار آنجاست)
+    $matched = ''
+    foreach ($v in $vars) {
+      try { Set-Clipboard -Value $v -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+      $clipOk = $false
+      try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $v) } catch { $clipOk = $false }
+      if (-not $clipOk) { continue }
+      Send-Combo 'ctrl,k'
+      Start-Sleep -Milliseconds 1000
+      Send-Combo 'ctrl,v'
+      Start-Sleep -Milliseconds 900
+      $hit = Test-DcSwitchHit $v
+      Write-Output ('DBG:TRY=' + $v + ' HIT=' + $hit + ' TREE=' + $script:LastTreeCount)
+      if ($hit -le 0) {
+        # نتیجه‌ای برای این واریانت نبود — سوییچر ببند و واریانت بعدی
+        Send-Combo 'esc'
+        Start-Sleep -Milliseconds 400
+        continue
+      }
+      Send-Combo 'enter'
+      Start-Sleep -Milliseconds 1700
+      $matched = $v
+      break
+    }
+    if (-not $matched) {
+      if ($script:LastTreeCount -gt 0 -and $script:LastTreeCount -lt 25) {
+        # درخت UIA کور (دسترس‌پذیری خاموش) — مثل نسخهٔ قبل با اولین واریانت بفرست؛
+        # تگ BLIND در لاگ صادقانه ثبت می‌شود
+        Write-Output 'DBG:BLIND=1'
+        try { Set-Clipboard -Value $vars[0] -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+        Send-Combo 'ctrl,k'
+        Start-Sleep -Milliseconds 1000
+        Send-Combo 'ctrl,v'
+        Start-Sleep -Milliseconds 900
+        Send-Combo 'enter'
+        Start-Sleep -Milliseconds 1700
+        $matched = [string]$vars[0]
+      } else {
+        Restore-Focus
+        Write-Output ('ERR:NOMATCH:' + ($vars -join '|'))
+        exit
+      }
+    }
+    # پیست متن پیام در کادر پیام (بعد از باز شدن DM فوکوس خودکار آنجاست)
     try { Set-Clipboard -Value $msg -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
     $clipOk2 = $false
     try { $got2 = Get-Clipboard -Raw; $clipOk2 = ($got2 -eq $msg) } catch { $clipOk2 = $false }
@@ -5288,17 +5370,17 @@ switch ($Action) {
     Start-Sleep -Milliseconds 400
     Send-Combo 'enter'
     Start-Sleep -Milliseconds 800
-    # گام ۳ — اثبات ارسال: متن پیام در درخت UIA (تاریخچهٔ چت) جستجو می‌شود
+    # اثبات ارسال: متن پیام در درخت UIA (تاریخچهٔ چت) جستجو می‌شود
     $probe = $msg
     if ($probe.Length -gt 20) { $probe = $probe.Substring(0, 20) }
     $probeRx = [regex]::Escape($probe)
     $sent = $false
     try {
-      $win2 = Get-DcWin
-      if ($win2) {
-        $all = $win2.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+      $win4 = Get-DcWin
+      if ($win4) {
+        $all4 = $win4.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
         $k = 0
-        foreach ($el in $all) {
+        foreach ($el in $all4) {
           $k++
           if ($k -gt 800) { break }
           $en = ''
@@ -5308,7 +5390,7 @@ switch ($Action) {
       }
     } catch { Write-Output ('DBG:MSGVERIFYERR=' + $_.Exception.Message) }
     Restore-Focus
-    if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }
+    if ($sent) { Write-Output ('OK:MSGSENT:' + $matched) } else { Write-Output ('OK:MSGSENT-UNVERIFIED:' + $matched) }
   }
   default { Write-Output 'ERR:UNKNOWN' }
 }`;
@@ -5316,7 +5398,7 @@ switch ($Action) {
 /* v0.22 — نوشتن اسکریپت در پوشهٔ برنامه (ACL کاربر جاری) و اجرای spawn -File:
    خط فرمان فقط چند ده کاراکتر است — محدودیت ۸۱۹۱ کاراکتری cmd.exe و
    ۳۲۷۶۷ کاراکتری CreateProcess هر دو دیگر اصلاً درگیر نمی‌شوند. */
-function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
+function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText, variants) {
   /* v0.35 — msgsend هم بلندمدت است (سوییچر + بارگذاری DM + ارسال) */
   const longRun = psAction === 'clickcall' || psAction === 'callswitch' || psAction === 'msgsend';
   const waitMs = longRun ? 25000 : 6000;
@@ -5325,11 +5407,22 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
   /* v0.35 — متن پیام فقط از گیومه‌های خطرناک پاک می‌شود، محتوا دست‌نخورده
      می‌ماند (از argv می‌آید، نه خط فرمان shell — گیومه امن است) */
   const safeText = String(msgText || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch]));
+  /* v0.74 — واریانت‌های حافظه برای msgsend: همان درس تلگرام (v0.72) — پارامترها با
+     فایل JSON می‌روند، argv فقط مسیر فایل را می‌بیند (پاورشل «|» و کوتیشن را می‌بلعد) */
+  const safeVars = (psAction === 'msgsend' && Array.isArray(variants))
+    ? variants.map((v) => String(v || '').replace(/[|'’‘“”`"…]/g, '').trim()).filter((v) => v && v.length >= 2).slice(0, 6)
+    : [];
   let psFile = '';
+  let dcReqFile = '';
   try {
     psFile = path.join(app.getPath('userData'), 'ava-dc.ps1');
     /* BOM: پاورشل ۵.۱ بدون BOM متن فارسیِ نام دکمه‌ها را خراب می‌خواند */
     fs.writeFileSync(psFile, '\ufeff' + DISCORD_PS_BODY, 'utf8');
+    if (psAction === 'msgsend') {
+      dcReqFile = path.join(app.getPath('userData'), 'ava-dc-req.json');
+      fs.writeFileSync(dcReqFile, JSON.stringify({ name: safeName, text: safeText, variants: safeVars }), 'utf8');
+      actLog(`discord req: v=${safeVars.length} [${safeVars.join(' | ').slice(0, 140)}]`, 'discord');
+    }
   } catch (e) {
     actLog(`discord ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'discord');
     return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت دیسکورد ممکن نشد' });
@@ -5337,7 +5430,7 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
   const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
     '-Action', psAction, '-Mode', mode, '-Name', safeName,
     '-Dx', String(dxN), '-Dy', String(dyN), '-WaitMs', String(waitMs), '-Retries', String(retries)];
-  if (psAction === 'msgsend') args.push('-Text', safeText);
+  if (psAction === 'msgsend') { args.push('-Text', safeText); args.push('-Req', dcReqFile); }
   const t0 = Date.now();
   return new Promise((resolve) => {
     let stdout = '', stderr = '', killed = false;
@@ -5395,6 +5488,12 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
         /* v0.30 — خطاهای پسونددار (ERR:NOBTN:LABEL / ERR:NOFOCUS) با پیشوند تطبیق می‌شوند */
         const em = out.trim();
         let msg = msgs[em] || '';
+        if (!msg && em.startsWith('ERR:NOMATCH')) {
+          /* v0.74 — هیچ واریانتی در سوییچر دیسکورد نتیجه نداد → هیچی ارسال نشده؛ صادقانه */
+          const tried = em.replace(/^ERR:NOMATCH:?/, '').split('|').filter(Boolean);
+          msg = `در دیسکورد نتیجهٔ مطمئنی برای «${tried.slice(0, 3).join('، ') || 'مخاطب'}» پیدا نکردم — هیچی نفرستادم. یک بار خودت سرچش کن تا اسم دقیقش رو یاد بگیرم.`;
+        }
+        if (!msg && em.startsWith('ERR:REQ')) msg = 'انتقال پارامترهای ارسال دیسکورد شکست خورد — یک بار دیگر امتحان کن.';
         if (!msg && em.startsWith('ERR:NOBTN:')) msg = 'دکمهٔ دیسکورد پیدا نشد — نام دکمه‌ها در activity.log ثبت شد؛ دیسکورد را یک‌بار ماکسیمم کن و دوباره بگو';
         if (!msg && em.startsWith('ERR:NOFOCUS')) msg = 'فوکوس به پنجرهٔ دیسکورد منتقل نشد — پنجرهٔ دیسکورد را یک‌بار دستی فعال کن و دوباره امتحان کن';
         return resolve({ ok: false, error: (msg || em.replace(/^ERR:/, 'خطا: ')).slice(0, 200) });

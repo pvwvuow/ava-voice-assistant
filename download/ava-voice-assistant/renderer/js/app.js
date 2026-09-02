@@ -2867,7 +2867,10 @@
            پنجرهٔ شناور نمی‌رود (لاگ v0.48: ۶ ثانیه معطلی AI) — کنترل واقعی
            پلیر سیستم است: پلیر/مدیا با هر فعل + ویدیو/فیلم/کلیپ با فعل‌های
            پخش/پاز/فول‌اسکرین/جلو/عقب + «برو جلو/عقب» مستقل */
-        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی|پلی\s?کن|پخش|نگه\s?دار)|(ویدیو|فیلم|کلیپ)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب|پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن|نگه\s?دار|ببند)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن)\s*(پلیر|مدیا|ویدیو|فیلم|کلیپ)/i,
+        /* v0.74 — + پین/جابه‌جایی/بزرگ‌وکوچک‌کردن پنجرهٔ پلیر (خواستهٔ کاربر: ممیزی
+           کامل کامندهای ویدیو پلیر — «ویدیو رو بر بالا سمت راست» قبلاً فقط با
+           مغز و بدون گرامر فارسی جواب می‌داد) */
+        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی|پلی\s?کن|پخش|نگه\s?دار)|(ویدیو|فیلم|کلیپ)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب|پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن|نگه\s?دار|ببند)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن)\s*(پلیر|مدیا|ویدیو|فیلم|کلیپ)|(ویدیو|فیلم|کلیپ|پلیر|مدیا|پنجره)[^.]{0,14}(پین|روییر?|بزرگ|کوچک|کوچیک|ببر|بیار|منتقل|جابجا|جابه)|(پین|روییر?|همیشه\s*روییر?)[^.]{0,10}(کن|بزن|بکن)/i,
         id: 'player_ctl', t: 'کنترل پلیر', i: '#i-music',
         r: async (c) => {
           /* v0.64 — گاردِ جملهٔ مرکب: «اولین ویدیو شادمهر رو کپی کن و توی پلیری که
@@ -2876,6 +2879,17 @@
              غیر از یک فعلِ کنترلی خواستهٔ دیگری هم دارد → مغز AI. */
           if (/(کپی|سرچ|جستجو|بگرد|پیدا\s?کن|اولین|دومین|سومین|چهارمین|بعد\s?(از|ش)|بعدش|تحلیل|بررسی|لینک|توی\s?(اون\s)?پلیر|همزمان|دوتا|سه\s?تا)/i.test(c)) return AI_FALLBACK;
           if (!bridge || !bridge.player || !bridge.player.ctl) return LANG === 'en' ? 'Player control is only available inside the app.' : 'کنترل پلیر فقط داخل خود نرم‌افزار کار می‌کند.';
+          /* v0.74 — اول گرامر کامل فارسی/انگلیسی (move/pin/unpin/grow/shrink/seek/…) */
+          try {
+            const _rich = (typeof AVAIntent !== 'undefined' && AVAIntent.videoCtlOf) ? AVAIntent.videoCtlOf(c) : null;
+            if (_rich) {
+              const res = await bridge.player.ctl({ action: _rich.action, arg: _rich.arg });
+              const _faLbl = { pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.', grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.', move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: _rich.arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', fullscreen: 'فول‌اسکرین شد.', close: 'بسته شد.', play_pause: 'پخش/توقف' };
+              const _extra = (_rich.action === 'seek') ? ' ' + Math.abs(_rich.arg) + ' ثانیه' : (_rich.action === 'move' ? ' (' + _rich.arg + ')' : '');
+              if (res && res.ok) return `انجام شد: ${_faLbl[_rich.action] || _rich.action}${_extra}.`;
+              return `انجام نشد: ${res && res.error || ''}`;
+            }
+          } catch (_) { /* noop */ }
           const num = (() => { const m = faToEn(c).match(/\d+/); return m ? Math.min(600, parseInt(m[0], 10) || 0) : 0; })();
           let action = '', arg = 0;
           if (/جلو|فوروارد/.test(c)) { action = 'seek'; arg = num || 10; }
@@ -3377,6 +3391,13 @@
          فرمانِ دائمی نمی‌شود — قبلاً open_url(web.telegram.org) یاد گرفته بود! */
       if (lr && lr.updated && window.AVACore && window.AVACore.isGibberish && window.AVACore.isGibberish(cmd)) {
         actLog('learn skip: جملهٔ نامفهوم (نویز STT) — ذخیره نشد: ' + String(cmd).slice(0, 44));
+        return;
+      }
+      /* v0.74 — گیت کیفیت دوم: گله/شکایت/گزارش خرابی هرگز فرمانِ دائمی نمی‌شود
+         (لاگ 0.73: «دهن منو سرویس کردی ..وقتی میگم علی تو باید یوزرش رو سرچ کنی
+         توی دیسکورد چرا نمیفهمی» → open_app(Discord) یاد گرفته شده بود!) */
+      if (lr && lr.updated && window.AVACore && window.AVACore.LEARN_COMPLAIN_RE && window.AVACore.LEARN_COMPLAIN_RE.test(String(cmd))) {
+        actLog('learn skip: گله/شکایت کاربر — فرمان دائمی نمی‌شود: ' + String(cmd).slice(0, 44));
         return;
       }
       if (lr.changed && lr.entry) {
@@ -3904,6 +3925,12 @@
        «در دیسکورد به علی بگو سلام» / «پیام بده به علی: دیشب گل دیدیم؟»
        — قبل از قاعدهٔ تماس می‌آید تا «پیام بده» هرگز «زنگ بزن» تفسیر نشود */
     if (/(پیام|پیغام)\s*(بده|کن|بفرست)|\b(dm|message)\b/i.test(t0) || /به\s+\S[^.]{1,28}?\s+بگو\s+\S/.test(t0)) {
+      /* v0.74 — جملهٔ استاندارد پیام (msgParse می‌فهمد) به لَین پیام‌رسانی واگذار
+         می‌شود — آنجا واریانت‌های حافظه (اسم ذخیره‌شدهٔ لاتین اول) و سؤال صادقانه
+         و کانت ذخیره‌شده هست. ریشهٔ لاگ 0.73: «آفرین حالا برو به علی تو دیسکورد
+         پیام بده» اینجا ربوده می‌شد، نام بد تمیز می‌شد («علی تو») و خروجی دروازه
+         هیچ‌وقت _dispatchOutcome نمی‌گرفت → [unrouted] 3ms و سرچ بدون واریانت. */
+      try { if (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgParse && AVAMessaging.msgParse(t0)) return null; } catch (_) { /* noop */ }
       let nm = null, tx = null;
       const pats = [
         /(?:به|برای)\s+(.+?)\s*(?:پیام|پیغام)\s*(?:بده|کن|بفرست)(?:\s*(?:که|:|،|,)\s*(.+))?$/,
@@ -3913,7 +3940,7 @@
       ];
       for (const re of pats) { const m = re.exec(t0); if (m && m[1]) { nm = m[1]; tx = m[2] || ''; break; } }
       if (nm) {
-        nm = nm.replace(/(توی|در|با|و|رو|را|برام|برای|دیسکورد)\s*$/g, '').replace(/["«»]/g, '').trim();
+        nm = nm.replace(/(توی|تو|در|با|و|رو|را|برام|برای|دیسکورد)\s*$/g, '').replace(/["«»]/g, '').trim();
         const bad = /^(من|خودم|تو|ما|مارو|این|اون|بگو|که)$/i.test(nm) || /(ساعت|هوا|قیمت|شرعی|یادداشت|آهنگ|موزیک|چنده|چند$)/.test(nm);
         if (bad || !nm) return null; /* اسم مخاطب نیست — برو سر قواعد دیگر */
         if (!tx) return t('disc.msgNeedText', { x: nm });
@@ -4712,6 +4739,7 @@
     if (DISC_GATE_RE.test(raw)) {
       const dr = await tryDiscordCmd(raw);
       if (dr) {
+        _dispatchOutcome = 'discord'; /* v0.74 — خروجی دروازهٔ دیسکورد دیگر unrouted دروغین نیست */
         if (cmdBusyGuard()) return;
         setState('success');
         statusText.textContent = t('status.done');
@@ -4728,6 +4756,7 @@
          (ولی «دیسکورد رو باز کن» نیت اجرای خود برنامه است → به مسیر عادی برود) */
       if (settings.extDiscord === false
           && !/(باز\s*کن|اجرا\s*کن|باز\s*شو|بیار\s*بالا|\b(open|run|launch)\b)/i.test(raw)) {
+        _dispatchOutcome = 'discord-off'; /* v0.74 — observability */
         if (cmdBusyGuard()) return;
         setState('success');
         statusText.textContent = t('status.done');
@@ -5142,8 +5171,9 @@
             /* v0.72 — ریشه‌یابی میدانی: لیست کامل واریانت‌ها قبل از ارسال لاگ می‌شود (لاگ 0.71: contact ذخیره‌شده «میلاد قدوسی» در واریانت‌های ۹ثانیه بعد غایب بود) */
             try { actLog('messaging variants: ' + _vs.join(' | ').slice(0, 160), 'ui', { ev: 'msg-vars', app: _mp.app }); } catch (_) { /* noop */ }
             const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname, variants: _vs }).catch(() => null) : null;
-            if (r && r.error && /NO_MATCH/.test(String(r.error))) {
-              /* v0.69 — وارسی عنوان چت شکست خورد → صادقانه؛ دیگر پیام به چتِ اشتباه نمی‌رود */
+            if (r && r.error && /NO_MATCH|NOMATCH/.test(String(r.error))) {
+              /* v0.69 — وارسی عنوان چت شکست خورد → صادقانه؛ دیگر پیام به چتِ اشتباه نمی‌رود
+                 v0.74 — ERR:NOMATCH دیسکورد (هیچ واریانتی در سوییچر نتیجه نداد) هم همین پاسخ */
               _mrep = LANG === 'en' ? `Could not find "${_name}" in ${_mp.appFa} with confidence — nothing was sent. Search them manually once and I'll remember.` : `چت «${_name}» رو تو ${_mp.appFa} مطمئن پیدا نکردم — هیچی نفرستادم. یک بار خودت سرچش کن تا اسم دقیقش رو یاد بگیرم.`;
             } else if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) {
               _mok = true;
@@ -8013,7 +8043,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.73.0-beta';
+  let appVersion = '0.74.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -9391,6 +9421,15 @@
     if (ALIAS[raw]) return { action: ALIAS[raw], arg: 0 };
     const FA = { 'ببند': 'close', 'بخوابون': 'close', 'پاز': 'play_pause', 'پین': 'pin', 'رویر': 'pin', 'بزرگتر': 'grow', 'کوچکتر': 'shrink', 'فول اسکرین': 'fullscreen', 'بعدی': 'next', 'قبلی': 'prev' };
     if (FA[raw]) return { action: FA[raw], arg: 0 };
+    /* v0.74 — جملهٔ کامل فارسی («ببر بالا سمت راست»، «برو جلو ۳۰ ثانیه»، «پین کن»،
+       «بزرگترش کن»…) — ریشهٔ لاگ 0.72: مغز همین جمله‌ها را video_ctl می‌داد ولی
+       videoCtlParse فقط توکن تکی می‌فهمید → «اقدامِ پلیر ناشناخته» */
+    try {
+      if (typeof AVAIntent !== 'undefined' && AVAIntent.videoCtlOf) {
+        const rich = AVAIntent.videoCtlOf(raw);
+        if (rich) return rich;
+      }
+    } catch (_) { /* noop */ }
     return null;
   }
   /* v0.66 — هلپر مشترک پخش ویدیو (لَین URL + اکشن video_play هر دو همین یک

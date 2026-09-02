@@ -105,6 +105,12 @@
     return false;
   }
 
+  /* v0.74 — آشکارساز گله/شکایت/گزارش خرابی (گیت کیفیت یادگیریِ دوم)
+     ریشهٔ لاگ 0.73: «دهن منو سرویس کردی ..وقتی میگم علی تو باید یوزرش رو سرچ کنی
+     توی دیسکورد چرا نمیفهمی» → open_app(Discord) به‌عنوان فرمان دائمی یاد گرفته شد!
+     جملهٔ گلهٔ روان، نه gibberish است نه ارجاعی — پس گیت خودش لازم است. */
+  const LEARN_COMPLAIN_RE = /(دهن\s*م(و|تو)?\s*(سرویس|انداخت|می|میزنی)|مسخره|سرکاری|هیچ\s*کاری\s*نمی|کار\s*نمی\s*کنه|کار\s*نمیکنه|نمی\s*فهمی|نمیفهمی|بلد\s*نیستی|بلد\s*نیس|گوش\s*نمیدی|توجه\s*نمی\s*کنی|حافظه\s*ندار|مموری\s*ندار|مموری\s*توجه|خراب\s*(شد|کردی|شده|شده‌ای)|درست\s*کار\s*نمی|درست\s*انجام\s*نمیده|اشتباه\s*می\s*کنی|فیکسش\s*کن|درستش\s*کن)/i;
+
   /* استخراج موجودیت از «متن» — بدون دانش بیرونی، فقط الگوهای فارسی امن */
   /* v0.66 — واژه‌های مجازِ حکمی/حرف اضافه که هرگز «عنوان» نیستند.
      ریشهٔ لاگ v0.65: «ویدیو رو پخش کن» → entities.video = «رو» ذخیره شد و
@@ -438,7 +444,7 @@
     return { text: rr.text, hints: rr.hints || [], resolved: rr.resolved, unresolved: rr.unresolved, lane: lane.lane, reason: lane.reason };
   }
 
-  const api = { normFa, recordTurn, resolveRefs, resolveRefTarget, isGibberish, laneOf, turnsCtx, entityCtx, lastUserText, prepare, reset, _state: state };
+  const api = { normFa, recordTurn, resolveRefs, resolveRefTarget, isGibberish, LEARN_COMPLAIN_RE, laneOf, turnsCtx, entityCtx, lastUserText, prepare, reset, _state: state };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVACore = api;
 })(typeof window !== 'undefined' ? window : null);

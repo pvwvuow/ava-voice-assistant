@@ -102,11 +102,11 @@ ok('Text param added to the body header (no cmdline cap risk — argv only)',
 ok('msgsend = name clipboard verified → focus verified → msg clipboard verified → paste+enter',
    body.includes("'msgsend' {") && (body.match(/Get-Clipboard -Raw/g) || []).length >= 3 && body.includes('if (-not $clipOk2)'));
 ok('send is PROVEN by searching the message text in the UIA tree; honest UNVERIFIED otherwise',
-   body.includes('[regex]::Escape($probe)') && body.includes("if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }"));
+   body.includes('[regex]::Escape($probe)') && /OK:MSGSENT-UNVERIFIED/.test(body)); /* v0.74 forward-relax: نتیجه + واریانت تطبیق‌شده (OK:MSGSENT:<variant>) */
 ok('missing name/text fail honestly before any key is sent',
-   body.includes("if (-not $name) { Write-Output 'ERR:NONAME'; exit }") && /'msgsend' \{[\s\S]{0,700}ERR:NOTEXT/.test(body));
+   body.includes("if (-not $name) { Write-Output 'ERR:NONAME'; exit }") && /'msgsend' \{[\s\S]{0,2600}ERR:NOTEXT/.test(body)); /* v0.74 forward-relax: بلوک req-read بالای گاردها */
 ok('main passes msgsend text separately (name sanitize never touches the message)',
-   mainSrc.includes("A === 'msgsend' ? String(text || '') : ''") && mainSrc.includes('if (psAction === \'msgsend\') args.push(\'-Text\', safeText);'));
+   mainSrc.includes("A === 'msgsend' ? String(text || '') : ''") && mainSrc.includes("args.push('-Text', safeText)")); /* v0.74 forward-relax: + args.push('-Req', dcReqFile) */
 ok('renderer voice rule with non-contact guard before the call rule',
    appSrc.includes("action: 'msgsend'") && /پیام\|پیغام/.test(appSrc) && /to\^\$|bad = \^\(/.test(appSrc) === false ? appSrc.includes("const bad = /^(من|خودم|تو|ما|مارو|این|اون|بگو|که)$/i.test(nm)") : true);
 /* NEG CONTROL — poison: unverified clipboard in msgsend */
