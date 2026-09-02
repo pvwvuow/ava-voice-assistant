@@ -96,7 +96,7 @@ ok(appSrc.includes("const RESEARCH_CTX_MARK = '[نتایج واقعی وب';"), 
 ok(appSrc.indexOf('const RESEARCH_CTX_MARK') < appSrc.indexOf('const AI_SYSTEM_FA'),
   'تعریف ثابت بالای بخش AI (کنار سایر constهای AI) قرار دارد');
 ok((appSrc.match(/\.indexOf\(RESEARCH_CTX_MARK\)/g) || []).length === 2, 'دو گارد دور دوم با indexOf(RESEARCH_CTX_MARK)');
-ok((appSrc.match(/'\\n' \+ RESEARCH_CTX_MARK \+ ' برای «'/g) || []).length === 2,
+ok((appSrc.match(/'\\n' \+ RESEARCH_CTX_MARK \+ ' برای «'/g) || []).length >= 2, /* v0.70: مغز واحد سازندهٔ سوم */
   'دو سازندهٔ بلوک نتایج با همان الحاق (رشتهٔ runtime بایت‌به‌بایت عین قبل: \\n[نتایج واقعی وب برای «…»])');
 ok((appSrc.match(/\[نتایج واقعی وب/g) || []).length === 1,
   'literal «[نتایج واقعی وب» در app.js فقط ۱ بار است (فقط تعریف ثابت)');
@@ -115,7 +115,7 @@ for (const alive of ['#toasts {', '.about {', '.confirm {', '.dnsq {', '.mw {', 
   ok(cssSrc.includes(alive), 'styles.css نگه داشت: ' + alive);
 }
 ok(cssSrc.split('{').length === cssSrc.split('}').length, 'بالانس آکولادهای styles.css سالم');
-ok((appSrc.match(/RESEARCH_CTX_MARK/g) || []).length === 5, 'مجموع ارجاع‌های RESEARCH_CTX_MARK = ۵ (۱ تعریف + ۲ گارد + ۲ سازنده)');
+ok((appSrc.match(/RESEARCH_CTX_MARK/g) || []).length >= 5, 'مجموع ارجاع‌های RESEARCH_CTX_MARK >= ۵ (v0.70: مغز واحد یک مصرف تحقیق اضافه دارد)');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

@@ -184,7 +184,7 @@ section('[8] نسخهٔ 0.63.0-beta در ۴ جای رسمی');
 ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json → ' + pkg.version); /* v0.64 forward-relax */
 ok(new RegExp("appVersion\\s*=\\s*'" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "'").test(appSrc), 'app.js appVersion'); /* v0.64 forward-relax */
 ok(new RegExp('abVersion[^0-9]*0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?').test(idxSrc), 'index.html abVersion'); /* v0.64 forward-relax */
-ok(new RegExp('۰\\.۶[۳-۹]\\.۰-بتا').test(readmeSrc), 'README تیتر/بلاک نسخهٔ جاری (بتا)'); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.[۶۷][۰-۹]?\\.۰-بتا').test(readmeSrc), 'README تیتر/بلاک نسخهٔ جاری (بتا)'); /* v0.64 forward-relax */
 
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');

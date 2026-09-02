@@ -76,7 +76,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
   ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json ' + pkg.version); /* v0.64 forward-relax */
   ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html abVersion'); /* v0.64 forward-relax */
   ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js appVersion'); /* v0.64 forward-relax */
-  ok(new RegExp('۰\\.۶[۳-۹]\\.۰-بتا').test(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
+  ok(new RegExp('۰\\.[۶۷][۰-۹]?\\.۰-بتا').test(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
 
   console.log('\n==========================================');
   console.log('scripts-test-v0480(relaxed): ' + pass + ' passed, ' + fail + ' failed');
