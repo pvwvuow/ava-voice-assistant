@@ -2703,8 +2703,12 @@
             if (res && res.ok && res.videoId) {
               const op = await bridge.player.open({ player: 'default', kind: 'url', src: 'https://www.youtube.com/watch?v=' + res.videoId });
               if (op && op.ok) return (LANG === 'en'
-                ? `Brought "${res.title || q}" into your default player.`
-                : `«${res.title || q}» را در پلیر پیش‌فرض سیستم پخش کردم.`);
+                ? (op.via === 'browser-fallback'
+                  ? `Player could not stream it — opened "${res.title || q}" in the browser.`
+                  : `Brought "${res.title || q}" into your default player.`)
+                : (op.via === 'browser-fallback'
+                  ? `پلیر نتوانست پخش کند — «${res.title || q}» را در مرورگر باز کردم.`
+                  : `«${res.title || q}» را در پلیر پیش‌فرض سیستم پخش کردم.`));
             }
           } catch (_) { /* noop */ }
           return LANG === 'en' ? 'Could not open the video.' : 'باز کردن ویدیو ممکن نشد.';
@@ -2737,14 +2741,14 @@
             : 'بگو چی پخش کنم — مثل «با وی‌ال‌سی آهنگ شادمهر رو پخش کن» — یا اول لینک ویدیو را کپی کن.';
           try {
             const res = await bridge.player.open({ player, kind, src });
+            if (res && res.ok && res.via === 'browser-fallback') return (LANG === 'en'
+              ? 'Your player could not stream YouTube — I opened it in the browser instead (no bot/sign-in walls there).'
+              : 'پلیر نتوانست یوتیوب را پخش کند — در مرورگر بازش کردم (اینجا دیوار ربات/ورود نیست).');
             if (res && res.ok) {
               return (LANG === 'en'
                 ? `Playing in ${res.fa}${res.controlled ? ' — now I fully control it (pause/seek/fullscreen).' : '.'}`
                 : `در ${res.fa} پخش شد${res.controlled ? ' — از الان پاز/جلو/عقب/فول‌اسکرینش هم دست خودمه.' : '.'}`);
             }
-            if (res && res.noYtdl) return (LANG === 'en'
-              ? `YouTube in ${res.player === 'vlc' ? 'VLC' : 'mpv'} needs yt-dlp. Say "play it in PotPlayer" instead.`
-              : `پخش یوتیوب در ${res.player === 'vlc' ? 'وی‌ال‌سی' : 'mpv'} به yt-dlp نیاز دارد — بگو «با پت‌پلیر پخش کن».`);
             return (LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
           } catch (_) { return LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'; }
         },
@@ -7079,7 +7083,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.61.0-beta';
+  let appVersion = '0.62.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8530,7 +8534,10 @@
             if (!bridge || !bridge.player || !bridge.player.open) { outs.push(t('toast.onlyApp')); break; }
             try {
               const res = await bridge.player.open({ player: 'default', kind: 'query', src: vq });
-              if (res && res.ok) outs.push(LANG === 'en' ? `Playing "${vq}"${res.fa ? ' in ' + res.fa : ''}.` : `«${vq}» را پخش کردم${res.fa ? ' — در ' + res.fa : ''}.`);
+              if (res && res.ok && res.via === 'browser-fallback') outs.push(LANG === 'en'
+                ? `Your player could not stream it — opened "${vq}" in the browser.`
+                : `پلیر نتوانست یوتیوب را پخش کند — «${vq}» را در مرورگر باز کردم.`);
+              else if (res && res.ok) outs.push(LANG === 'en' ? `Playing "${vq}"${res.fa ? ' in ' + res.fa : ''}.` : `«${vq}» را پخش کردم${res.fa ? ' — در ' + res.fa : ''}.`);
               else outs.push(LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
             } catch (_) { outs.push(LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'); }
             break;

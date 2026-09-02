@@ -3488,7 +3488,10 @@ async function playersScan(force = false) {
     if (!exe && d.id === 'mpv') exe = await execWhere('mpv.exe');
     if (exe) list.push({ id: d.id, fa: d.fa, exe });
   }
-  const ytdl = await execWhere('yt-dlp');
+  /* v0.62 — yt-dlp: PATH سیستم یا نسخهٔ باندل‌شدهٔ خود آوا */
+  const wPath = await execWhere('yt-dlp');
+  const bPath = ytDlpBundledPath();
+  const ytdl = wPath || (bPath && fs.existsSync(bPath) ? bPath : '');
   playerScanCache = { at: Date.now(), list, ytdl };
   return playerScanCache;
 }
@@ -3539,9 +3542,71 @@ function defaultVideoPlayer(force = false) {
 }
 ipcMain.handle('player:default', () => defaultVideoPlayer());
 
-/* پلیرهایی که لینک یوتیوب را خودشان می‌فهمند یا با yt-dlp استریم می‌شود */
-const STREAM_NATIVE = new Set(['potplayer', 'kmplayer']);
-const STREAM_YTDLP = new Set(['vlc', 'mpv']);
+/* ---------- ۳ت) yt-dlp خود-شفادار (v0.62 — ریشهٔ «ساین این/ربات نیستی») ----------
+   گزارش کاربر: «پات‌پلیر باز می‌کنه، پخش نمیشه؛ میگه ساین این ویدیو اکانت یا
+   ربات نیستی». علت: در v0.61 لینک خام یوتیوب به پت‌پلیر/کی‌ام‌پلیر داده می‌شد
+   و پارسر داخلی‌شان پشت دیوار ربات‌یابی/ورود یوتیوب می‌ماند. قانون ساختاری
+   جدید (یک لاین): لینک خام یوتیوب هرگز به هیچ پلیری داده نمی‌شود؛ اول yt-dlp
+   URL استریمِ مستقیم می‌سازد (تک‌فایلی mp4 — در همهٔ پلیرها پخش می‌شود)؛
+   اگر حل نشد → مرورگر (کاربر لاگین است؛ دیوار ربات/ورود آنجا نیست).
+   yt-dlp خودش شفا پیدا می‌کند: یوتیوب مرتب پارسرش را عوض می‌کند و yt-dlp
+   کهنه هفتهٔ بعد می‌شکند — پس هر بار که حل شکست، نسخهٔ تازه دانلود و یک
+   بار دیگر تلاش می‌شود. */
+function ytDlpBundledPath() { try { return path.join(app.getPath('userData'), 'bin', 'yt-dlp.exe'); } catch (_) { return ''; } }
+let ytDlpState = { failedAt: 0 }; /* بعد از شکست دانلود، ۳۰ دقیقه دوباره مزاحم شبکه نشو */
+/* فورمت تک‌فایلی muxed: 720p اگر یوتیوب سرو کند، وگرنه 360p — با هر پلیری پخش می‌شود */
+function ytDlpCmd(bin, url) {
+  return `${bin} -f "22/18/b[ext=mp4]/b" -g --no-playlist --no-warnings "${url}"`;
+}
+function ytdlpGetUrl(bin, url) {
+  return new Promise((resolve) => {
+    exec(ytDlpCmd(bin, String(url || '')), { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+      if (err || !stdout) return resolve('');
+      const line = String(stdout).split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0] || '';
+      resolve(/^https?:\/\//i.test(line) ? line : '');
+    });
+  });
+}
+/* دانلود نسخهٔ رسمی yt-dlp در پوشهٔ خود آوا (userData/bin) — اتمی با .part */
+function ytDlpDownload() {
+  return new Promise((resolve) => {
+    const bin = ytDlpBundledPath();
+    if (!bin) return resolve(false);
+    if (Date.now() - ytDlpState.failedAt < 30 * 60 * 1000) return resolve(false);
+    const part = bin + '.part';
+    try { fs.mkdirSync(path.dirname(bin), { recursive: true }); } catch (_) { /* noop */ }
+    exec(`powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' -OutFile '${part}'"`,
+      { windowsHide: true, timeout: 120000, maxBuffer: 1024 * 1024 }, (err) => {
+        if (err) { ytDlpState.failedAt = Date.now(); try { fs.unlinkSync(part); } catch (_) { /* noop */ } return resolve(false); }
+        try { fs.renameSync(part, bin); resolve(true); }
+        catch (_) { ytDlpState.failedAt = Date.now(); resolve(false); }
+      });
+  });
+}
+/* پیدا کردن yt-dlp: PATH سیستم → نسخهٔ باندل‌شدهٔ خود آوا → دانلود */
+async function ytDlpFind() {
+  const w = await execWhere('yt-dlp');
+  if (w) return w;
+  const b = ytDlpBundledPath();
+  if (b && fs.existsSync(b)) return b;
+  return (await ytDlpDownload()) ? b : '';
+}
+/* حل ویدیوی یوتیوب → URL استریم مستقیم؛ با شفای خودکار yt-dlp کهنه */
+async function resolveYtStream(url) {
+  const bin = await ytDlpFind();
+  if (!bin) return { ok: false, error: 'yt-dlp پیدا نشد (نصب یا دانلود ناموفق بود)' };
+  const g1 = await ytdlpGetUrl(bin, url);
+  if (g1) return { ok: true, url: g1 };
+  /* شفا: yt-dlp کهنه (یوتیوب مرتب عوض می‌شود) → نسخهٔ تازه → یک تلاش دیگر.
+     باینری «سیستمی» کاربر حذف نمی‌شود — فقط نسخهٔ باندل‌شدهٔ خود آوا. */
+  if (bin === ytDlpBundledPath()) { try { fs.unlinkSync(bin); } catch (_) { /* noop */ } }
+  ytDlpState.failedAt = 0;
+  const d = await ytDlpDownload();
+  const bin2 = d ? ytDlpBundledPath() : '';
+  if (!bin2) return { ok: false, error: 'استریم یوتیوب استخراج نشد و yt-dlp تازه هم نصب نشد' };
+  const g2 = await ytdlpGetUrl(bin2, url);
+  return g2 ? { ok: true, url: g2 } : { ok: false, error: 'استریم یوتیوب استخراج نشد — در مرورگر پخش می‌کنم' };
+}
 /* تصمیمِ «چه چیزی با چه پلیری باز شود» — تابع خالص v0.61 برای تست بدون ویندوز */
 function playerOpenDecision(kind, src, wanted, scan, def) {
   const isUrl = /^https?:\/\//i.test(String(src || ''));
@@ -3569,11 +3634,11 @@ function playerOpenDecision(kind, src, wanted, scan, def) {
     }
   }
   if (isYt) {
-    if (STREAM_NATIVE.has(player)) return { action: 'spawn', player };
-    if (STREAM_YTDLP.has(player)) {
-      return scan.ytdl ? { action: 'spawn-ytdlp', player } : { action: 'no-ytdlp', player };
-    }
-    return { action: 'browser', player };
+    /* v0.62 — یک لاین برای همهٔ پلیرها: لینک خام یوتیوب هرگز به پلیر داده
+       نمی‌شود (پارسر داخلی پلیرها پشت دیوار ربات/ورود یوتیوب می‌ماند).
+       yt-dlp استریم مستقیم می‌سازد؛ «spawn» مستقیم فقط برای فایل/لینک مستقیم. */
+    if (scan.ytdl) return { action: 'spawn-ytdlp', player };
+    return { action: 'no-ytdlp', player }; /* اجرا: دانلود yt-dlp → حل → پخش؛ نشد → مرورگر */
   }
   if (isFile) return { action: 'spawn', player };
   return { action: 'spawn', player }; /* هر منبع دیگری (لینک مستقیم ویدیو و…) */
@@ -3587,9 +3652,10 @@ async function openWithDefaultPlayer(url) {
     const d = playerOpenDecision('url', String(url || ''), 'default', scan, def);
     if (d.action === 'browser') { try { shell.openExternal(url); return { ok: true, via: 'browser' }; } catch (_) { return { ok: false }; } }
     if (d.action === 'os-default') { try { shell.openExternal(url); return { ok: true, via: 'browser' }; } catch (_) { return { ok: false }; } }
-    if (d.action === 'no-ytdlp') return { ok: false, noYtdl: true, player: d.player };
-    if (d.action === 'spawn' || d.action === 'spawn-ytdlp') {
-      return playerLaunch(d.player, url, { ytdl: d.action === 'spawn-ytdlp' });
+    /* v0.62 — یوتیوب: یک لاین (حل استریم → پلیر؛ فالبک مرورگر داخل playerLaunchYt) */
+    if (d.action === 'no-ytdlp' || d.action === 'spawn-ytdlp') return playerLaunchYt(d.player, url);
+    if (d.action === 'spawn') {
+      return playerLaunch(d.player, url, {});
     }
     return { ok: false, error: d.error || 'پخش ممکن نشد' };
   } catch (e) { return { ok: false, error: netErr(e) }; }
@@ -3704,18 +3770,12 @@ async function playerLaunch(player, src, opts) {
   if (!entry || !entry.exe) return { ok: false, player, error: 'پلیر پیدا نشد' };
   let feed = String(src || '');
   const isYt = /youtube\.com|youtu\.be/i.test(feed);
-  /* یوتیوب در VLC/mpv → استریم مستقیم با yt-dlp (PotPlayer/KMPlayer خودشان یوتیوب را می‌فهمند) */
+  /* v0.62 — یوتیوب در «همهٔ» پلیرها: اول استریم مستقیم با yt-dlp، بعد پخش
+     (لینک خام یوتیوب = دیوار ربات/ورود در پارسر داخلی پلیرها) */
   if (isYt && opts && opts.ytdl) {
-    try {
-      const g = await new Promise((resolve) => {
-        exec(`yt-dlp -f "best" -g --no-warnings "${feed}"`, { windowsHide: true, timeout: 25000 }, (err, stdout) => {
-          if (err || !stdout) return resolve('');
-          resolve(String(stdout).split(/\r?\n/).filter(Boolean)[0] || '');
-        });
-      });
-      if (!g) return { ok: false, player, error: 'استریم یوتیوب استخراج نشد (yt-dlp قدیمی است؟) — بگو «با پت‌پلیر پخش کن»' };
-      feed = g;
-    } catch (_) { return { ok: false, player, error: 'استریم یوتیوب استخراج نشد' }; }
+    const r = await resolveYtStream(feed);
+    if (!r.ok) return { ok: false, player, error: r.error || 'استریم یوتیوب استخراج نشد', ytFail: true };
+    feed = r.url;
   }
   try {
     if (player === 'vlc') {
@@ -3737,6 +3797,15 @@ async function playerLaunch(player, src, opts) {
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }
+}
+
+/* v0.62 — نردبان پخش یوتیوب: حل استریم → پلیر؛ آخرین طبقه: مرورگر.
+   بن‌بست ندارد — کاربر همیشه ویدیو را می‌بیند (پلیر یا مرورگر). */
+async function playerLaunchYt(player, src) {
+  const r = await playerLaunch(player, src, { ytdl: true });
+  if (r.ok) return r;
+  try { shell.openExternal(src); return { ok: true, via: 'browser-fallback', player, fa: 'مرورگر', note: r.error || '' }; }
+  catch (_) { return { ok: false, player, noYtdl: true, error: r.error || 'پخش ممکن نشد' }; }
 }
 
 ipcMain.handle('player:open', async (_e, p) => {
@@ -3772,11 +3841,13 @@ ipcMain.handle('player:open', async (_e, p) => {
     try { await shell.openPath(src); } catch (_) { /* noop */ }
     return { ok: true, via: 'os-default', player: 'uwp', fa: 'پلیر پیش‌فرض ویندوز' };
   }
-  if (d.action === 'no-ytdlp') {
-    return { ok: false, noYtdl: true, player, error: 'برای پخش یوتیوب در ' + ((entry && entry.fa) || player) + ' باید yt-dlp روی سیستم نصب باشد' };
+  if (d.action === 'no-ytdlp' || d.action === 'spawn-ytdlp') {
+    /* v0.62 — یک لاین: yt-dlp (سیستمی/باندل/تازه‌دانلود) استریم می‌سازد؛
+       نشد → خود playerLaunchYt به مرورگر فالبک می‌کند (بن‌بست ندارد) */
+    return playerLaunchYt(player, src);
   }
-  if (d.action === 'spawn' || d.action === 'spawn-ytdlp') {
-    return playerLaunch(player, src, { ytdl: d.action === 'spawn-ytdlp' });
+  if (d.action === 'spawn') {
+    return playerLaunch(player, src, {});
   }
   return { ok: false, error: 'پخش ممکن نشد' };
 });

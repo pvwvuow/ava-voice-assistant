@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0540.js — doctest v0.60.0-beta
+/* scripts-test-v0540.js — doctest v0.62.0-beta
    بازخورد کاربر: «منطقش داشت خوب کار می‌کرد (قشنگترین گناه واقعاً بود و جمینای
    تحقیق کرد و عمل کرد) — ولی هنوز بعضی جاها مشکل داریم»
    سند لاگ v0.53 (bmtiwdla0nqyz):
@@ -13,7 +13,7 @@
      3) DO جدید yt_search (واژگان + اجراکننده + قانون FA/EN)
      4) قانون ۱۰ بازنویسی‌شده (اول تاریخچه، بعد اکشن؛ مجوزِ رد کردن نیست)
      5) گارد یادگیری بازشده (همین/این/اون هم — رفتار واقعی regex)
-     6) نسخه 0.61.0-beta
+     6) نسخه 0.62.0-beta
 */
 const fs = require('fs');
 const path = require('path');
@@ -95,11 +95,11 @@ if (LEARN_RE) {
 }
 ok(appSrc.includes("actLog('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست: '"), 'لاگ صادقانهٔ learn skip');
 
-console.log('\n[7] نسخه 0.61.0-beta');
-ok(appSrc.includes("let appVersion = '0.61.0-beta';"), 'app.js: 0.60.0-beta');
-ok(pkg.version === '0.61.0-beta', 'package.json: 0.60.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.61.0-beta</span>'), 'index.html: v0.60.0-beta');
-ok(readme.includes('۰.۶۱.۰-بتا') && readme.includes('مفعولِ ارجاعی'), 'README: ۰.۶۱.۰-بتا (بلوک ۰.۵۴ در تاریخچه مانده)');
+console.log('\n[7] نسخه 0.62.0-beta');
+ok(appSrc.includes("let appVersion = '0.62.0-beta';"), 'app.js: 0.62.0-beta');
+ok(pkg.version === '0.62.0-beta', 'package.json: 0.62.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.62.0-beta</span>'), 'index.html: v0.62.0-beta');
+ok(readme.includes('۰.۶۲.۰-بتا') && readme.includes('مفعولِ ارجاعی'), 'README: ۰.۶۲.۰-بتا (بلوک ۰.۵۴ در تاریخچه مانده)');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

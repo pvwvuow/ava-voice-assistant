@@ -63,17 +63,17 @@ section('[3] playerOpenDecision — تصمیم واحد برای همهٔ حال
   const m = /function playerOpenDecision\(kind, src, wanted, scan, def\)\s*\{[\s\S]*?\n\}/.exec(mainSrc);
   ok(!!m, 'تابع تصمیم در main.js استخراج‌پذیر است');
   const fn = eval('(' + m[0] + ')');
-  const STREAM_NATIVE = new Set(['potplayer', 'kmplayer']);
-  const STREAM_YTDLP = new Set(['vlc', 'mpv']);
   const scan = { list: [{ id: 'vlc' }, { id: 'potplayer' }, { id: 'kmplayer' }, { id: 'mpv' }, { id: 'mpc' }, { id: 'wmplayer' }], ytdl: true };
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).action === 'spawn' && fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).player === 'potplayer', 'پیش‌فرض پت‌پلیر + یوتیوب → spawn پت‌پلیر (خودش یوتیوب را می‌فهمد)');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'kmplayer' }).player === 'kmplayer', 'پیش‌فرض کی‌ام‌پلیر + یوتیوب → spawn');
+  /* v0.62 — یوتیوب یک لاین شد: لینک خام به هیچ پلیری نمی‌رود (دیوار ربات/ورود) —
+     جزئیات نردبان جدید در scripts-test-v0620a.js */
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).action === 'spawn-ytdlp' && fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).player === 'potplayer', 'پیش‌فرض پت‌پلیر + یوتیوب → spawn-ytdlp (v0.62: اول استریم مستقیم، بعد پلیر)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'kmplayer' }).action === 'spawn-ytdlp', 'پیش‌فرض کی‌ام‌پلیر + یوتیوب → spawn-ytdlp (v0.62: بدون استثنا)');
   ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'vlc' }).action === 'spawn-ytdlp', 'پیش‌فرض VLC + یوتیوب + yt-dlp → spawn-ytdlp');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', { list: scan.list, ytdl: false }, { id: 'vlc' }).action === 'no-ytdlp', 'VLC بدون yt-dlp → no-ytdlp (پیام صادقانه)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', { list: scan.list, ytdl: false }, { id: 'vlc' }).action === 'no-ytdlp', 'بدون yt-dlp → no-ytdlp (v0.62: اجرا دانلود می‌کند، بن‌بست نیست)');
   ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'uwp' }).action === 'browser', 'پیش‌فرض Media Player ویندوز (UWP) + یوتیوب → مرورگر (UWP لینک نمی‌فهمد)');
   ok(fn('file', 'C:\\v\\a.mp4', 'default', scan, { id: 'uwp' }).action === 'os-default', 'فایل محلی + پیش‌فرض UWP → os-default (خود ویندوز با همان پلیر باز می‌کند)');
   ok(fn('url', 'https://youtu.be/x', 'vlc', scan, null).action === 'spawn-ytdlp', 'پلیر صریح («با وی‌ال‌سی») مسیر خودش را می‌رود');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'wmplayer', scan, null).action === 'browser', 'پلیر صریحِ یوتیوب‌ناتوان (WMP) → مرورگر، نه شکست');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'wmplayer', scan, null).action === 'spawn-ytdlp', 'پلیر صریح WMP + یوتیوب → spawn-ytdlp (v0.62: استریم مستقیم در WMP هم پخش می‌شود)');
   const noScan = { list: [], ytdl: false };
   ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', noScan, { id: '' }).action === 'browser', 'هیچ پلیری نصب نیست → مرورگر (کاربر بی‌جواب نمی‌ماند)');
 }
