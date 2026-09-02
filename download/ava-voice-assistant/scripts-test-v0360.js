@@ -32,7 +32,7 @@ const body = bm ? bm[1] : '';
 
 console.log('\n[1] C1: Discord tray-proof discovery (ERR:NO_DISCORD for tray-hidden Discord)');
 ok('MainWindowHandle filter no longer decides NO_DISCORD — process existence does',
-   body.includes('$dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue)') &&
+   body.includes('$dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB,DiscordDevelopment -ErrorAction SilentlyContinue)') &&
    body.includes("if (-not $dcProcs -or $dcProcs.Count -eq 0) { Write-Output 'ERR:NO_DISCORD'; exit }"));
 ok('Find-DcHwndByPid enumerates windows of all Discord PIDs (class Chrome_WidgetWin_1, visible preferred)',
    body.includes('function Find-DcHwndByPid') && body.includes("[AvaDc3.W]::EnumWindows($cb, [IntPtr]::Zero)") &&

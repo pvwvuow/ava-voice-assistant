@@ -445,7 +445,52 @@
     return { url, player: playerTargetOf(rawCmd) };
   }
 
-  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, playerTargetOf, videoUrlLane };
+  /* ============================================================
+     v0.66 — PTT: تشخیص تعارض کلید + لیست کلیدهای پیشنهادی امن
+     ------------------------------------------------------------
+     خواستهٔ صریح کاربر: «یک لیست از دکمه‌های پوش تو تالک پیشنهادی هم بزار که
+     روی برنامه‌های دیگه اگه باز بود به مشکل نخوریم یا تداخل نداشته باشه با
+     شورت‌کات‌های دیگه ویندوز یا برنامه‌ها». لاگ v0.63: کاربر به Ctrl+1 رفته
+     بود (= تعویض تب در مرورگرها/IDEها).
+     خروجی pttConflictOf: رشتهٔ هشدار فارسی ('' = بی‌تعارض شناخته‌شده).
+     ============================================================ */
+  const PTT_CONFLICTS = [
+    { re: /CommandOrControl\+[1-9]$/i, why: 'Ctrl+۱ تا ۹ در مرورگرها و IDEها تعویض تب است' },
+    { re: /CommandOrControl\+Shift\+Q$/i, why: 'Ctrl+Shift+Q در Chrome پنجره را می‌بندد' },
+    { re: /CommandOrControl\+Q$/i, why: 'Ctrl+Q در خیلی برنامه‌ها «خروج» است' },
+    { re: /CommandOrControl\+W(\+Shift)?$/i, why: 'Ctrl+W بستن تب/پنجره است' },
+    { re: /CommandOrControl\+Shift\+M$/i, why: 'Ctrl+Shift+M میانبر میوت دیسکورد است' },
+    { re: /CommandOrControl\+S$/i, why: 'Ctrl+S «ذخیره» است' },
+    { re: /CommandOrControl\+Shift\+S$/i, why: 'Ctrl+Shift+S در اکثر ادیتورها «ذخیرهٔ همه» است' },
+    { re: /Alt\+F4$/i, why: 'Alt+F4 بستن برنامه است' },
+    { re: /CommandOrControl\+Alt\+(Up|Down|Left|Right)$/i, why: 'Ctrl+Alt+جهت‌ها چرخش تصویر اینتل است' },
+    { re: /(^|\+)F1$/i, why: 'F1 راهنمای ویندوز/برنامه‌هاست' },
+    { re: /(^|\+)F5$/i, why: 'F5 رفرش است' },
+    { re: /(^|\+)F6$/i, why: 'F6 جابه‌جایی فوکوس در مرورگر است' },
+    { re: /(^|\+)F10$/i, why: 'F10 منوی برنامه را باز می‌کند' },
+    { re: /(^|\+)F11$/i, why: 'F11 تمام‌صفحه است' },
+    { re: /(^|\+)F12$/i, why: 'F12 ابزار توسعه‌دهنده را باز می‌کند' },
+    { re: /^(Super|Meta|Win)\+/i, why: 'کلید ویندوز ترکیبی، شورت‌کات خودِ ویندوز است' },
+    { re: /CommandOrControl\+Shift\+Escape$/i, why: 'Ctrl+Shift+Esc تسک‌منیجر است' },
+    { re: /CommandOrControl\+Shift\+Space$/i, why: 'در برخی نرم‌افزارهای ورودی متن (IME) استفاده می‌شود — معمولاً مشکلی پیش نمی‌آید ولی اگر تداخل دیدی یکی از پیشنهادها را بگیر' },
+  ];
+  function pttConflictOf(combo) {
+    const s = String(combo || '').trim();
+    if (!s) return '';
+    for (const c of PTT_CONFLICTS) { if (c.re.test(s)) return c.why; }
+    return '';
+  }
+  /* لیست پیشنهادی امن — کاربرد کمک‌دربرنامه‌ها، بدون تداخل شناخته‌شده */
+  const PTT_SUGGESTIONS = [
+    { acc: 'F9', fa: 'F9 — امن‌ترین تک‌کلید' },
+    { acc: 'CommandOrControl+Alt+Space', fa: 'Ctrl+Alt+Space' },
+    { acc: 'CommandOrControl+Alt+V', fa: 'Ctrl+Alt+V' },
+    { acc: 'F8', fa: 'F8' },
+    { acc: 'CommandOrControl+Alt+U', fa: 'Ctrl+Alt+U' },
+    { acc: 'Alt+Q', fa: 'Alt+Q' },
+  ];
+
+  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, playerTargetOf, videoUrlLane, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

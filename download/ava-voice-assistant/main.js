@@ -4519,7 +4519,7 @@ $SCNAME = @{ 'ctrl' = 0x1D; 'shift' = 0x2A; 'm' = 0x32; 'd' = 0x20; 'h' = 0x23; 
 # v0.36 — دیگر فیلتر MainWindowHandle وجود ندارد: دیسکوردِ داخل try پنجرهٔ «مخفی»
 # دارد (MainWindowHandle=0) و فیلتر قبلی همین‌جا ERR:NO_DISCORD می‌داد — ریشهٔ
 # «دیسکورد دیگه اصلاً کار نمی‌کنه» بعد از آپدیت/بستن به try. حالا پروسه هست؟ کافی است.
-$dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue)
+$dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB,DiscordDevelopment -ErrorAction SilentlyContinue)
 $proc = $dcProcs | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
 if (-not $proc) {
   # اگر دیسکورد با دیپ‌لینک در حال بالا آمدن است، تا $WaitMs میلی‌ثانیه صبر کن
@@ -4527,7 +4527,7 @@ if (-not $proc) {
   while ($waited -lt $WaitMs) {
     Start-Sleep -Milliseconds 600
     $waited += 600
-    $dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB -ErrorAction SilentlyContinue)
+    $dcProcs = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB,DiscordDevelopment -ErrorAction SilentlyContinue)
     $proc = $dcProcs | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
     if ($proc) { break }
   }
@@ -4982,6 +4982,18 @@ function Try-CallClick {
 #   رفت ولی UIA کور بود و نتوانستیم تایید کنیم، ERR:NOFOCUS=نه UIA نه فوکوس.
 switch ($Action) {
   'focus'    { if ($bg) { Write-Output 'OK' } elseif (Focus-DcHard) { Write-Output 'OK' } else { Write-Output 'ERR:NOFOCUS' } }
+  # v0.66 — عیب‌یاب یک‌کلیکی (خواستهٔ کاربر: «کامل بررسی کنی و تست…نخوایم اصلا به مشکل بخوریم»):
+  # هر لایهٔ جداگانه آزموده و گام‌به‌گام در DBG لاگ می‌شود؛ نتیجهٔ نهایی صادقانه است.
+  'selftest' {
+    $null = [AvaDc3.W]::new()  # WinAPI لود شده؟ (رسیدن به اینجا یعنی بله)
+    Write-Output 'DBG:STEP=winapi:OK'
+    try { $null = Add-Type -AssemblyName UIAutomationClient; Write-Output 'DBG:STEP=uia:OK' } catch { Write-Output ('DBG:STEP=uia:FAIL(' + $_.Exception.Message + ')') }
+    $dc = @(Get-Process -Name Discord,DiscordCanary,DiscordPTB,DiscordDevelopment -ErrorAction SilentlyContinue)
+    if ($dc.Count -gt 0) { Write-Output ('DBG:STEP=process:OK(' + ($dc | ForEach-Object { $_.ProcessName } | Select-Object -Unique) + ')') } else { Write-Output 'DBG:STEP=process:NONE' }
+    $h = Find-DcHwndByPid
+    if ($h) { Write-Output 'DBG:STEP=window:OK' } else { Write-Output 'DBG:STEP=window:NONE' }
+    if ($dc.Count -gt 0) { Write-Output 'OK:SELFTEST' } else { Write-Output 'ERR:NO_DISCORD' }
+  }
   'mute'     { Write-Output (Press-Dc '^Mute$' '^Unmute$' 'MUTE' 'ctrl,shift,m') }
   'unmute'   { Write-Output (Press-Dc '^Unmute$' '^Mute$' 'UNMUTE' 'ctrl,shift,m') }
   'deafen'   { Write-Output (Press-Dc '^Deafen$' '^Undeafen$' 'DEAFEN' 'ctrl,shift,d') }
@@ -5714,8 +5726,18 @@ function pttWatcherEdge(line) {
   }
 }
 function pttStopHoldWatcher() {
+  /* v0.66 — علامت روی خودِ پروسه: در reconfig/خاموشی، مرگِ پروسه‌ای که خودمان
+     کشتیم نباید «restart #N» و تایمر ری‌استارت بسازد (لاگ v0.63: در هر تعویض
+     کلید «watcher exited (code=null) → restart» + سه‌بار disabled پشت‌هم).
+     پرچم روی child می‌نشیند چون رویداد exit آن async است و پرچمِ سراسری
+     تا آن موقع ریست می‌شد. */
   pttSt.watchReady = false;
-  try { if (pttSt.watchChild && !pttSt.watchChild.killed) pttSt.watchChild.kill(); } catch (_) { /* noop */ }
+  try {
+    if (pttSt.watchChild && !pttSt.watchChild.killed) {
+      pttSt.watchChild._avaIntentionalKill = true;
+      pttSt.watchChild.kill();
+    }
+  } catch (_) { /* noop */ }
   pttSt.watchChild = null;
   try { if (pttSt.watchFile) fs.unlinkSync(pttSt.watchFile); } catch (_) { /* noop */ }
   pttSt.watchFile = '';
@@ -5778,6 +5800,8 @@ function pttStartWatcher(vks) {
       try { fs.unlinkSync(file); } catch (_) { /* noop */ }
       if (pttSt.watchFile === file) pttSt.watchFile = '';
       if (pttSt.watchChild === child) { pttSt.watchChild = null; pttSt.watchReady = false; }
+      /* v0.66 — توقفِ عامدانه (reconfig/خاموشی) شمارندهٔ خرابی و ری‌استارت ندارد */
+      if (child._avaIntentionalKill) { actLog('ptt watcher stopped (reconfig/config) — no restart'); return; }
       /* ری‌استارت خودکار — اگر وسط ضبط مرد، اول «up» صادقانه بفرست تا ضبط بی‌نهایت نماند */
       if (wasReady) { try { sendUI('ava:ptt-up', { why: 'watcher-died' }); } catch (_) { /* noop */ } }
       pttSt.watchTries++;

@@ -354,6 +354,11 @@
                       <option value="toggle" data-i18n="set.ptt.toggle">یک بار بزن (toggle)</option>
                     </select>
                   </div>
+                  <!-- v0.66 — کلیدهای پیشنهادی امن + هشدار تعارض + وضعیت نگهبان
+                       (خواستهٔ کاربر: «لیست دکمه‌های پیشنهادی که تداخل نداشته باشه») -->
+                  <div class="ptt-presets" id="pttPresets"></div>
+                  <span class="set-hint warn" id="pttConflictHint" hidden></span>
+                  <span class="set-hint" id="pttStatus" data-i18n="set.ptt.statusIdle">وضعیت: —</span>
                 </div>
               </div>
 
@@ -527,6 +532,8 @@
                     <button class="chip sm" id="btnDcDecline"><svg class="ic"><use href="#i-close"/></svg><span data-i18n="disc.declineBtn">رد تماس</span></button>
                     <button class="chip sm" id="btnDcHangup"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="disc.hangupBtn">قطع تماس</span></button>
                     <button class="chip sm" id="btnDcFocus"><svg class="ic"><use href="#i-window"/></svg><span data-i18n="disc.focusBtn">فوکوس دیسکورد</span></button>
+                    <!-- v0.66 — عیب‌یاب یک‌کلیکی: WinAPI/UIA/پروسس/پنجره گام‌به‌گام در activity.log -->
+                    <button class="chip sm" id="btnDcSelftest"><svg class="ic"><use href="#i-info"/></svg><span data-i18n="disc.selftestBtn">تست دیسکورد</span></button>
                   </div>
                   <div class="dc-call-row">
                     <input type="text" id="dcCallName" class="set-input" data-i18n-ph="disc.namePh" placeholder="اسم دوستت در دیسکورد…" autocomplete="off" />

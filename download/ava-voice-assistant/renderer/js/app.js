@@ -241,6 +241,8 @@
     'disc.muteBtn': ['میوت', 'Mute'], 'disc.deafenBtn': ['بی‌صدا کردن کل', 'Deafen'],
     'disc.answerBtn': ['جواب تماس', 'Answer'], 'disc.declineBtn': ['رد تماس', 'Decline'],
     'disc.hangupBtn': ['قطع تماس', 'Hang up'], 'disc.focusBtn': ['فوکوس دیسکورد', 'Focus Discord'],
+    'disc.selftestBtn': ['تست دیسکورد', 'Test Discord'],
+    'disc.selftestOk': ['تست دیسکورد کامل شد — جزئیات گام‌به‌گام در activity.log', 'Discord self-test finished — step details in activity.log'],
     'disc.callBtn': ['زنگ بزن', 'Call'],
     /* ---------- v0.17 — تنظیمات دیسکورد ---------- */
     'set.nav.discord': ['دیسکورد', 'Discord'],
@@ -313,6 +315,14 @@
     'set.ptt.set': ['کلید ذخیره شد:', 'Key saved:'],
     'set.ptt.on': ['دکمهٔ فشاری صحبت روشن شد', 'Push-to-Talk enabled'],
     'set.ptt.off': ['دکمهٔ فشاری صحبت خاموش شد', 'Push-to-Talk disabled'],
+    /* v0.66 — پیشنهاد کلید امن + تعارض + وضعیت */
+    'set.ptt.presetsTitle': ['کلیدهای پیشنهادی امن (بدون تداخل با ویندوز و برنامه‌های پرکاربرد):', 'Safe suggested keys (no known Windows/app conflicts):'],
+    'set.ptt.conflict': ['⚠ تداخل: {x}', '⚠ Conflict: {x}'],
+    'set.ptt.noConflict': ['این کلید تداخل شناخته‌شده‌ای ندارد ✓', 'No known conflict for this key ✓'],
+    'set.ptt.statusIdle': ['وضعیت: —', 'Status: —'],
+    'set.ptt.statusWatcher': ['وضعیت: فعال — نگهبان پایدار آماده است', 'Status: active — persistent watcher ready'],
+    'set.ptt.statusFallback': ['وضعیت: فعال — فالبک میانبر سراسری (سقف ۳۰ ثانیه)', 'Status: active — global shortcut fallback (30s cap)'],
+    'set.ptt.statusOff': ['وضعیت: خاموش — سوییچ بالا را روشن کن', 'Status: off — enable the switch above'],
     /* v0.60 — ثبت کلید PTT: فقط کلیدهای لاتین + تایم‌اوت + راهنمای لغو */
     'set.key.latin': ['کلیدهای لاتین مجازند', 'Only Latin keys are accepted'],
     'set.key.timeout': ['زمان ثبت کلید تمام شد — دوباره امتحان کن', 'Key capture timed out — try again'],
@@ -7238,13 +7248,60 @@
     if (optPtt) optPtt.checked = settings.ptt.enabled !== false;
     if (optPttMode) optPttMode.value = settings.ptt.mode === 'toggle' ? 'toggle' : 'hold';
     if (pttKeyLabel) pttKeyLabel.textContent = pttComboLabel(settings.ptt.combo);
+    pttConflictHintUpdate();
   }
   pttRefreshUi();
+  /* v0.66 — هشدار تعارض + وضعیت زندهٔ نگهبان (خواستهٔ کاربر: لیست کلیدهای امن
+     + نبود تعارض با ویندوز/برنامه‌ها). تعارض‌ها خالص‌اند (voiceIntent.pttConflictOf). */
+  function pttConflictHintUpdate() {
+    const hint = $('#pttConflictHint');
+    if (!hint) return;
+    if (settings.ptt.enabled === false) { hint.hidden = true; return; }
+    const why = (typeof AVAIntent !== 'undefined' && AVAIntent.pttConflictOf) ? AVAIntent.pttConflictOf(settings.ptt.combo) : '';
+    if (why) { hint.textContent = t('set.ptt.conflict', { x: why }); hint.hidden = false; }
+    else { hint.textContent = t('set.ptt.noConflict'); hint.hidden = false; }
+  }
+  function pttStatusUpdate() {
+    const el = $('#pttStatus');
+    if (!el) return;
+    (async () => {
+      try {
+        if (!bridge || !bridge.ptt || !bridge.ptt.get) return;
+        const st = await bridge.ptt.get();
+        if (!st || !st.cfg) return;
+        el.textContent = settings.ptt.enabled === false ? t('set.ptt.statusOff')
+          : (st.ready ? t('set.ptt.statusWatcher')
+            : (st.registered ? t('set.ptt.statusFallback') : t('set.ptt.statusIdle')));
+      } catch (_) { /* noop */ }
+    })();
+  }
+  {
+    const wrap = $('#pttPresets');
+    if (wrap && typeof AVAIntent !== 'undefined' && AVAIntent.pttSuggestionsOf) {
+      const ttl = document.createElement('div');
+      ttl.className = 'ptt-presets-title';
+      ttl.textContent = t('set.ptt.presetsTitle');
+      wrap.appendChild(ttl);
+      for (const s of AVAIntent.pttSuggestionsOf()) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip ptt-preset';
+        b.textContent = s.fa;
+        b.title = s.acc;
+        b.addEventListener('click', () => {
+          settings.ptt.combo = s.acc;
+          pttSave(true).then(() => { pttRefreshUi(); pttStatusUpdate(); }).catch(() => { /* noop */ });
+          toast(t('set.ptt.set') + ' ' + pttComboLabel(s.acc), '#i-mic');
+        });
+        wrap.appendChild(b);
+      }
+    }
+  }
   async function pttSave(reRegister) {
     store.set('ptt', settings.ptt);
     if (reRegister && bridge && bridge.ptt) { try { await bridge.ptt.reconfig(); } catch (_) { /* noop */ } }
   }
-  if (optPtt) optPtt.addEventListener('change', () => { settings.ptt.enabled = !!optPtt.checked; pttSave(true); toast(settings.ptt.enabled ? t('set.ptt.on') : t('set.ptt.off'), '#i-mic'); });
+  if (optPtt) optPtt.addEventListener('change', () => { settings.ptt.enabled = !!optPtt.checked; pttSave(true); toast(settings.ptt.enabled ? t('set.ptt.on') : t('set.ptt.off'), '#i-mic'); pttConflictHintUpdate(); pttStatusUpdate(); });
   if (optPttMode) optPttMode.addEventListener('change', () => { settings.ptt.mode = optPttMode.value === 'toggle' ? 'toggle' : 'hold'; pttSave(true); });
   if (btnPttKey) btnPttKey.addEventListener('click', () => {
     if (pttKeyLabel) pttKeyLabel.textContent = t('set.ptt.press');
@@ -7262,6 +7319,7 @@
         toast(t('set.ptt.set') + ' ' + pttComboLabel(acc), '#i-mic');
       }
       pttRefreshUi();
+      pttStatusUpdate(); /* v0.66 — وضعیت پس از تعویض کلید */
     };
     const capTimer = setTimeout(() => { toast(t('set.key.timeout'), '#i-info'); done(null); }, 10000);
     const onKey = (e) => {
@@ -7590,6 +7648,7 @@
   dcBtn('#btnDcAnswer', 'answer', t('disc.answer'));
   dcBtn('#btnDcDecline', 'decline', t('disc.decline'));
   dcBtn('#btnDcFocus', 'focus', t('disc.focused'));
+  dcBtn('#btnDcSelftest', 'selftest', t('disc.selftestOk')); /* v0.66 — عیب‌یاب یک‌کلیکی */
   const btnDcCall = $('#btnDcCall');
   const dcCallName = $('#dcCallName');
   if (btnDcCall) btnDcCall.addEventListener('click', async () => {

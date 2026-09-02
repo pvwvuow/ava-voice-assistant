@@ -122,6 +122,27 @@ ok(/\.think-chip::after/.test(cssSrc) && /blur\(6px\)/.test(cssSrc), 'F1: هال
 ok(/id="wakeWordNow"/.test(idxSrc) && /set\.stt\.wakeWordNow'/.test(appSrc) && /wwn\.textContent = String\(settings\.wakeWordText/.test(appSrc), 'F2: بج «کلمهٔ فعال الان» + سیم‌کشی نمایش');
 ok(/elWwn2 = \$\('#wakeWordNow'\)/.test(appSrc), 'F2: تازه‌سازی بج پس از تایپ دستی هم');
 
+/* ---------- [7] v0.66 — PTT (C) ---------- */
+section('7] PTT — ثبات نگهبان + تعارض + پیشنهادها + وضعیت');
+const VI = require(path.join(APP, 'renderer/js/voiceIntent.js'));
+ok(typeof VI.pttConflictOf === 'function' && typeof VI.pttSuggestionsOf === 'function', 'voiceIntent: pttConflictOf/pttSuggestionsOf صادر شده‌اند');
+ok(VI.pttConflictOf('CommandOrControl+1').length > 0, 'تعارض: Ctrl+1 (تب مرورگر) — دقیقاً کلیدی که کاربر لاگ داشت');
+ok(VI.pttConflictOf('CommandOrControl+Shift+M').length > 0, 'تعارض: Ctrl+Shift+M (میوت دیسکورد)');
+ok(VI.pttConflictOf('F9') === '' && VI.pttConflictOf('CommandOrControl+Alt+V') === '', 'پیشنهادهای امن واقعاً بی‌تعارض‌اند');
+ok(VI.pttSuggestionsOf().length >= 5 && VI.pttSuggestionsOf().every((s) => s.acc && s.fa), 'لیست پیشنهادی ≥۵ کلید با برچسب فارسی');
+ok(/_avaIntentionalKill = true/.test(mainSrc) && /if \(child\._avaIntentionalKill\) \{ actLog\('ptt watcher stopped/.test(mainSrc), 'main: مرگِ عامدانهٔ watcher دیگر restart نمی‌سازد (ریشهٔ لاگ: restart# در هر تعویض کلید)');
+ok(/id="pttPresets"/.test(idxSrc) && /id="pttConflictHint"/.test(idxSrc) && /id="pttStatus"/.test(idxSrc), 'UI: چیپ‌های پیشنهادی + هشدار تعارض + وضعیت');
+ok(/AVAIntent\.pttConflictOf\(settings\.ptt\.combo\)/.test(appSrc) && /function pttStatusUpdate\(\)/.test(appSrc), 'renderer: هشدار زندهٔ تعارض + وضعیت از ptt:get');
+ok(/set\.ptt\.presetsTitle'/.test(appSrc) && /set\.ptt\.statusWatcher'/.test(appSrc), 'i18n: کلیدهای جدید PTT');
+
+/* ---------- [8] v0.66 — دیسکورد (E) ---------- */
+section('8] دیسکورد — selftest یک‌کلیکی + تشخیص پهن پروسس');
+ok(/'selftest' \{/.test(mainSrc) && /OK:SELFTEST/.test(mainSrc), 'main: اکشن selftest در اسکریپت PS (گام‌های DBG: winapi/uia/process/window)');
+ok((mainSrc.match(/Discord,DiscordCanary,DiscordPTB,DiscordDevelopment/g) || []).length >= 3, 'main: تشخیص پروسس شامل Discord/Canary/PTB/Development');
+ok(/id="btnDcSelftest"/.test(idxSrc) && /dcBtn\('#btnDcSelftest', 'selftest'/.test(appSrc), 'UI: دکمهٔ «تست دیسکورد» + سیم‌کشی');
+ok(/disc\.selftestBtn':/.test(appSrc) && /disc\.selftestOk':/.test(appSrc), 'i18n: برچسب/پیام تست دیسکورد');
+ok(/'discord_mute'/.test(appSrc) && /'discord_hangup'/.test(appSrc) && /'discord_answer'/.test(appSrc) && /'discord_decline'/.test(appSrc) && /'discord_deafen'/.test(appSrc) && /'discord_unmute'/.test(appSrc), 'DO: هر ۶ اکشن دیسکورد سیم‌کشی‌شده');
+
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');
 console.log('PASS=' + pass + '  FAIL=' + fail);
