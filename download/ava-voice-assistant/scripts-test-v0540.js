@@ -13,7 +13,7 @@
      3) DO جدید yt_search (واژگان + اجراکننده + قانون FA/EN)
      4) قانون ۱۰ بازنویسی‌شده (اول تاریخچه، بعد اکشن؛ مجوزِ رد کردن نیست)
      5) گارد یادگیری بازشده (همین/این/اون هم — رفتار واقعی regex)
-     6) نسخه 0.60.0-beta
+     6) نسخه 0.61.0-beta
 */
 const fs = require('fs');
 const path = require('path');
@@ -73,7 +73,7 @@ console.log('\n[5] قانون ۱۰ بازنویسی‌شده (اول تاریخ�
 ok(appSrc.includes('مرجع را اول از «تاریخچهٔ همین گفتگو» بردار'), 'FA: اول تاریخچه');
 ok(appSrc.includes('بعد از حلِ مرجع حتماً اکشن بده'), 'FA: بعد از حل، حتماً اکشن (نه رد کردن)');
 ok(appSrc.includes('این قانون هرگز مجوزِ رد کردن یا بی‌جواب گذاشتنِ خواستهٔ کاربر نیست'), 'FA: مجوزِ رد کردن نیست');
-ok(appSrc.includes('resolve the reference FIRST from the chat history'), 'EN: history first');
+ok(appSrc.includes('resolve the reference FIRST from the conversation history'), /* v0.61: منابع واقعی (تاریخچه + موجودیت‌ها) */ 'EN: history first');
 ok(appSrc.includes('This rule never justifies refusing or ignoring the user request'), 'EN: never refuses');
 
 console.log('\n[6] گارد یادگیری بازشده — رفتار واقعی regex (vm)');
@@ -95,11 +95,11 @@ if (LEARN_RE) {
 }
 ok(appSrc.includes("actLog('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست: '"), 'لاگ صادقانهٔ learn skip');
 
-console.log('\n[7] نسخه 0.60.0-beta');
-ok(appSrc.includes("let appVersion = '0.60.0-beta';"), 'app.js: 0.60.0-beta');
-ok(pkg.version === '0.60.0-beta', 'package.json: 0.60.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.60.0-beta</span>'), 'index.html: v0.60.0-beta');
-ok(readme.includes('۰.۶۰.۰-بتا') && readme.includes('مفعولِ ارجاعی'), 'README: ۰.۶۰.۰-بتا (بلوک ۰.۵۴ در تاریخچه مانده)');
+console.log('\n[7] نسخه 0.61.0-beta');
+ok(appSrc.includes("let appVersion = '0.61.0-beta';"), 'app.js: 0.60.0-beta');
+ok(pkg.version === '0.61.0-beta', 'package.json: 0.60.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.61.0-beta</span>'), 'index.html: v0.60.0-beta');
+ok(readme.includes('۰.۶۱.۰-بتا') && readme.includes('مفعولِ ارجاعی'), 'README: ۰.۶۱.۰-بتا (بلوک ۰.۵۴ در تاریخچه مانده)');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

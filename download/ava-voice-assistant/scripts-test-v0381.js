@@ -23,7 +23,6 @@ const fs = require('fs');
 const path = require('path');
 const R = path.join(__dirname);
 const read = (f) => fs.readFileSync(path.join(R, f), 'utf8');
-const core = require('./pipCore');
 const AVAVoice = require('./renderer/js/voiceCommandParser');
 
 let pass = 0, fail = 0;
@@ -31,10 +30,6 @@ const ok = (cond, name) => { if (cond) { pass++; console.log('PASS | ' + name); 
 
 const app = read('renderer/js/app.js');
 const mainjs = read('main.js');
-const pwm = read('pipWindowManager.js');
-const phtml = read('renderer/pip.html');
-const pRenderer = read('renderer/js/pipRenderer.js');
-const pPreload = read('pipPreload.js');
 const idx = read('renderer/index.html');
 const pkg = JSON.parse(read('package.json'));
 
@@ -155,47 +150,7 @@ if (nfM && wkM && wreM) {
   ok(!!wm2 && wm2[2] === 'پین کن ویدیو رو', 'POS: «هی آوا …» دنباله');
 }
 
-/* ۱۰) PiP — pipCore: چرخهٔ شفافیت */
-ok(core.stepOpacity(0.3, -1) === 1, 'PiP: opacity از ۳۰٪ می‌چرخد به ۱۰۰٪ (قبلاً گیر می‌کرد)');
-ok(core.stepOpacity(1, -1) === 0.7, 'PiP: ۱۰۰→۷۰');
-ok(core.stepOpacity(0.3, 1) === 0.5, 'PiP: ۳۰→۵۰');
-
-/* ۱۱) PiP — شناسهٔ ۱۱ رقمی */
-const lvM = pwm.match(/function looksLikeVideoId\(s\) \{[\s\S]*?\n\}/);
-ok(!!lvM, 'looksLikeVideoId استخراج شد');
-if (lvM) {
-  const f = new Function('return ' + lvM[0].replace(/^function /, 'function ')) ;
-  const looks = f();
-  ok(looks('hello-world') === false, 'NEG: «hello-world» یوتیوب باز نمی‌کند');
-  ok(looks('abcdefghijk') === false, 'NEG: ۱۱ حرف کوچک یکدست');
-  ok(looks('dQw4w9WgXcQ') === true, 'POS: شناسهٔ واقعی یوتیوب');
-  ok(looks('abcdefghi1j') === true, 'POS: ۱۱ نویسه با رقم');
-}
-ok(!/\/\^\[a-zA-Z0-9_-\]\{11\}\$\/\.test\(s\) \? s : null/.test(pwm), 'PiP: heuristic خام ۱۱ نویسه‌ای حذف شد');
-
-/* ۱۲) PiP — بازبست میانبرها + pause + فوکوس + restore + clamp + flush */
-ok(/function showPiP\(source\) \{[\s\S]*?bindMoveKeys\(true\);/.test(pwm), 'PiP: showPiP دوباره bindMoveKeys می‌کند (میانبر بعد از hide→show مرده نیست)');
-ok(/function hidePiP\(\) \{[\s\S]*?pip:pause/.test(pwm), 'PiP: hidePiP قبل از مخفی شدن صدا را pause می‌کند');
-ok(pPreload.includes('onPause'), 'PiP: پل onPause در preload');
-ok(pRenderer.includes("pipHost.onPause"), 'PiP: renderer به onPause گوش می‌دهد');
-ok(/pip:host:focus-input/.test(pwm) && /pip:host:blur-input/.test(pwm), 'PiP: handler فوکوس/بلور ورودی');
-ok(pRenderer.includes('pipHost.focusInput') && pRenderer.includes('pipHost.blurInput'), 'PiP: ورودی جستجو فوکوس/بلور را خبر می‌دهد');
-ok(/setFocusable\(true\)/.test(pwm) && /setFocusable\(false\)/.test(pwm), 'PiP: setFocusable موقت در تایپ');
-ok(/opts\.restore === undefined\) opts\.restore = true/.test(pwm), 'PiP: restore موقعیت ذخیره‌شده پیش‌فرض شد');
-ok(/getAllDisplays\(\)\.some/.test(pwm), 'PiP: جای ذخیره‌شده فقط روی مانیتور مرئی بازیابی می‌شود');
-ok(/Math\.min\(state\.lastBounds\.x, wa\.x \+ wa\.width - s\.w\)/.test(pwm), 'PiP: resize به workArea مهار می‌شود');
-ok(pwm.includes('flushPiPState'), 'PiP: flushPiPState صادر می‌شود');
-ok(/will-quit[\s\S]{0,200}flushPiPState/.test(mainjs), 'PiP/main: flush در will-quit');
-ok(/will-quit[\s\S]{0,200}unregisterAll/.test(mainjs), 'main: unregisterAll در will-quit ماند');
-
-/* ۱۳) PiP — صدا هنگام بستن */
-ok(/function showEmpty\(msg\) \{[\s\S]*?vid\.pause\(\)/.test(pRenderer), 'PiP: showEmpty پخش را واقعاً می‌بندد');
-ok(/function showEmpty\(msg\) \{[\s\S]*?about:blank/.test(pRenderer), 'PiP: iframe خالی می‌شود');
-ok(pRenderer.includes('executeJavaScript') && !pRenderer.includes('enablejsapi=1'), 'PiP: postMessage با origin مشخص (بدون wildcard)');
-ok('PiP v2: وضعیت یوتیوب با ytVideoState سینک می‌شود', pRenderer.includes('ytVideoState') && pRenderer.includes('setPlayIcon(!!st.p)'));
-ok(pRenderer.includes("volumechange"), 'PiP: رویداد mute ویدیوی مستقیم سینک می‌شود');
-ok(/barEl\.addEventListener\('mouseleave'/.test(pRenderer), 'PiP: خروج از نوار کنترل hoverUi(false) می‌فرستد (dead zone iframe)');
-ok(pRenderer.includes('setPlayIcon(false);\n      setMuteIcon(false);') || /loadSource\(src\) \{[\s\S]{0,120}setPlayIcon\(false\)/.test(pRenderer), 'PiP: دکمه‌ها با هر منبع جدید ریست می‌شوند');
+/* ۱۰-۱۳) PiP — قابلیت ویدیوی شناور در v0.61 کامل حذف شد؛ پین‌هایش منقضی‌اند */
 
 /* ۱۴) main — EncodedCommand و بقیه */
 ok(/custom:run[\s\S]{0,400}-EncodedCommand/.test(mainjs), 'main: custom:run با EncodedCommand (کوتیشن دیگر نمی‌شکند)');
@@ -211,10 +166,8 @@ ok(/return writeJsonAtomic\(f, obj\);/.test(mainjs), 'main: settings:save اتم
 ok(/writeJsonAtomic\(f, reminders\)/.test(mainjs), 'main: یادآوری‌ها اتمیک');
 ok(/writeJsonAtomic\(f, arr\.slice\(0, 200\)\)/.test(mainjs), 'main: یادداشت‌ها اتمیک');
 ok(/writeJsonAtomic\(f, appsCache\)/.test(mainjs), 'main: کش برنامه‌ها اتمیک');
-ok(/renameSync\(tmp, statePath\)/.test(pwm), 'PiP: نوشتن state اتمیک');
 ok(/installer open failed/.test(mainjs), 'main: خطای openPath نصّاب چک می‌شود');
 ok(/shortcut register FAILED/.test(mainjs), 'main: اشغال میانبر PTT لاگ می‌شود (v0.47: پیام داینامیک + fallback + اعلان)');
-ok(/KEY_BUSY:Ctrl\+Shift\+P/.test(pwm), 'PiP: اشغال Ctrl+Shift+P لاگ می‌شود');
 
 /* ۱۵) app — بقیه فیکس‌ها */
 ok(/mAudio\.play\(\)\.catch\(\(\) => \{/.test(app), 'app: play() بدون unhandled rejection');

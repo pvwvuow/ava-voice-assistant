@@ -37,8 +37,8 @@ if (!gotSingleInstanceLock) {
   });
 }
 
-/* v0.37 — مدیر پنجرهٔ ویدیوی شناور (Smart Gaming PiP) — IPC و میانبرها را خودش ثبت می‌کند */
-const pipManager = require('./pipWindowManager');
+/* v0.61 — پنجرهٔ شناور PiP (پلیر خودساختهٔ آوا) حذف شد؛ ویدیو با پلیر
+   پیش‌فرضِ خود کاربر پخش می‌شود (player:open / player:default پایین‌تر). */
 
 /* ---------- پروتکل امن ava:// ----------
    رابط کاربری از ava://app بارگذاری می‌شود تا فایل‌های برنامه
@@ -507,21 +507,12 @@ function createWindow() {
   win.on('unmaximize', () => win.webContents.send('win:maximized-changed', false));
   win.on('closed', () => {
     win = null;
-    /* v0.60 (A20) — شبح‌شدن اپ: بستن پنجرهٔ اصلی قبلاً پنجره‌های مخفیِ helper
-       (zaiWin پل z.ai و ytWin یوتیوب) را زنده نگه می‌داشت → window-all-closed
-       هرگز آتش نمی‌شد و اپ بی‌پنجره/بی‌تری به کار ادامه می‌داد. حالا:
-       helperها destroy می‌شوند؛ اگر پنجرهٔ PiP باز باشد window-all-closed بعد
-       از بستن آن خودش quit می‌کند، وگرنه همین‌جا خروج. */
+    /* v0.60 (A20) — شبح‌شدن اپ: بستن پنجرهٔ اصلی قبلاً پنجرهٔ مخفیِ helper
+       (zaiWin پل z.ai) را زنده نگه می‌داشت → helperها destroy می‌شوند.
+       v0.61 — پنجره‌های ویدیوی خودساختهٔ آوا (یوتیوب/شناور)
+       حذف شدند؛ پخش ویدیو با پلیر پیش‌فرضِ خود کاربر است (player:open). */
     try { if (zaiWin && !zaiWin.isDestroyed()) zaiWin.destroy(); } catch (_) { /* noop */ }
-    try { if (ytWin && !ytWin.isDestroyed()) ytWin.destroy(); } catch (_) { /* noop */ }
-    try {
-      const st = (pipManager && typeof pipManager.getState === 'function') ? pipManager.getState() : null;
-      const pipOpen = !!(st && st.open);
-      if (!pipOpen) app.quit();
-      else actLog('main window closed — PiP window still open, app stays until it closes');
-    } catch (_) {
-      try { app.quit(); } catch (_2) { /* noop */ }
-    }
+    try { app.quit(); } catch (_2) { /* noop */ }
   });
 
   /* v0.60 (B1) — گارد will-attach-webview برای پنجرهٔ اصلی (هم‌الگوی
@@ -567,7 +558,7 @@ ipcMain.handle('win:is-maximized', () => (win ? win.isMaximized() : false));
 function setupMicPermission() {
   const allow = ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'];
   /* v0.60 (B4) — media/audioCapture فقط برای مببع برنامه (ava://app)؛
-     قبلاً هر سایتی (مثلاً ytWin یا هر صفحهٔ خارجیِ نشست پیش‌فرض) هم
+     قبلاً هر سایتی (هر صفحهٔ خارجیِ نشست پیش‌فرض) هم
      بی‌قید مجاز بود. صفحات پارتیشن z.ai (persist:ai) هندلر اختصاصی خودشان
      را در ادامه دارند و مثل قبل مجاز می‌مانند. بقیه با لاگ صادقانه رد می‌شوند. */
   const originOf = (wc, details, requestingOrigin) => {
@@ -736,46 +727,24 @@ const COMMANDS = {
   youtube_search: { cmd: (a) => { try { shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}`); } catch (_) { return null; } return URL_OPEN_MARKER; }, fa: 'جستجوی یوتیوب' },
   /* v0.50 — «پلی/پخش کن» = پخشِ واقعی اولین نتیجه (لاگ کاربر v0.49:
      «آهنگ جدید شادمهر تو یوتیوب برام پلی کن» فقط صفحهٔ نتایج باز می‌شد).
-     اولین ویدیو پیدا و مستقیم watch باز می‌شود؛ شکست شبکه/پارس →
-     fallback صادقانه: صفحهٔ نتایج */
+     v0.61 — پلیرِ خودساختهٔ آوا حذف شد: پخش با «پلیر پیش‌فرضِ کاربر» است
+     (خواستهٔ صریح: «ببین ویدیو پلیر پیش فرض کاربر چیه، با همون پلی کنه»);
+     اگر پلیر پیش‌فرض استریم‌پذیر نبود → همان ویدیو در مرورگر باز می‌شود. */
   youtube_play: {
     cmd: (a) => { try { shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(String(a || '').trim().slice(0, 120))}`); } catch (_) { return null; } return URL_OPEN_MARKER; }, /* v0.60 B8 */
     asyncCmd: async (a) => {
       const q = String(a || '').trim().slice(0, 120);
       if (!q) { try { shell.openExternal('https://www.youtube.com'); } catch (_) { return null; } return URL_OPEN_MARKER; }
       const vid = await ytFirstVideoId(q);
-      if (vid) {
-        /* v0.51 — پلی یعنی پخش در پلیر خود آوا (خواستهٔ کاربر: «ویدیو پخش
-           نمیشه در لانچر خودمون»)؛ پنجرهٔ شناور = webview بدون jsapi.
-           فقط اگر پنجره/پخش شناور نشد فالبک مرورگر */
-        try {
-          if (pipManager && typeof pipManager.openUrl === 'function' && pipManager.openUrl('https://www.youtube.com/watch?v=' + vid)) {
-            return 'powershell -NoProfile -Command "Write-Output ava_player"';
-          }
-        } catch (_) { /* فالبک مرورگر */ }
-        try { shell.openExternal('https://www.youtube.com/watch?v=' + vid); } catch (_) { return null; } /* v0.60 B8 */
-        return URL_OPEN_MARKER;
-      }
-      try { shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`); } catch (_) { return null; } /* v0.60 B8 */
+      const watch = vid ? ('https://www.youtube.com/watch?v=' + vid)
+        : `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+      const r = await openWithDefaultPlayer(watch);
+      if (r && r.ok) return 'powershell -NoProfile -Command "Write-Output ava_player"';
+      try { shell.openExternal(watch); } catch (_) { return null; } /* فالبک مرورگر */
       return URL_OPEN_MARKER;
     },
     fa: 'پخش یوتیوب',
   },
-  /* v0.38 — یوتیوب شناور: اگر عبارت/لینک، ویدیوی یوتیوب بود همان‌جا در پنجرهٔ شناور
-     پخش می‌شود؛ وگرنه نتیجه‌ها در مرورگر باز می‌شود (صفحهٔ نتایج iframe نمی‌شود) */
-  pip_youtube:   { cmd: (a) => {
-    const q = String(a || '').trim();
-    if (q && pipManager && typeof pipManager.openUrl === 'function') {
-      const ok = pipManager.openUrl(q);
-      if (ok) return 'powershell -NoProfile -Command "Write-Output pip_started"';
-    }
-    /* v0.60 (B8) — فالبک مرورگر از مسیر shell.openExternal */
-    try {
-      if (q) shell.openExternal(`https://www.youtube.com/results?search_query=${encodeURIComponent(q.slice(0, 120))}`);
-      else shell.openExternal('https://www.youtube.com');
-    } catch (_) { return null; }
-    return URL_OPEN_MARKER;
-  }, fa: 'یوتیوب شناور' },
   open_downloads: { cmd: 'start "" "shell:Downloads"',  fa: 'پوشه دانلودها' },
   open_documents: { cmd: 'start "" "shell:Personal"',     fa: 'پوشه اسناد' },
 
@@ -1637,6 +1606,13 @@ ipcMain.handle('updater:install', () => {
 /* کپی متن در کلیپ‌بورد ویندوز (گزارش خطاها — v0.16.1) */
 ipcMain.handle('sys:copy-text', (_e, txt) => {
   try { clipboard.writeText(String(txt || '')); return true; } catch (_) { return false; }
+});
+
+/* v0.61 — خواندن کلیپ‌بورد (جایگزین pip:clip بعد از حذف پنجرهٔ شناور):
+   «لینکی که کپی کردم رو باز کن» / «با وی‌ال‌سی پخش کن» از همین می‌خواند */
+ipcMain.handle('sys:clipboard', () => {
+  try { return { ok: true, text: String(clipboard.readText() || '').slice(0, 2000) }; }
+  catch (_) { return { ok: false, text: '' }; }
 });
 
 ipcMain.handle('app:flags', () => ({
@@ -3461,8 +3437,10 @@ async function ytResolve(query) {
 }
 ipcMain.handle('yt:resolve', (_e, p) => ytResolve(p && p.query));
 
-/* ---------- ۳) پخش‌کنندهٔ یوتیوب آوا (صفحهٔ کامل — نه امبد) ---------- */
-let ytWin = null;
+/* ---------- ۳) نرمال‌سازی لینک یوتیوب (v0.61 — پنجرهٔ پخش خود آوا حذف شد) ----------
+   پلیرِ خودساختهٔ آوا (پنجرهٔ یوتیوب + پنجرهٔ شناور PiP) برچیده شد؛ ویدیو با
+   «پلیر پیش‌فرضِ کاربر» پخش می‌شود (player:open v2 پایین). این تابع فقط
+   لینک را تمیز می‌کند تا به پلیر/مرورگر داده شود. */
 function ytNormalizeUrl(raw) {
   let u = String(raw || '').trim();
   if (!u) return null;
@@ -3474,51 +3452,15 @@ function ytNormalizeUrl(raw) {
   }
   return /^https?:\/\/([a-z0-9-]+\.)*youtube\.com\//i.test(u) ? u : null;
 }
-function ytWatchWindow(p) {
-  const q = p || {};
-  let url = null;
-  if (q.videoId && /^[A-Za-z0-9_-]{11}$/.test(q.videoId)) url = 'https://www.youtube.com/watch?v=' + q.videoId + '&autoplay=1';
-  else if (q.url) url = ytNormalizeUrl(q.url) || (/^https?:\/\//i.test(q.url) ? q.url : null); /* v0.43 — هر لینکی در خود آوا باز می‌شود */
-  else if (q.query) url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(String(q.query).slice(0, 120));
-  if (!url) return { ok: false, error: 'لینک یا عبارت یوتیوب معتبر نیست' };
-  try {
-    if (ytWin && !ytWin.isDestroyed()) { ytWin.loadURL(url).catch(() => {}); ytWin.show(); ytWin.focus(); return { ok: true, reused: true, url }; }
-    ytWin = new BrowserWindow({
-      width: 1180, height: 700, minWidth: 460, minHeight: 300, show: true,
-      title: 'آوا — یوتیوب', backgroundColor: '#0b0f14', autoHideMenuBar: true,
-      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
-    });
-    ytWin.setMenuBarVisibility(false);
-    ytWin.on('closed', () => { ytWin = null; });
-    ytWin.loadURL(url).catch(() => {});
-    return { ok: true, url };
-  } catch (e) {
-    return { ok: false, error: netErr(e) };
-  }
-}
-ipcMain.handle('yt:watch', (_e, p) => Promise.resolve(ytWatchWindow(p)));
 
-/* v0.45 — نیت «بستن» (بازنگری کامل منطق): «یوتیوب رو ببند» نباید یوتیوب را
-   باز کند — وضعیت و بستنِ پنجرهٔ پخش یوتیوبِ آوا از مسیر IPC در دسترس است */
-function ytWatchStatus() {
-  try { return { ok: true, open: !!(ytWin && !ytWin.isDestroyed()) }; } catch (_) { return { ok: true, open: false }; }
-}
-function ytWatchClose() {
-  try {
-    if (ytWin && !ytWin.isDestroyed()) { ytWin.close(); return { ok: true, closed: true }; }
-    return { ok: true, closed: false };
-  } catch (e) { return { ok: false, error: netErr(e) }; }
-}
-ipcMain.handle('yt:status', () => Promise.resolve(ytWatchStatus()));
-ipcMain.handle('yt:close', () => Promise.resolve(ytWatchClose()));
-
-/* ---------- ۴) اسکن پلیرهای نصب‌شده ---------- */
+/* ---------- ۴) اسکن پلیرهای نصب‌شده (v0.61 — + KMPlayer + پلیر پیش‌فرض) ---------- */
 const PF = () => process.env.ProgramFiles || 'C:\\Program Files';
 const PF86 = () => process.env['ProgramFiles(x86)'] || PF();
 const PLAYER_DEFS = [
   { id: 'vlc', fa: 'وی‌ال‌سی', paths: ['VideoLAN/VLC/vlc.exe'] },
   { id: 'mpv', fa: 'mpv', paths: ['mpv/mpv.exe', 'mpv.net/mpv.exe'] },
   { id: 'potplayer', fa: 'پت‌پلیر', paths: ['DAUM/PotPlayer/PotPlayerMini64.exe', 'DAUM/PotPlayer/PotPlayerMini.exe', 'DAUM/PotPlayer64/PotPlayerMini64.exe'] },
+  { id: 'kmplayer', fa: 'کی‌ام‌پلیر', paths: ['KMPlayer/KMPlayer64.exe', 'KMPlayer/KMPlayer.exe', 'KMP/KMPlayer.exe', 'KMPlayer64/KMPlayer64.exe'] },
   { id: 'mpc', fa: 'ام‌پی‌سی', paths: ['MPC-HC/mpc-hc64.exe', 'MPC-HC/mpc-hc.exe', 'MPC-BE/mpc-be64.exe'] },
   { id: 'wmplayer', fa: 'ویندوز مدیا پلیر', paths: ['Windows Media Player/wmplayer.exe'] },
 ];
@@ -3551,6 +3493,107 @@ async function playersScan(force = false) {
   return playerScanCache;
 }
 ipcMain.handle('player:scan', () => playersScan());
+
+/* ---------- ۴ب) پلیر ویدیوی «پیش‌فرض» کاربر (v0.61) ----------
+   خواستهٔ صریح کاربر: «آوا ببینه ویدیو پلیر پیش‌فرض کاربر چیه، با همون پلی کنه».
+   ویندوز انتخاب پیش‌فرض را در رجیستری FileExts\.ext\UserChoice\ProgId نگه
+   می‌دارد؛ ما ProgId را برای mp4/mkv/avi می‌خوانیم و به شناسهٔ پلیر وصل
+   می‌کنیم (تفسیر ProgId در playerProgIdToId — تابع خالص، تست‌پذیر). */
+function playerProgIdToId(progId) {
+  const s = String(progId || '');
+  if (!s) return '';
+  if (/vlc/i.test(s)) return 'vlc';
+  if (/potplayer/i.test(s)) return 'potplayer';
+  if (/kmplayer/i.test(s)) return 'kmplayer';
+  if (/mpv/i.test(s)) return 'mpv';
+  if (/mpc|mediaplayerclassic/i.test(s)) return 'mpc';
+  if (/wmplayer|windows\.media\.|wmp/i.test(s)) return 'wmplayer';
+  if (/^appx?/i.test(s)) return 'uwp'; /* Media Player / Films&TV مایکروسافت */
+  return '';
+}
+let defaultPlayerCache = { at: 0, id: '', progId: '' };
+function defaultVideoPlayer(force = false) {
+  if (!force && defaultPlayerCache.id && Date.now() - defaultPlayerCache.at < 10 * 60 * 1000) return defaultPlayerCache;
+  return new Promise((resolve) => {
+    const ps = 'powershell -NoProfile -Command "'
+      + '$out=@(); '
+      + 'foreach($ext in \'.mp4\',\'.mkv\',\'.avi\'){ '
+      + '$k=\"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\\' + $ext + \'\\UserChoice\"; '
+      + 'try{ $p=(Get-ItemProperty -Path $k -ErrorAction Stop).ProgId; if($p){ $out += ($ext + \'=\' + $p) } }catch{} }; '
+      + 'Write-Output ($out -join \';\')"';
+    exec(ps, { windowsHide: true, timeout: 6000 }, (err, stdout) => {
+      let id = '', progId = '';
+      if (!err && stdout) {
+        for (const pair of String(stdout).trim().split(';')) {
+          const ix = pair.indexOf('=');
+          if (ix <= 0) continue;
+          const pg = pair.slice(ix + 1).trim();
+          const mapped = playerProgIdToId(pg);
+          if (mapped) { id = mapped; progId = pg; break; }
+        }
+      }
+      defaultPlayerCache = { at: Date.now(), id, progId };
+      resolve(defaultPlayerCache);
+    });
+  });
+}
+ipcMain.handle('player:default', () => defaultVideoPlayer());
+
+/* پلیرهایی که لینک یوتیوب را خودشان می‌فهمند یا با yt-dlp استریم می‌شود */
+const STREAM_NATIVE = new Set(['potplayer', 'kmplayer']);
+const STREAM_YTDLP = new Set(['vlc', 'mpv']);
+/* تصمیمِ «چه چیزی با چه پلیری باز شود» — تابع خالص v0.61 برای تست بدون ویندوز */
+function playerOpenDecision(kind, src, wanted, scan, def) {
+  const isUrl = /^https?:\/\//i.test(String(src || ''));
+  const isYt = isUrl && /youtube\.com|youtu\.be/i.test(src);
+  const isFile = kind === 'file' || (!isUrl && !!src);
+  if (wanted && wanted !== 'default' && !scan.list.some((x) => x.id === wanted)) {
+    /* پلیر خواسته‌شده نصب نیست */
+    const alt = (scan.list.find((x) => x.id !== 'wmplayer') || scan.list[0] || {}).id || '';
+    if (!alt) return { action: 'fail', error: 'هیچ پلیری (VLC/KMPlayer/PotPlayer/mpv/MPC) روی سیستم نصب نیست' };
+    return { action: 'substitute', player: alt, wanted };
+  }
+  let player = wanted;
+  if (!player || player === 'default') {
+    const defId = (def && def.id) || '';
+    if (defId === 'uwp') {
+      /* Media Player/Films&TV مایکروسافت: فایل محلی را خود OS با آن باز می‌کند؛
+         لینک یوتیوب را نمی‌فهمد → مرورگر */
+      return { action: isYt ? 'browser' : 'os-default', player: 'uwp' };
+    }
+    if (defId && scan.list.some((x) => x.id === defId)) player = defId;
+    else player = (scan.list.find((x) => x.id !== 'wmplayer') || scan.list[0] || {}).id || '';
+    if (!player) {
+      /* هیچ پلیر دسکتاپی: فایل محلی را OS باز می‌کند؛ لینک → مرورگر */
+      return { action: isYt ? 'browser' : 'os-default', player: '' };
+    }
+  }
+  if (isYt) {
+    if (STREAM_NATIVE.has(player)) return { action: 'spawn', player };
+    if (STREAM_YTDLP.has(player)) {
+      return scan.ytdl ? { action: 'spawn-ytdlp', player } : { action: 'no-ytdlp', player };
+    }
+    return { action: 'browser', player };
+  }
+  if (isFile) return { action: 'spawn', player };
+  return { action: 'spawn', player }; /* هر منبع دیگری (لینک مستقیم ویدیو و…) */
+}
+/* باز کردن لینک ویدیو (یوتیوب یا مستقیم) با پلیر پیش‌فرض کاربر —
+   مستقل از IPC تا youtube_play/sys-run هم از همین یک مسیر برود */
+async function openWithDefaultPlayer(url) {
+  try {
+    const scan = await playersScan();
+    const def = await defaultVideoPlayer();
+    const d = playerOpenDecision('url', String(url || ''), 'default', scan, def);
+    if (d.action === 'browser') { try { shell.openExternal(url); return { ok: true, via: 'browser' }; } catch (_) { return { ok: false }; } }
+    if (d.action === 'os-default') { try { shell.openExternal(url); return { ok: true, via: 'browser' }; } catch (_) { return { ok: false }; } }
+    if (d.action === 'no-ytdlp') return { ok: false, noYtdl: true, player: d.player };
+    if (d.action === 'spawn' || d.action === 'spawn-ytdlp') {
+      return playerLaunch(d.player, url, { ytdl: d.action === 'spawn-ytdlp' });
+    }
+    return { ok: false, error: d.error || 'پخش ممکن نشد' };
+  } catch (e) { return { ok: false, error: netErr(e) }; }
+}
 
 /* ---------- ۵) کنترل پلیرها ---------- */
 const playerCtl = { player: null, vlcPort: 0, vlcPass: '', vlcBase: '', mpvPipe: '\\\\.\\pipe\\ava-mpv', ytUrl: '', exe: '' };
@@ -3587,7 +3630,7 @@ function mpvSend(cmdObj) {
   });
 }
 /* کلیدهای مدیای جهانی — برای هر پلیر/مرورگری که زیر کنترل مستقیم نیست */
-const MEDIA_KEYS = { play_pause: 'B3', next: 'B0', prev: 'B1', stop: 'B7' };
+const MEDIA_KEYS = { play_pause: 'B3', next: 'B0', prev: 'B1', stop: 'B2' }; /* v0.61 — stop اصلاح شد: VK_MEDIA_STOP=0xB2 */
 const VK = { left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0x46, f11: 0x7A };
 function fgKeys(seq) {
   /* کلیدها به «پنجرهٔ فعال» می‌روند — کاربر پلیر را جلوی چشمش دارد */
@@ -3653,38 +3696,19 @@ ipcMain.handle('player:ctl', async (_e, p) => {
 });
 
 /* ---------- ۶) باز کردن در پلیر (حتی یوتیوب) ---------- */
-ipcMain.handle('player:open', async (_e, p) => {
-  const q = p || {};
+/* اجرای واقعی پلیر با منبع (v0.61 — از player:open و openWithDefaultPlayer
+   هر دو همین یک مسیر می‌روند تا رفتارها هیچ‌وقت از هم جدا نیفتند) */
+async function playerLaunch(player, src, opts) {
   const scan = await playersScan();
-  let player = String(q.player || '').toLowerCase();
-  if (!scan.list.some((x) => x.id === player)) {
-    /* پلیر خواسته‌شده نصب نیست → اولین گزینهٔ موجود */
-    player = (scan.list.find((x) => x.id !== 'wmplayer') || scan.list[0] || {}).id || '';
-    if (!player) return { ok: false, error: 'هیچ پلیری (VLC/mpv/PotPlayer/MPC) روی سیستم نصب نیست' };
-  }
   const entry = scan.list.find((x) => x.id === player);
-  /* منبع: عبارت یوتیوب → حل ویدیو؛ لینک → نرمال؛ فایل محلی → همان */
-  let src = String(q.src || '').trim();
-  if (q.kind === 'query' && src) {
-    const res = await ytResolve(src);
-    if (!res.ok) return { ok: false, error: res.error };
-    src = 'https://www.youtube.com/watch?v=' + res.videoId;
-    playerCtl.ytUrl = src;
-  } else {
-    const n = ytNormalizeUrl(src);
-    playerCtl.ytUrl = n || '';
-    src = n || src;
-  }
-  const isYt = /youtube\.com|youtu\.be/i.test(src);
-  let feed = src;
-  /* یوتیوب در VLC/mpv → استریم مستقیم با yt-dlp (PotPlayer خودش یوتیوب را می‌فهمد) */
-  if (isYt && (player === 'vlc' || player === 'mpv') && !scan.ytdl) {
-    return { ok: false, noYtdl: true, player, error: 'برای پخش یوتیوب در ' + entry.fa + ' باید yt-dlp روی سیستم نصب باشد' };
-  }
-  if (isYt && (player === 'vlc' || player === 'mpv') && scan.ytdl) {
+  if (!entry || !entry.exe) return { ok: false, player, error: 'پلیر پیدا نشد' };
+  let feed = String(src || '');
+  const isYt = /youtube\.com|youtu\.be/i.test(feed);
+  /* یوتیوب در VLC/mpv → استریم مستقیم با yt-dlp (PotPlayer/KMPlayer خودشان یوتیوب را می‌فهمند) */
+  if (isYt && opts && opts.ytdl) {
     try {
       const g = await new Promise((resolve) => {
-        exec(`yt-dlp -f "best" -g --no-warnings "${src}"`, { windowsHide: true, timeout: 25000 }, (err, stdout) => {
+        exec(`yt-dlp -f "best" -g --no-warnings "${feed}"`, { windowsHide: true, timeout: 25000 }, (err, stdout) => {
           if (err || !stdout) return resolve('');
           resolve(String(stdout).split(/\r?\n/).filter(Boolean)[0] || '');
         });
@@ -3707,17 +3731,54 @@ ipcMain.handle('player:open', async (_e, p) => {
       playerCtl.player = 'mpv'; playerCtl.exe = entry.exe;
       return { ok: true, player, fa: entry.fa, controlled: true };
     }
-    if (player === 'potplayer') {
-      spawn(entry.exe, [feed], { detached: true, stdio: 'ignore' }).unref();
-      playerCtl.player = 'potplayer'; playerCtl.exe = entry.exe; playerCtl.vlcBase = '';
-      return { ok: true, player, fa: entry.fa, controlled: false };
-    }
     spawn(entry.exe, [feed], { detached: true, stdio: 'ignore' }).unref();
     playerCtl.player = player; playerCtl.exe = entry.exe; playerCtl.vlcBase = '';
     return { ok: true, player, fa: entry.fa, controlled: false };
   } catch (e) {
     return { ok: false, error: netErr(e) };
   }
+}
+
+ipcMain.handle('player:open', async (_e, p) => {
+  const q = p || {};
+  const scan = await playersScan();
+  const wanted = String(q.player || 'default').toLowerCase();
+  /* منبع: عبارت یوتیوب → حل ویدیو؛ لینک → نرمال؛ فایل محلی → همان */
+  let src = String(q.src || '').trim();
+  if (q.kind === 'query' && src) {
+    const res = await ytResolve(src);
+    if (!res.ok) return { ok: false, error: res.error };
+    src = 'https://www.youtube.com/watch?v=' + res.videoId;
+    playerCtl.ytUrl = src;
+  } else {
+    const n = ytNormalizeUrl(src);
+    playerCtl.ytUrl = n || '';
+    src = n || src;
+  }
+  /* v0.61 — تصمیم واحد برای همهٔ حالت‌ها (پلیر صریح، «پلیر پیش‌فرض»، فایل محلی) */
+  const def = wanted === 'default' ? await defaultVideoPlayer() : null;
+  const d = playerOpenDecision(q.kind || 'url', src, wanted, scan, def);
+  if (d.action === 'fail') return { ok: false, error: d.error };
+  const player = (d.action === 'substitute') ? d.player
+    : (d.player || wanted);
+  const entry = scan.list.find((x) => x.id === player);
+  if (d.action === 'browser') {
+    /* پلیر پیش‌فرض/خواسته‌شده یوتیوب را نمی‌فهمد → همان ویدیو در مرورگر */
+    try { shell.openExternal(src); } catch (_) { /* noop */ }
+    return { ok: true, via: 'browser', player, fa: (entry && entry.fa) || 'مرورگر' };
+  }
+  if (d.action === 'os-default') {
+    /* فایل محلی با انتخاب خود ویندوز (همان پلیر پیش‌فرض کاربر) باز می‌شود */
+    try { await shell.openPath(src); } catch (_) { /* noop */ }
+    return { ok: true, via: 'os-default', player: 'uwp', fa: 'پلیر پیش‌فرض ویندوز' };
+  }
+  if (d.action === 'no-ytdlp') {
+    return { ok: false, noYtdl: true, player, error: 'برای پخش یوتیوب در ' + ((entry && entry.fa) || player) + ' باید yt-dlp روی سیستم نصب باشد' };
+  }
+  if (d.action === 'spawn' || d.action === 'spawn-ytdlp') {
+    return playerLaunch(player, src, { ytdl: d.action === 'spawn-ytdlp' });
+  }
+  return { ok: false, error: 'پخش ممکن نشد' };
 });
 
 /* ============================================================
@@ -5504,10 +5565,8 @@ app.whenReady().then(() => {
   createWindow();
   setupAutoUpdater();
 
-  /* v0.37 — راه‌اندازی پنجرهٔ ویدیوی شناور:
-     وضعیت از pip-state.json (userData) بازیابی و IPC + میانبرهای سراسری ثبت می‌شود
-     Ctrl+Shift+P روشن/خاموش PiP — Ctrl+Shift+جهت‌ها جابجایی — Plus/Minus اندازه */
-  try { pipManager.init({ win }); } catch (e) { console.error('pip init:', e); }
+  /* v0.61 — پیاده‌سازی ویدیوی شناور حذف شد؛ میانبر Ctrl+Shift+P دیگر
+     PiP را باز نمی‌کند (فضای میانبر آزاد است). */
 
   /* v0.24 — سلف‌چک شبکه بعد از بالا آمدن پنجره (تأخیر کوتاه تا بوت سنگین نشود)
      v0.29.1 — + تشخیص عمیق: پراکسی سیستم + https واقعی به generativelanguage */
@@ -5584,5 +5643,4 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   try { pttStopHoldWatcher(); } catch (_) { /* noop */ } /* v0.51 — پروسهٔ PowerShell نگهبان PTT هم بسته شود */
-  try { pipManager.flushPiPState(); } catch (_) { /* noop */ } /* v0.38.1 — آخرین ≤۳۰۰ms وضعیت PiP از دست نمی‌رود */
 });

@@ -60,7 +60,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
   console.log('\n[4] v0.49 — گیت + رجیستری + دایت');
   ok(intentSrc.includes('function gateType(cmd)') && intentSrc.includes('function blocksActionRule(cmd, ruleId)'), 'voiceIntent: گیت نوع جمله');
   ok(intentSrc.includes("'correction'") && intentSrc.includes("'multi-step'") && intentSrc.includes("'question'") && intentSrc.includes("'smart-find'") && intentSrc.includes("'noun-phrase'"), 'voiceIntent: پنج نوع جمله');
-  ok(appSrc.includes('AVAIntent.blocksActionRule(cmd, rule.id)') && appSrc.includes("ev: 'gate'"), 'app: گیت در runCommand وصل است + لاگ ساخت‌یافته gate');
+  ok(/AVAIntent\.blocksActionRule\((?:cmd|vcText), rule\.id\)/.test(appSrc) && appSrc.includes("ev: 'gate'"), 'app: گیت در runCommand وصل است + لاگ ساخت‌یافته gate (v0.61: روی vcText)');
   ok(sitesSrc.includes('SITE_QUERY_REGISTRY') && sitesSrc.includes("'https://divar.ir/s/' + (city || 'tehran') + '?q=' + encodeURIComponent(q)"), 'voiceSites: رجیستری درون‌سایتی شهر-محور (v0.50 — ریشهٔ ۴۰۴ دیوار)');
   ok(appSrc.includes('function siteUrlFix(url)') && appSrc.includes('siteUrlFix(x.value)'), 'app: بازسازی URL پس از AI (executeDoActions)');
   ok(appSrc.includes('دیوار=divar.ir/s/{شهر-با-حروف-انگلیسی}?q='), 'app: قانون ۵ با قالب شهری دیوار (v0.50 — بجنورد→bojnurd)');
@@ -72,11 +72,11 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
   ok(!/ghp_[A-Za-z0-9]{20,}/.test(mainSrc + appSrc + preloadSrc + htmlSrc + dnsSrc + intentSrc), 'هیچ ghp_… واقعی در سورس نیست');
 
   /* ---------- 6) نسخه ---------- */
-  console.log('\n[6] نسخه 0.60.0-beta');
-  ok(pkg.version === '0.60.0-beta', 'package.json 0.60.0-beta');
-  ok(htmlSrc.includes('<span id="abVersion">v0.60.0-beta</span>'), 'index.html abVersion');
-  ok(appSrc.includes("let appVersion = '0.60.0-beta';"), 'app.js appVersion');
-  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۶۰.۰-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
+  console.log('\n[6] نسخه 0.61.0-beta');
+  ok(pkg.version === '0.61.0-beta', 'package.json 0.60.0-beta');
+  ok(htmlSrc.includes('<span id="abVersion">v0.61.0-beta</span>'), 'index.html abVersion');
+  ok(appSrc.includes("let appVersion = '0.61.0-beta';"), 'app.js appVersion');
+  ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes('۰.۶۱.۰-بتا'), 'README بلاک ۰.۵۳ (ارقام فارسی)');
 
   console.log('\n==========================================');
   console.log('scripts-test-v0480(relaxed): ' + pass + ' passed, ' + fail + ' failed');

@@ -1157,7 +1157,7 @@ app.whenReady().then(async () => {
         weatherRef: /const r = await bridge\.system\.weather\(city \|\| 'تهران'\);[\s\S]{0,600}return AI_FALLBACK;/.test(a292),
         calcRef: /if \(!m\) \{[\s\S]{0,200}return AI_FALLBACK;/.test(a292),
         dispatch: a292.includes("reply && typeof reply === 'object' && reply.__aiFallback")
-          && /__aiFallback[\s\S]{0,420}aiConnected\(\)\) \{ (_dispatchOutcome = '[a-z-]+'; )?await aiHandleCommand\(cmd(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\((?:rule, cmd|rule)?\)))?\); return; \}/.test(a292), /* v0.47: +outcome؛ v0.50: aiFallbackCtx(rule, cmd) */
+          && /__aiFallback[\s\S]{0,420}aiConnected\(\)\) \{ (_dispatchOutcome = '[a-z-]+'; )?await aiHandleCommand\((?:cmd|vcText)(, (?:rule && rule\.__aiExtra|await aiFallbackCtx\((?:rule, (?:cmd|vcText)|rule)?\)))?\); return; \}/.test(a292), /* v0.47: +outcome؛ v0.50: aiFallbackCtx(rule, cmd)؛ v0.61: vcText */
         edgeCity: a292.includes('wxExtractCity') && a292.includes('نشونم') && a292.includes('نشانم'),
         honestGeo: m292.includes('if (!gr.ok) return wFail(`سرویس آب‌وهوا پاسخ نداد (HTTP ${gr.status})`, true);')
           && (m292.match(/wFail\([^\n]*true\)/g) || []).length >= 4,
@@ -1449,27 +1449,19 @@ app.whenReady().then(async () => {
       const a37 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
       const h37 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
       const m37 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
-      const pm37 = fs.readFileSync(path.join(__dirname, 'pipWindowManager.js'), 'utf8');
-      const ph37 = fs.readFileSync(path.join(__dirname, 'renderer/pip.html'), 'utf8');
-      const pr37 = fs.readFileSync(path.join(__dirname, 'renderer/js/pipRenderer.js'), 'utf8');
       const pl37 = fs.readFileSync(path.join(__dirname, 'preload.js'), 'utf8');
       const vp37 = require(path.join(__dirname, 'renderer/js/voiceCommandParser.js'));
       const v37 = {
-        mgr: m37.includes("require('./pipWindowManager')") && pm37.includes("'screen-saver'") && pm37.includes('forward: true') && pm37.includes('pip-state.json') && pm37.includes('CommandOrControl+Shift+P') && pm37.includes('Borderless Windowed'),
-        parser: vp37.parseVoiceCommand('ویدیو رو پین کن', { pipOpen: false }).intent === 'PIN_VIDEO' && vp37.parseVoiceCommand('ببندش', { pipOpen: false }) === null && vp37.parseVoiceCommand('ببندش', { pipOpen: true }).intent === 'UNPIN_VIDEO' && vp37.parseVoiceCommand('ببرش بالا سمت راست', { pipOpen: false }).entities.position === 'top-right' && vp37.parseVoiceCommand('شفافیت هفتاد درصد', { pipOpen: true }).entities.opacity === 0.7,
-        detect: a37.includes('async function detectActiveVideo') && a37.includes("kind: 'blob'") && a37.includes('bridge.pipAPI.clipboard()'),
-        how: a37.includes('__aiExtra: AVACapabilities.aiPromptAddon()') && /aiHandleCommand\(cmd, (?:await aiFallbackCtx\((?:rule, cmd|rule)\)|rule && rule\.__aiExtra)\)/.test(a37) && fs.existsSync(path.join(__dirname, 'renderer/js/capabilities.js')),
-        bridge: pl37.includes('pipAPI: {') && ['show', 'hide', 'move', 'resize', 'setOpacity', 'setClickThrough', 'setAlwaysOnTop', 'reset', 'getState'].every((k) => pl37.includes(k)),
-        ui: ph37.includes('assets/ava-logo.png') && (ph37.match(/data-ui="1"/g) || []).length >= 6 && /youtube(-nocookie)?\.com\/embed\//.test(pr37) && pr37.includes('hoverUi'),
+        /* v0.61 — پلیر خودساختهٔ آوا (PiP) حذف شد؛ پارسر کتابخانه‌ای می‌ماند */
+        removed: !fs.existsSync(path.join(__dirname, 'pipWindowManager.js')) && !fs.existsSync(path.join(__dirname, 'renderer/pip.html')) && !fs.existsSync(path.join(__dirname, 'renderer/js/pipRenderer.js')) && !m37.includes("require('./pipWindowManager')") && !pl37.includes('pipAPI: {'),
+        parser: typeof vp37.parseVoiceCommand === 'function' && vp37.PIP_COMMAND_RE instanceof RegExp,
+        how: a37.includes('__aiExtra: AVACapabilities.aiPromptAddon()') && fs.existsSync(path.join(__dirname, 'renderer/js/capabilities.js')),
         order: h37.indexOf('js/voiceCommandParser.js') > -1 && h37.indexOf('js/voiceCommandParser.js') < h37.indexOf('js/app.js') && h37.indexOf('js/capabilities.js') < h37.indexOf('js/app.js'),
         ver: /^0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a37) && />v0\.(3[7-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?</.test(h37),
       };
-      ok('v0.37 pip manager: screen-saver top + smart click-through + state file + shortcuts + borderless note', v37.mgr);
-      ok('v0.37 parser: fa/en intents + anti-hijack guards (ببندش needs pipOpen)', v37.parser);
-      ok('v0.37 detectActiveVideo: in-page → webview → clipboard, honest blob', v37.detect);
+      ok('v0.61/v0.37: pip window removed everywhere (files/main/preload)', v37.removed);
+      ok('v0.37 parser kept as library: fa/en intents API intact', v37.parser);
       ok('v0.37 how-to: local capability registry + AI manifest via __aiExtra', v37.how);
-      ok('v0.37 preload: full pipAPI bridge', v37.bridge);
-      ok('v0.37 pip UI: logo watermark + data-ui controls + youtube embed + hover', v37.ui);
       ok('v0.37 script order: parser/capabilities before app.js', v37.order);
       ok('v0.37 version markers (0.37.x/0.3x+)', v37.ver);
     } catch (e) { console.log('SKIP | v0.37 markers | ' + String(e && e.message).slice(0, 80)); }
@@ -1484,25 +1476,15 @@ app.whenReady().then(async () => {
       const a38 = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
       const ih38 = fs.readFileSync(path.join(__dirname, 'renderer/index.html'), 'utf8');
       const m38 = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
-      const pm38 = fs.readFileSync(path.join(__dirname, 'pipWindowManager.js'), 'utf8');
-      const ph38 = fs.readFileSync(path.join(__dirname, 'renderer/pip.html'), 'utf8');
-      const pr38 = fs.readFileSync(path.join(__dirname, 'renderer/js/pipRenderer.js'), 'utf8');
-      const pl38 = fs.readFileSync(path.join(__dirname, 'pipPreload.js'), 'utf8');
       const v38 = {
-        cmds: m38.includes('youtube_search:') && m38.includes('pip_youtube:') && m38.includes("typeof c.cmd === 'function'") && m38.includes('pipManager.openUrl'),
-        openUrl: pm38.includes('function openUrl(u)') && pm38.includes('openUrl,') && pm38.includes('pip:host:search') && pm38.includes("{ kind: 'note'") && pm38.includes('results?search_query='),
-        player: !pr38.includes('enablejsapi=1') && (pr38.match(/btnClose\.addEventListener/g) || []).length === 1 && (pr38.match(/btnLock\.addEventListener/g) || []).length === 1 && pr38.includes("kind === 'note'") && pr38.includes('emptyDefault'),
-        ui: ph38.includes('id="btnPlay"') && ph38.includes('id="btnMute"') && ph38.includes('id="pipSearch"') && ph38.includes('.pip-search') && pl38.includes('search: (q)'),
+        cmds: m38.includes('youtube_search:') && m38.includes("typeof c.cmd === 'function'") && !m38.includes('pip_youtube:'),
         errors: m38.includes('429 سهمیهٔ همین مدل است') && m38.includes('سرویس هوش مصنوعی موقتاً شلوغ است') && m38.includes("actLog('gemini-chat fail: tried models ") && !m38.includes('مدل‌های امتحان‌شده: ') && !m38.includes('هیچ کلید Gemini جواب نداد'), /* v0.39: failover markers refreshed */
-        voice: a38.includes('const ytQueryOf') && a38.includes("run: 'pip_youtube'") && a38.includes("run: 'youtube_search'") && a38.indexOf("run: 'pip_youtube'") < a38.indexOf('AVAVoice.PIP_COMMAND_RE'),
+        voice: a38.includes("run: 'youtube_search'") && !a38.includes("run: 'pip_youtube'"),
         ver: /^0\.(3[8-9]|[4-9][0-9])\.[\w.-]+$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[8-9]|[4-9][0-9])\.[\w.-]+';/.test(a38) && />v0\.(3[8-9]|[4-9][0-9])\./.test(ih38),
       };
-      ok('v0.38 commands: youtube_search + pip_youtube (function cmd + PiP bridge)', v38.cmds);
-      ok('v0.38 pip manager: openUrl export + in-PiP search (link→play, text→browser+note)', v38.openUrl);
-      ok('v0.38 player: no double btnClose/btnLock + note kind + emptyDefault', v38.player);
-      ok('v0.38 pip UI: play/mute/search controls + preload search API', v38.ui);
+      ok('v0.61/v0.38 commands: youtube_search kept, pip_youtube removed', v38.cmds);
       ok('v0.38 errors: silent failover 401/403/429 + polite 429 + models only in activity.log', v38.errors);
-      ok('v0.38 voice rules: ytQueryOf + pip_youtube/youtube_search before PIP_COMMAND_RE', v38.voice);
+      ok('v0.61/v0.38 voice rules: yt_search kept, pip_youtube removed', v38.voice);
       ok('v0.38 version markers (0.38.0-beta)', v38.ver);
     } catch (e) { console.log('SKIP | v0.38 markers | ' + String(e && e.message).slice(0, 80)); }
 

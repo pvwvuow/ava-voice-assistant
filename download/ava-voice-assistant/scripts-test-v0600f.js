@@ -27,7 +27,7 @@ function ok(cond, name) {
 
 const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
 const dnsSrc = fs.readFileSync(path.join(ROOT, 'lib/dns-bypass.js'), 'utf8');
-const pipMgr = fs.readFileSync(path.join(ROOT, 'pipWindowManager.js'), 'utf8');
+/* v0.61 — پنجرهٔ شناور (pipWindowManager.js) حذف شد؛ پین‌های مربوط به آن منقضی‌اند */
 
 /* ============================================================
    [1] A19 — نصّاب ناقص بعد از لغو/خطا
@@ -60,8 +60,9 @@ ok(b1Body.includes('delete webPreferences.preload'), 'preload مهمان حذف 
 ok(b1Body.includes("h === 'chat.z.ai'") && b1Body.includes("h.endsWith('.z.ai')") && b1Body.includes("u.protocol === 'ava:'"),
   'allowlist: فقط ava:// و chat.z.ai (مرز نقطه‌ای)');
 ok(b1Body.includes('e.preventDefault()') && b1Body.includes('webview attach BLOCKED'), 'بقیه preventDefault + لاگ صادقانه');
-ok(pipMgr.includes('will-attach-webview') && pipMgr.includes('WEBVIEW_BLOCK'), 'گارد PiP (پین v0510) دست‌نخورده');
-ok((mainSrc.match(/will-attach-webview/g) || []).length === 2, 'دقیقاً دو گارد webview: پنجرهٔ اصلی + PiP');
+/* v0.61 — گارد PiP حذف شد (پنجرهٔ شناور برچیده شد)؛ گارد پنجرهٔ اصلی می‌ماند */
+ok(!fs.existsSync(path.join(ROOT, 'pipWindowManager.js')), 'v0.61: پنجرهٔ شناور حذف شده (فایل نیست)');
+ok((mainSrc.match(/\.on\('will-attach-webview'/g) || []).length === 1, 'دقیقاً یک گارد webview فعال: پنجرهٔ اصلی (PiP حذف شده)');
 
 /* ============================================================
    [3] B2 — allowlist پاپ‌آپ: hostname دقیق
@@ -182,11 +183,11 @@ if (atomM) {
    ============================================================ */
 console.log('\n[9] B8 — بازکردن URL از shell.openExternal (بدون cmd.exe)');
 ok((mainSrc.match(/start "" "https|'start https|start https:\//g) || []).length === 0, 'صفر `start` لختِ https در main.js');
-ok((mainSrc.match(/URL_OPEN_MARKER/g) || []).length >= 11, 'URL_OPEN_MARKER قرارداد خروجی sys:run را نگه می‌دارد (≥۱۱ مصرف)');
+ok((mainSrc.match(/URL_OPEN_MARKER/g) || []).length >= 9, 'URL_OPEN_MARKER قرارداد خروجی sys:run را نگه می‌دارد (≥۹ مصرف؛ v0.61: مصرف pip_youtube حذف شد)');
 ok((mainSrc.match(/shell\.openExternal/g) || []).length >= 10, 'بازکردن‌های https از shell.openExternal (الگوی sys:open-url)');
 ok(mainSrc.includes("cmd: 'start chrome'") && mainSrc.includes("'start \"\" \"shell:Downloads\"'") && mainSrc.includes('start "" "${hit.exe}"'),
   'بازکردن برنامه/پوشه/فایل عمداً روی `start` ماند (خارج از دامنهٔ B8)');
-ok(mainSrc.includes('pipManager.openUrl') && mainSrc.includes('ava_player'), 'پین v0510 (پلی کن → پلیر آوا) سالم');
+ok(mainSrc.includes('openWithDefaultPlayer(watch)') && mainSrc.includes('ava_player'), 'پین v0610 (پلی کن → پلیر پیش‌فرض کاربر) سالم');
 ok(mainSrc.includes('youtube_search: { cmd: (a) => { try { shell.openExternal'), 'youtube_search مهاجرت شد');
 ok(mainSrc.includes("if (q) shell.openExternal(`https://www.google.com/search?q="), 'web_search مهاجرت شد');
 
@@ -205,9 +206,10 @@ console.log('\n[11] A20 — شبح‌شدن اپ: بستن پنجرهٔ اصلی
 const closedM = /win\.on\('closed'[\s\S]*?\n  \}\);/.exec(mainSrc);
 ok(!!closedM, 'بلوک win.on(closed) گسترش یافته');
 const closedBody = closedM ? closedM[0] : '';
-ok(closedBody.includes('zaiWin.destroy()') && closedBody.includes('ytWin.destroy()'), 'zaiWin و ytWin destroy می‌شوند');
-ok(closedBody.includes('pipManager.getState()') && closedBody.includes('app.quit()'), 'بدون PiP → quit؛ با PiP → window-all-closed');
-ok(mainSrc.includes('PiP window still open'), 'لاگ صادقانهٔ ماندن با PiP');
+/* v0.61 — ytWin/PiP حذف شدند؛ فقط zaiWin destroy می‌شود و اپ خروج می‌کند */
+ok(closedBody.includes('zaiWin.destroy()') && closedBody.includes('app.quit()'), 'zaiWin destroy می‌شود و اپ خروج می‌کند (ytWin/PiP حذف)');
+ok(!closedBody.includes('ytWin.destroy()'), 'v0.61: ytWin دیگر وجود ندارد');
+ok(!mainSrc.includes('pipManager'), 'v0.61: هیچ ارجاعی به pipManager در main.js نیست');
 ok(/app\.on\('window-all-closed'[\s\S]{0,80}app\.quit\(\)/.test(mainSrc), 'window-all-closed → app.quit() (رفتار ویندوز) حفظ شد');
 
 /* ============================================================

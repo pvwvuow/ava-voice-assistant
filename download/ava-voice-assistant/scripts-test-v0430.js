@@ -98,18 +98,18 @@ ok(AVAIntent.TABLE.player_open.anchors.some((r) => r.test('وی ال سی')), '�
 /* ============================================================
    ۲) app.js — وصل‌شدن داوری به dispatch + قوانین جدید
    ============================================================ */
-ok(app.includes('AVAIntent.arbitrate(cmd, RULES)'), 'app: dispatch از داوری نیت استفاده می‌کند');
+ok(app.includes('AVAIntent.arbitrate(vcText, RULES)'), 'app: dispatch از داوری نیت استفاده می‌کند (روی متن ترمیم‌شدهٔ هستهٔ فهم)');
 ok(app.includes('intent ambiguous → AI arbitration'), 'app: نیت مبهم → داوری AI (لاگ)');
 ok(app.includes('if (_intentCands) parts.push(_intentCands);'), 'app: نامزدهای نیت به پیام AI می‌چسبند');
 ok(/let rule = _arbit \? _arbit\.rule : null;/.test(app), 'app: قانون برندهٔ داوری اجرا می‌شود');
 ok(!/const rule = RULES\.find\(\(r\) => r\.k\.test\(cmd\)\) \|\| findCustomRule/.test(app), 'app: «اولین قانون برنده» حذف شد (ریشهٔ معماری قدیمی)');
 
 /* قوانین جدید v0.43 */
-for (const id of ['now_playing', 'yt_bring', 'yt_watch', 'player_open', 'player_ctl', 'logoff']) {
+for (const id of ['now_playing', 'yt_bring', 'player_open', 'player_ctl', 'yt_close', 'logoff']) { /* v0.61: yt_watch حذف شد؛ yt_close ماند */
   ok(app.includes("id: '" + id + "'"), 'app: قانون ' + id + ' ثبت شده');
 }
 ok(app.includes('bridge.media.now()'), 'app: now_playing از SMTC می‌خواند');
-ok(app.includes('bridge.yt.resolve') && app.includes('bridge.yt.watch'), 'app: yt_bring/yt_watch از resolve+watch آوا');
+ok(app.includes('bridge.yt.resolve') && app.includes("bridge.player.open({ player: 'default'"), 'app: yt_bring از resolve + پخش با پلیر پیش‌فرض کاربر (v0.61)');
 ok(app.includes('bridge.player.open({ player, kind, src })') && app.includes("bridge.player.ctl({ action, arg })"), 'app: کنترل پلیر به پل اصلی وصل است');
 ok(/مسیر درست خودش را دارد/.test(app) && !/\(پخش\|بزن\|پلی\|شروع\|play\|کن\)/.test(app), 'app: music_play دیگر «کن» تنهایی را نمی‌بلعد');
 ok(read('renderer/js/voiceIntent.js').includes('پلی\\s?کن|باز\\s?کن|بگیر|بزن'), 'voiceIntent: ytQueryOf فعل پخش/پلی را از عبارت حذف می‌کند (v0.50 منتقل شد)');
@@ -142,14 +142,14 @@ ok(idx.includes('id="optEdgeVoice"') && idx.includes('<option value="farid">فر
 ok(idx.includes('js/voiceIntent.js'), 'UI: اسکریپت داوری نیت قبل از app.js لود می‌شود');
 
 /* ============================================================
-   ۴) SMTC + پخش‌کنندهٔ یوتیوب آوا
+   ۴) SMTC + پخش با پلیر پیش‌فرض کاربر (v0.61: پنجرهٔ خود آوا حذف شد)
    ============================================================ */
 ok(main.includes("ipcMain.handle('media:now'") && main.includes('GlobalSystemMediaTransportControlsSessionManager'), 'main: SMTC واقعی ویندوز (هر مرورگری)');
 ok(main.includes("ipcMain.handle('yt:resolve'") && main.includes('results?search_query='), 'main: ytResolve — عبارت → videoId');
-ok(main.includes("ipcMain.handle('yt:watch'") && main.includes('watch?v='), 'main: پخش‌کنندهٔ یوتیوب آوا (صفحهٔ کامل)');
+ok(!main.includes("ipcMain.handle('yt:watch'") && main.includes('watch?v='), 'main: پنجرهٔ پخش خود آوا حذف شد؛ پخش با پلیر پیش‌فرض (v0.61)');
 ok(main.includes("autoplay-policy", "no-user-gesture-required") || (main.includes("'autoplay-policy'") && main.includes('no-user-gesture-required')), 'main: پخش خودکار در پنجرهٔ Watch');
-ok(main.includes('videoId && /^[A-Za-z0-9_-]{11}$/') && main.includes('ytNormalizeUrl'), 'main: نرمال‌سازی لینک (watch/shorts/live/youtu.be)');
-ok(main.includes("else if (q.url) url = ytNormalizeUrl(q.url) ||"), 'main: لینک غیر یوتیوب هم در خود آوا باز می‌شود');
+ok(/youtube\.com\/(?:watch\?|shorts\/|live\/|embed\/)/.test(main) && main.includes('ytNormalizeUrl'), 'main: نرمال‌سازی لینک (watch/shorts/live/youtu.be)');
+ok(/function ytNormalizeUrl\(raw\)/.test(main), 'main: ytNormalizeUrl برای پاس‌دادن لینک به پلیر/مرورگر (v0.61)');
 
 /* رفتار ytNormalizeUrl */
 (() => {
@@ -194,11 +194,11 @@ ok(main.includes('--input-ipc-server='), 'main: mpv با IPC pipe کنترل‌�
 ok(main.includes('yt-dlp -f "best" -g'), 'main: یوتیوب → استریم مستقیم برای VLC/mpv (yt-dlp)');
 ok(main.includes('noYtdl') && main.includes('با پت‌پلیر پخش کن'), 'main: بدون yt-dlp → راهنمای صادقانه (پت‌پلیر یوتیوب را خودش می‌فهمد)');
 ok(main.includes("ipcMain.handle('player:ctl'") && main.includes("pl_pause'") && main.includes("['cycle', 'pause']"), 'main: کنترل واقعی VLC HTTP + mpv IPC');
-ok(main.includes('const MEDIA_KEYS = { play_pause: \'B3\', next: \'B0\', prev: \'B1\', stop: \'B7\' }'), 'main: کلیدهای مدیای جهانی (هر پلیری)');
+ok(/const MEDIA_KEYS = \{ play_pause: 'B3', next: 'B0', prev: 'B1', stop: 'B2' \}/.test(main), 'main: کلیدهای مدیای جهانی (v0.61: stop=0xB2 درست)');
 ok(main.includes('function fgKeys(seq)'), 'main: کلیدها به پنجرهٔ فعال (جلو/عقب/فول‌اسکرین)');
 ok(/Math\.round\(Math\.abs\(d\) \/ 5\)/.test(main), 'main: جلو/عقب چندفشاری (هر فلش ≈۵ ثانیه)');
 ok(main.includes('taskkill /IM'), 'main: بستن پلیرِ باز‌شده توسط آوا');
-ok(pre.includes('now: () => ipcRenderer.invoke(\'media:now\')') && pre.includes('watch: (p) => ipcRenderer.invoke(\'yt:watch\', p)'), 'preload: پل‌های مدیا/یوتیوب');
+ok(pre.includes('now: () => ipcRenderer.invoke(\'media:now\')') && pre.includes("resolve: (query) => ipcRenderer.invoke('yt:resolve'") && pre.includes("default: () => ipcRenderer.invoke('player:default'"), 'preload: پل‌های مدیا/یوتیوب/پلیر پیش‌فرض (v0.61)');
 ok(pre.includes('scan: () => ipcRenderer.invoke(\'player:scan\')') && pre.includes('ctl: (p) => ipcRenderer.invoke(\'player:ctl\', p)'), 'preload: پل‌های کنترل پلیر');
 
 /* ============================================================

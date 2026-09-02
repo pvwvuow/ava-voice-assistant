@@ -58,8 +58,9 @@ const RULES = [
     ['گوگل کروم رو برام باز کن', 'open_chrome'],
     ['با وی‌ال‌سی آهنگ شادمهر رو پخش کن', 'player_open'],
     ['play shape of you on youtube', 'yt_play'],
-    ['این ویدیو رو پین کن', 'pip'],
-    ['یوتیوب شناور رو باز کن', 'pip_youtube'],
+    /* v0.61: نیت‌های pip/pip_youtube حذف شدند → کنترل پلیر */
+    ['ویدیو رو فول اسکرین کن', 'player_ctl'],
+    ['پلیر رو پاز کن', 'player_ctl'],
   ];
   for (const [c, id] of fp) {
     ok(AVAIntent.gateReason(c, id) === '', 'FP-guard: «' + c.slice(0, 42) + '» → fast (' + id + ')');
@@ -116,24 +117,14 @@ const RULES = [
   const appSrc = fs.readFileSync(path.join(__dirname, 'renderer/js/app.js'), 'utf8');
   ok(appSrc.includes('function pttStart') && appSrc.includes("aveDeliver(txt, 'ptt-flush'"), 'رندرر: pttStart + flush (تحویل، نه لغو)');
 
-  console.log('\n[۶] پلیر v2 — ریشهٔ ارور ۱۵۳ + کنترل حرفه‌ای');
-  const pipHtml = fs.readFileSync(path.join(__dirname, 'renderer/pip.html'), 'utf8');
-  const pipRen = fs.readFileSync(path.join(__dirname, 'renderer/js/pipRenderer.js'), 'utf8');
-  const pipMgr = fs.readFileSync(path.join(__dirname, 'pipWindowManager.js'), 'utf8');
-  ok(pipHtml.includes('<webview id="yt"'), 'pip.html: webview به‌جای iframe');
-  ok(!/enablejsapi=1/.test(pipHtml + pipRen), 'هیچ enablejsapi=1 در پلیر نیست (ریشهٔ ارور ۱۵۳ منفجر شد)');
-  ok(pipRen.includes('youtube-nocookie.com/embed/'), 'embed ساده youtube-nocookie (بدون jsapi → بدون ۱۵۳)');
-  ok(pipMgr.includes('webviewTag: true'), 'pipWindowManager: webviewTag فعال');
-  ok(pipMgr.includes('will-attach-webview') && pipMgr.includes('WEBVIEW_BLOCK'), 'گارد امنیتی will-attach-webview (فقط embed یوتیوب)');
-  ok(pipRen.includes('executeJavaScript') || pipRen.includes('ytEval'), 'کنترل پخش با executeJavaScript (play/pause/seek/زمان)');
-  ok(pipHtml.includes('id="seek"') && pipRen.includes('fmtTime'), 'نوار زمان واقعی + نمایش زمان');
-  ok(pipHtml.includes('id="ytFallback"') && pipRen.includes('openExternal'), 'فالبک صادقانه «باز کردن در یوتیوب»');
-  ok(pipMgr.includes("'pip:open-external'") && /https:\\\/\\\/\(www\\\.\)\?youtube/.test(pipMgr), 'open-external فقط برای یوتیوب (گارد URL)');
+  console.log('\n[۶] پلیر سیستم — v0.61: پلیر خود آوا حذف شد؛ پخش با پلیر پیش‌فرض کاربر');
+  ok(!fs.existsSync(path.join(__dirname, 'renderer/pip.html')) && !fs.existsSync(path.join(__dirname, 'pipWindowManager.js')) && !fs.existsSync(path.join(__dirname, 'renderer/js/pipRenderer.js')), 'فایل‌های پلیر خودساختهٔ آوا حذف شدند (v0.61)');
+  ok(!mainSrc.includes('pipManager') && !mainSrc.includes('pip_youtube'), 'main.js: بدون pipManager/pip_youtube');
+  ok(mainSrc.includes('openWithDefaultPlayer') && mainSrc.includes("ipcMain.handle('player:default'"), 'main.js: youtube_play → پلیر پیش‌فرض کاربر + player:default');
   ok(mainSrc.includes("'autoplay-policy', 'no-user-gesture-required'"), 'autoplay با صدا بدون کلیک');
-  ok(mainSrc.includes('pipManager.openUrl') && mainSrc.includes('ava_player'), '«پلی کن» → پخش در پلیر خود آوا (فالبک مرورگر)');
 
   console.log('\n[۷] فاز تحقیق — پادزهر توهم «نازنین»');
-  ok(/'set_wake_word', 'research', 'type_once'\]/.test(appSrc), 'DO_ACTS + research + type_once');
+  ok(/'set_wake_word', 'research', 'type_once'/.test(appSrc), 'DO_ACTS + research + type_once (v0.61: +video_play/video_ctl در انتها)');
   ok(mainSrc.includes('aiWebResearch') && mainSrc.includes('duckduckgo.com/html') && mainSrc.includes('format=rss'), 'تحقیق وب: DDG + فالبک Bing RSS');
   ok(mainSrc.includes("'ai:research'") && preSrc.includes('research:'), 'IPC ai:research + پل preload');
   ok(appSrc.includes('[نتایج واقعی وب') && appSrc.includes('learn skip'), 'دور دوم AI + عدم یادگیریِ برنامهٔ تحقیقی');
@@ -152,8 +143,8 @@ const RULES = [
 
   console.log('\n[۱۰] نسخه');
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-  ok(pkg.version === '0.60.0-beta', 'package.json → 0.60.0-beta');
-  ok(pkg.description.includes('۰.۶۰') && pkg.description.includes('فیکس'), 'description → ۰.۵۱');
+  ok(pkg.version === '0.61.0-beta', 'package.json → 0.61.0-beta');
+  ok(pkg.description.includes('۰.۶۱') && pkg.description.includes('پلیر'), 'description → ۰.۶۱');
 
   console.log('\n==========================================');
   console.log('scripts-test-v0510: ' + pass + ' passed, ' + fail + ' failed');

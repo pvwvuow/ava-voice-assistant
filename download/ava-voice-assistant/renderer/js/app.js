@@ -2608,7 +2608,7 @@
   }
 
   /* ============================================================
-     v0.37 — Smart Gaming PiP + راهنمای فرمان‌ها (دو قانونِ اولویت‌دار)
+     v0.37 → v0.61 — بلاک قواعد مدیا + راهنمای فرمان‌ها
      ------------------------------------------------------------
      (الف) HOW — «چجوری می‌تونم فلان کارو بکنم؟»:
           اول در رجیستری توانایی‌های آوا (capabilities.js) می‌گردد؛
@@ -2618,30 +2618,18 @@
           گارد لازم: «چطور/چجوری/چگونه» فقط وقتی سوالِ روش است که
           «میتونم/کنم/بکنم» یا «چی میتونی» هم در جمله باشد — وگرنه
           «هوا چطوره؟» هم راهنما می‌شد!
-     (ب) PIP — فرمان‌های ویدیوی شناور (پین/بردار/جابجایی/اندازه/
-          شفافیت/قفل کلیک/همیشه‌رو/ریست) با پارسر فارسی+انگلیسی.
-          پارسر null بدهد → به AI می‌رود (نه اقدام اشتباه).
-     ترتیب مهم است: «چجوری ویدیو رو پین کنم؟» باید HOW شود نه پین!
+     (ب) MEDiA — یوتیوب/پلیر سیستم/کنترل پخش/دیکتهٔ یک‌باره.
+          v0.61: پنجرهٔ شناور (PiP) و پنجرهٔ یوتیوب (ytWin) حذف شدند؛
+          پخش با «پلیر پیش‌فرض کاربر» است و کنترل پلیر با کلیدهای مدیا.
      ============================================================ */
   {
-    const pipRules = [
+    /* v0.61 — بلاک قواعد مدیا: «یوتیوب شناور» و «پنجرهٔ شناور (PiP)» حذف شدند
+       (پلیر خودساختهٔ آوا برچیده شد؛ پخش با پلیر پیش‌فرض کاربر است). */
+    const mediaRules = [
       {
         k: /چ(?:طور|جور|گونه)[^.]{0,10}(?:میتونم|می\s?تونم|بکنم|کنم|بذارم|بزنم|بدم|کرد|بکن)|(?:میتونم|می\s?تونم)[^.]{0,16}چ(?:طور|جور|گونه)|how (do|can) i\b|what can you do|چی\s?(?:میتونی|می\s?تونی|بلدی)|چیکار.{0,8}(?:میتونی|بلدی)|چه\s?(?:کارایی|کارهایی|فرمانهایی|فرمان\u200cهایی|فرمانهای?|دستوراتی?)|لیست\s?(?:فرمان|دستور|کامند)|توانایی/i,
         id: 'howto', t: 'راهنمای فرمان‌ها', i: '#i-gear', r: (c) => howToReply(c),
         __aiExtra: AVACapabilities.aiPromptAddon(),
-      },
-      /* --- v0.38 — یوتیوب شناور با عبارت: «یوتیوب شناور آهنگ X» ---
-         قبل از قانونِ پینِ عمومی تا «شناور» به PIN ویدیوی جاری تفسیر نشود؛
-         «پین» عمداً در الگو نیست تا «یوتیوب رو پین کن» همان جریانِ قبلی بماند */
-      {
-        k: /(یوتیوب|youtube)[^.]{0,24}(شناور|فیپ)|شناور[^.]{0,14}(یوتیوب|youtube)|floating\s+youtube|youtube\s+pip/i,
-        id: 'pip_youtube', t: 'یوتیوب شناور', i: '#i-music', run: 'pip_youtube',
-        arg: (c) => ytQueryOf(c),
-        r: (c) => {
-          const q = ytQueryOf(c);
-          if (!q) return LANG === 'en' ? 'YouTube is open; copy a video link and say "pin the video" and I will float it.' : 'یوتیوب باز شد؛ لینک ویدیو را کپی کن و بگو «ویدیو رو پین کن» تا شناور پخشش کنم.';
-          return LANG === 'en' ? `Looking for "${q}" in the floating window; if it is not a video link, results open in the browser.` : `«${q}» را برای پنجرهٔ شناور برداشتم؛ اگر لینک ویدیو نباشد، نتیجه‌ها در مرورگر باز می‌شود.`;
-        },
       },
       /* --- v0.50 — «پلی/پخش کن» روی یوتیوب = پخشِ واقعی اولین نتیجه ---
          (لاگ کاربر v0.49: «آهنگ جدید شادمهر تو یوتیوب برام پلی کن» فقط صفحهٔ
@@ -2653,7 +2641,7 @@
         r: (c) => {
           const q = ytQueryOf(c);
           return q
-            ? (LANG === 'en' ? `Playing "${q}" in the AVA player.` : `«${q}» را در پلیر خود آوا پخش می‌کنم.`)
+            ? (LANG === 'en' ? `Playing "${q}" in your default video player.` : `«${q}» را با پلیر پیش‌فرض سیستم پخش می‌کنم.`)
             : (LANG === 'en' ? 'Opening YouTube.' : 'یوتیوب باز شد.');
         },
       },
@@ -2687,11 +2675,11 @@
             : `در حال پخش در ${n.app || 'برنامهٔ نامشخص'}: «${what}»${n.playing ? '' : ' (مکث شده)'}`);
         },
       },
-      /* --- v0.43 — «همین ویدیو رو بیار» — ویدیوی در حال پخشِ مرورگر، بدون کپی لینک
-         (خواستهٔ کاربر: «کاربر خودش کپی نکنه لینکو») --- */
+      /* --- v0.43 — «همین ویدیو رو بیار» — v0.61: پخش با پلیر پیش‌فرض کاربر
+         (نیت «پخش در خود آوا» حذف شد) --- */
       {
         /* v0.47 — B16: فاصلهٔ جمله («ویدیویی که توی یوتیوب داره پخش میشه رو بیار…») دیگر رول را نمی‌پراند (لاگ: به yt_search زباله می‌رفت) */
-        k: /همین\s?(ویدیو|فیلم|کلیپ)|ویدیو(یی)?\s?که[^.]{0,28}?(داره|در\s?حال)[^.]{0,12}?پخش|ویدیو\s?در\s?حال\s?پخش|همینو?\s?(بیار|پین\s?کن|باز\s?کن)|برام\s?همون\s?ویدیو|(بیار|بیارش)[^.]{0,16}(پات\s?پلیر|potplayer|وی\s?ال\s?سی|vlc)|bring (the )?current video|this video/i,
+        k: /همین\s?(ویدیو|فیلم|کلیپ)|ویدیو(یی)?\s?که[^.]{0,28}?(داره|در\s?حال)[^.]{0,12}?پخش|ویدیو\s?در\s?حال\s?پخش|همینو?\s?(بیار|باز\s?کن)|برام\s?همون\s?ویدیو|(بیار|بیارش)[^.]{0,16}(پات\s?پلیر|potplayer|وی\s?ال\s?سی|vlc)|bring (the )?current video|this video/i,
         id: 'yt_bring', t: 'ویدیوی در حال پخش', i: '#i-music',
         r: async (c) => {
           const cleanTitle = (s) => String(s || '').replace(/\s*[-–—]\s*(YouTube|یوتیوب)\s*$/i, '').trim();
@@ -2713,63 +2701,33 @@
           try {
             const res = (bridge.yt && bridge.yt.resolve) ? await bridge.yt.resolve(q) : null;
             if (res && res.ok && res.videoId) {
-              const op = await bridge.yt.watch({ videoId: res.videoId });
+              const op = await bridge.player.open({ player: 'default', kind: 'url', src: 'https://www.youtube.com/watch?v=' + res.videoId });
               if (op && op.ok) return (LANG === 'en'
-                ? `Brought "${res.title || q}" into AVA's own player.`
-                : `«${res.title || q}» را آوردم داخل پخش‌کنندهٔ خودم.`);
+                ? `Brought "${res.title || q}" into your default player.`
+                : `«${res.title || q}» را در پلیر پیش‌فرض سیستم پخش کردم.`);
             }
-            const w2 = (bridge.yt && bridge.yt.watch) ? await bridge.yt.watch({ query: q }) : null;
-            if (w2 && w2.ok) return (LANG === 'en'
-              ? `Opened YouTube results for "${q}" in AVA's player.`
-              : `نتیجه‌های «${q}» را در پخش‌کنندهٔ خودم باز کردم.`);
           } catch (_) { /* noop */ }
           return LANG === 'en' ? 'Could not open the video.' : 'باز کردن ویدیو ممکن نشد.';
         },
       },
-      /* --- v0.43 — «تو خودت بازش کن / لینکی که کپی کردم رو نشونم بده» ---
-         ریشهٔ گزارش کاربر: امبد یوتیوب می‌گفت «برو توی خودت یوتیوب ببین»؛
-         حالا پخش‌کنندهٔ واقعی یوتیوبِ آوا (صفحهٔ کامل) باز می‌شود --- */
+      /* --- v0.43 — کنترل پلیرها: «با وی ال سی پخش کن…» / «برو جلو ۳۰ ثانیه» ---
+         v0.61 — + کی‌ام‌پلیر + «با پلیر پیش‌فرض پخش کن» + کلیپ‌بورد از sys.clipboard */
       {
-        k: /(تو|توی|داخل)\s?(خودت|خودتت|خودم)|همینجا\s?(باز|نمایش|پخش|ببین)|لینک(ی)?\s?که\s?کپی|کپی\s?کردم|این\s?لینک\s?رو|لینک\s?یوتیوب\s?(رو|را)?\s?(باز|نشون|ببین)|open (it|the link) (in|here)|show me (the )?link/i,
-        id: 'yt_watch', t: 'پخش در خود آوا', i: '#i-music',
-        r: async (c) => {
-          let clip = '';
-          try {
-            const cb = (bridge && bridge.pipAPI && bridge.pipAPI.clipboard) ? await bridge.pipAPI.clipboard() : null;
-            clip = String((cb && (cb.url || cb.text || cb)) || '').trim();
-          } catch (_) { /* noop */ }
-          const mUrl = clip.match(/https?:\/\/\S+/);
-          const url = mUrl ? mUrl[0] : '';
-          try {
-            if (url) {
-              const op = await bridge.yt.watch({ url });
-              if (op && op.ok) return (LANG === 'en' ? 'Opened the link in AVA\'s player.' : 'لینک را داخل پخش‌کنندهٔ خودم باز کردم.');
-            }
-            /* بدون لینک: اگر چیزی در حال پخش است همان بیاید، وگرنه یوتیوب */
-            const op2 = await bridge.yt.watch({ url: 'https://www.youtube.com' });
-            if (op2 && op2.ok) return (LANG === 'en'
-              ? 'Opened YouTube inside AVA — paste or search there.'
-              : 'یوتیوب را داخل خودم باز کردم؛ از همین‌جا ببین و جستجو کن.');
-          } catch (_) { /* noop */ }
-          return LANG === 'en' ? 'Could not open the player window.' : 'پنجرهٔ پخش باز نشد.';
-        },
-      },
-      /* --- v0.43 — کنترل پلیرها: «با وی ال سی پخش کن…» / «برو جلو ۳۰ ثانیه» --- */
-      {
-        /* v0.47 — B16: حرف‌نوشت STT «پات پلیر» + فعل‌های باز کن/بیار (لاگ: «پات پلیر رو باز کن» رول را نمی‌گرفت) */
-        k: /(با|توی|تو|توسط)\s*(وی\s?ال\s?سی|\bvlc\b|ام\s?پی\s?وی|\bmpv\b|پت\s?پلیر|پات\s?پلیر|potplayer|ام\s?پی\s?سی|\bmpc\b)|(پخش|پلی\s?کن|بذار|اجرا|باز\s?کن|بیار|بیارش)[^.]{0,12}(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|پات\s?پلیر|potplayer|ام\s?پی\s?سی|mpc)|(پت\s?پلیر|پات\s?پلیر|potplayer)[^.]{0,10}(باز\s?کن|بیار|پخش\s?کن)/i,
+        /* v0.47 — B16: حرف‌نوشت STT «پات پلیر» + فعل‌های باز کن/بیار (لاگ: «پات پلیر رو باز کن» رول را نمی‌گرفت)
+           v0.61 — + کی‌ام‌پلیر + «با پلیر پیش‌فرض» (پلیرِ انتخابی خود کاربر در ویندوز) */
+        k: /(با|توی|تو|توسط)\s*(وی\s?ال\s?سی|\bvlc\b|ام\s?پی\s?وی|\bmpv\b|پت\s?پلیر|پات\s?پلیر|potplayer|کی\s?ام\s?پلیر|کی\s?ام\s?پلیر|kmplayer|ام\s?پی\s?سی|\bmpc\b)|(پخش|پلی\s?کن|بذار|اجرا|باز\s?کن|بیار|بیارش)[^.]{0,12}(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|پات\s?پلیر|potplayer|کی\s?ام\s?پلیر|kmplayer|ام\s?پی\s?سی|mpc)|(پت\s?پلیر|پات\s?پلیر|potplayer|کی\s?ام\s?پلیر|kmplayer)[^.]{0,10}(باز\s?کن|بیار|پخش\s?کن)|پلیر\s?پیش\s?فرض[^.]{0,10}(پخش|پلی|بذار|باز)/i,
         id: 'player_open', t: 'پخش در پلیر', i: '#i-music',
         r: async (c) => {
-          const pidOf = (s) => (/وی\s?ال\s?سی|vlc/i.test(s) ? 'vlc' : /ام\s?پی\s?وی|mpv/i.test(s) ? 'mpv' : /پت\s?پلیر|potplayer/i.test(s) ? 'potplayer' : /ام\s?پی\s?سی|mpc/i.test(s) ? 'mpc' : '');
+          const pidOf = (s) => (/وی\s?ال\s?سی|vlc/i.test(s) ? 'vlc' : /ام\s?پی\s?وی|mpv/i.test(s) ? 'mpv' : /پت\s?پلیر|potplayer/i.test(s) ? 'potplayer' : /کی\s?ام\s?پلیر|kmplayer/i.test(s) ? 'kmplayer' : /ام\s?پی\s?سی|mpc/i.test(s) ? 'mpc' : (/پلیر\s?پیش\s?فرض/i.test(s) ? 'default' : ''));
           const player = pidOf(c);
           let src = ytQueryOf(c)
-            .replace(/(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|potplayer|ام\s?پی\s?سی|mpc)/gi, ' ')
+            .replace(/(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|potplayer|کی\s?ام\s?پلیر|kmplayer|ام\s?پی\s?سی|mpc|پلیر\s?پیش\s?فرض)/gi, ' ')
             .replace(/\s+/g, ' ').trim();
           let kind = src ? 'query' : 'url';
           if (!src) {
             try {
-              const cb = (bridge && bridge.pipAPI && bridge.pipAPI.clipboard) ? await bridge.pipAPI.clipboard() : null;
-              const clip = String((cb && (cb.url || cb.text || cb)) || '').trim();
+              const cb = (bridge && bridge.sys && bridge.sys.clipboard) ? await bridge.sys.clipboard() : null;
+              const clip = String((cb && cb.text) || '').trim();
               const mUrl = clip.match(/https?:\/\/\S+/);
               if (mUrl) src = mUrl[0];
             } catch (_) { /* noop */ }
@@ -2786,16 +2744,17 @@
             }
             if (res && res.noYtdl) return (LANG === 'en'
               ? `YouTube in ${res.player === 'vlc' ? 'VLC' : 'mpv'} needs yt-dlp. Say "play it in PotPlayer" instead.`
-              : `پخش یوتیوب در ${res.player === 'vlc' ? 'وی‌ال‌سی' : 'mpv'} به yt-dlp نیاز دارد — بگو «با پت‌پلیر پخش کن» یا بگو «تو خودت بازش کن».`);
+              : `پخش یوتیوب در ${res.player === 'vlc' ? 'وی‌ال‌سی' : 'mpv'} به yt-dlp نیاز دارد — بگو «با پت‌پلیر پخش کن».`);
             return (LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
           } catch (_) { return LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'; }
         },
       },
       {
-        /* دقت: «ویدیو/فیلم رو ببند» عمداً اینجا نیست — مال پنجرهٔ شناور است
-           (فیکس v0.40). کنترل پلیر: پلیر/مدیا با هر فعل + ویدیو/فیلم فقط با
-           فول‌اسکرین/جلو/عقب + «برو جلو/عقب» مستقل */
-        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی)|(ویدیو|فیلم)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ)\s*(پلیر|مدیا)/i,
+        /* v0.61 — بازنگری ریشه‌ای: «ویدیو رو پلی کن» دیگر به نیتِ حذف‌شدهٔ
+           پنجرهٔ شناور نمی‌رود (لاگ v0.48: ۶ ثانیه معطلی AI) — کنترل واقعی
+           پلیر سیستم است: پلیر/مدیا با هر فعل + ویدیو/فیلم/کلیپ با فعل‌های
+           پخش/پاز/فول‌اسکرین/جلو/عقب + «برو جلو/عقب» مستقل */
+        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی|پلی\s?کن|پخش|نگه\s?دار)|(ویدیو|فیلم|کلیپ)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب|پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن|نگه\s?دار|ببند)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن)\s*(پلیر|مدیا|ویدیو|فیلم|کلیپ)/i,
         id: 'player_ctl', t: 'کنترل پلیر', i: '#i-music',
         r: async (c) => {
           if (!bridge || !bridge.player || !bridge.player.ctl) return LANG === 'en' ? 'Player control is only available inside the app.' : 'کنترل پلیر فقط داخل خود نرم‌افزار کار می‌کند.';
@@ -2808,7 +2767,7 @@
           else if (/فول\s?اسکرین|تمام\s?صفحه/.test(c)) action = 'fullscreen';
           else if (/ببند/.test(c)) action = 'close';
           else if (/صدا|ولوم/ .test(c)) action = /زیاد|بلند|بالا/.test(c) ? 'volume_up' : 'volume_down';
-          else action = 'play_pause'; /* پاز/توقف/استاپ/بی‌فعل */
+          else action = 'play_pause'; /* پاز/توقف/استاپ/پلی کن/پخش کن/نگه دار/بی‌فعل */
           try {
             const res = await bridge.player.ctl({ action, arg });
             if (res && res.ok) {
@@ -2822,14 +2781,10 @@
       /* --- v0.45 — بازنگری کامل منطق: نیتِ «بستن» قرینهٔ «باز کردن» است ---
          ریشهٔ ممیزی: «یوتیوب رو ببند» فقط واژهٔ یوتیوب را می‌دید و یوتیوب را
          «باز» می‌کرد! حالا فعلِ بستن/خاموش/قطع/استاپ یک نیت واقعی است.
-         دقت: «ویدیو/فیلم/کلیپ + ببند» عمداً اینجا نیست — همان مسیر UNPIN
-         پنجرهٔ شناور (فیکس v0.40) می‌ماند. */
+         v0.61 — پنجرهٔ شناور حذف شده؛ بستن یعنی بستن پلیری که آوا اجرا کرده. */
       {
         k: /(یوتیوب|youtube|پخش|استریم)[^.]{0,12}(ببند|بس\s?بند|بس\s?کن|خاموش\s?کن|قطع\s?کن|استاپ|استوپ|پایان)|(ببندش?|خاموشش?\s?کن|قطعش?\s?کن|استاپش?|استوپش?)[^.]{0,12}(یوتیوب|youtube|پخش)|(از\s*)?(یوتیوب|youtube)[^.]{0,10}(بیرون|کافی)|close (the )?(youtube|player|stream)/i,
         id: 'yt_close', t: 'بستن پخش', i: '#i-window', r: (c) => ytCloseReply(c),
-      },
-      {
-        k: AVAVoice.PIP_COMMAND_RE, id: 'pip', t: 'ویدیوی شناور', i: '#i-window', r: (c) => pipVoiceReply(c),
       },
       /* --- v0.51 — دیکتهٔ یک‌باره بدون «اینجا»: «ببین بنویس …» / «اینو تایپ کن …» /
          «برام بنویس که …» — استخراج محتوا با voiceIntent.typeOnceOf؛ اگر محتوا
@@ -2846,7 +2801,7 @@
         },
       },
     ];
-    RULES.splice(1, 0, ...pipRules);
+    RULES.splice(1, 0, ...mediaRules);
   }
 
   /* ============================================================
@@ -2861,10 +2816,10 @@
      ============================================================ */
   const CMD_PAGE_DECK = {
     video: {
-      fa: 'ویدیو و یوتیوب', en: 'Video & YouTube',
+      fa: 'ویدیو و پلیر سیستم', en: 'Video & System Player',
       items: {
-        fa: ['ویدیو رو پین کن', 'ویدیو رو ببر گوشهٔ بالا راست', 'ویدیو رو شیشه‌ای کن', 'ویدیو رو واضح‌تر کن', 'ویدیو رو کوچیکش کن', 'ویدیو رو ببند', 'کلیک روش رو ببند', 'تو یوتیوب آهنگ X رو سرچ کن'],
-        en: ['Pin the video', 'Move it top-right', 'Make it glassy', 'Make it clearer', 'Make it smaller', 'Close the video', 'Click through on', 'Search YouTube for X'],
+        fa: ['ویدیو رو پلی کن', 'ویدیو رو پاز کن', 'ویدیو رو فول اسکرین کن', 'ویدیو رو ببند', 'برو جلو ۳۰ ثانیه', 'با وی‌ال‌سی آهنگ X رو پخش کن', 'با پت‌پلیر پخش کن', 'با پلیر پیش‌فرض پخش کن', 'تو یوتیوب آهنگ X رو سرچ کن'],
+        en: ['Play the video', 'Pause the video', 'Fullscreen the video', 'Close the video', 'Forward 30s', 'Play X in VLC', 'Play in PotPlayer', 'Play in my default player', 'Search YouTube for X'],
       },
     },
     music: {
@@ -3088,7 +3043,7 @@
      = اجرا؛ بعد از ۱۶ ثانیه خودش می‌رود. هر دسته حداکثر هر ۱۲ ساعت یک‌بار
      تا اذیت نکند — و در وسط کار هرگز جلوی فرمان بعدی را نمی‌گیرد.
      ============================================================ */
-  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'yt_play', 'yt_bring', 'yt_watch', 'now_playing', 'player_open', 'player_ctl', 'pip_youtube', 'pip', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
+  const SUGGEST_TRIGGERS = new Set(['open_youtube', 'open_music', 'yt_search', 'yt_play', 'yt_bring', 'now_playing', 'player_open', 'player_ctl', 'yt_close', 'music_play', 'music_pause', 'music_next', 'music_prev', 'music_page', 'media_next', 'media_prev', 'media_toggle']);
   const SUGGEST_DECK = {
     video: {
       title: { fa: 'درگیر یوتیوب و ویدیویی؟', en: 'Working with YouTube/video?' },
@@ -3163,11 +3118,10 @@
     web_search: 'سرچ کن، جستجو کن، گوگل کن، پیداش کن — کل وب',
     site_search: 'جستجو داخل یک سایت مشخص: توی سایت X اینو/دنبال … سرچ کن/بگرد/پیدا کن',
     yt_search: 'جستجو یا پخش داخل یوتیوب: تو یوتیوب X رو سرچ کن / پلی کن',
-    yt_bring: 'ویدیویی که الان در مرورگر/سیستم پخش میشه رو بیار داخل آوا: همین ویدیو رو بیار',
-    yt_watch: 'باز کردن لینک کپی‌شده یا یوتیوب داخل پخش‌کنندهٔ خود آوا: تو خودت بازش کن',
+    yt_bring: 'ویدیویی که الان در مرورگر/سیستم پخش میشه رو با پلیر پیش‌فرض کاربر پخش کن: همین ویدیو رو بیار',
     now_playing: 'چی داره پخش میشه؟ — وضعیت پخش سیستم',
-    player_open: 'پخش در پلیر ویندوز: با وی‌ال‌سی/پت‌پلیر/mpv آهنگ X رو پخش کن',
-    player_ctl: 'کنترل پلیر: پلیر رو پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند',
+    player_open: 'پخش در پلیر ویندوز: با وی‌ال‌سی/پت‌پلیر/کی‌ام‌پلیر/mpv آهنگ X رو پخش کن — یا «با پلیر پیش‌فرض پخش کن»',
+    player_ctl: 'کنترل پلیر: ویدیو رو پلی/پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند',
     web_open: 'فقط باز کردن سایت — بدون هیچ جستجویی',
     open_youtube: 'باز کردن خود یوتیوب',
     open_music: 'پخش موزیک/آهنگ',
@@ -3373,6 +3327,16 @@
     const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(cmd || ''), await avaStateCtx()];
     if (_intentCands) parts.push(_intentCands);
     if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
+    /* v0.61 — حافظهٔ گفتگو برای فالبک هم — هیچ مسیر AI بی‌حافظه نیست */
+    try { if (window.AVACore) { const t = window.AVACore.turnsCtx(6); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
+    return parts.filter(Boolean).join('\n');
+  }
+  /* v0.61 — بستهٔ زمینهٔ لَین مغز (ستون ۴): مثل فالبک + حافظهٔ گفتگو +
+     موجودیت‌ها. قانون ۹ِ پرامپت («ارجاع را از تاریخچه حل کن») حالا واقعاً
+     تاریخچه دارد — ریشهٔ «همون مدل موتوری که گفتیم» همین بود. */
+  async function aiBrainCtx() {
+    const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(arguments.length ? arguments[0] : ''), await avaStateCtx()];
+    try { if (window.AVACore) { const t = window.AVACore.turnsCtx(6); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
     return parts.filter(Boolean).join('\n');
   }
 
@@ -4457,12 +4421,48 @@
     rcReply.textContent = '';
     rcTag.textContent = t('tag.working');
 
+    /* ============================================================
+       v0.61 — هستهٔ فهم (AVACore) — چهار ستون معماری جدید پاسخ‌دهی
+       ----------------------------------------------------------
+       ستون ۲: حل‌گر ارجاع — «همینو/همون آهنگ/اون مدل» با موجودیتِ آخرین
+         گفتگو ترمیم می‌شود تا هیچ لایه‌ای (قانون/AI) عبارتِ لخت نبیند
+         (ریشهٔ لاگ v0.53: «همینو» در یوتیوب سرچ شد).
+       ستون ۳: مسیربینی دو لَین — جملهٔ «موضوع‌دار» (سرچ/پخش با اسم/سوال/
+         تصحیح/ارجاع) وقتی AI وصل است «مستقیم» به مغز ابری می‌رود و
+         قانون‌ها فقط فالبکِ آفلاین‌اند (وارونگیِ «قانون-اول» قدیم).
+       ستون ۱/۴: حافظه و بستهٔ زمینه در voiceCore.js است؛ بعد از هر اجرا
+         recordTurn() هر دو لَین را از یک حافظه تغذیه می‌کند.
+       همیشه دقیقاً یک لَین — دوبار اجرا ساختاراً ناممکن است.
+       ============================================================ */
+    let vcText = cmd;
+    try {
+      if (window.AVACore) {
+        const _vc = window.AVACore.prepare(cmd, {
+          ai: aiConnected(),
+          apps: (typeof sysApps !== 'undefined' && sysApps.list) ? sysApps.list.map((a) => AVACore.normFa(String(a.name || '')).toLowerCase()) : [],
+        });
+        vcText = _vc.text || cmd;
+        if (_vc.resolved && _vc.resolved.length) {
+          try { actLog('ctx-resolve: «' + cmd.slice(0, 48) + '» → «' + vcText.slice(0, 48) + '» (' + _vc.resolved.map((r) => r.domain + '=' + r.to).join(', ') + ')', 'ui', { ev: 'ctx', resolved: _vc.resolved }); } catch (_) { /* noop */ }
+        }
+        if (_vc.lane === 'brain' && aiConnected()) {
+          try { actLog('lane=brain (direct-AI, reason=' + _vc.reason + '): «' + vcText.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'brain', reason: _vc.reason }); } catch (_) { /* noop */ }
+          _dispatchOutcome = 'ai-brain';
+          await aiHandleCommand(vcText, await aiBrainCtx());
+          return;
+        }
+      }
+    } catch (_) { vcText = cmd; } /* هستهٔ فهم هرگز نباید مسیر را بشکند */
+
+
     /* v0.43 — داوری نیت: همهٔ قوانین منطبق امتیاز می‌گیرند (لنگر/ممنوعه/
        تقویت‌کننده) و برندهٔ قاطع اجرا می‌شود؛ جملهٔ مبهم با نامزدها به AI
-       می‌رود. ریشهٔ «دونه‌دونه فیکس کردن کامندها» همین‌جا حذف شد. */
-    const _arbit = (typeof AVAIntent !== 'undefined') ? AVAIntent.arbitrate(cmd, RULES) : null;
+       می‌رود. ریشهٔ «دونه‌دونه فیکس کردن کامندها» همین‌جا حذف شد.
+       v0.61 — این زنجیره فقط دو نقش دارد: لَین instant + فالبک آفلاینِ
+       لَین brain — و روی متنِ ترمیم‌شده (vcText) کار می‌کند نه متن خام. */
+    const _arbit = (typeof AVAIntent !== 'undefined') ? AVAIntent.arbitrate(vcText, RULES) : null;
     let rule = _arbit ? _arbit.rule : null;
-    if (!rule) rule = findCustomRule(cmd);
+    if (!rule) rule = findCustomRule(vcText);
     _intentCands = (typeof AVAIntent !== 'undefined') ? (AVAIntent.candidatesText(_arbit) || '') : '';
     /* نیت مبهم + AI در دسترس → اقدام حدسی ممنوع، داوری با AI */
     if (rule && _arbit && !_arbit.decisive && aiConnected()) {
@@ -4475,7 +4475,7 @@
        اگر AI قطع باشد، رفتار قبلی (حدس محلی) حفظ می‌شود تا کاربر بی‌جواب نماند. */
     if (rule && aiConnected() && typeof AVAUnderstand !== 'undefined') {
       try {
-        const _und = AVAUnderstand.analyze(cmd);
+        const _und = AVAUnderstand.analyze(vcText);
         if (_und && AVAUnderstand.blocksBlindAction(_und, rule.id, targetResolvableWebSync)) {
           actLog('understand-first: «' + _und.target.clean + '» not locally resolvable → AI decides (no blind ' + rule.id + ')');
           _intentCands = AVAUnderstand.briefForAi(_und) + (_intentCands ? '\n' + _intentCands : '');
@@ -4487,15 +4487,15 @@
        اکشنِ کور اجرا نمی‌کنند (ریشهٔ سه نشت لاگ v0.50: «مطمئنی اسم آهنگ…»،
        «…نازنین نیست»، «جدیدترین آهنگ شادمهر در ۲۰۲۶» — همگی open_music شدند).
        v0.51 = وارونگی بار اثبات: اجرای سریعِ خانوادهٔ اکشن فقط با فعلِ اجرای صریح. */
-    if (rule && aiConnected() && typeof AVAIntent !== 'undefined' && AVAIntent.blocksActionRule && AVAIntent.blocksActionRule(cmd, rule.id)) {
-      const _gt = (AVAIntent.gateReason ? AVAIntent.gateReason(cmd, rule.id) : AVAIntent.gateType(cmd)) || 'unknown';
-      actLog('sentence-gate: «' + cmd.slice(0, 60) + '» → ' + _gt + ' → AI decides (no blind ' + (rule.id || '?') + ')', 'ui', { ev: 'gate', gtype: _gt, blocked: rule.id || '?' });
+    if (rule && aiConnected() && typeof AVAIntent !== 'undefined' && AVAIntent.blocksActionRule && AVAIntent.blocksActionRule(vcText, rule.id)) {
+      const _gt = (AVAIntent.gateReason ? AVAIntent.gateReason(vcText, rule.id) : AVAIntent.gateType(vcText)) || 'unknown';
+      actLog('sentence-gate: «' + vcText.slice(0, 60) + '» → ' + _gt + ' → AI decides (no blind ' + (rule.id || '?') + ')', 'ui', { ev: 'gate', gtype: _gt, blocked: rule.id || '?' });
       rule = null;
     }
     if (!rule) {
       /* مرحله ۳ پایپ‌لاین: تطبیق فازی برنامه‌های سیستم («تلگرام رو اجرا کن»)
          اگر نیت باز کردن نبود یا برنامه پیدا نشد → هوش مصنوعی (مرحله ۴) */
-      const appReply = await tryAppOpen(cmd);
+      const appReply = await tryAppOpen(vcText);
       if (appReply) {
         setState('success');
         statusText.textContent = t('status.done');
@@ -4503,6 +4503,7 @@
         typeText(rcReply, appReply);
         speak(appReply);
         pushHistory(cmd, !/پیدا نکردم|not found/i.test(appReply));
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: vcText, via: 'app-open', intent: 'open_app', reply: appReply }); } catch (_) { /* noop */ }
         /* v0.47 — B02: قفلِ busy بلافاصله آزاد شود */
         cmdBusy = false;
         _dispatchOutcome = 'app-open';
@@ -4518,7 +4519,7 @@
            v0.42 — عکسِ وضعیت (تایمرها/یادآوری‌ها/یادداشت‌ها/آخرین سایت) هم
            می‌چسبد تا AI «ذخیره‌شده‌های» کاربر را ببیند */
         _dispatchOutcome = 'ai';
-        await aiHandleCommand(cmd, await aiFallbackCtx(null, cmd));
+        await aiHandleCommand(vcText, await aiFallbackCtx(null, vcText));
         return;
       }
     }
@@ -4526,19 +4527,19 @@
        «چرا این کار را کرد؟» قابل دیباگ باشد (کرد = خط utterance total پایانی) */
     if (rule) {
       try {
-        const _q = rule.arg ? rule.arg(cmd) : undefined;
-        actLog('interpret: گفت «' + cmd.slice(0, 60) + '» | فهمید ' + (rule.id || 'custom') + (_q !== undefined ? ' q=«' + String(_q || '').slice(0, 60) + '»' : ''), 'ui', { ev: 'interpret', via: 'rule', id: rule.id || '', q: String(_q || '').slice(0, 120) });
+        const _q = rule.arg ? rule.arg(vcText) : undefined;
+        actLog('interpret: گفت «' + vcText.slice(0, 60) + '» | فهمید ' + (rule.id || 'custom') + (_q !== undefined ? ' q=«' + String(_q || '').slice(0, 60) + '»' : ''), 'ui', { ev: 'interpret', via: 'rule', id: rule.id || '', q: String(_q || '').slice(0, 120) });
       } catch (_) { /* noop */ }
     }
     _dispatchOutcome = rule ? ('rule:' + (rule.id || rule.t || '?')) : 'free-reply';
-    let reply = rule ? await resolveReply(rule, cmd) : t('default.reply');
+    let reply = rule ? await resolveReply(rule, vcText) : t('default.reply');
     /* v0.29.2 — قانونی که درخواست را فهمید ولی نتوانست انجام دهد (شهر پیدا
        نشد / شبکه / پارس ریاضی) → دیگر بن‌بست نیست؛ همان درخواست به تحلیل
        هوش مصنوعی می‌رود (گزارش کاربر: «ارجاع نمیده به ای آی») */
     if (reply && typeof reply === 'object' && reply.__aiFallback) {
       actLog('rule "' + ((rule && rule.t) || '?') + '" could not fulfill → AI fallback');
       /* v0.37 — __aiExtra: قانون راهنما فهرست توانایی‌های آوا را به AI می‌چسباند */
-      if (aiConnected()) { _dispatchOutcome = 'rule-fallback-ai'; await aiHandleCommand(cmd, await aiFallbackCtx(rule, cmd)); return; }
+      if (aiConnected()) { _dispatchOutcome = 'rule-fallback-ai'; await aiHandleCommand(vcText, await aiFallbackCtx(rule, vcText)); return; }
       reply = t('weather.fail'); /* AI هم در دسترس نیست → پیام صادقانهٔ از پیش تعریف‌شده */
       rcTag.textContent = t('tag.reply');
     }
@@ -4557,6 +4558,14 @@
         /* v0.39 — پیشنهاد زمینه‌ای: کاربر درگیر یوتیوب/ویدیو/موسیقی بود → کارت فرمان‌ها */
         if (rule && rule.id && SUGGEST_TRIGGERS.has(rule.id)) maybeSuggestCommands('video');
         pushHistory(cmd, !/نشده|نمی‌شود|Failed/.test(rcTag.textContent || ''));
+        /* v0.61 — ستون ۱: حافظهٔ گفتگو بعد از هر اجرای قانون تغذیه می‌شود */
+        try {
+          if (window.AVACore) window.AVACore.recordTurn({
+            utterance: vcText, via: 'rule', intent: rule ? (rule.id || rule.t || '') : '',
+            params: (rule && rule.arg) ? { q: String(rule.arg(vcText) || '').slice(0, 80) } : null,
+            reply: String(reply || '').slice(0, 200),
+          });
+        } catch (_) { /* noop */ }
         handsFreeRearm();
       } catch (e) {
         /* v0.47 — B03: استثنای مسیر پاسخ هرگز بی‌صدا دور ریخته نمی‌شود */
@@ -7070,7 +7079,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.60.0-beta';
+  let appVersion = '0.61.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8302,7 +8311,11 @@
     /* v0.60 (A11) — removed the sentence pointing at run_cmd with value=dict: no such rule id exists; the honest fallback says "چنین فرمانی نیست" */
     'Important rule 8: when the user wants text WRITTEN right where they are (اینجا بنویس… / ببین بنویس… / type this… / any write phrasing), reply with act=type_once and value=the exact text verbatim (strip only the command words; if the text was quoted, keep only the quoted part).\n' +
     /* v0.53 — history-reference law (real log 16:14:47: "the same Shadmehr song you last searched" → hallucinated «قشنگترین گناه») */
-    'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the chat history — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: play = music_play with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
+    /* v0.61 — قانون ارجاع: حالا دو منبع واقعی دارد — «تاریخچهٔ گفتگو» و
+       «موجودیت‌های آخرین موضوع» که هر دو واقعاً به همین پیام چسبانده شده‌اند؛
+       عبارتِ ترمیم‌شدهٔ کاربر هم ممکن است خودش قبلاً «همینو» را با تیتر واقعی
+       عوض کرده باشد (حل‌گر ارجاع AVACore). به‌روزشدگی متن مطابق همین منابع. */
+    'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the conversation history and the entity list attached to this message (تاریخچهٔ همین گفتگو / موجودیت‌های آخرین گفتگو) — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: video/song play = video_play (or music_play for the local music library) with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the attached history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -8316,7 +8329,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|volume_up|volume_down), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -8346,9 +8359,21 @@
   }
   /* v0.44 — سقف تاریخچهٔ چت (AI فقط ۸ پیامِ آخر را می‌خواند؛ نگهداشتنِ
      نامحدودش فقط RAM هدر می‌داد) */
+  let vcPendingUser = null;
   function pushChatHist(role, content) {
     chatHist.push({ role, content: String(content == null ? '' : content).slice(0, 4000) });
     if (chatHist.length > 40) chatHist = chatHist.slice(-40);
+    /* v0.61 — ستون ۱: هر رد و بدلِ AI (کاربر+پاسخ) به‌عنوان یک turn در
+       حافظهٔ هستهٔ فهم ثبت می‌شود — resolveRefs و entityCtx از همین تغذیه می‌شوند */
+    try {
+      if (window.AVACore) {
+        if (role === 'user') vcPendingUser = String(content == null ? '' : content);
+        else if (role === 'assistant' && vcPendingUser != null) {
+          window.AVACore.recordTurn({ utterance: vcPendingUser, via: 'ai', reply: String(content == null ? '' : content) });
+          vcPendingUser = null;
+        }
+      }
+    } catch (_) { /* noop */ }
   }
 
   /* استخراج بلوک افزودن فرمان از پاسخ AI */
@@ -8368,7 +8393,7 @@
      الگوی پروژهٔ مرجع: AI فقط «تصمیم» می‌گیرد؛ اجرای واقعی با کد محلی آوا و
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
-  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'yt_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word', 'research', 'type_once']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word؛ v0.51 +research (فاز تحقیق) +type_once (دیکتهٔ یک‌باره)؛ v0.54 +yt_search (سرچ یوتیوب بومی) */
+  const DO_ACTS = ['open_app', 'open_url', 'web_search', 'yt_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word', 'research', 'type_once', 'video_play', 'video_ctl']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word؛ v0.51 +research (فاز تحقیق) +type_once (دیکتهٔ یک‌باره)؛ v0.54 +yt_search (سرچ یوتیوب بومی)؛ v0.61 +video_play (پخش با پلیر پیش‌فرض کاربر) +video_ctl (کنترل پلیر سیستم) */
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -8495,6 +8520,31 @@
             const yr = await bridge.system.run('youtube_search', yq).catch(() => null);
             const yOk = !!(yr && (yr.ok === undefined || yr.ok));
             outs.push(yOk ? (LANG === 'en' ? 'YouTube search opened.' : 'جستجوی یوتیوب باز شد.') : (LANG === 'en' ? "Couldn't open it." : 'باز نشد.'));
+            break;
+          }
+          case 'video_play': {
+            /* v0.61 — پخش واقعی ویدیو با «پلیر پیش‌فرضِ کاربر» (خواستهٔ صریح:
+               «ببین ویدیو پلیر پیش فرض کاربر چیه، با همون پلی کنه») */
+            const vq = String(a.value || '').trim().slice(0, 120);
+            if (!vq) { outs.push(LANG === 'en' ? 'No title was given to play.' : 'عنوانی برای پخش داده نشد.'); break; }
+            if (!bridge || !bridge.player || !bridge.player.open) { outs.push(t('toast.onlyApp')); break; }
+            try {
+              const res = await bridge.player.open({ player: 'default', kind: 'query', src: vq });
+              if (res && res.ok) outs.push(LANG === 'en' ? `Playing "${vq}"${res.fa ? ' in ' + res.fa : ''}.` : `«${vq}» را پخش کردم${res.fa ? ' — در ' + res.fa : ''}.`);
+              else outs.push(LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
+            } catch (_) { outs.push(LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'); }
+            break;
+          }
+          case 'video_ctl': {
+            /* v0.61 — کنترل پلیر سیستم (play_pause/next/prev/fullscreen/stop/close/vol_up/vol_down) */
+            const vc = String(a.value || '').trim().toLowerCase();
+            const okSet = new Set(['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down']);
+            if (!okSet.has(vc)) { outs.push(LANG === 'en' ? 'Unknown player action.' : 'اقدامِ پلیر ناشناخته.'); break; }
+            if (!bridge || !bridge.player || !bridge.player.ctl) { outs.push(t('toast.onlyApp')); break; }
+            try {
+              const res = await bridge.player.ctl({ action: vc, arg: 0 });
+              outs.push(res && res.ok ? (LANG === 'en' ? `Done (${vc}).` : 'انجام شد.') : (LANG === 'en' ? `Could not: ${res && res.error || ''}` : `انجام نشد: ${res && res.error || ''}`));
+            } catch (_) { outs.push(LANG === 'en' ? 'Control failed.' : 'کنترل پلیر ممکن نشد.'); }
             break;
           }
           case 'open_url': case 'web_search': {
@@ -9103,194 +9153,23 @@
   }
 
   /* ============================================================
-     v0.37 — Smart Gaming PiP: اتصال فرمان صوتی به پنجرهٔ شناور
+     v0.61 — نیت «بستن پخش» (بازنگری کامل منطق)
      ------------------------------------------------------------
-     • detectActiveVideo(): تشخیص ویدیوی فعال در سه مسیر:
-         ۱) <video> در حال پخشِ خودِ صفحهٔ آوا (src مستقیم https →
-            انتقال با volume/rate/time؛ blob/MediaSource → قابل
-            انتقال نیست، صادقانه گزارش می‌شود)
-         ۲) webview چت z.ai — اگر کاربر داخلش یوتیوب باز کرده باشد
-            (videoId + ثانیهٔ جاری → ?start=)
-         ۳) کلیپ‌بورد — رایج‌ترین مسیر گیمر: لینک یوتیوب را کپی
-            می‌کند و می‌گوید «ویدیو رو پین کن»
-     • pipVoiceReply(): پارسر فارسی/انگلیسی → فرمان واقعی پنجره
-     • howToReply(): «چجوری می‌تونم …؟» → رجیستری توانایی‌ها یا AI
-     محدودیت‌های شناخته‌شده: sync کامل با ویدیوی اصلی (مخصوصاً
-     یوتیوب) و کنترل موقعیت در native requestPictureInPicture
-     ممکن نیست — به همین دلیل پنجرهٔ اختصاصی آوا ساخته شد.
+     قبلاً: «یوتیوب رو ببند» یوتیوب را باز می‌کرد (نیت مخالف نادیده
+     می‌شد) → فیکس v0.45 نیت بستن را ساخت. حالا پنجره‌های خودساختهٔ
+     آوا (ytWin/PiP) حذف شده‌اند؛ بستن یعنی بستن پلیری که آوا اجرا
+     کرده، وگرنه پاسخ صادقانه.
      ============================================================ */
-  function ytIdFromUrl(u) {
-    const m = String(u || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/|v\/))([A-Za-z0-9_-]{6,})/i);
-    return m ? m[1] : null;
-  }
-  function ytStartFromUrl(u) {
-    const m = String(u || '').match(/[?&](?:t|start)=([0-9hms]+)/i);
-    if (!m) return 0;
-    if (/^\d+$/.test(m[1])) return parseInt(m[1], 10);
-    const hm = m[1].match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
-    if (!hm) return 0;
-    return (parseInt(hm[1] || '0', 10) * 3600) + (parseInt(hm[2] || '0', 10) * 60) + parseInt(hm[3] || '0', 10);
-  }
-
-  async function detectActiveVideo() {
-    /* الف) ویدیوی در حال پخش داخل خود صفحهٔ آوا */
-    try {
-      const vs = [...document.querySelectorAll('video')].filter((v) => !v.paused && !v.ended && v.readyState >= 2);
-      if (vs.length) {
-        const v = vs[0];
-        const src = v.currentSrc || v.src || '';
-        if (/^https?:/i.test(src)) {
-          return { kind: 'src', url: src, volume: v.volume, rate: v.playbackRate, time: v.currentTime, muted: v.muted };
-        }
-        /* blob:/mediasource — انتقال مستقیم ممکن نیست */
-        return { kind: 'blob' };
-      }
-    } catch (_) { /* noop */ }
-    /* ب) webview چت z.ai — یوتیوبِ بازِ داخل آن */
-    try {
-      const wv = document.querySelector('webview');
-      if (wv && typeof wv.executeJavaScript === 'function') {
-        const info = await wv.executeJavaScript(
-          'JSON.stringify((function(){var p=[].slice.call(document.querySelectorAll("video")).filter(function(v){return !v.paused})[0];return {u:location.href,t:p?p.currentTime:0}})())',
-          false
-        );
-        const obj = JSON.parse(info || '{}');
-        const id = ytIdFromUrl(obj.u);
-        if (id) return { kind: 'youtube', videoId: id, start: Math.floor(obj.t || 0) };
-      }
-    } catch (_) { /* noop */ }
-    /* ج) کلیپ‌بورد — لینک کپی‌شدهٔ یوتیوب یا ویدیوی مستقیم */
-    try {
-      const clip = await bridge.pipAPI.clipboard();
-      const id = ytIdFromUrl(clip);
-      if (id) return { kind: 'youtube', videoId: id, start: ytStartFromUrl(clip) };
-      const dm = String(clip || '').match(/https?:\/\/\S+\.(?:mp4|webm|mov)(?:\?\S*)?/i);
-      if (dm) return { kind: 'src', url: dm[0] };
-    } catch (_) { /* noop */ }
-    return { kind: 'none' };
-  }
-
-  const PIP_POS_FA = {
-    'top-right': 'بالا-راست', 'top-left': 'بالا-چپ', 'bottom-right': 'پایین-راست',
-    'bottom-left': 'پایین-چپ', 'center': 'وسط صفحه', 'top-center': 'بالا-وسط', 'bottom-center': 'پایین-وسط',
-  };
-  const PIP_POS_EN = {
-    'top-right': 'top-right', 'top-left': 'top-left', 'bottom-right': 'bottom-right',
-    'bottom-left': 'bottom-left', 'center': 'center', 'top-center': 'top-center', 'bottom-center': 'bottom-center',
-  };
-  const PIP_SIZE_KEY = { 'small': 'small', 'medium': 'medium', 'large': 'large', 'extra-large': 'xl' };
-  const PIP_SIZE_FA = { small: 'کوچک', medium: 'متوسط', large: 'بزرگ', 'extra-large': 'خیلی بزرگ' };
-
-  /* v0.45 — نیت «بستن پخش» (بازنگری کامل منطق): بستنِ چیزی که واقعاً باز است.
-     ترتیب: پنجرهٔ یوتیوب آوا → پنجرهٔ شناور (PiP) → وگرنه صادقانه: چیزی باز نیست.
-     (قبلاً «یوتیوب رو ببند» یوتیوب را باز می‌کرد — نیت مخالف نادیده گرفته می‌شد) */
   async function ytCloseReply() {
-    let st = null;
-    try { st = (bridge && bridge.yt && bridge.yt.status) ? await bridge.yt.status() : null; } catch (_) { /* noop */ }
-    if (st && st.open) {
-      try { await bridge.yt.close(); } catch (_) { /* noop */ }
-      return LANG === 'en' ? 'Closed the AVA YouTube player.' : 'پنجرهٔ یوتیوب آوا بسته شد.';
-    }
-    let pipSt = null;
-    try { pipSt = (bridge && bridge.pipAPI) ? await bridge.pipAPI.getState() : null; } catch (_) { /* noop */ }
-    if (pipSt && pipSt.open) {
-      try { await bridge.pipAPI.hide(); } catch (_) { /* noop */ }
-      return LANG === 'en' ? 'Floating video closed.' : 'ویدیوی شناور بسته شد.';
-    }
-    return LANG === 'en'
-      ? 'No player of mine is open right now. To stop local music, say "pause the music".'
-      : 'الان پنجرهٔ پخشی از من باز نیست. برای توقف موزیکِ محلی بگو «آهنگ رو قطع کن».';
-  }
-
-  async function pipVoiceReply(cmd) {
-    let st = null;
-    try { st = await bridge.pipAPI.getState(); } catch (_) { st = { open: false, size: 'medium' }; }
-    const parsed = AVAVoice.parseVoiceCommand(cmd, {
-      pipOpen: !!(st && st.open),
-      size: (st && st.size === 'xl') ? 'extra-large' : ((st && st.size) || 'medium'),
-      opacity: (st && typeof st.opacity === 'number') ? st.opacity : undefined, /* v0.40 — پلهٔ نسبی واضح‌تر/شفاف‌تر */
-    });
-    if (!parsed) {
-      /* جملهٔ لنگر‌دار ولی ناشناخته → هوش مصنوعی؛ بدون AI هم صادق می‌مانیم */
-      if (aiConnected()) return AI_FALLBACK;
-      return LANG === 'en'
-        ? 'I could not map that to a floating-video command. First pin one: say "pin the video".'
-        : 'این را به فرمان ویدیوی شناور تبدیل نکردم. اول یه ویدیو پین کن: بگو «ویدیو رو پین کن».';
-    }
-    const P = parsed.intent;
-    const E = parsed.entities || {};
-    actLog('pip intent ' + P + ' ' + JSON.stringify(E));
     try {
-      if (P === 'PIN_VIDEO') {
-        const src = await detectActiveVideo();
-        await bridge.pipAPI.show(src);
-        if (E.position) await bridge.pipAPI.move(E.position);
-        const posTxt = E.position ? (LANG === 'en' ? PIP_POS_EN[E.position] : PIP_POS_FA[E.position]) : '';
-        if (src.kind === 'youtube') {
-          return (LANG === 'en' ? 'YouTube video pinned' : 'ویدیوی یوتیوب پین شد') + (posTxt ? ' — ' + posTxt : '') +
-            (LANG === 'en' ? '. Tune it: "make it smaller", "opacity fifty", "click through on".' : '. با «کوچیکش کن»، «شفافش کن» و «کلیک روش رو ببند» تنظیمش کن.');
-        }
-        if (src.kind === 'src') {
-          return (LANG === 'en' ? 'Video pinned' : 'ویدیو پین شد') + (posTxt ? ' — ' + posTxt : '') + '.';
-        }
-        if (src.kind === 'blob') {
-          return LANG === 'en'
-            ? 'This in-page video plays via blob/MediaSource and cannot be transferred. Copy its YouTube link and say "pin the video".'
-            : 'این ویدیو داخل صفحه با blob پخش می‌شود و انتقال مستقیم ممکن نیست. لینک یوتیوبش را کپی کن و بگو «ویدیو رو پین کن».';
-        }
-        return LANG === 'en'
-          ? 'No playing video found. Copy a YouTube link and say "pin the video" again.'
-          : 'ویدیوی در حال پخشی پیدا نکردم. لینک یوتیوب موردنظرت را کپی کن و دوباره بگو «ویدیو رو پین کن».';
+      if (bridge && bridge.player && bridge.player.ctl) {
+        const res = await bridge.player.ctl({ action: 'close', arg: 0 });
+        if (res && res.ok) return LANG === 'en' ? 'Closed the player.' : 'پلیر بسته شد.';
       }
-      if (P === 'UNPIN_VIDEO') {
-        await bridge.pipAPI.hide();
-        return LANG === 'en' ? 'Floating video removed.' : 'ویدیو از صفحه برداشته شد.';
-      }
-      if (P === 'MOVE_PIP') {
-        if (E.size) await bridge.pipAPI.resize(PIP_SIZE_KEY[E.size] || 'medium');
-        await bridge.pipAPI.move(E.position);
-        return LANG === 'en' ? 'Moved to ' + PIP_POS_EN[E.position] + '.' : 'رفت ' + PIP_POS_FA[E.position] + '.';
-      }
-      if (P === 'RESIZE_PIP') {
-        await bridge.pipAPI.resize(PIP_SIZE_KEY[E.size] || 'medium');
-        return LANG === 'en' ? 'Size: ' + E.size + '.' : 'اندازه شد: ' + (PIP_SIZE_FA[E.size] || E.size) + '.';
-      }
-      if (P === 'OPACITY_PIP') {
-        await bridge.pipAPI.setOpacity(E.opacity);
-        return LANG === 'en'
-          ? 'Opacity set to ' + Math.round(E.opacity * 100) + '%.'
-          : 'شفافیت شد ' + Math.round(E.opacity * 100) + '٪.';
-      }
-      if (P === 'CLICK_THROUGH_ON') {
-        await bridge.pipAPI.setClickThrough(true);
-        return LANG === 'en'
-          ? 'Click-lock on — clicks pass through to your game. Say "click through off" to unlock.'
-          : 'قفل کلیک فعال شد؛ کلیک‌ها از روی پنجره رد می‌شوند و به بازی می‌رسند. برای باز کردن بگو «کلیک روش فعال باشه».';
-      }
-      if (P === 'CLICK_THROUGH_OFF') {
-        await bridge.pipAPI.setClickThrough(false);
-        return LANG === 'en' ? 'Window is clickable again.' : 'کلیک روی پنجره دوباره فعال شد.';
-      }
-      if (P === 'ALWAYS_ON_TOP_ON') {
-        await bridge.pipAPI.setAlwaysOnTop(true);
-        return LANG === 'en' ? 'Stays on top of everything now.' : 'خودش را همیشه رو صفحه نگه می‌دارد.';
-      }
-      if (P === 'ALWAYS_ON_TOP_OFF') {
-        await bridge.pipAPI.setAlwaysOnTop(false);
-        return LANG === 'en' ? 'No longer always on top.' : 'دیگه همیشه رو صفحه نمی‌ماند.';
-      }
-      if (P === 'RESET_PIP') {
-        await bridge.pipAPI.reset();
-        return LANG === 'en' ? 'Floating video reset to defaults.' : 'ویدیوی شناور به حالت پیش‌فرض برگشت.';
-      }
-    } catch (e) {
-      actLog('pip error: ' + ((e && e.message) || e));
-      return LANG === 'en'
-        ? 'Floating video failed: ' + ((e && e.message) || 'unknown')
-        : 'ویدیوی شناور انجام نشد: ' + ((e && e.message) || 'نامشخص');
-    }
-    if (aiConnected()) return AI_FALLBACK;
-    return t('default.reply');
+    } catch (_) { /* noop */ }
+    return LANG === 'en'
+      ? 'No player that I launched is open right now. To stop local music, say "pause the music".'
+      : 'الان پلیری که من اجرا کرده باشم باز نیست. برای توقف موزیکِ محلی بگو «آهنگ رو قطع کن».';
   }
 
   /* «چجوری می‌تونم …؟» — اول رجیستری محلی (آفلاین و فوری)، بعد AI با مانیفست */
@@ -9302,8 +9181,8 @@
     }
     if (aiConnected()) return AI_FALLBACK; /* با __aiExtra فهرست توانایی‌ها به AI می‌چسبد */
     return LANG === 'en'
-      ? 'I am offline right now — sign in on the GLM chat tab and ask again. Meanwhile I can pin videos ("pin the video"), control Discord (mute/deafen/call/message), dictate into any app ("type here for me"), play music, read rates/weather, set timers and reminders, and open apps or sites.'
-      : 'الان به هوش مصنوعی وصل نیستم که جواب کامل بدهم (تب «صفحه چت GLM» وارد حسابت شو). فعلاً این‌ها را بلدم: ویدیوی شناور («ویدیو رو پین کن»)، دیسکورد (میوت/دیفن/تماس/پیام)، تایپ صوتی در هر برنامه («اینجا برام تایپ کن»)، موزیک، آب‌وهوا، قیمت ارز و طلا، اوقات شرعی، تایمر، یادآوری، یادداشت، خاموش/ریستارت و باز کردن برنامه‌ها و سایت‌ها.';
+      ? 'I am offline right now — sign in on the GLM chat tab and ask again. Meanwhile I can control video players ("play the video", "fullscreen", "play in VLC"), control Discord (mute/deafen/call/message), dictate into any app ("type here for me"), play music, read rates/weather, set timers and reminders, and open apps or sites.'
+      : 'الان به هوش مصنوعی وصل نیستم که جواب کامل بدهم (تب «صفحه چت GLM» وارد حسابت شو). فعلاً این‌ها را بلدم: کنترل پلیر ویدیو («ویدیو رو پلی کن»، «فول اسکرین»، «با وی‌ال‌سی پخش کن»، «با پلیر پیش‌فرض پخش کن»)، دیسکورد (میوت/دیفن/تماس/پیام)، تایپ صوتی در هر برنامه («اینجا برام تایپ کن»)، موزیک، آب‌وهوا، قیمت ارز و طلا، اوقات شرعی، تایمر، یادآوری، یادداشت، خاموش/ریستارت و باز کردن برنامه‌ها و سایت‌ها.';
   }
 
   /* ============================================================

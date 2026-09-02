@@ -72,15 +72,15 @@ ok(JSON.stringify(sb.f('CommandOrControl+Alt+F5')) === JSON.stringify([0x11, 0x1
 
 console.log('\n[5] قانون ارجاع به تاریخچه + گارد یادگیری');
 ok(appSrc.includes('مرجع را اول از «تاریخچهٔ همین گفتگو» بردار'), 'FA: قانون ۱۰ (v0.54: اول تاریخچه، بعد اکشن — نه حافظه، نه رد کردن)');
-ok(appSrc.includes('resolve the reference FIRST from the chat history'), 'EN: rule 9 (v0.54)');
+ok(appSrc.includes('resolve the reference FIRST from the conversation history'), /* v0.61: منابع واقعی (تاریخچه + موجودیت‌ها) */ 'EN: rule 9 (v0.54)');
 ok(appSrc.includes('learn skip: جملهٔ ارجاعی به تاریخچه — قابل بازپخش آفلاین نیست'), 'learn-skip: جملهٔ ارجاعی یاد گرفته نمی‌شود');
 ok(/همون\|همین\|همان/.test(appSrc) && /همینو\|اونو/.test(appSrc) && appSrc.includes('آخرین بار|قبلی'), 'regex گارد: همون/همین/همان + همینو/اونو + آخرین بار/قبلی');
 
 console.log('\n[6] نسخه (forward-relax ≥0.54)');
-ok(pkg.version === '0.60.0-beta', 'package.json → 0.60.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.60.0-beta</span>'), 'index.html abVersion');
-ok(appSrc.includes("let appVersion = '0.60.0-beta';"), 'app.js appVersion');
-ok(readme.includes('۰.۶۰.۰-بتا'), 'README بلاک ۰.۵۴ (ارقام فارسی)');
+ok(pkg.version === '0.61.0-beta', 'package.json → 0.61.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.61.0-beta</span>'), 'index.html abVersion');
+ok(appSrc.includes("let appVersion = '0.61.0-beta';"), 'app.js appVersion');
+ok(readme.includes('۰.۶۱.۰-بتا'), 'README بلاک ۰.۵۴ (ارقام فارسی)');
 
 console.log('\n======================');
 console.log('PASS=' + pass + '  FAIL=' + fail);

@@ -222,9 +222,10 @@ const OP = (r) => (r && r.entities && typeof r.entities.opacity === 'number' ? r
   eq((AVAVoice.parseSiteSearch('حالا توی این سایت برام دنبال ساعت رولکس بگرد', D9) || {}).thisSite, true, 'W9c: «توی این سایت…» همین');
 }
 
-/* ---------- ۸) پارسر ctx.opacity از وضعیت واقعی PiP ---------- */
+/* ---------- ۸) پارسر فرمان صوتی سالم (v0.61: پنجرهٔ شناور حذف شد؛ پارسر می‌ماند) ---------- */
 {
-  ok(/opacity: \(st && typeof st\.opacity === 'number'\) \? st\.opacity : undefined/.test(app), 'ساخت: ctx.opacity از getState به پارسر پاس می‌شود');
+  ok(/const PIP_COMMAND_RE = /.test(app) === false, 'app.js دیگر PIP_COMMAND_RE را مصرف نمی‌کند (پارسر کتابخانه‌ای باقی است)');
+  ok(/const PIP_COMMAND_RE = /.test(read('renderer/js/voiceCommandParser.js')), 'پارسر voiceCommandParser سر جایش است');
 }
 
 /* ---------- ۹) نسخه و سلامت فایل‌ها ---------- */

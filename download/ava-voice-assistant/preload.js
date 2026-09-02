@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld('ava', {
        کلیپ‌بورد — قبلی پیست Ctrl+V بود و در پنجرهٔ اشتباه می‌نشست) */
     saveFg: () => ipcRenderer.invoke('sys:savefg'),
     typeText: (text, hwnd) => ipcRenderer.invoke('sys:typeText', { text, hwnd }),
+    /* v0.61 — خواندن کلیپ‌بورد (جایگزین pip:clip پس از حذف پنجرهٔ شناور) */
+    clipboard: () => ipcRenderer.invoke('sys:clipboard'),
     /* v0.35 — بیدارباش در مینیمایز/بازی: جلوگیری از suspend شدن اپ تا حلقهٔ
        «آوا» حتی وقتی پنجره مخفی است یا کاربر در بازی است زنده بماند */
     wakePsb: (on) => ipcRenderer.invoke('wake:psb', !!on),
@@ -161,16 +163,12 @@ contextBridge.exposeInMainWorld('ava', {
     now: () => ipcRenderer.invoke('media:now'),
   },
   yt: {
-    /* عبارت → ویدیوی یوتیوب (اولین نتیجه) */
+    /* عبارت → ویدیوی یوتیوب (اولین نتیجه) — v0.61: برای پخش با پلیر پیش‌فرض */
     resolve: (query) => ipcRenderer.invoke('yt:resolve', { query }),
-    /* باز کردن ویدیو/لینک/جستجو در پخش‌کنندهٔ یوتیوب خود آوا */
-    watch: (p) => ipcRenderer.invoke('yt:watch', p),
-    /* v0.45 — نیت «بستن»: «یوتیوب رو ببند» */
-    status: () => ipcRenderer.invoke('yt:status'),
-    close: () => ipcRenderer.invoke('yt:close'),
   },
   player: {
     scan: () => ipcRenderer.invoke('player:scan'),
+    default: () => ipcRenderer.invoke('player:default'), /* v0.61 — پلیر ویدیوی پیش‌فرض کاربر */
     open: (p) => ipcRenderer.invoke('player:open', p),
     ctl: (p) => ipcRenderer.invoke('player:ctl', p),
   },
@@ -207,24 +205,8 @@ contextBridge.exposeInMainWorld('ava', {
     onStatus: (cb) => ipcRenderer.on('ava:net-status', (_e, s) => cb(s)),
   },
 
-  /* v0.37 — پنجرهٔ ویدیوی شناور (Smart Gaming PiP)
-     پنجرهٔ شیشه‌ای مخصوص گیم: همیشه‌رو، شفافیت، click-through، ذخیرهٔ وضعیت */
-  pipAPI: {
-    show: (source) => ipcRenderer.invoke('pip:show', source),
-    hide: () => ipcRenderer.invoke('pip:hide'),
-    toggle: (source) => ipcRenderer.invoke('pip:toggle', source),
-    move: (position) => ipcRenderer.invoke('pip:move', position),
-    resize: (size) => ipcRenderer.invoke('pip:resize', size),
-    setOpacity: (value) => ipcRenderer.invoke('pip:opacity', value),
-    setClickThrough: (enabled) => ipcRenderer.invoke('pip:click-through', !!enabled),
-    setAlwaysOnTop: (enabled) => ipcRenderer.invoke('pip:always-on-top', !!enabled),
-    reset: () => ipcRenderer.invoke('pip:reset'),
-    getState: () => ipcRenderer.invoke('pip:get-state'),
-    /* لینک کپی‌شدهٔ کلیپ‌بورد از پروسهٔ اصلی (برای «لینک یوتیوب رو پین کن») */
-    clipboard: () => ipcRenderer.invoke('pip:clip'),
-    /* تغییر وضعیت از صدا/میانبر/دکمه‌های خود پنجره */
-    onState: (cb) => ipcRenderer.on('pip:state', (_e, s) => cb(s)),
-  },
+  /* v0.61 — پنجرهٔ ویدیوی شناور حذف شد؛ پخش با پلیر پیش‌فرض کاربر.
+     خواندن کلیپ‌بورد («لینک کپی‌کردم رو پخش کن») حالا از sys.clipboard است. */
 
   /* فرمان‌های سفارشی پیشنهاد هوش مصنوعی — اجرا فقط پس از تأیید کاربر در UI */
   custom: {

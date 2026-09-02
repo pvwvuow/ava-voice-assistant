@@ -110,14 +110,11 @@ const uDig = U.analyze('توی دیجی کالا دنبال ساعت بگرد');
 ok(U.blocksBlindAction(uDig, 'site_search', webOnly) === false, 'دیجی‌کالا (سایت) → مسیر بومی، بلاک نمی‌شود');
 ok(appSrc.includes("if (/^(www\\.)?google\\./.test(host)) return 'https://www.google.com/search?q=' + enc;"), 'siteSearchUrlFor: گوگل = جستجوی گوگل (نه site:google.com)');
 
-/* ---------- ۸) IPC بستن یوتیوب ---------- */
-ok(mainSrc.includes("ipcMain.handle('yt:close'"), 'main.js: yt:close');
-ok(mainSrc.includes("ipcMain.handle('yt:status'"), 'main.js: yt:status');
-ok(mainSrc.includes('function ytWatchClose') && mainSrc.includes('function ytWatchStatus'), 'main.js: توابع بستن/وضعیت');
-ok(preSrc.includes("close: () => ipcRenderer.invoke('yt:close')"), 'preload: yt.close');
-ok(preSrc.includes("status: () => ipcRenderer.invoke('yt:status')"), 'preload: yt.status');
+/* ---------- ۸) نیت «بستن پخش» (v0.61: پنجره‌های خود آوا حذف شدند → بستنِ پلیرِ کنترل‌شده) ---------- */
+ok(!mainSrc.includes("ipcMain.handle('yt:close'") && !mainSrc.includes("ipcMain.handle('yt:status'"), 'main.js: yt:close/yt:status حذف شدند (v0.61)');
+ok(!preSrc.includes("close: () => ipcRenderer.invoke('yt:close')") && !preSrc.includes("status: () => ipcRenderer.invoke('yt:status')"), 'preload: پل‌های بستن حذف شدند (v0.61)');
 ok(appSrc.includes('async function ytCloseReply'), 'app.js: ytCloseReply');
-ok(appSrc.includes("bridge.yt.close()") && appSrc.includes("bridge.yt.status()"), 'app.js: ترتیب بستن (یوتیوب → PiP → صادق)');
+ok(appSrc.includes("bridge.player.ctl({ action: 'close', arg: 0 })"), 'app.js: بستن = پلیرِ اجراشدهٔ آوا (v0.61)');
 ok(/id: 'yt_close', t: 'بستن پخش'/.test(appSrc), 'app.js: قانون yt_close ثبت شده');
 
 /* ---------- ۹) سبک‌سازی RAM دور ۲ — وب‌ویو GLM تنبل ---------- */

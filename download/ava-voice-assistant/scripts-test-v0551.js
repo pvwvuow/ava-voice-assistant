@@ -52,7 +52,7 @@ console.log('\n[A] گارد بسته‌بندی — build.files');
 ok(globs.length > 0, 'build.files آرایهٔ غیرخالی است');
 ok(globs.includes('lib/dns-bypass.js') || globs.includes('lib/**/*'), 'lib/dns-bypass.js داخل build.files (require مستقیم main.js)');
 ok(new Set(globs).size === globs.length, 'بدون تکرار در build.files');
-for (const f of ['main.js', 'preload.js', 'pipPreload.js', 'pipCore.js', 'pipWindowManager.js']) {
+for (const f of ['main.js', 'preload.js']) { /* v0.61: pipPreload/pipCore/pipWindowManager حذف شدند */
   ok(globs.includes(f), 'فایل ریشهٔ بسته‌بندی‌شده: ' + f);
 }
 
@@ -71,8 +71,8 @@ for (const f of rootJs) {
     if (!covered(relPath)) bad.push(f + ' → ' + m[2] + ' (خارج از build.files!)');
   }
 }
-ok(relTotal >= 3, 'اسکن require نسبی انجام شد (' + relTotal + ' مورد، ' + rootJs.length + ' فایل ریشه)');
-ok(relSeen.has('./pipWindowManager') && relSeen.has('./lib/dns-bypass') && relSeen.has('./pipCore'), 'اسکن به requireهای حیاتی رسیده (pipWindowManager/dns-bypass/pipCore)');
+ok(relTotal >= 1, 'اسکن require نسبی انجام شد (v0.61: فقط dns-bypass باقی است) (' + relTotal + ' مورد، ' + rootJs.length + ' فایل ریشه)');
+ok(relSeen.has('./lib/dns-bypass'), 'اسکن به requireهای حیاتی رسیده (lib/dns-bypass) — v0.61: requireهای pip حذف شدند');
 ok(bad.length === 0, 'همهٔ requireهای نسبی موجود و پوشیده با build.files' + (bad.length ? ' — ' + bad.join(' | ') : ''));
 
 /* [C] سازگاری نسخه (relax از پین 0.56.0-beta — پین عددی شغل سوئیت‌های نسخه‌دار است) */

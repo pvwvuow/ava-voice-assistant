@@ -112,11 +112,11 @@ ok(/ویدیو رو پین کن/.test(app), 'app: فرمان‌های پیشنه
   const ids = [...app.matchAll(/id: '([a-z_]+)'/g)].map((m) => m[1]);
   ok(ids.length >= 45, 'قوانین شناسه‌دار به اندازهٔ کافی هستند (' + ids.length + ')');
   ok(new Set(ids).size === ids.length, 'هیچ id تکراری نیست');
-  ['shutdown', 'restart', 'open_youtube', 'yt_search', 'pip', 'music_play', 'vol_mute', 'reminder', 'timer', 'weather', 'calc'].forEach((x) =>
+  ['shutdown', 'restart', 'open_youtube', 'yt_search', 'player_ctl', 'music_play', 'vol_mute', 'reminder', 'timer', 'weather', 'calc'].forEach((x) =>
     ok(ids.includes(x), 'id کلیدی موجود: ' + x));
 }
 ok(/function aiCmdCatalogCtx\(\)/.test(app), 'app: سازندهٔ کاتالوگ AI');
-ok(/aiHandleCommand\(cmd, (?:await aiFallbackCtx\((?:null, )?cmd\)|aiCmdCatalogCtx\(\))\)/.test(app), 'app: کاتالوگ فقط وقتی تزریق می‌شود که فرمان شناخته نشد'); /* v0.42: aiFallbackCtx = کاتالوگ+وضعیت؛ v0.50: aiFallbackCtx(null, cmd) */
+ok(/aiHandleCommand\((?:cmd|vcText), (?:await aiFallbackCtx\((?:null, )?(?:cmd|vcText)\)|aiCmdCatalogCtx\(\))\)/.test(app), 'app: کاتالوگ فقط وقتی تزریق می‌شود که فرمان شناخته نشد'); /* v0.42؛ v0.50: aiFallbackCtx(null, cmd)؛ v0.61: vcText + aiBrainCtx */
 ok(/'run_custom', 'run_cmd'((, '[a-z_]+')*)?\]/.test(app), 'app: run_cmd در DO_ACTS مجاز است'); /* v0.42: +note_show؛ v0.46: +set_wake_word */
 ok(/a\.act === 'run_cmd'/.test(app), 'app: اجراکنندهٔ run_cmd');
 ok(/RULES\.find\(\(x\) => x\.id === String\(a\.value \|\| ''\)\.trim\(\)\)/.test(app), 'app: run_cmd فقط idهای واقعی کاتالوگ را اجرا می‌کند');
