@@ -1714,18 +1714,35 @@ ipcMain.handle('msg:send', async (_e, p) => {
   const name = String((p && p.name) || '').replace(/['’‘“”`"…]/g, '').trim();
   const text = String((p && p.text) || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch])).trim();
   const username = String((p && p.username) || '').replace(/[^a-zA-Z0-9_@.]/g, '').replace(/[.@]/g, '').trim();
+  const openMode = !!(p && p.open); /* v0.75 — «چت X رو باز کن» بدون ارسال پیام */
   if (!name) return { ok: false, error: 'نام مخاطب پیدا نشد' };
-  if (!text) return { ok: false, error: 'متن پیام پیدا نشد' };
+  if (!text && !openMode) return { ok: false, error: 'متن پیام پیدا نشد' };
   const variants = Array.isArray(p && p.variants) ? p.variants : [];
-  actLog(`msg:send app=${app} name=${name.slice(0, 24)} text=${text.slice(0, 40)} variants=${variants.length}`, 'msg', { ev: 'msg-send', app });
+  actLog(`msg:send app=${app} name=${name.slice(0, 24)} text=${String(text).slice(0, 40)} variants=${variants.length}${openMode ? ' open=1' : ''}`, 'msg', { ev: 'msg-send', app });
   if (app === 'discord') {
     /* v0.74 — واریانت‌های حافظه (اسم ذخیره‌شدهٔ لاتین اول) به موتور دیسکورد هم
        می‌رسند؛ ریشهٔ شکایت «چرا از ذخیره استفاده نمیکنه برای سرچ مخاطب تو پیام
        رسان ها»: اینجا فقط name (اسم گفتاری) به runDiscordPs می‌رفت */
-    return runDiscordPs('msgsend', 'fg', name, 46, 52, text, variants);
+    return runDiscordPs('msgsend', 'fg', name, 46, 52, text, variants, openMode);
   }
-  if (app === 'telegram') return runTgPs(name, text, username, false, variants);
+  if (app === 'telegram') return runTgPs(name, text, username, false, variants, openMode);
   return { ok: false, error: 'این پیام‌رسان اتوماسیون دسکتاپ ندارد' };
+});
+
+/* v0.75 — «کی برام پیام داده؟» — خواندنِ چت‌های اخیر (مرحلهٔ ۳ پیام‌رسانی — فقط-خواندنی).
+   فعلاً تلگرام: لیست چت‌ها با UIA خوانده می‌شود (بدون هیچ کلیدی)؛ دیسکورد هنوز نه —
+   صادقانه می‌گوییم. خروجی OK:READ|t1||t2||… به پاسخ صوتی تبدیل می‌شود. */
+ipcMain.handle('msg:read', async (_e, p) => {
+  const app = String((p && p.app) || 'telegram').toLowerCase();
+  if (app !== 'telegram') {
+    return { ok: false, error: 'خواندنِ چت‌های ' + (app === 'discord' ? 'دیسکورد' : app) + ' هنوز پیاده نشده — فعلاً تلگرام را می‌توانم بخوانم' };
+  }
+  const r = await runTgPs('', '', '', false, [], false, true);
+  if (r && r.ok && String(r.result || '').startsWith('OK:READ|')) {
+    const titles = String(r.result).replace(/^OK:READ\|/, '').split('||').map((s) => s.trim()).filter(Boolean);
+    return { ok: true, titles: titles.slice(0, 10) };
+  }
+  return { ok: false, error: (r && r.error) || 'خواندن لیست چت‌های تلگرام انجام نشد' };
 });
 
 /* v0.68 — عیب‌یاب صوتی («تست تلگرام»): کشف پنجره + فوکوس بدون هیچ ارسالی.
@@ -5284,12 +5301,15 @@ switch ($Action) {
       if ($ReqObj.name) { $Name = [string]$ReqObj.name }
       if ($ReqObj.text) { $Text = [string]$ReqObj.text }
       if ($ReqObj.variants) { $vars = @($ReqObj.variants | ForEach-Object { [string]$_ }) }
-    }
+      # v0.75 — حالتِ بازکردنِ چت بدون ارسال («چت X رو تو دیسکورد باز کن»)
+      if ($ReqObj.open) { $script:DcOpen = 1 } else { $script:DcOpen = 0 }
+    } else { $script:DcOpen = 0 }
     $name = ($Name -replace '[''"]', '')
     foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $name = $name.Replace([string]$cq, '') }
     if (-not $name) { Write-Output 'ERR:NONAME'; exit }
     $msg = ('' + $Text).Trim()
-    if (-not $msg) { Write-Output 'ERR:NOTEXT'; exit }
+    # v0.75 — در حالتِ open، متنِ خالی مجاز است (هیچ تایپی انجام نمی‌شود)
+    if ((-not $msg) -and ($script:DcOpen -ne 1)) { Write-Output 'ERR:NOTEXT'; exit }
     $vars = @($vars | ForEach-Object { $v = ([string]$_) -replace '[''"]', ''; foreach ($cq2 in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $v = $v.Replace([string]$cq2, '') }; $v.Trim() } | Where-Object { $_ })
     if ($vars -notcontains $name) { $vars = @($name) + @($vars) }
     if ($vars.Count -gt 6) { $vars = @($vars[0..5]) }
@@ -5339,6 +5359,62 @@ switch ($Action) {
       }
       Send-Combo 'enter'
       Start-Sleep -Milliseconds 1700
+      # v0.75 — راستی‌آزماییِ تیترِ DM بعد از سوییچ و قبل از تایپِ پیام (درسِ لاگ 0.74:
+      # «صد» — بریدهٔ «صدرا» — با HIT زیررشته‌ای روی عناصرِ پشتِ سوییچر جور درآمد و
+      # پیام برای آدمِ اشتباه فرستاده شد OK:MSGSENT:صد). حالا: تیترِ چتِ باز باید حاوی
+      # واریانت باشد — برای میلهٔ کوتاهِ فارسی تطبیقِ توکنِ کامل (زیررشته «صد» روی «صدفا»
+      # دروغ سبز می‌سازد). جور نشد؟ چتِ اشتباه است — ESC و واریانت بعدی؛ هیچ تایپی.
+      $hdrOk = $false
+      $hdrName = ''
+      $hdrSeen = 0
+      try {
+        $win3 = Get-DcWin
+        if ($win3) {
+          $all3 = $win3.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+          $k3 = 0
+          foreach ($el3 in $all3) {
+            $k3++
+            if ($k3 -gt 500) { break }
+            $nm3 = ''
+            try { $nm3 = $el3.Current.Name } catch { }
+            if (-not $nm3) { continue }
+            try { if ([bool]$el3.Current.IsOffscreen) { continue } } catch { }
+            $ct3 = ''
+            try { $ct3 = [string]$el3.Current.ControlType.ProgrammaticName } catch { }
+            if ($ct3 -match 'Edit|Document') { continue }
+            try { $nm3 = $nm3 -replace '[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]', '' } catch { }
+            $nm3 = $nm3.Trim()
+            if (-not $nm3) { continue }
+            $hdrSeen++
+            foreach ($v2 in $vars) {
+              $vv = ([string]$v2).Trim()
+              if (-not $vv) { continue }
+              $hit2 = $false
+              if ($vv.Length -le 4 -and $vv -match '[\u0600-\u06FF]') {
+                # میلهٔ کوتاهِ فارسی: توکنِ کاملِ برابر (نه زیررشته)
+                try {
+                  $nmN = (($nm3.ToLower() -replace '[^\p{L}\p{Nd}]+',' ').Trim())
+                  if ((($nmN -split ' ') | Where-Object { $_ }) -contains $vv.ToLower()) { $hit2 = $true }
+                } catch { }
+              } elseif ($nm3.IndexOf($vv, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { $hit2 = $true }
+              if ($hit2) { $hdrOk = $true; $hdrName = $nm3; break }
+            }
+            if ($hdrOk) { break }
+          }
+        }
+      } catch { }
+      Write-Output ('DBG:HDR=' + $(if ($hdrName) { $hdrName.Substring(0, [Math]::Min(60, $hdrName.Length)) } else { '-' }) + ' SEEN=' + $hdrSeen)
+      if (-not $hdrOk) {
+        if ($hdrSeen -gt 0) {
+          # عناصرِ نام‌دار دیدیم ولی هیچ واریانتی در تیتر نبود → چتِ اشتباه؛ ببند و ادامه
+          Send-Combo 'esc'
+          Start-Sleep -Milliseconds 400
+          continue
+        }
+        # هیچ عنصرِ نام‌داری خوانده نشد (دسترس‌پذیریِ ناقص) → صادقانه UNVERIFIED می‌فرستیم
+        $matched = $v
+        break
+      }
       $matched = $v
       break
     }
@@ -5362,6 +5438,8 @@ switch ($Action) {
       }
     }
     # پیست متن پیام در کادر پیام (بعد از باز شدن DM فوکوس خودکار آنجاست)
+    # v0.75 — حالتِ بازکردنِ چت بدون ارسال (msgopen): هیچ تایپی، هیچ Enterی روی متن
+    if (-not $msg) { Restore-Focus; Write-Output ('OK:CHATOPEN:' + $matched); exit }
     try { Set-Clipboard -Value $msg -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
     $clipOk2 = $false
     try { $got2 = Get-Clipboard -Raw; $clipOk2 = ($got2 -eq $msg) } catch { $clipOk2 = $false }
@@ -5382,10 +5460,23 @@ switch ($Action) {
         $k = 0
         foreach ($el in $all4) {
           $k++
-          if ($k -gt 800) { break }
+          if ($k -gt 1500) { break }
           $en = ''
           try { $en = $el.Current.Name } catch { }
           if ($en -and ($en -match $probeRx)) { $sent = $true; break }
+        }
+        # v0.75 — تلاش دوم بعد از مکث: بارگذاریِ تاریخچه گاهی کند است (کاهش UNVERIFIED کاذب)
+        if (-not $sent) {
+          Start-Sleep -Milliseconds 900
+          $all4b = $win4.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+          $k = 0
+          foreach ($el in $all4b) {
+            $k++
+            if ($k -gt 1500) { break }
+            $en = ''
+            try { $en = $el.Current.Name } catch { }
+            if ($en -and ($en -match $probeRx)) { $sent = $true; break }
+          }
         }
       }
     } catch { Write-Output ('DBG:MSGVERIFYERR=' + $_.Exception.Message) }
@@ -5398,7 +5489,7 @@ switch ($Action) {
 /* v0.22 — نوشتن اسکریپت در پوشهٔ برنامه (ACL کاربر جاری) و اجرای spawn -File:
    خط فرمان فقط چند ده کاراکتر است — محدودیت ۸۱۹۱ کاراکتری cmd.exe و
    ۳۲۷۶۷ کاراکتری CreateProcess هر دو دیگر اصلاً درگیر نمی‌شوند. */
-function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText, variants) {
+function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText, variants, msgOpenMode) {
   /* v0.35 — msgsend هم بلندمدت است (سوییچر + بارگذاری DM + ارسال) */
   const longRun = psAction === 'clickcall' || psAction === 'callswitch' || psAction === 'msgsend';
   const waitMs = longRun ? 25000 : 6000;
@@ -5412,6 +5503,8 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText, variants) {
   const safeVars = (psAction === 'msgsend' && Array.isArray(variants))
     ? variants.map((v) => String(v || '').replace(/[|'’‘“”`"…]/g, '').trim()).filter((v) => v && v.length >= 2).slice(0, 6)
     : [];
+  /* v0.75 — حالتِ بازکردنِ چت بدون ارسال (msgopen) */
+  const openMode = !!(msgOpenMode);
   let psFile = '';
   let dcReqFile = '';
   try {
@@ -5420,8 +5513,8 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText, variants) {
     fs.writeFileSync(psFile, '\ufeff' + DISCORD_PS_BODY, 'utf8');
     if (psAction === 'msgsend') {
       dcReqFile = path.join(app.getPath('userData'), 'ava-dc-req.json');
-      fs.writeFileSync(dcReqFile, JSON.stringify({ name: safeName, text: safeText, variants: safeVars }), 'utf8');
-      actLog(`discord req: v=${safeVars.length} [${safeVars.join(' | ').slice(0, 140)}]`, 'discord');
+      fs.writeFileSync(dcReqFile, JSON.stringify({ name: safeName, text: safeText, variants: safeVars, open: openMode }), 'utf8');
+      actLog(`discord req: v=${safeVars.length} [${safeVars.join(' | ').slice(0, 140)}]${openMode ? ' open=1' : ''}`, 'discord');
     }
   } catch (e) {
     actLog(`discord ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'discord');
@@ -5528,6 +5621,9 @@ if (-not $ReqObj) { Write-Output 'ERR:REQ'; exit }
 [string]$Text = [string]$ReqObj.text
 [string]$Username = [string]$ReqObj.username
 [int]$Test = $(if ($ReqObj.test) { 1 } else { 0 })
+# v0.75 — حالتِ خواندنِ چت‌های اخیر («کی برام پیام داده؟») و بازکردنِ چت بدون ارسال
+[int]$Read = $(if ($ReqObj.read) { 1 } else { 0 })
+[int]$Open = $(if ($ReqObj.open) { 1 } else { 0 })
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 Add-Type -TypeDefinition @'
 using System;
@@ -5768,12 +5864,57 @@ if ($Test -eq 1) {
   Write-Output 'OK:TGTEST'
   exit
 }
+if ($Read -eq 1) {
+  # v0.75 — «کی برام پیام داده؟» — خواندنِ چت‌های اخیر از لیست UIA (مرحلهٔ ۳ پیام‌رسانی —
+  # قدم اول فقط-خواندنی: هیچ کلیدی فشرده نمی‌شود جز فوکوس پنجره؛ بعدش فوکوس برمی‌گردد)
+  $fgR = Focus-TgHard
+  Write-Output ('DBG:FG=' + $(if ($fgR) { '1' } else { '0' }))
+  if (-not $fgR) { Write-Output 'ERR:NOFOCUS'; exit }
+  Start-Sleep -Milliseconds 500
+  $names2 = @()
+  try {
+    Add-Type -AssemblyName UIAutomationClient | Out-Null
+    Add-Type -AssemblyName UIAutomationTypes | Out-Null
+    $mainR = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd)
+    $lcR = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List)
+    if ($mainR) {
+      $listsR = $mainR.FindAll([System.Windows.Automation.TreeScope]::Descendants, $lcR)
+      $nlR = 0
+      foreach ($lR in $listsR) {
+        $nlR++
+        if ($nlR -gt 6) { break }
+        $itemsR = $null
+        try { $itemsR = $lR.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition) } catch { }
+        if (-not $itemsR) { continue }
+        $niR = 0
+        foreach ($itR in $itemsR) {
+          $niR++
+          if ($niR -gt 24) { break }
+          $nmR = ''
+          try { $nmR = $itR.Current.Name } catch { }
+          if (-not $nmR) { continue }
+          try { $nmR = $nmR -replace '[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]', '' } catch { }
+          $nmR = $nmR.Trim()
+          if ($nmR.Length -lt 1 -or $nmR.Length -gt 70) { continue }
+          if ($names2 -notcontains $nmR) { $names2 += $nmR }
+          if ($names2.Count -ge 12) { break }
+        }
+        if ($names2.Count -ge 12) { break }
+      }
+    }
+  } catch { }
+  Restore-Focus
+  if ($names2.Count -eq 0) { Write-Output 'ERR:TG_READ_EMPTY'; exit }
+  Write-Output ('OK:READ|' + ($names2 -join '||'))
+  exit
+}
 # گام ۱ — نام مخاطب در کلیپ‌بورد با تایید
 $nm = ($Name -replace '[''"]', '')
 foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $nm = $nm.Replace([string]$cq, '') }
 if (-not $nm) { Write-Output 'ERR:NONAME'; exit }
 $msg = ('' + $Text).Trim()
-if (-not $msg) { Write-Output 'ERR:NOTEXT'; exit }
+# v0.75 — در حالتِ open، متنِ خالی مجاز است (فقط چت باز می‌شود، هیچ تایپی نیست)
+if ((-not $msg) -and ($Open -ne 1)) { Write-Output 'ERR:NOTEXT'; exit }
 try { Set-Clipboard -Value $nm -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
 $clipOk = $false
 try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $nm) } catch { $clipOk = $false }
@@ -5867,6 +6008,13 @@ if ($Username) {
   }
   Write-Output ('DBG:MATCHED=' + $usedVar)
 }
+# v0.75 — حالتِ بازکردنِ چت بدون ارسال: همین‌جا تمام — هیچ پیستی، هیچ Enterی روی متن
+if ((-not $msg) -and ($Open -eq 1)) {
+  Write-Output ('DBG:TITLE=' + $title2)
+  Restore-Focus
+  Write-Output 'OK:CHATOPEN'
+  exit
+}
 # گام ۳ — پیست متن پیام و ارسال با Enter واقعی
 try { Set-Clipboard -Value $msg -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
 $clipOk2 = $false
@@ -5904,7 +6052,7 @@ Write-Output ('DBG:TITLE=' + $tb.ToString().Trim())
 Restore-Focus
 if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }`;
 
-function runTgPs(nm, msgText, username, testMode, variants) {
+function runTgPs(nm, msgText, username, testMode, variants, openMode, readMode) {
   const safeName = String(nm || '').replace(/['’‘“”`"…]/g, '');
   const safeText = String(msgText || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch]));
   const safeUser = String(username || '').replace(/[^a-zA-Z0-9_]/g, '');
@@ -5918,7 +6066,7 @@ function runTgPs(nm, msgText, username, testMode, variants) {
        ریشهٔ لاگ 0.70+0.71: argv پاورشل «|» و کوتیشن‌ها را می‌بلعید — واریانت‌ها به یک
        رشتهٔ فاصله‌خورده می‌چسبیدند (DBG:VARN=1) و حتی $Name آلوده می‌شد. */
     reqFile = path.join(app.getPath('userData'), 'ava-tg-req.json');
-    fs.writeFileSync(reqFile, JSON.stringify({ name: safeName, text: safeText, username: safeUser, variants: safeVars, test: !!testMode }), 'utf8');
+    fs.writeFileSync(reqFile, JSON.stringify({ name: safeName, text: safeText, username: safeUser, variants: safeVars, test: !!testMode, open: !!openMode, read: !!readMode }), 'utf8');
   } catch (e) {
     actLog(`telegram ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'msg');
     return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت تلگرام ممکن نشد' });
@@ -5965,6 +6113,7 @@ function runTgPs(nm, msgText, username, testMode, variants) {
           'ERR:CLIP': 'کلیپ‌بورد در دسترس نیست — یک‌بار دیگر امتحان کن، یا مخاطب را در تنظیمات › افزونه‌ها ثبت کن',
           'ERR:NOFOCUS': 'فوکوس به پنجرهٔ تلگرام منتقل نشد — پنجرهٔ تلگرام را یک‌بار دستی فعال کن و دوباره امتحان کن',
           'ERR:NOFOCUS2': 'بعد از باز شدن چت، فوکوس به تلگرام برنگشت — تلگرام را یک‌بار دستی فعال کن و دوباره امتحان کن',
+          'ERR:TG_READ_EMPTY': 'لیست چت‌های تلگرام خوانده نشد — مطمئن شو تلگرام باز است و چند چت دارد، بعد دوباره بگو',
         };
         const em = out.trim();
         let msg2 = msgs[em] || '';

@@ -69,6 +69,15 @@
   function normWord(s) {
     return String(s || '').toLowerCase().replace(/\u200C/g, ' ').replace(/\s+/g, ' ').trim();
   }
+  /* v0.75 — حذف واژه‌به‌واژهٔ دُمِ ایستا (پیام/بگو/رو/را/تو/…) از نامزدِ مقصد.
+     regex قدیمی داخلِ واژه می‌برید (لاگ میدانی 0.74: صدرا→صد؛ سارا→سا، زهرا→زه هم قربانی می‌شوند)؛
+     این نسخه فقط واژه‌های کاملِ ایستا را از انتها برمی‌دارد و آخرین واژه را هرگز نمی‌خورد. */
+  const TAIL_STOP_WORD_RE = /^(?:پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست|بده|بدم|که|رو|را|تو|در|توی|با)$/i;
+  function stripStopTail(t) {
+    const ws = String(t || '').replace(/\u200C/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+    while (ws.length > 1 && TAIL_STOP_WORD_RE.test(ws[ws.length - 1])) ws.pop();
+    return ws.join(' ').trim();
+  }
   function msgParse(cmd) {
     let s = String(cmd || '').trim();
     if (!s || s.length < 6) return null;
@@ -113,8 +122,12 @@
       break;
     }
     if (tm2) {
-      target = tm2[1].replace(STOP_TAIL_RE, '').trim();
-      target = target.replace(/\s*(پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست)[\s\S]*$/i, '').trim();
+      /* v0.75 — ریشهٔ لاگ میدانی 0.74 (۲۲:۰۵): «به صدرا تو دیسکورد پیام بده» → target=«صد»!
+         STOP_TAIL_RE دُمِ «را» را بدون مرزواژه می‌خورد (صدرا→صد، سارا→سا، زهرا→زه) و بعد
+         سوییچرِ دیسکورد با HIT زیررشته‌ای به چتِ اشتباه رفت و پیام برای آدمِ اشتباه فرستاده شد.
+         درمان: حذف دُم فقط واژه‌به‌واژه — هیچ‌وقت داخلِ یک واژه بریده نمی‌شود. */
+      target = stripStopTail(tm2[1]);
+      target = target.replace(/\s+(?:پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست)[\s\S]*$/i, '').trim();
       /* v0.69 — «به همین علی اچ کی» → «همین» حذف، نام می‌ماند؛ «به همین اسم/مخاطب» → ref */
       target = target.replace(/^(?:همین|همون|همان|اون|این)\s+/i, '');
       if (!target || /^(?:اسم|نام|مخاطب|شخص)(?:\s+(?:رو|را))?$/i.test(target)) {
@@ -405,11 +418,35 @@
      واتساپ با شماره ۰۹۱۲…» / «علی رو با آیدی ali_gh ذخیره کن» (اپ
      پیش‌فرض: یوزرنیم→تلگرام، شماره→واتساپ) / «مخاطب علی رو حذف کن» /
      «علی رو از مخاطبین پاک کن» / «مخاطبینمو بخون» / «لیست مخاطبین». */
+  /* v0.75 — نقشهٔ اپ برای شاخهٔ آموزش ctCmdParse (کپیِ امن از APP_MAP در app.js) */
+  const APP_MAP_FA = { 'تلگرام': 'telegram', 'telegram': 'telegram', 'دیسکورد': 'discord', 'دیسبورد': 'discord', 'discord': 'discord', 'واتساپ': 'whatsapp', 'واتس اپ': 'whatsapp', 'whatsapp': 'whatsapp', 'روبیکا': 'rubika', 'rubika': 'rubika', 'ایتا': 'eitaa', 'eitaa': 'eitaa' };
   function ctCmdParse(cmd) {
     let s = String(cmd || '').trim();
     if (!s || s.length < 8) return null;
     /* جملهٔ ارسال پیام هرگز فرمان مخاطبین نیست (گارد مستقیم) */
     if (/(پیام|پیغام)\s*(بده|بفرست|برسون|برسان)|بگو\s+(که|این)/i.test(s)) return null;
+    /* v0.75 — آموزشِ قطعیِ آفلاین مخاطب از شکلِ گفتاری (ریشهٔ لاگ میدانی 0.74):
+       «ببین من یک کاربر توی دیسکورد مخاطبمه اسمش تو دیسکورد diyako هست ولی من بهش میگم صدرا»
+       به مغز رفت، مغز contact_save خالی با اپِ غلط داد (/telegram/) → ذخیره شکست خورد →
+       دوباره «به صدرا پیام بده» هیچ حافظه‌ای نداشت. حالا همین‌جا، بدون AI، ذخیره می‌شود:
+       handle = واژهٔ لاتینِ بعد از «اسمش/یوزرش/آیدیش (تو APP)» + nameFa = بعد از «بهش میگم». */
+    if (/(?:هست|هستن|میگم|میگیم|صدا\s*می)/i.test(s) && /(?:اسمش|یوزرش|یوزرنیمش|آیدیش|ایدیش|مخاطبم)/i.test(s)) {
+      const APP_RE_S = '(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)';
+      const _appM2 = s.match(new RegExp(APP_RE_S, 'i'));
+      const _appId2 = _appM2 ? (APP_MAP_FA[_appM2[0].toLowerCase().replace(/\s+/g, ' ')] || '') : '';
+      let _hdl2 = '';
+      const _hm1 = s.match(new RegExp('(?:اسمش?و?|یوزرش?و?|یوزرنیمش?|آیدیش?|ایدیش?)\\s*(?:تو|توی|در)?\\s*(?:' + APP_RE_S + ')?\\s*(?:یه?\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})', 'i'));
+      const _hm2 = _hm1 ? null : s.match(new RegExp('(?:' + APP_RE_S + ')(?:ش|م)?\\s*(?:اسمش?|آیدیش?|ایدیش?|یوزرش?)?\\s*(?:هست\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})', 'i'));
+      if (_hm1) _hdl2 = _hm1[1].replace(/^@/, '');
+      else if (_hm2) _hdl2 = _hm2[1].replace(/^@/, '');
+      let _nm2 = '';
+      const _gm = s.match(/(?:بهش|براش|به\s+اون|بهشون)\s+(?:میگم|میگمش|میگیم|صدا\s*می\s*کنم|صداش\s*می\s*کنم)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+      if (_gm) _nm2 = _gm[1].replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (_nm2) _nm2 = _nm2.replace(/(?:\s|^)(خب|خوب|دیگه|ببین|اوکی|باشه)$/i, '').trim();
+      if (_hdl2 && _nm2 && _appId2) {
+        return { op: 'save', name: _nm2.slice(0, 40), app: _appId2, handle: _hdl2.slice(0, 80), kind: 'username' };
+      }
+    }
     if (/(ذخیره|ثبت|اضافه|سیو|save|add)/i.test(s) && /کن/i.test(s)) {
       const um = s.match(/(?:با\s*)?(?:یوزر|یوزرنیم|آیدی|ایدی|نام کاربری|username|user)\s*[:\s]*([a-zA-Z0-9_@.]{3,40})/i);
       const pm = s.match(/(?:با\s*)?(?:شماره|موبایل|تلفن|نمبر|number|phone)\s*[:\s]*([0-9۰-۹+][0-9۰-۹+\s]{5,23})/);
@@ -480,7 +517,64 @@
     return lat.concat(fao);
   }
 
-  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike, latinFirstOrder };
+  /* ---------- ۸) v0.75 — گاردها و گرامرهای جدید ---------- */
+  /* گارد هدفِ مشکوک — ریشهٔ لاگ 0.74: «صد» (بریدهٔ صدرا) مستقیم به سوییچر دیسکورد
+     رفت، با HIT زیررشته‌ای جور درآمد و پیام برای آدمِ اشتباه فرستاده شد.
+     هدفی که نه در مخاطبین است نه شکلِ یک اسم واقعی دارد → ارسال نمی‌شود؛
+     صادقانه می‌پرسیم/آموزش ذخیره می‌دهیم. */
+  const FA_NUM_WORD_RE = /^(?:صد|دویست|سیصد|چهارصد|پانصد|پنجصد|ششصد|هفتصد|هشتصد|نهصد|هزار|میلیون|میلیارد|ده|یازده|دوازده|سی|چهل|پنجاه|شصت|هفتاد|هشتاد|نود|تا|دونه|بار)$/i;
+  const COMMON_NONAME_RE = /^(?:سلام|تست|هیچ|چیز|چیزی|خب|خوب|باشه|اوکی|اکی|الان|حالا|چند|کجاست|چیه|چرا|خیلی)$/i;
+  function suspiciousTarget(t) {
+    const s = String(t || '').trim();
+    if (!s) return true;
+    if (/[A-Za-z]/.test(s)) return false; /* لاتین (یوزرنیم/اسم لاتین) معتبر است */
+    if (isLatinUsername(s)) return false;
+    if (phoneLike(s)) return false;
+    const n = normFa(s);
+    if (n.replace(/\s+/g, '').length < 3) return true; /* «صد»، «آر» … */
+    if (FA_NUM_WORD_RE.test(n)) return true;
+    if (COMMON_NONAME_RE.test(n)) return true;
+    return false;
+  }
+
+  /* v0.75 — «چت X رو تو تلگرام/دیسکورد باز کن» — بازکردنِ چت بدون ارسال پیام.
+     ریشهٔ خواسته: کاربر قبل از پیام‌دادن می‌خواهد خودش چت را ببیند؛ تا حالا
+     هیچ گرامری برای این وجود نداشت و جمله به مغز/بازکردنِ اپِ خالی می‌افتاد. */
+  function chatOpenParse(cmd) {
+    let s = String(cmd || '').trim();
+    if (!s || s.length < 10) return null;
+    if (/(پیام|پیغام|بگو|بنویس|بفرست|برسون|برسان|تایپ|سرچ)/i.test(s)) return null; /* نیت ارسال/سرچ نیست */
+    if (!/(?:باز\s*(?:کن|شو|شه)|بیار|بکش|بکش\s*بالا|برو|سری\s*بزن|سر\s*بزن)/i.test(s)) return null;
+    let appM = MSG_APPS.find((m) => m.re.test(s));
+    if (!appM) return null;
+    if (appM.needsLoc && !/(?:تو|در|توی|با)\s*(بله(?!ی)|روبیکا|ایتا)/i.test(s)) return null;
+    /* شکل ۱ — «چت X رو تو APP باز کن» */
+    let m = s.match(/(?:چت|گفتگو)\s+(?:با\s+)?((?:[\u0600-\u06FFa-zA-Z0-9._@]{2,30})(?:\s+[\u0600-\u06FFa-zA-Z0-9._@]{2,30}){0,2})\s*(?:رو|را)?\s+(?:تو|توی|در)/i);
+    if (!m) {
+      /* شکل ۲ — «تو APP چت X رو باز کن» */
+      m = s.match(/(?:تو|توی|در)\s+[\u0600-\u06FFa-zA-Z]+\s+(?:چت|گفتگو)\s+(?:با\s+)?((?:[\u0600-\u06FFa-zA-Z0-9._@]{2,30})(?:\s+[\u0600-\u06FFa-zA-Z0-9._@]{2,30}){0,2})/i);
+    }
+    if (!m) return null;
+    let target = stripStopTail(m[1]);
+    target = target.replace(/\s+(?:رو|را)$/i, '').trim();
+    if (!target || /^(?:اسم|نام|مخاطب|شخص|من|تو)$/i.test(target)) return null;
+    if (suspiciousTarget(target)) return null;
+    return { app: appM.id, appFa: appM.fa, target };
+  }
+
+  /* v0.75 — «کی برام پیام داده؟» / «پیام‌های جدید» — خواندن چت‌های اخیر (مرحلهٔ ۳
+     پیام‌رسانی — قدم اول فقط-خواندنی). فعلاً فقط تلگرام اتوماسیونِ خواندن دارد؛
+     دیسکورد صادقانه «خواندن ندارم» می‌گیرد (app='discord' برمی‌گردد). */
+  function msgReadParse(cmd) {
+    const s = String(cmd || '').trim();
+    if (!s || s.length < 8) return null;
+    const hit = /(کی\s*(برام|برای\s*من)?\s*(پیام|مسیج|چت))|(پیام\s*(داده|فرستاده|نوشته|دارم))|((پیام|مسیج|چت|گفتگو)\s*(?:های|ها)?\s*(جدید|نو|اخیر|آخر|خونده\s*نشده|ناشده|تازه))|(لیست\s*(چت|گفتگو|پیام))|(آخرین\s*(چت|گفتگو|پیام))/i;
+    if (!hit.test(s)) return null;
+    const appM = MSG_APPS.find((m) => m.re.test(s));
+    return { app: appM ? appM.id : 'telegram', appFa: appM ? appM.fa : 'تلگرام' };
+  }
+
+  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike, latinFirstOrder, stripStopTail, suspiciousTarget, chatOpenParse, msgReadParse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAMessaging = api;
 })(typeof window !== 'undefined' ? window : null);

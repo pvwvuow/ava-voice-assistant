@@ -133,6 +133,7 @@ contextBridge.exposeInMainWorld('ava', {
     open: (u) => ipcRenderer.invoke('msg:open', u),
     send: (p) => ipcRenderer.invoke('msg:send', p),
     test: (p) => ipcRenderer.invoke('msg:test', p),
+    read: (p) => ipcRenderer.invoke('msg:read', p), /* v0.75 — «کی برام پیام داده؟» */
   },
   vpn: {
     detect: () => ipcRenderer.invoke('vpn:detect'),

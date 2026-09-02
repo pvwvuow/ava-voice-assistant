@@ -145,7 +145,7 @@ ok(!tgBody.includes('/*'), 'پین دائمی: هیچ /* داخل بدنهٔ PS 
 ok(tgBody.indexOf("if ($Test -eq 1)") > tgBody.indexOf('function Restore-Focus') && tgBody.indexOf("if ($Test -eq 1)") < tgBody.indexOf('# گام ۱'), 'شاخهٔ $Test بعد از تعریف Restore-Focus و قبل از گام ۱ است');
 ok(tgBody.includes("Write-Output 'OK:TGTEST'"), 'خروجی تست OK:TGTEST');
 ok(tgBody.indexOf("if ($Test -eq 1)") < tgBody.indexOf('ERR:NOTEXT'), 'حالت تست قبل از چک‌های نام/متن است (هیچ ارسالی انجام نمی‌شود)');
-ok(/function runTgPs\(nm, msgText, username, testMode(, variants)?\)/.test(mainSrc), 'runTgPs پارامتر testMode دارد'); /* v0.69 forward-relax */
+ok(/function runTgPs\(nm, msgText, username, testMode(, variants)?(, openMode)?(, readMode)?\)/.test(mainSrc), 'runTgPs پارامتر testMode دارد'); /* v0.75 forward-relax: +openMode+readMode */
 ok(mainSrc.includes("'-Test', testMode ? '1' : '0'") || mainSrc.includes('test: !!testMode'), 'آرگومان -Test به PS پاس می‌شود'); /* v0.72 forward-relax: req JSON */
 ok(mainSrc.includes("ipcMain.handle('msg:test'"), 'IPC msg:test ثبت شده');
 ok(mainSrc.includes("runTgPs('', '', '', true)"), 'msg:test تلگرام → runTgPs در حالت تست');

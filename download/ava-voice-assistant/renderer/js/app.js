@@ -5082,6 +5082,95 @@
     }
 
     /* ============================================================
+       v0.75 — لَین خواندن چت‌های اخیر («کی برام پیام داده؟») — مرحلهٔ ۳ پیام‌رسانی
+       ------------------------------------------------------------
+       قدم اول فقط-خواندنی: لیست چت‌های تلگرام با UIA خوانده می‌شود (هیچ کلیدی
+       فشرده نمی‌شود) و تیترها صوتی خوانده می‌شوند. دیسکورد صادقانه.
+       ============================================================ */
+    {
+      const _mrp = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgReadParse) ? AVAMessaging.msgReadParse(raw) : null;
+      if (_mrp) {
+        _dispatchOutcome = 'messaging';
+        try { actLog('lane=msg-read (deterministic): app=' + _mrp.app, 'ui', { ev: 'lane', lane: 'msg-read', app: _mrp.app }); } catch (_) { /* noop */ }
+        let _rrep = '';
+        try {
+          if (bridge && bridge.msg && bridge.msg.read) {
+            const r = await bridge.msg.read({ app: _mrp.app });
+            if (r && r.ok && Array.isArray(r.titles) && r.titles.length) {
+              _rrep = LANG === 'en'
+                ? 'Latest ' + _mrp.appFa + ' chats: ' + r.titles.slice(0, 8).map((x, i) => (i + 1) + '- ' + x).join(', ')
+                : 'آخرین چت‌های ' + _mrp.appFa + ': ' + r.titles.slice(0, 8).map((x, i) => (i + 1) + '- ' + x).join('، ') + '.';
+            } else _rrep = (r && r.error) || (LANG === 'en' ? 'Could not read the chat list.' : 'لیست چت‌ها خوانده نشد.');
+          } else _rrep = LANG === 'en' ? 'Chat reading is unavailable.' : 'خواندن چت‌ها در دسترس نیست.';
+        } catch (e) { _rrep = LANG === 'en' ? 'Chat reading failed.' : 'خواندن چت‌ها انجام نشد: ' + String((e && e.message) || e).slice(0, 60); }
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _rrep);
+        speak(_rrep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'msg_read', params: { app: _mrp.app }, reply: _rrep }); } catch (_) { /* noop */ }
+        playDoneSound();
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4200);
+        return;
+      }
+    }
+
+    /* ============================================================
+       v0.75 — لَین بازکردنِ چت («چت علی رو تو دیسکورد باز کن») — بدون ارسال پیام
+       ------------------------------------------------------------
+       تا حالا گرامری برای این نبود؛ جمله به مغز/بازکردنِ اپِ خالی می‌افتاد.
+       همان موتور واریانت‌های حافظه‌سوار + راستی‌آزمایی تیتر استفاده می‌شود؛
+       فقط هیچ متنی تایپ نمی‌شود (PS: open=1 → OK:CHATOPEN).
+       ============================================================ */
+    {
+      const _cop = (typeof AVAMessaging !== 'undefined' && AVAMessaging.chatOpenParse) ? AVAMessaging.chatOpenParse(raw) : null;
+      if (_cop && bridge && bridge.msg && bridge.msg.send) {
+        _dispatchOutcome = 'messaging';
+        try { actLog('lane=chat-open (deterministic): app=' + _cop.app + ' target=' + String(_cop.target).slice(0, 24), 'ui', { ev: 'lane', lane: 'chat-open', app: _cop.app }); } catch (_) { /* noop */ }
+        let _orep = '';
+        try {
+          const _ctsO = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+          const _ctO = AVAMessaging.contactFind ? AVAMessaging.contactFind(_ctsO, _cop.app, _cop.target) : null;
+          const _nmO = (_cop.app === 'discord' && _ctO && AVAMessaging.isLatinUsername(_ctO.handle)) ? _ctO.handle.replace(/^@/, '') : ((_ctO && _ctO.name) || _cop.target);
+          const _hdO = (_ctO && _ctO.handle) || '';
+          const _vsO = [];
+          const _pushO = (x) => { const v = String(x || '').trim(); if (v && _vsO.indexOf(v) === -1) _vsO.push(v); };
+          _pushO(_cop.target);
+          if (_ctO) { _pushO(_ctO.name); (Array.isArray(_ctO.aliases) ? _ctO.aliases : []).forEach(_pushO); _pushO(_ctO.handle); }
+          if (!AVAMessaging.phoneLike(_cop.target)) { try { const _flO = AVAMessaging.faToLatin(_cop.target); if (_flO && _flO.length >= 3) _pushO(_flO); } catch (_) { /* noop */ } }
+          if (_vsO.some((x) => /[A-Za-z]/.test(String(x || ''))) && AVAMessaging.latinFirstOrder) {
+            const _ordO = AVAMessaging.latinFirstOrder(_vsO.slice()); _vsO.length = 0; _ordO.forEach(_pushO);
+          }
+          const _unO = (_cop.app === 'telegram' && AVAMessaging.isLatinUsername(_hdO)) ? _hdO.replace(/^@/, '') : (AVAMessaging.isLatinUsername(_cop.target) ? _cop.target.replace(/^@/, '') : '');
+          try { actLog('chat-open variants: ' + _vsO.join(' | ').slice(0, 120), 'ui', { ev: 'msg-vars', app: _cop.app }); } catch (_) { /* noop */ }
+          const r = await bridge.msg.send({ app: _cop.app, name: _nmO, text: '', username: _unO, variants: _vsO, open: true }).catch(() => null);
+          if (r && r.ok && /CHATOPEN/.test(String(r.result || ''))) {
+            _orep = LANG === 'en' ? `Opened the "${_nmO}" chat on ${_cop.appFa}.` : `چت «${_nmO}» رو تو ${_cop.appFa} باز کردم — خودت ادامه‌ش بده.`;
+          } else if (r && r.ok) {
+            _orep = LANG === 'en' ? `Opened the "${_nmO}" chat on ${_cop.appFa}.` : `چت «${_nmO}» رو تو ${_cop.appFa} باز کردم.`;
+          } else if (r && r.error && /NO_MATCH|NOMATCH/.test(String(r.error))) {
+            _orep = LANG === 'en' ? `Could not find "${_nmO}" on ${_cop.appFa} with confidence — nothing was opened. Save the contact first.` : `چت «${_nmO}» رو تو ${_cop.appFa} مطمئن پیدا نکردم — هیچی باز نکردم. اول مخاطبش رو ذخیره کن.`;
+          } else {
+            _orep = (r && r.error) || (LANG === 'en' ? 'Could not open the chat.' : 'باز کردن چت انجام نشد.');
+          }
+        } catch (e) { _orep = LANG === 'en' ? 'Chat open failed.' : 'باز کردن چت انجام نشد: ' + String((e && e.message) || e).slice(0, 60); }
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _orep);
+        speak(_orep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'chat_open', params: { app: _cop.app, msgTarget: String(_cop.target).slice(0, 80), msgApp: _cop.app }, reply: _orep }); } catch (_) { /* noop */ }
+        if (/باز کردم/.test(_orep) || /Opened/.test(_orep)) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3600);
+        return;
+      }
+    }
+
+    /* ============================================================
        v0.67 — لَین قطعیِ پیام‌رسانی (اکستنشن مرحلهٔ ۲ — اتوماسیون واقعی)
        ------------------------------------------------------------
        بازخورد کاربر روی مرحلهٔ ۱: «پیام رسان‌ها هیچکدوم کار نمیکنه…
@@ -5114,6 +5203,14 @@
             /* v0.67 — بدون متن پیام هیچ ارسالی وجود ندارد؛ قبلاً deep-link لخت
                می‌زد که در تلگرام هیچ بود (ریشهٔ «هیچ‌کاری نمی‌کنه») */
             _mrep = LANG === 'en' ? `What should I send to "${_mp.target}" on ${_mp.appFa}? Say: «…message them that …»` : `چی برای «${_mp.target}» تو ${_mp.appFa} بفرستم؟ بگو «به ${_mp.target} پیام بده که …»`;
+          } else if ((_mp.app === 'telegram' || _mp.app === 'discord') && (typeof AVAMessaging.suspiciousTarget === 'function') && AVAMessaging.suspiciousTarget(_mp.target) && !AVAMessaging.contactFind(Array.isArray(settings.msgContacts) ? settings.msgContacts : [], _mp.app, _mp.target)) {
+            /* v0.75 — گارد هدفِ مشکوک (درسِ لاگ 0.74: «صد» — بریدهٔ «صدرا» — مستقیم به
+               سوییچر رفت، با HIT زیررشته‌ای جور درآمد و پیام به آدمِ اشتباه رفت).
+               مقصد نه در مخاطبین است نه شکلِ یک اسم واقعی دارد → هیچ ارسالی؛
+               صادقانه می‌گوییم و راهِ درست (ذخیره/اسم کامل‌تر) را می‌گوییم. */
+            _mrep = LANG === 'en'
+              ? `"${_mp.target}" is not in my contacts and doesn't look like a real name — nothing was sent. Say the full name, or save them first: "save ${_mp.target} on ${_mp.appFa} with user …".`
+              : `«${_mp.target}» رو تو مخاطبینم ندارم و هم اسمِ مطمئنی به نظر نمی‌رسه — هیچی نفرستادم. اسم کاملش رو بگو، یا اول ذخیره‌ش کن: «${_mp.target} رو تو ${_mp.appFa} با یوزر … ذخیره کن».`;
           } else if (_mp.app === 'telegram' || _mp.app === 'discord') {
             /* اتوماسیون واقعی دسکتاپ — نام فارسی با سرچ/سوییچرِ خود اپ باز و
                پیست/ارسال می‌شود؛ deep-link فقط فالبکِ «اپ باز نیست» است */
@@ -5223,6 +5320,48 @@
         cmdBusy = false;
         setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
         return;
+      }
+    }
+
+    /* ============================================================
+       v0.75 — لَین ارسالِ ارجاعیِ بدون اپ («آفرین با همین برو بهش پیام بده بنویس سلام چطوری»)
+       ------------------------------------------------------------
+       ریشهٔ لاگ 0.74 (22:04): بدون اسم اپ، msgParse نمی‌گیرد و مغز هم جا ماند
+       (kind=chat) — درخواست کاربر بی‌جواب ماند و فقط با «آره»ی بعدی نجات یافت.
+       حالا: بهش/براش + فعلِ پیام + بدون اپ → مقصد از حافظهٔ msgTarget حل می‌شود؛
+       اپ = آخرین اپ پیام‌رسانی؛ متن = بعد از فعل؛ همان تأییدِ مغز (بله/نفرست) —
+       هیچ ارسالی بدون تأیید صریح.
+       ============================================================ */
+    {
+      const _hasAppRe = /(تلگرام|telegram|دیسکورد|discord|واتساپ|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)/i;
+      const _refMsgRe = /(?:بهش|براش|به\s+اون)\s+(?:پیام|پیغام|بگو|بنویس|بفرست)/i;
+      if (!_hasAppRe.test(raw) && _refMsgRe.test(raw) && window.AVACore) {
+        const _rt = (typeof window.AVACore.resolveRefTarget === 'function') ? window.AVACore.resolveRefTarget(raw) : '';
+        let _tx = '';
+        const _tm = raw.match(/(?:پیام\s*بده|پیغام\s*بده|بگو|بنویس|بفرست)\s*(?:که|این\s*که|:|،|,)?\s*([\s\S]{1,300})$/i);
+        if (_tm) _tx = _tm[1].replace(/^(?:بنویس|بگو|بفرست|پیام\s*بده)\s+/i, '').trim();
+        if (_rt && _tx) {
+          const _st = (window.AVACore._state && window.AVACore._state.entities) || {};
+          const _app2 = _st.msgApp || 'telegram';
+          const _appFa2 = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا' }[_app2] || _app2;
+          const _cts3 = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+          const _ct3 = (typeof AVAMessaging !== 'undefined' && AVAMessaging.contactFind) ? AVAMessaging.contactFind(_cts3, _app2, _rt, true) : null;
+          const _nm2 = (_ct3 && _ct3.name) || _rt;
+          _dispatchOutcome = 'messaging';
+          _pendingConfirm = { action: { act: 'contact_send', params: { app: _app2, contactId: _ct3 ? _ct3.id : '', name: _nm2, text: _tx } }, at: Date.now(), cmd: raw };
+          const _crep3 = LANG === 'en' ? `Send "${_tx}" to "${_nm2}" on ${_appFa2}?` : `به «${_nm2}» تو ${_appFa2} بگم «${_tx}»؟ (بگو بله یا نفرست)`;
+          setState('success');
+          statusText.textContent = t('status.done');
+          rcTag.textContent = t('tag.done');
+          typeText(rcReply, _crep3);
+          speak(_crep3);
+          pushHistory(raw, true);
+          try { actLog('lane=msg-ref (deterministic): app=' + _app2 + ' target=' + String(_nm2).slice(0, 24) + ' text=' + String(_tx).slice(0, 30), 'ui', { ev: 'lane', lane: 'msg-ref', app: _app2 }); } catch (_) { /* noop */ }
+          try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'msg_ref', params: { msgTarget: String(_nm2).slice(0, 80), msgApp: _app2 }, reply: _crep3 }); } catch (_) { /* noop */ }
+          cmdBusy = false;
+          setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 4200);
+          return;
+        }
       }
     }
 
@@ -8043,7 +8182,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.74.0-beta';
+  let appVersion = '0.75.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10207,6 +10346,26 @@
         break;
       }
     }
+    /* v0.75 — الگوی آموزشِ گفتاری «اسمش تو دیسکورد diyako هست ولی من بهش میگم صدرا»:
+       ریشهٔ لاگ میدانی 0.74 (22:05): مغز برای همین جمله contact_save خالی با اپِ غلط
+       (/telegram/) داد و ذخیره شکست خورد؛ دوباره «به صدرا پیام بده» حافظه نداشت.
+       ۱) handle: واژهٔ لاتینِ بعد از «اسمش/یوزرش/آیدیش (تو APP)» یا بعد از «APPش» */
+    if (!hints.handle) {
+      const _hmA = s.match(new RegExp('(?:اسمش?و?|یوزرش?و?|یوزرنیمش?|آیدیش?|ایدیش?)\\s*(?:تو|توی|در)?\\s*(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)?\\s*(?:یه?\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})', 'i'));
+      const _hmB = _hmA ? null : s.match(new RegExp('(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)(?:ش|م)?\\s*(?:اسمش?|آیدیش?|ایدیش?|یوزرش?)?\\s*(?:هست\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})', 'i'));
+      if (_hmA) hints.handle = _hmA[1].replace(/^@/, '');
+      else if (_hmB) hints.handle = _hmB[1].replace(/^@/, '');
+      /* خودِ اپ هم ممکن است فقط در الگوی B آمده باشد */
+      if (!hints.app && _hmB) {
+        const _am2 = _hmB[0].match(/(تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)/i);
+        if (_am2) hints.app = APP_MAP[String(_am2[1]).toLowerCase().replace(/\s+/g, ' ')] || '';
+      }
+    }
+    /* ۲) nameFa: «(من) بهش/براش میگم صدرا» / «صداش می‌کنم صدرا» */
+    if (!hints.nameFa) {
+      const _gm = s.match(/(?:بهش|براش|به\s+اون|بهشون)\s+(?:میگم|میگمش|میگیم|صدا\s*می\s*کنم|صداش\s*می\s*کنم)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+      if (_gm) hints.nameFa = _gm[1].replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim().replace(/(?:\s|^)(خب|خوب|دیگه|ببین|اوکی|باشه)$/i, '').trim();
+    }
     if (!hints.nameEn && !hints.nameFa && !hints.phone && !hints.handle) return null;
     return hints;
   }
@@ -10271,30 +10430,37 @@
           const p = (a.params && typeof a.params === 'object') ? a.params : {};
           if (!Array.isArray(settings.msgContacts)) settings.msgContacts = [];
           /* v0.71 — نجاتِ فیلدهای خالی (R1): مغز flash-lite در ۳ از ۴ ذخیرهٔ لاگ،
-             contact_save خالی داد؛ فیلدها مستقیم از جملهٔ کاربر استخراج می‌شوند */
+             contact_save خالی داد؛ فیلدها مستقیم از جملهٔ کاربر استخراج می‌شوند.
+             v0.75 — teachContactHints حالا همیشه صدا زده می‌شود (نه فقط وقتی همهٔ فیلدها
+             خالی‌اند): (۱) الگوی آموزشِ گفتاری را می‌فهمد («اسمش تو دیسکورد diyako هست
+             ولی من بهش میگم صدرا») (۲) اپِ جمله بر اپِ حدسیِ مغز مقدم است — ریشهٔ لاگ
+             میدانی 0.74: مغز برای آموزشِ دیسکورد، telegram داد و مخاطب جایش اشتباه
+             ذخیره شد (id=null ok=false /telegram/). */
           let _nmFa = String(p.nameFa || p.name || '').trim();
           let _nmEn = String(p.nameEn || '').trim();
           let _app = String(p.app || '').trim().toLowerCase();
           let _hdl = String(p.handle || '').trim();
-          if (!_nmFa && !_nmEn && !_hdl) {
-            try {
-              const _h = (typeof teachContactHints === 'function') ? teachContactHints(cmd) : null;
-              if (_h) {
-                _nmFa = _h.nameFa; _nmEn = _h.nameEn; _hdl = _h.handle || '';
-                if (_h.app) _app = _h.app;
-                actLog('brain contact_save salvage-from-sentence: nameFa=' + _nmFa + ' nameEn=' + _nmEn + ' handle=' + _hdl);
-              }
-            } catch (_) { /* noop */ }
-          }
+          try {
+            const _h = (typeof teachContactHints === 'function') ? teachContactHints(cmd) : null;
+            if (_h) {
+              if (!_nmFa && _h.nameFa) _nmFa = _h.nameFa;
+              if (!_nmEn && _h.nameEn) _nmEn = _h.nameEn;
+              if (!_hdl && _h.handle) _hdl = _h.handle;
+              if (_h.app) _app = _h.app; /* اپِ جمله همیشه بر مغز مقدم است */
+              if (_nmFa || _nmEn || _hdl) actLog('brain contact_save salvage-from-sentence: nameFa=' + _nmFa + ' nameEn=' + _nmEn + ' handle=' + _hdl + ' app=' + _app);
+            }
+          } catch (_) { /* noop */ }
           if (!_app) _app = 'telegram';
           const name = _nmFa || _nmEn;
-          const id = (window.AVAMemory && m && name) ? m.addContact(settings.msgContacts, { name, app: _app, handle: _hdl, aliases: [_nmEn].filter(Boolean) }) : null;
+          const _aliases = [_nmEn].concat(Array.isArray(p.aliases) ? p.aliases.map(String) : []).map((x) => String(x || '').trim()).filter(Boolean);
+          const id = (window.AVAMemory && m && name) ? m.addContact(settings.msgContacts, { name, app: _app, handle: _hdl, aliases: _aliases }) : null;
           let ok = false;
           if (id) { try { store.set('msgContacts', settings.msgContacts); ok = true; } catch (_) { ok = false; } }
           if (ok) { try { if (window.AVACore && window.AVACore._state) window.AVACore._state.entities.person = String(_nmEn || name).slice(0, 80); } catch (_) { /* noop */ } }
           actLog('brain contact_save id=' + String(id) + ' ok=' + String(ok) + ' ' + name + '/' + _app + '/' + _nmEn);
           try { msgContactsRender(); } catch (_) { /* noop */ }
-          if (ok) outs.push(LANG === 'en' ? `Contact saved: ${name}${_nmEn ? ' (' + _nmEn + ')' : ''}.` : `مخاطب ذخیره شد: ${name}${_nmEn ? ' — انگلیسی: ' + _nmEn : ''}.`);
+          const _appFaS = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا' }[_app] || _app;
+          if (ok) outs.push(LANG === 'en' ? `Contact saved: ${name}${_nmEn ? ' (' + _nmEn + ')' : ''}${_hdl ? ' → ' + _hdl : ''}.` : `مخاطب ذخیره شد: ${name}${_nmEn ? ' — انگلیسی: ' + _nmEn : ''}${_hdl ? ' (' + _appFaS + ': ' + _hdl + ')' : ''}. از این به بعد فقط بگو «به ${name} پیام بده».`);
           else if (name || _hdl) outs.push(LANG === 'en' ? 'Could not save the contact — try again.' : 'ذخیرهٔ مخاطب انجام نشد — یک بار دیگر بگو: «به اسم ' + String(name || _hdl).slice(0, 20) + ' تو تلگرام ذخیره کن».');
           else outs.push(LANG === 'en' ? 'I could not figure out the contact name — say: "save Pouria on telegram".' : 'نتونستم اسم مخاطب را بفهمم — این شکلی بگو: «پوریا رو تو تلگرام ذخیره کن».');
         } else if (a.act === 'contact_list') {

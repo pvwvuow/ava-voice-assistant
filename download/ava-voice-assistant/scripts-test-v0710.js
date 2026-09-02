@@ -73,7 +73,7 @@ section('teachContactHints — عین جمله‌های لاگ 0.70');
 /* ============ R1 — نجات contact_save خالی (ساختار app.js) ============ */
 section('contact_save نجات فیلد خالی — پین‌های ساختاری app.js');
 ok(/brain contact_save salvage-from-sentence/.test(appSrc), 'لاگ salvage وجود دارد');
-ok(/if \(!_nmFa && !_nmEn && !_hdl\) \{[\s\S]*?teachContactHints\(cmd\)/.test(appSrc), 'فیلد خالی → استخراج از جمله');
+ok(/teachContactHints\(cmd\) : null/.test(appSrc) && /if \(!_nmFa && _h\.nameFa\)[\s\S]{0,300}?if \(_h\.app\) _app = _h\.app/.test(appSrc), 'فیلد خالی → استخراج از جمله'); /* v0.75 forward-relax: hints همیشه + اپِ جمله مقدم */
 ok(/if \(!_app\) _app = 'telegram';/.test(appSrc), 'اپِ خالی → پیش‌فرض telegram');
 ok(/if \(ok\) \{ try \{ if \(window\.AVACore && window\.AVACore\._state\) window\.AVACore\._state\.entities\.person/.test(appSrc), 'entities.person فقط روی ذخیرهٔ موفق');
 ok(/نتونستم اسم مخاطب را بفهمم/.test(appSrc), 'پیام صادقانه وقتی هیچ نامی قابل استخراج نیست');

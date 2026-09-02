@@ -117,6 +117,20 @@
      بعداً «همین ویدیویی که یوتیوب دادم» با «رو» بازنویسی شد → «ویدیو رو یی»
      (جملهٔ خراب که AI را به video_play(youtube.com) فرستاد). */
   const ENTITY_STOP_RE = /^(رو|را|به|از|روی|توی|تو|برای|برا|کن|بکن|بزن|بده|بیار|ببر|بذار|بزار|پخش|باز|پاز|ببند|استاپ|استوپ|پلیر|مدیا|بالا|پایین|کوچک|بزرگ|کم|زیاد|من|تو|ما|این|اون|همین|همون|که|ویدیو|فیلم|کلیپ|آهنگ|موزیک|یوتیوب|گوگل|لینک|کپی|دادم|کردم|گفتم|بعدی|قبلی|جدید|جدیدترین|اول|بعد|دیگه|فقط|یه|یک)$/i;
+  /* v0.75 — گارد ارزشِ موجودیت (ریشهٔ لاگ میدانی 0.73/0.74): موجودیت‌ها با فیلر/فعل/زبالهٔ STT
+     آلوده می‌شدند («باور کن»، «آمده‌ای»، «صد» — بریدهٔ صدرا) و بعد حل‌گرِ ارجاع «همینو» را با
+     همین آشغال‌ها بازنویسی می‌کرد («همینو برام تو یوتیوب پیدا کن» → «باور کن برام…») و پارسهٔ
+     جمله نابود می‌شد. قاعده: هرگز «به بهتر از نبودن» — مقدارِ مشکوک اصلاً ذخیره/استفاده نمی‌شود. */
+  const ENTITY_VALUE_BAD_RE = /^(?:باور\s*کن|آمده\s*ای|رفته\s*ای|گفته\s*ای|دیده\s*ای|سلام|تست|هیچ|چیز|چیزی|خب|خوب|آره|اره|نه|باشه|اوکی|اکی|حالا|الان|ببین|ببینید|بیا|برو|بریم|فکر\s*کن|یعنی|مثلا|مثلاً|فقط|خیلی|کاملا|صد|دویست|سیصد|چهارصد|پانصد|پنجصد|ششصد|هفتصد|هشتصد|نهصد|هزار|میلیون|ده|بیست|سی|چهل|پنجاه|شصت|هفتاد|هشتاد|نود|یکی|دوتا)$/i;
+  function entityOk(v) {
+    const s = String(v || '').replace(/[\u200c\u200f\u200e]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!s) return false;
+    if (s.replace(/\s+/g, '').length < 3) return false; /* «صد»، «رو» … */
+    if (ENTITY_VALUE_BAD_RE.test(s)) return false;
+    if (ENTITY_STOP_RE.test(s)) return false;
+    if (isGibberish(s)) return false; /* زبالهٔ STT */
+    return true;
+  }
   function extractFromText(text) {
     const s = normFa(text);
     const out = {};
@@ -165,7 +179,11 @@
       const vi = t.via + '/' + t.intent;
       if (/messaging\/msg_send|msg_test/.test(vi) && t.u) {
         const mm = t.u.match(/(?:به|برای|برا)\s+([^\s][\u0600-\u06FFa-zA-Z0-9._@\s]{1,40}?)(?=\s+(?:پیام|پیغام|بگو|بنویس|بفرست)|$)/i);
-        if (mm && mm[1] && !/^(همین|همون|بهش|براش|اون)/i.test(mm[1].trim())) { state.entities.msgTarget = mm[1].trim().slice(0, 80); }
+        if (mm && mm[1] && !/^(همین|همون|بهش|براش|اون)/i.test(mm[1].trim())) {
+          /* v0.75 — بریدن در حرف اضافهٔ مکان: «صدرا تو دیسکورد» هرگز یکجا مقصد نمی‌شود */
+          const _mt = mm[1].trim().replace(/\s+(?:تو|توی|در|با)\s+[\u0600-\u06FFa-zA-Z]+[\s\S]*$/i, '').trim();
+          if (_mt && entityOk(_mt)) { state.entities.msgTarget = _mt.slice(0, 80); }
+        }
       }
       Object.assign(pu, extractFromText(t.u));
       const intent = t.intent || '';
@@ -179,7 +197,8 @@
       }
       for (const k of Object.keys(pu)) {
         const v = String(pu[k] || '').trim().slice(0, 80);
-        if (v && !/^(همین|همون|اونو|اینو|همو)$/.test(v)) state.entities[k] = v;
+        /* v0.75 — گارد ارزش: «باور کن/آمده‌ای/صد» هرگز موجودیت نمی‌شوند */
+        if (v && entityOk(v)) state.entities[k] = v;
       }
     } catch (_) { /* حافظه هرگز نباید مسیر اجرا را بشکند */ }
   }
@@ -207,14 +226,15 @@
 
   function pickEntity(key) {
     const e = state.entities;
-    if (key === 'song' && e.song) return e.song;
-    if (key === 'video' && e.video) return e.video;
-    if (key === 'model' && e.model) return e.model;
-    if (key === 'site' && e.site) return e.site;
-    if (key === 'city' && e.city) return e.city;
-    if (key === 'query' && e.query) return e.query;
-    if (e.lastTitle) return e.lastTitle;
-    return e.song || e.video || e.model || e.query || '';
+    /* v0.75 — هر خروجی از گارد ارزش می‌گذرد؛ مقدارِ آلوده = نداشتنِ مقدار */
+    const ok = (v) => (v && entityOk(v)) ? v : '';
+    if (key === 'song') return ok(e.song) || ok(e.lastTitle) || ok(e.query);
+    if (key === 'video') return ok(e.video) || ok(e.lastTitle) || ok(e.query);
+    if (key === 'model') return ok(e.model);
+    if (key === 'site') return ok(e.site);
+    if (key === 'city') return ok(e.city);
+    if (key === 'query') return ok(e.query) || ok(e.lastTitle);
+    return ok(e.lastTitle) || ok(e.song) || ok(e.video) || ok(e.model) || ok(e.query);
   }
 
   function resolveRefs(cmd, opts) {
@@ -329,8 +349,10 @@
   function resolveRefTarget(text) {
     const s = String(text || '');
     if (!/(همین|همون|همان|بهش|براش|اونو?|اینو?)/i.test(s)) return '';
-    if (REF_NOUN_RE.test(s)) return state.entities.person || state.entities.msgTarget || '';
-    if (/\b(بهش|براش|برا\s?اش)\b/i.test(s) || /(?:^|\s)(بهش|براش|برا\s?اش)(?=$|[\s،؛».!؟?:،])/i.test(s)) return state.entities.msgTarget || '';
+    /* v0.75 — خروجی هم از گارد ارزش می‌گذرد (مقصدِ آلوده هرگز ارسال نمی‌شود) */
+    const _okt = (v) => (v && entityOk(v)) ? v : '';
+    if (REF_NOUN_RE.test(s)) return _okt(state.entities.person) || _okt(state.entities.msgTarget);
+    if (/\b(بهش|براش|برا\s?اش)\b/i.test(s) || /(?:^|\s)(بهش|براش|برا\s?اش)(?=$|[\s،؛».!؟?:،])/i.test(s)) return _okt(state.entities.msgTarget);
     return '';
   }
 
@@ -444,7 +466,7 @@
     return { text: rr.text, hints: rr.hints || [], resolved: rr.resolved, unresolved: rr.unresolved, lane: lane.lane, reason: lane.reason };
   }
 
-  const api = { normFa, recordTurn, resolveRefs, resolveRefTarget, isGibberish, LEARN_COMPLAIN_RE, laneOf, turnsCtx, entityCtx, lastUserText, prepare, reset, _state: state };
+  const api = { normFa, recordTurn, resolveRefs, resolveRefTarget, isGibberish, LEARN_COMPLAIN_RE, laneOf, turnsCtx, entityCtx, lastUserText, prepare, reset, entityOk, _state: state };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVACore = api;
 })(typeof window !== 'undefined' ? window : null);

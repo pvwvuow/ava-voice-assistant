@@ -108,7 +108,7 @@ ok(mainSrc.includes("'-Variants', safeVars.join('|')") || mainSrc.includes('$Req
 ok(appSrc.includes('variants: _vs'), 'رندرر واریانت‌ها را می‌فرستد');
 const tgBody = (mainSrc.split('const TG_PS_BODY = `')[1] || '').split('`;')[0];
 ok(tgBody.length > 2000 && !tgBody.includes('/*'), 'بدون کامنت /* در پاورشل');
-ok(mainSrc.includes('runTgPs(name, text, username, false, variants)'), 'msg:send واریانت را به موتور می‌دهد');
+ok(/runTgPs\(name, text, username, false, variants(, openMode)?\)/.test(mainSrc), 'msg:send واریانت را به موتور می‌دهد'); /* v0.75 forward-relax: +openMode */
 
 /* ============ ۸) یادگیری — گیت کیفیت ============ */
 section('learn gate');

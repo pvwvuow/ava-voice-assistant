@@ -102,7 +102,7 @@ ok(mainSrc.slice(tgEnd, tgEnd + 2200).includes("'-STA'"), 'spawn پاورشل ب
 console.log('\n[4] IPC msg:send و پل preload');
 ok(/ipcMain\.handle\('msg:send'/.test(mainSrc), 'هندلر msg:send در main');
 ok(mainSrc.includes("runDiscordPs('msgsend', 'fg', name, 46, 52, text"), 'دیسکورد → موتور اثبات‌شدهٔ v0.35 (پارادوکس deep-link حل شد — v0.74 ریلکس: +variants)');
-ok(mainSrc.includes("return runTgPs(name, text, username, false, variants)"), 'تلگرام → موتور جدید (+واریانت‌ها)');
+ok(/return runTgPs\(name, text, username, false, variants(, openMode)?\)/.test(mainSrc), 'تلگرام → موتور جدید (+واریانت‌ها)'); /* v0.75 forward-relax: +openMode */
 ok(mainSrc.includes("String((p && p.username) || '').replace(/[^a-zA-Z0-9_@.]/g, '')"), 'پاک‌سازی username (قاعدهٔ B8)');
 ok(/send: \(p\) => ipcRenderer\.invoke\('msg:send', p\)/.test(preloadSrc), 'پل preload msg.send');
 

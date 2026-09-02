@@ -29,9 +29,9 @@ const C = require('./renderer/js/voiceCore.js');
 const B = require('./renderer/js/voiceBrain.js');
 
 console.log('— ۱) دیسکورد واریانت‌های حافظه را می‌گیرد (ریشهٔ شکایت «توجه نمیکنه به مموری») —');
-ok(mainSrc.includes("return runDiscordPs('msgsend', 'fg', name, 46, 52, text, variants)"), 'msg:send دیسکورد variants را به موتور می‌دهد');
+ok(/return runDiscordPs\('msgsend', 'fg', name, 46, 52, text, variants(, openMode)?\)/.test(mainSrc), 'msg:send دیسکورد variants را به موتور می‌دهد'); /* v0.75 forward-relax: +openMode */
 ok(mainSrc.includes('ava-dc-req.json'), 'ترابری JSON-فایل برای دیسکورد (درس تلگرام v0.72)');
-ok(mainSrc.includes('function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText, variants)'), 'امضای runDiscordPs با variants');
+ok(/function runDiscordPs\(psAction, mode, nm, dxN, dyN, msgText, variants(, msgOpenMode)?\)/.test(mainSrc), 'امضای runDiscordPs با variants'); /* v0.75 forward-relax: +msgOpenMode */
 ok(mainSrc.indexOf("[string]$Req = ''") > mainSrc.indexOf('DISCORD_PS_BODY'), 'پارامتر $Req در PS دیسکورد');
 ok(mainSrc.includes("if ($ReqObj.variants) { $vars = @($ReqObj.variants | ForEach-Object { [string]$_ }) }"), 'خواندن واریانت‌ها از req JSON');
 ok(mainSrc.includes("if ($vars -notcontains $name) { $vars = @($name) + @($vars) }"), 'اسم گفتاری همیشه در لیست واریانت‌ها');
