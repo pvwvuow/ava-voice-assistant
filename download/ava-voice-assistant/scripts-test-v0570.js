@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0570.js — doctest v0.57.0-beta
+/* scripts-test-v0570.js — doctest v0.60.0-beta
    درخواست کاربر: «تنظیمات رو تمیز کن فقط — کل صفحه تنظیمات یکم نا مرتبه حس میکنم — با دقت»
    (روی پایهٔ v0.54.0-beta — بدون هیچ ویژگی v0.55/0.56)
    چک‌ها:
@@ -9,7 +9,7 @@
      4) صفر استایل inline در صفحهٔ تنظیمات + کلاس‌های ptt-controls/w150/w190 + تولتیپ دوزبانه PTT
      5) i18n — ۹ کلید تازه هر یک بار (دیکشنری ادغام‌شدهٔ D1 — بلوک مرده حذف شد) با جفت فارسی/انگلیسی
      6) نگهبان‌های ساختاری — ترتیب پنل‌ها، تگ‌های دقیق، یکتایی idهای حیاتی، گارد showSettingsPane
-     7) نسخه 0.57.0-beta چهارگانه
+     7) نسخه 0.60.0-beta چهارگانه
 */
 const fs = require('fs');
 const path = require('path');
@@ -142,13 +142,13 @@ ok(appSrc.includes("if (!setPanes.some((p) => p.dataset.pane === id)) id = 'mic'
    'گارد showSettingsPane سر جایش است');
 ok(!htmlSrc.includes('data-i18n="disc.hint"'), 'کلید یتیم disc.hint همچنان غایب (پین v0360)');
 
-console.log('\n[7] نسخه 0.57.0-beta');
-ok(appSrc.includes("let appVersion = '0.57.0-beta';"), 'app.js: 0.57.0-beta');
-ok(pkg.version === '0.57.0-beta', 'package.json: 0.57.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.57.0-beta</span>'), 'index.html: v0.57.0-beta');
-ok(readme.includes('۰.۵۷.۰-بتا') && readme.includes('مرتب‌سازی صفحهٔ تنظیمات'), 'README: ۰.۵۷.۰-بتا');
-ok(pkg.description.includes('۰.۵۷') && pkg.description.includes('بدون ویژگی‌های v0.55/0.56'),
-   'description: ۰.۵۷ + پایهٔ v0.54 بدون v0.55/0.56');
+console.log('\n[7] نسخه 0.60.0-beta');
+ok(appSrc.includes("let appVersion = '0.60.0-beta';"), 'app.js: 0.60.0-beta');
+ok(pkg.version === '0.60.0-beta', 'package.json: 0.60.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.60.0-beta</span>'), 'index.html: v0.60.0-beta');
+ok(readme.includes('۰.۶۰.۰-بتا') && readme.includes('بازبینی چهارایجنتی'), 'README: ۰.۶۰.۰-بتا');
+ok(pkg.description.includes('۰.۶۰') && pkg.description.includes('فیکس'),
+   'description: ۰.۶۰ + بسته‌های A/B/C/D (forward-relax v0.60)');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);

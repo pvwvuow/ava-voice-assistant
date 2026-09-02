@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 #  AVA Voice Assistant  -  One-Command Git Publisher
 #  ------------------------------------------------------------
 #  Normal push:          .\push.ps1 "my update message"
@@ -15,9 +15,9 @@
 #   4. Never tracks node_modules / dist
 #   5. Commits (default message = date/time) and pushes
 #   6. With -Release: bumps the patch version in package.json
-#      (0.4.0 -> 0.4.1) or uses -Version, then tags vX.Y.Z so
-#      GitHub Actions builds the installer and publishes it
-#      to GitHub Releases automatically
+#      (0.57.0-beta -> 0.57.1-beta - pre-release suffix kept; or uses -Version),
+#      then tags vX.Y.Z[-pre] so GitHub Actions builds the installer and
+#      publishes a DRAFT release to GitHub Releases (publish via RELEASING.md)
 #
 #  Tip: use push.cmd if PowerShell blocks scripts:
 #       .\push.cmd "my update" -Release
@@ -64,7 +64,9 @@ $remote = git remote get-url origin 2>$null
 if (-not $remote) {
   Fail "No 'origin' remote found. One-time setup:`n    git remote add origin https://github.com/pvwvuow/ava-voice-assistant.git"
 }
-Info "remote: $remote"
+# credentials (https://user:token@github.com/...) never get echoed
+$remoteMasked = $remote -replace '//[^@]+@', '//***@'
+Info "remote: $remoteMasked"
 
 # ---------- 2) auto-fix "repository" in package.json ----------
 $slug = $null
@@ -73,7 +75,7 @@ if ($remote -match 'github\.com[/:]') {
   if (Get-Command node -ErrorAction SilentlyContinue) {
     $env:AVA_REPO_URL = "https://github.com/$slug.git"
     node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.repository={type:'git',url:process.env.AVA_REPO_URL};p.build=p.build||{};p.build.publish={provider:'github'};fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
-    if ($LASTEXITCODE -eq 0) { Ok "package.json repository -> $env:AVA_REPO_URL" }
+    if ($LASTEXITCODE -eq 0) { Ok "package.json repository -> $($env:AVA_REPO_URL -replace '//[^@]+@', '//***@')" }
     else { Warn "could not update package.json (node error) - CI will fix it anyway" }
   } else {
     Warn "node not found - skipping package.json fix (GitHub Actions will fix it automatically)"
@@ -91,17 +93,22 @@ if ($proxy) {
 }
 
 # ---------- 2c) release: bump version BEFORE commit ----------
+# pre-release suffixes (-beta ...) are kept, not fed to [int] (old bug: '0-beta' -> cast crash)
+$VER_RE = '^(\d+\.\d+\.\d+)(?:-([\w.]+))?$'
 $newVer = $null
 if ($Release) {
   $cur = Get-PkgVersion
   if ($Version) {
     $newVer = $Version
+  } elseif ($cur -notmatch $VER_RE) {
+    Fail "نسخهٔ package.json قابل بامپ خودکار نیست: '$cur' — فرمت مورد انتظار X.Y.Z یا X.Y.Z-پسوند (مثل 0.60.0-beta). نسخه را دستی یا با node scripts/bump-version.js درست کن."
   } else {
-    $parts = $cur.Split('.')
-    if ($parts.Count -eq 3) {
-      $parts[2] = [string]([int]$parts[2] + 1)
-      $newVer = ($parts -join '.')
-    } else { $newVer = $cur }
+    $nums = $Matches[1]
+    $pre  = $Matches[2]
+    $parts = $nums.Split('.')
+    $parts[2] = [string]([int]$parts[2] + 1)
+    $newVer = ($parts -join '.')
+    if ($pre) { $newVer = "$newVer-$pre" } else { $newVer = "$newVer-beta" }  # keep/append beta
   }
   if (Get-Command node -ErrorAction SilentlyContinue) {
     $env:AVA_VER = $newVer
@@ -116,8 +123,12 @@ if ($Release) {
 }
 
 # ---------- 3) sync .gitignore + CI workflow to repo root ----------
+# root .gitignore is a superset (Next.js + monorepo rules) - never clobber it
 $gi = Join-Path $PSScriptRoot '.gitignore'
-if (Test-Path $gi) { Copy-Item $gi (Join-Path $root '.gitignore') -Force }
+if ((Test-Path $gi) -and -not (Test-Path (Join-Path $root '.gitignore'))) {
+  Copy-Item $gi (Join-Path $root '.gitignore') -Force
+  Info "root .gitignore was missing - seeded from the app one"
+}
 
 $wfSrc = Join-Path $PSScriptRoot '.github\workflows\build.yml'
 $wfDir = Join-Path $root '.github\workflows'
@@ -165,8 +176,12 @@ Ok "pushed to origin/$branch"
 # ---------- 7) optional: tag + release ----------
 if ($Release -and $newVer) {
   $tag = "v$newVer"
-  git tag -d $tag 2>$null
-  git push origin ":refs/tags/$tag" 2>$null
+  # NEVER force-recreate a remote tag (CI releases are immutable history now)
+  $taken = (git ls-remote --tags origin "refs/tags/$tag" 2>$null | Out-String).Trim()
+  if ($taken -ne "") {
+    Fail "نسخه را bump کن — تگ $tag از قبل روی ریموت است"
+  }
+  git tag -d $tag 2>$null   # only stale LOCAL tag, remote is untouched
   git tag $tag
   git push origin $tag
   if ($LASTEXITCODE -ne 0) { Fail "tag push failed" }

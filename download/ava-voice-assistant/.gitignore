@@ -7,3 +7,7 @@ release/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# runtime state — never track (C6)
+.tmp-pip-state.json
+*.pid

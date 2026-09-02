@@ -1,12 +1,12 @@
-# ============================================================
+﻿# ============================================================
 #  AVA Voice Assistant - Release Script (called by runmetocreateexeforyou.bat)
 #  - Fixes broken git proxy settings
 #  - Syncs the repository URL from the real remote
 #  - Commits everything, keeps "version" in package.json in sync
 #    with the release tag (auto-bumps patch if the tag already exists)
 #  - Pushes main + tag -> GitHub Actions builds the EXE installer
-#    and publishes it on GitHub Releases (in-app updater reads it)
-#  ASCII only - safe for Windows PowerShell 5.1
+#    and uploads it as a DRAFT on GitHub Releases (in-app updater reads it)
+#  UTF-8 with BOM (Persian messages) - safe for Windows PowerShell 5.1
 # ============================================================
 param([string]$Message = "")
 
@@ -94,10 +94,18 @@ function TagTaken($t) {
 }
 
 $bumped = $false
+# pre-release suffixes (-beta ...) are handled outside the numeric bump
+# (old bug: [int]'0-beta' crashed for every beta version)
+if ($ver -notmatch '^(\d+\.\d+\.\d+)(?:-([\w.]+))?$') {
+  Fail "نسخهٔ package.json قابل پردازش نیست: '$ver' — فرمت مورد انتظار X.Y.Z یا X.Y.Z-پسوند (مثل 0.60.0-beta). از node scripts/bump-version.js استفاده کن."
+}
+$numPart = $Matches[1]
+$prePart = $Matches[2]
 while (TagTaken $tag) {
-  $parts = $ver.Split(".")
+  $parts = $numPart.Split(".")
   $parts[2] = [string]([int]$parts[2] + 1)
-  $ver = $parts -join "."
+  $numPart = $parts -join "."
+  $ver = if ($prePart) { "$numPart-$prePart" } else { "$numPart-beta" }  # keep/append beta
   $tag = "v$ver"
   $bumped = $true
 }

@@ -180,9 +180,9 @@ function extractFn(name, src) {
 
 /* ---------- ۸) نسخه و README ---------- */
 {
-  eq(/^0\.[45]/.test(pkg.version), true, 'نسخه: package.json (0.4x به جلو)');
-  ok(/let appVersion = '0\.[45]/.test(app), 'نسخه: app.js (0.4x به جلو)');
-  ok(/v0\.[45]/.test(idx), 'نسخه: index.html (0.4x به جلو)');
+  eq(/^0\.[4-9]/.test(pkg.version), true, 'نسخه: package.json (0.4x به جلو)');
+  ok(/let appVersion = '0\.[4-9]/.test(app), 'نسخه: app.js (0.4x به جلو)');
+  ok(/v0\.[4-9]/.test(idx), 'نسخه: index.html (0.4x به جلو)');
   ok(readme.includes('0.41.0-beta') || readme.includes('v0.41.0-beta') || readme.includes('۰.۴۱.۰-بتا') || readme.includes('v0.41-beta'), 'README: بلوک v0.41');
 }
 

@@ -1,4 +1,7 @@
 # 🔴 BUGLIST — تحلیل ریشه‌ای کامل روی v0.46.0-beta
+
+> 🗄 سند تاریخی — هر ۳۲ ریشه در v0.47.0-beta بسته شد. برای وضعیت فعلی: worklog و AVA-BACKLOG.
+
 **منبع:** activity.log واقعی کاربر (۵۰۴۹ خط، از v0.38.1 تا v0.46.0) + ممیزی خط‌به‌خط کد (app.js ۹۶۱۳ خط، main.js ۴۹۱۸ خط، voiceWake.js، voiceIntent.js، voiceUnderstand.js، voiceCommandParser.js)
 **تاریخ:** 2026-09-01 — ثبت‌شده قبل از فیکس v0.47
 

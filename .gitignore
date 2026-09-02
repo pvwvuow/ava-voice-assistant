@@ -59,3 +59,11 @@ agent-ctx/
 
 # sandbox scratch (test artifacts, models) — never part of the app
 /scripts/
+
+# --- AVA monorepo — local junk, never track (C6) ---
+/upload/
+/download/*.zip
+/db/custom.db
+/scripts/*.png
+.zscripts/dev.pid
+/public/ava/

@@ -1,8 +1,8 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.57.0-beta",
-  "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۵۷: مرتب‌سازی کامل صفحهٔ تنظیمات — ناوبری گروهی (گفتار / صدا و هوش / اتصال‌ها / سیستم)، جداکننده‌های یکنواخت بین ردیف‌ها، زیرتیترهای پنل برنامه و حذف استایل‌های شلوغ — ساخته‌شده روی پایهٔ v0.54.0-beta و بدون ویژگی‌های v0.55/0.56",
+  "version": "0.60.0-beta",
+  "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۶۰: ۳۰ فیکس باگ، سخت‌سازی امنیتی، ابزار انتشار و پاکسازی ساختار — بسته‌های A/B/C/D از بازبینی چهارایجنتی، بدون تغییر بزرگ معماری",
   "main": "main.js",
   "license": "MIT",
   "author": {
@@ -36,7 +36,7 @@
     },
     "publish": {
       "provider": "github",
-      "releaseType": "release"
+      "releaseType": "draft"
     },
     "artifactName": "AVA-Setup-${version}.${ext}",
     "files": [

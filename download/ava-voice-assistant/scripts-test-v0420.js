@@ -264,9 +264,9 @@ function ruleK(src, id) {
    ۶) نسخه و README
    ============================================================ */
 {
-  ok(/^0\.[45][0-9]*\./.test(pkg.version), 'نسخه: package.json (0.4x به جلو)');
-  ok(/let appVersion = '0\.[45][0-9]*\./.test(app), 'نسخه: app.js (0.4x به جلو)');
-  ok(/v0\.[45][0-9]*\./.test(idx), 'نسخه: index.html (0.4x به جلو)');
+  ok(/^0\.[4-9][0-9]*\./.test(pkg.version), 'نسخه: package.json (0.4x به جلو)');
+  ok(/let appVersion = '0\.[4-9][0-9]*\./.test(app), 'نسخه: app.js (0.4x به جلو)');
+  ok(/v0\.[4-9][0-9]*\./.test(idx), 'نسخه: index.html (0.4x به جلو)');
   ok(readme.includes('v0.42-beta') && readme.includes('openai-edge-tts'), 'README: بلوک v0.42 + اشارهٔ openai-edge-tts');
   ok(pkg.dependencies && pkg.dependencies.ws, 'package: وابستگی ws ثبت شده');
 }

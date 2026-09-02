@@ -100,7 +100,7 @@ ok(/voiceIntent\.js[\s\S]*?voiceUnderstand\.js[\s\S]*?app\.js/.test(idxSrc), 'in
 
 /* ---------- ۸) نسخه ---------- */
 const pkg = JSON.parse(fs.readFileSync(path.join(R, 'package.json'), 'utf8'));
-ok(/^0\.[45]/.test(pkg.version), 'package.json version forwards-compatible 0.4x+ = ' + pkg.version);
+ok(/^0\.[4-9]/.test(pkg.version), 'package.json version forwards-compatible 0.4x+ = ' + pkg.version);
 
 console.log(`\nv0.44 understand-first: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

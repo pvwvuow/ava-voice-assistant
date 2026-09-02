@@ -104,7 +104,7 @@ ok((appSrc.match(/'toast\.wakeWordSet': \[/g) || []).length >= 1, 'i18n toast د
 /* ---------- 9) version ---------- */
 console.log('\n[9] نسخه');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-ok(/^0\.[45]\d\.\d+(-beta)?$/.test(pkg.version) && pkg.version >= '0.46', 'package.json نسخهٔ ۰.۴x+ (forward-relaxed)');
+ok(/^0\.[4-9]\d\.\d+(-beta)?$/.test(pkg.version) && pkg.version >= '0.46', 'package.json نسخهٔ ۰.۴x+ (forward-relaxed)');
 
 console.log('\n========================================');
 console.log('v0460: ' + pass + ' passed, ' + fail + ' failed');
