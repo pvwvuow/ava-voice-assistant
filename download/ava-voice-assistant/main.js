@@ -3697,7 +3697,7 @@ function mpvSend(cmdObj) {
 }
 /* کلیدهای مدیای جهانی — برای هر پلیر/مرورگری که زیر کنترل مستقیم نیست */
 const MEDIA_KEYS = { play_pause: 'B3', next: 'B0', prev: 'B1', stop: 'B2' }; /* v0.61 — stop اصلاح شد: VK_MEDIA_STOP=0xB2 */
-const VK = { left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0x46, f11: 0x7A };
+const VK = { left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0x46, f11: 0x7A, enter: 0x0D };
 function fgKeys(seq) {
   /* کلیدها به «پنجرهٔ فعال» می‌روند — کاربر پلیر را جلوی چشمش دارد */
   const body = seq.map((k) => `[W.N]::keybd_event(${k},0,0,0); [W.N]::keybd_event(${k},0,2,0);`).join(' ');
@@ -3707,6 +3707,78 @@ function fgKeys(seq) {
     () => {}
   );
 }
+
+/* ---------- ۵.۵) کنترل پنجرهٔ پلیر — v0.63 ----------
+   لاگ v0.62: کاربر پات‌پلیر را «خودش» باز کرده بود و گفت ببند/پین کن/بزرگ‌ترش کن —
+   آوا فقط پلیرهای خودش را می‌شناخت و هیچی اجرا نمی‌شد. راه‌حل ساختاری: یافتن
+   پنجرهٔ پلیر با اسکن پروسس + user32 (همان زیرساخت PowerShell تک‌خطی بقیهٔ main)
+   — بدون باینری بومی جدید، برای هر پلیر شناخته‌شده‌ای کار می‌کند. */
+const PLAYER_PROC_RE = 'potplayer|mpv|mpc|wmplayer|vlc|kmplayer|gom|bsplayer|smplayer';
+function playerWindowCtl(kind, arg) {
+  /* kind: topmost|notopmost|move|grow|shrink|close — arg: برای move موقعیت نام‌دار */
+  const pos = String(arg == null ? 'center' : arg).toLowerCase().replace(/[_/]/g, '-');
+  const XY = {
+    'top-left': '($wa.X+12),($wa.Y+12)',
+    'top-right': '($wa.X+$wa.Width-$w-12),($wa.Y+12)',
+    'bottom-left': '($wa.X+12),($wa.Y+$wa.Height-$hh-12)',
+    'bottom-right': '($wa.X+$wa.Width-$w-12),($wa.Y+$wa.Height-$hh-12)',
+    'center': '($wa.X+[int](($wa.Width-$w)/2)),($wa.Y+[int](($wa.Height-$hh)/2))',
+    'top': '($wa.X+[int](($wa.Width-$w)/2)),($wa.Y+12)',
+    'bottom': '($wa.X+[int](($wa.Width-$w)/2)),($wa.Y+$wa.Height-$hh-12)',
+    'left': '($wa.X+12),($wa.Y+[int](($wa.Height-$hh)/2))',
+    'right': '($wa.X+$wa.Width-$w-12),($wa.Y+[int](($wa.Height-$hh)/2))',
+  };
+  const IMP = "[DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f); [DllImport(\"user32.dll\")] public static extern bool GetWindowRect(IntPtr h, out R r); [DllImport(\"user32.dll\")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h); public struct R { public int L; public int T; public int Rt; public int B; }";
+  let act = '';
+  if (kind === 'topmost') act = "[W.N]::SetWindowPos($h,[IntPtr](-1),0,0,0,0,0x13)|Out-Null; Write-Output ('OK topmost ' + $p.ProcessName)";
+  else if (kind === 'notopmost') act = "[W.N]::SetWindowPos($h,[IntPtr](-2),0,0,0,0,0x13)|Out-Null; Write-Output ('OK notopmost ' + $p.ProcessName)";
+  else if (kind === 'close') act = "[W.N]::PostMessage($h,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)|Out-Null; Start-Sleep -Milliseconds 800; if(Get-Process -Id $p.Id -ErrorAction SilentlyContinue){ Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }; Write-Output ('OK close ' + $p.ProcessName)";
+  else if (kind === 'move') {
+    const tpl = XY[pos] || XY.center;
+    const parts = tpl.split(',');
+    act = "$x=" + parts[0] + "; $y=" + parts.slice(1).join(',') + "; [W.N]::SetWindowPos($h,[IntPtr]::Zero,$x,$y,0,0,0x15)|Out-Null; Write-Output ('OK move " + pos + " ' + $p.ProcessName)";
+  } else if (kind === 'grow') {
+    act = "$nw=[int][Math]::Min($wa.Width-16,[Math]::Max($w+2,[int]($w*1.15))); $nh=[int][Math]::Min($wa.Height-16,[Math]::Max($hh+2,[int]($hh*1.15))); $x=$r.L+[int](($w-$nw)/2); $y=$r.T+[int](($hh-$nh)/2); [W.N]::SetWindowPos($h,[IntPtr]::Zero,$x,$y,$nw,$nh,0x14)|Out-Null; Write-Output ('OK grow ' + $p.ProcessName)";
+  } else if (kind === 'shrink') {
+    act = "$nw=[int][Math]::Max(260,[int]($w*0.85)); $nh=[int][Math]::Max(160,[int]($hh*0.85)); $x=$r.L+[int](($w-$nw)/2); $y=$r.T+[int](($hh-$nh)/2); [W.N]::SetWindowPos($h,[IntPtr]::Zero,$x,$y,$nw,$nh,0x14)|Out-Null; Write-Output ('OK shrink ' + $p.ProcessName)";
+  } else return Promise.resolve({ ok: false, error: 'اقدام پنجره ناشناخته' });
+  /* اولویت: پلیری که آوا اجرا کرده؛ بعد اسکن عمومی پلیرهای شناخته‌شده */
+  const known = playerCtl.exe ? psPathSafe(path.basename(playerCtl.exe, '.exe')) : '';
+  const prio = known
+    ? "$pn='" + known + "'; $p=Get-Process -Name $pn -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}|Select-Object -First 1; "
+    : '';
+  const psAll =
+    "$ErrorActionPreference='SilentlyContinue'; " +
+    "Add-Type -Namespace W -Name N -MemberDefinition '" + IMP + "'; " +
+    "Add-Type -AssemblyName System.Windows.Forms; " +
+    "$wa=[System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; " +
+    "$p=$null; " + prio +
+    "if(-not $p){ $p=Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Select-Object -First 1 } " +
+    "if(-not $p){ Write-Output 'NOWIN' } else { " +
+    "$h=$p.MainWindowHandle; " +
+    "if([W.N]::IsIconic($h)){ [W.N]::ShowWindow($h,9)|Out-Null } " +
+    "$r=New-Object ('W.N+R'); [W.N]::GetWindowRect($h,[ref]$r)|Out-Null; " +
+    "$w=[Math]::Max(1,$r.Rt-$r.L); $hh=[Math]::Max(1,$r.B-$r.T); " +
+    act + " }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${psAll.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 9000 },
+      (err, so) => {
+        const out = String(so || '').trim();
+        if (out.indexOf('NOWIN') >= 0) return resolve({ ok: false, error: 'پنجرهٔ پلیری پیدا نشد' });
+        if (out.indexOf('OK') === 0 || out.indexOf(' OK') > 0) {
+          const toks = out.split(/\s+/);
+          if (toks.length >= 3) playerCtl.lastWinProc = String(toks.slice(2).join(' ') || '').toLowerCase();
+          return resolve({ ok: true, out });
+        }
+        resolve({ ok: false, error: 'کنترل پنجره ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+function psPathSafe(s) { return String(s || '').replace(/'/g, "''"); }
+
 ipcMain.handle('player:ctl', async (_e, p) => {
   const a = p && p.action ? String(p.action) : '';
   if (!a) return { ok: false, error: 'اقدام نامشخص' };
@@ -3735,6 +3807,13 @@ ipcMain.handle('player:ctl', async (_e, p) => {
     };
     if (mpvMap[a]) { const ok = await mpvSend(mpvMap[a]); if (ok) { if (a === 'close') playerCtl.player = null; return { ok: true, via: 'mpv-ipc' }; } }
   }
+  /* ۲.۵) v0.63 — کنترل پنجرهٔ پلیر: pin/unpin/move/grow/shrink — برای هر پلیری
+     (حتی پلیری که خودِ کاربر باز کرده) با یافتن پنجره از اسکن پروسس */
+  if (a === 'pin' || a === 'unpin' || a === 'move' || a === 'grow' || a === 'shrink') {
+    const wr = await playerWindowCtl(a === 'pin' ? 'topmost' : a === 'unpin' ? 'notopmost' : a, p && p.arg);
+    if (wr.ok) return { ok: true, via: 'win-ctl' };
+    return { ok: false, error: wr.error || 'کنترل پنجره ممکن نشد' };
+  }
   /* ۳) کلیدهای مدیای جهانی / کلیدهای پنجرهٔ فعال */
   if (MEDIA_KEYS[a]) { fgKeys([`0x${MEDIA_KEYS[a]}`]); return { ok: true, via: 'media-keys' }; }
   if (a === 'seek') {
@@ -3744,7 +3823,14 @@ ipcMain.handle('player:ctl', async (_e, p) => {
     fgKeys(Array.from({ length: n }, () => (d > 0 ? VK.right : VK.left)));
     return { ok: true, via: 'fg-keys' };
   }
-  if (a === 'fullscreen') { fgKeys([VK.f11, VK.f]); return { ok: true, via: 'fg-keys' }; }
+  if (a === 'fullscreen') {
+    /* v0.63 — کلید فول‌اسکرین از پلیر می‌آید: پات‌پلیر=Enter، mpv/vlc/mpc=F، بقیه=F11+F */
+    const nm = String(playerCtl.exe ? path.basename(playerCtl.exe) : (playerCtl.lastWinProc || '')).toLowerCase();
+    if (/potplayer/.test(nm)) { fgKeys([VK.enter]); return { ok: true, via: 'fg-keys' }; }
+    if (/mpv|vlc|mpc/.test(nm)) { fgKeys([VK.f]); return { ok: true, via: 'fg-keys' }; }
+    fgKeys([VK.f11, VK.f]);
+    return { ok: true, via: 'fg-keys' };
+  }
   if (a === 'volume_up') { fgKeys(['0xAF']); return { ok: true, via: 'media-keys' }; }
   if (a === 'volume_down') { fgKeys(['0xAE']); return { ok: true, via: 'media-keys' }; }
   if (a === 'play_pause') { fgKeys([`0x${MEDIA_KEYS.play_pause}`]); return { ok: true, via: 'media-keys' }; }
@@ -3756,7 +3842,11 @@ ipcMain.handle('player:ctl', async (_e, p) => {
       playerCtl.player = null;
       return { ok: true, via: 'taskkill' };
     }
-    return { ok: false, error: 'پلیری زیر کنترل آوا باز نیست' };
+    /* v0.63 — پلیری که خودِ کاربر باز کرده (لاگ v0.62: پات‌پلیرِ دستی بسته نشد)
+       — WM_CLOSE به پنجرهٔ پلیر یافته‌شده، بعد در صورت ماندن، خاتمهٔ پروسس */
+    const wr = await playerWindowCtl('close');
+    if (wr.ok) { playerCtl.player = null; return { ok: true, via: 'win-ctl' }; }
+    return { ok: false, error: 'پلیری باز نیست' };
   }
   return { ok: false, error: 'این اقدام برای پلیر فعلی ممکن نیست' };
 });
@@ -3800,8 +3890,17 @@ async function playerLaunch(player, src, opts) {
 }
 
 /* v0.62 — نردبان پخش یوتیوب: حل استریم → پلیر؛ آخرین طبقه: مرورگر.
-   بن‌بست ندارد — کاربر همیشه ویدیو را می‌بیند (پلیر یا مرورگر). */
+   بن‌بست ندارد — کاربر همیشه ویدیو را می‌بیند (پلیر یا مرورگر).
+   v0.63 — لینکِ بی‌شناسه (صفحهٔ اصلی/سرچ یوتیوب) هرگز به پلیر یا مرورگر
+   نمی‌رود؛ لاگ v0.62: سه بار video_play(https://www.youtube.com/) زده شد
+   و خروجی یا دیوار ربات بود یا صفحهٔ خالی — خطای شفاف برمی‌گردد تا
+   رندرر لینک واقعی را از کلیپ‌بورد جبران کند. */
+const YT_NOVIDEO_RE = /^(https?:\/\/)?(www\.)?(youtube\.com\/?(?:[?#].*)?|youtu\.be\/?)(\s|$)/i;
 async function playerLaunchYt(player, src) {
+  const s = String(src || '').trim();
+  if (/youtube\.com|youtu\.be/i.test(s) && (YT_NOVIDEO_RE.test(s) || !/(?:watch\?v=|youtu\.be\/|shorts\/|live\/|embed\/|\/v\/)/i.test(s))) {
+    return { ok: false, player, noVideoId: true, error: 'این آدرس یوتیوب ویدیوی مشخصی ندارد' };
+  }
   const r = await playerLaunch(player, src, { ytdl: true });
   if (r.ok) return r;
   try { shell.openExternal(src); return { ok: true, via: 'browser-fallback', player, fa: 'مرورگر', note: r.error || '' }; }

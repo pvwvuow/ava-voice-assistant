@@ -759,7 +759,7 @@ app.whenReady().then(async () => {
         normLayer: /function normFaFull\(s\)/.test(appjs) && appjs.includes('raw = normFaFull(raw);') && appjs.includes('\\u06F0-\\u06F9'),
         doProtocol: /function parseDo\(text\)/.test(appjs) && /async function executeDoActions\(actions(?:, origCmd)?\)/.test(appjs) /* v0.39: +origCmd for run_cmd */ && appjs.includes('const DO_ACTS = ['),
         doPrompt: appjs.includes('<<<DO>>>') && appjs.includes('discord_call') && appjs.includes('run_custom'),
-        doHook: appjs.includes('const doRes = parseDo(r.text);') && appjs.includes("rcTag.textContent = t('tag.aiDo')"),
+        doHook: /(?:const|let) doRes = parseDo\(r\.text\);/.test(appjs) && appjs.includes("rcTag.textContent = t('tag.aiDo')"), /* v0.63 forward-relax: doRes حالا let است (دور ترمیم DO-repair) */
         doSafe: appjs.includes("DO_ACTS.includes(a.act)") && appjs.includes("askConfirm({") && appjs.includes("Sleep the PC?"),
         callMode: appjs.includes("discordCallMode") && html.includes('optDiscordCallMode') && mainjs.includes("assist === true") && mainjs.includes("OK:ASSIST"),
       };

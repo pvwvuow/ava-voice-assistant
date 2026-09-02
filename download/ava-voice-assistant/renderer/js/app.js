@@ -3125,7 +3125,7 @@
     yt_bring: 'ویدیویی که الان در مرورگر/سیستم پخش میشه رو با پلیر پیش‌فرض کاربر پخش کن: همین ویدیو رو بیار',
     now_playing: 'چی داره پخش میشه؟ — وضعیت پخش سیستم',
     player_open: 'پخش در پلیر ویندوز: با وی‌ال‌سی/پت‌پلیر/کی‌ام‌پلیر/mpv آهنگ X رو پخش کن — یا «با پلیر پیش‌فرض پخش کن»',
-    player_ctl: 'کنترل پلیر: ویدیو رو پلی/پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند',
+    player_ctl: 'کنترل پلیر: ویدیو رو پلی/پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند / پین کن / بزرگترش کن / ببرش بالا سمت راست',
     web_open: 'فقط باز کردن سایت — بدون هیچ جستجویی',
     open_youtube: 'باز کردن خود یوتیوب',
     open_music: 'پخش موزیک/آهنگ',
@@ -7083,7 +7083,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.62.0-beta';
+  let appVersion = '0.63.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8252,6 +8252,9 @@
     /* v0.53 — قانون ارجاع به تاریخچه (لاگ واقعی 16:14:47: «همون آهنگ شادمهری که آخرین بار سرچ کردی» → توهم «قشنگترین گناه شادمهر») */
     /* v0.54 — قانون ۱۰ بازنویسی شد (بازخورد کاربر: در v0.52 جریانِ ارجاع+تحقیق درست کار می‌کرد — قانون نباید بهانهٔ ردِ اجرا شود) */
     'قانون مهم ۱۰ (بسیار مهم): اگر کاربر با ارجاع به گذشته حرف زد (همینو، همونو، اونو، همون، همونی که گفتی/سرچ کردی/پخش کردی، آخرین بار، قبلی، «همون آهنگ جدیدشو»)، مرجع را اول از «تاریخچهٔ همین گفتگو» بردار — مخصوصاً عنوانی که خودت چند پیام قبل در جواب گفتی. بعد از حلِ مرجع حتماً اکشن بده: پخش = music_play با عنوانِ حل‌شده؛ سرچ در یوتیوب = yt_search؛ سرچ گوگل = web_search. اگر مرجع در تاریخچه نبود، act=research بده یا صادقانه بپرس — هرگز عنوان را از حافظه‌ات نساز. این قانون هرگز مجوزِ رد کردن یا بی‌جواب گذاشتنِ خواستهٔ کاربر نیست.\n' +
+    /* v0.63 — نگاشت مستقیم کنترل پخش (لاگ v0.62: «ببند/پین کن/ببر بالا سمت راست/
+       بزرگتر کن» یا بی‌اکشن ماندند یا fullscreen اشتباه زده شد) */
+    'قانون مهم ۱۱ (بسیار مهم): هر درخواستِ کنترلِ ویدیو/پلیر = بلوک DO با act=video_ctl: «ببند/بخوابون»=close؛ «پین کن/همیشه رویر/بیفته جلو»=pin؛ «دیگه رویر نباشه»=unpin؛ «ببر بالا سمت راست»=move:top-right؛ «ببر گوشه پایین چپ»=move:bottom-left؛ «ببر وسط»=move:center؛ «بزرگتر کن/ابعادشو زیاد کن»=grow؛ «کوچکتر کن»=shrink؛ «برو جلو ۳۰ ثانیه»=seek:30؛ «۱۰ ثانیه عقب»=seek:-10؛ «پاز کن»=play_pause؛ «ادامه بده/پلی کن»=play_pause؛ «بعدی/پاس کن»=next؛ «فول اسکرین کن»=fullscreen؛ صدای ویدیو=volume_up/volume_down. فرمانِ اجرایی هرگز بدونِ بلوک DO نمی‌ماند — این کارها هرگز سوال یا گفتگو نیستند.\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
     '<<<ADD>>>\n' +
@@ -8270,6 +8273,10 @@
     '- open_app: value=نام برنامه (کروم، تلگرام، فتوشاپ، بازی‌ها…)\n' +
     '- open_url: value=آدرس https؛ web_search: value=عبارت جستجو\n' +
     '- vol_up / vol_down / vol_mute؛ vol_set: value=عدد 0 تا 100\n' +
+    /* v0.63 — video_play/video_ctl در پرامپت فارسی غایب بودند (لاگ v0.61/0.62:
+       AI فرمتِ value را خودش حدس می‌زد — video_play(https://www.youtube.com/)) */
+    '- video_play: value=عنوانِ دقیقِ ویدیو/فیلم برای پخش در پلیر پیش‌فرضِ کاربر، یا خودِ لینکِ کاملِ ویدیو — اگر کاربر گفت «لینکی که کپی کردم / در کلیپ‌بورد دارم»، value را دقیقاً __clipboard__ بگذار تا آوا لینک واقعی را از کلیپ‌بورد بخواند؛ هرگز آدرسِ ناقصِ بدونِ ویدیو مثل youtube.com خالی نده\n' +
+    '- video_ctl: کنترل پلیر/پنجرهٔ ویدیو؛ value یکی از: play_pause|next|prev|stop|close|fullscreen|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=همیشه رویر، grow=بزرگتر کردن، shrink=کوچکتر کردن، move=جابه‌جایی پنجره، seek=پرش ±ثانیه — «بزرگتر/کوچکتر کردنِ» ویدیو هرگز fullscreen نیست\n' +
     '- media_next / media_prev / media_toggle (پلیر سیستم)\n' +
     '- music_play: value=اسم آهنگ یا خالی؛ music_pause\n' +
     /* v0.54 — سرچ یوتیوب ابزار درست گرفت (لاگ v0.53 ۱۶:۴۹: AI برای «همینو برام تو یوتیوب سرچ کن» open_url(https://www.youtube.com/result) می‌داد = صفحهٔ خالی) */
@@ -8320,6 +8327,8 @@
        عبارتِ ترمیم‌شدهٔ کاربر هم ممکن است خودش قبلاً «همینو» را با تیتر واقعی
        عوض کرده باشد (حل‌گر ارجاع AVACore). به‌روزشدگی متن مطابق همین منابع. */
     'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the conversation history and the entity list attached to this message (تاریخچهٔ همین گفتگو / موجودیت‌های آخرین گفتگو) — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: video/song play = video_play (or music_play for the local music library) with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the attached history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
+    /* v0.63 — EN mirror of قانون ۱۱: player/video control mapping + never-leave-a-command rule */
+    'Important rule 10 (critical): EVERY video/player control request = a DO block with act=video_ctl: "close it"=close؛ "pin / always on top"=pin؛ "stop being on top"=unpin؛ "move it to the top right"=move:top-right؛ "move to bottom left"=move:bottom-left؛ "center it"=move:center؛ "make it bigger"=grow؛ "make it smaller"=shrink؛ "forward 30 seconds"=seek:30؛ "back 10 seconds"=seek:-10؛ "pause/resume"=play_pause؛ "skip/next"=next؛ "fullscreen"=fullscreen؛ video volume=volume_up/volume_down. Making the video bigger/smaller is NEVER fullscreen. An understood command must NEVER remain without a DO block — these are never questions or chat.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
     '{"title":"Short command name","phrases":["spoken phrase"],"action":{"type":"...","value":"..."}}\n' +
@@ -8333,7 +8342,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|volume_up|volume_down), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests; if the user means the link they COPIED, value=__clipboard__ so AVA reads the clipboard; never a bare youtube.com without a video id), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=always on top, grow=bigger, shrink=smaller, move=window position, seek=jump seconds), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -8398,6 +8407,38 @@
      فقط از مسیرهای امن و شناسه‌دار. اگر لایه‌های آفلاین نفهمیدند، جمنای
      می‌تواند مستقیم کارها را به فرمان بدهد (حتی چند کار همزمان). */
   const DO_ACTS = ['open_app', 'open_url', 'web_search', 'yt_search', 'vol_up', 'vol_down', 'vol_mute', 'vol_set', 'media_next', 'media_prev', 'media_toggle', 'music_play', 'music_pause', 'lock', 'screenshot', 'monitor_off', 'sys_sleep', 'minimize_all', 'recycle_empty', 'dns_set', 'dns_reset', 'reminder_add', 'discord_call', 'discord_mute', 'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline', 'run_custom', 'run_cmd', 'note_show', 'set_wake_word', 'research', 'type_once', 'video_play', 'video_ctl']; /* v0.39 +run_cmd؛ v0.42 +note_show؛ v0.46 +set_wake_word؛ v0.51 +research (فاز تحقیق) +type_once (دیکتهٔ یک‌باره)؛ v0.54 +yt_search (سرچ یوتیوب بومی)؛ v0.61 +video_play (پخش با پلیر پیش‌فرض کاربر) +video_ctl (کنترل پلیر سیستم) */
+  /* ---------- v0.63 — گرامر گستردهٔ video_ctl ----------
+     لاگ v0.62: «پین کن/ببند/ببر بالا سمت راست/بزرگتر کن» یا بی‌اکشن ماندند یا
+     fullscreen اشتباه زده شد. حالا value خامِ AI اینجا به action+arg اجرایی
+     تبدیل می‌شود: pin/unpin (همیشه رویر)، move:موقعیت، grow/shrink (اندازه)،
+     seek:±ثانیه — تابع مستقل از DOM تا در باتری تست زنده eval شود. */
+  function videoCtlParse(value) {
+    const raw = String(value == null ? '' : value).trim().toLowerCase()
+      .replace(/[«»"']/g, '').replace(/\s+/g, ' ');
+    const POS = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center', 'top', 'bottom', 'left', 'right'];
+    const SIMP = ['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down', 'pin', 'unpin', 'grow', 'shrink'];
+    if (/^move/.test(raw)) {
+      let tail = raw.replace(/^move[:\s]*/, '').trim().replace(/[_/]/g, '-')
+        .replace(/top\s*right/g, 'top-right').replace(/top\s*left/g, 'top-left')
+        .replace(/bottom\s*right/g, 'bottom-right').replace(/bottom\s*left/g, 'bottom-left')
+        .replace(/وسط|مرکز/g, 'center').replace(/بالا/g, 'top').replace(/پایین/g, 'bottom')
+        .replace(/راست/g, 'right').replace(/چپ/g, 'left');
+      if (POS.indexOf(tail) >= 0) return { action: 'move', arg: tail };
+      const xy = tail.match(/^(-?\d+)\s*[,،]\s*(-?\d+)$/);
+      if (xy) return { action: 'move', arg: { x: Math.round(+xy[1]), y: Math.round(+xy[2]) } };
+      return { action: 'move', arg: 'center' };
+    }
+    if (/^seek/.test(raw)) {
+      const n = parseFloat(raw.replace(/^seek[:\s]*/, '').replace(/[^\d.-]/g, ''));
+      return { action: 'seek', arg: isNaN(n) ? 10 : Math.max(-300, Math.min(300, n)) };
+    }
+    if (SIMP.indexOf(raw) >= 0) return { action: raw, arg: 0 };
+    const ALIAS = { pause: 'play_pause', play: 'play_pause', resume: 'play_pause', bigger: 'grow', larger: 'grow', smaller: 'shrink', always_on_top: 'pin', ontop: 'pin', untop: 'unpin' };
+    if (ALIAS[raw]) return { action: ALIAS[raw], arg: 0 };
+    const FA = { 'ببند': 'close', 'بخوابون': 'close', 'پاز': 'play_pause', 'پین': 'pin', 'رویر': 'pin', 'بزرگتر': 'grow', 'کوچکتر': 'shrink', 'فول اسکرین': 'fullscreen', 'بعدی': 'next', 'قبلی': 'prev' };
+    if (FA[raw]) return { action: FA[raw], arg: 0 };
+    return null;
+  }
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -8528,8 +8569,27 @@
           }
           case 'video_play': {
             /* v0.61 — پخش واقعی ویدیو با «پلیر پیش‌فرضِ کاربر» (خواستهٔ صریح:
-               «ببین ویدیو پلیر پیش فرض کاربر چیه، با همون پلی کنه») */
-            const vq = String(a.value || '').trim().slice(0, 120);
+               «ببین ویدیو پلیر پیش فرض کاربر چیه، با همون پلی کنه»)؛
+               v0.63 — لینک کپی‌شده: __clipboard__ / اشارهٔ «کپی کردم» / دامنهٔ خام
+               یوتیوب → لینک واقعی از کلیپ‌بورد خوانده می‌شود (لاگ v0.62: سه بار
+               video_play(https://www.youtube.com/) زده شد = صفحهٔ خالی/دیوار ربات) */
+            const vq0 = String(a.value || '').trim().slice(0, 200);
+            const mentionsCopy = /(کپی\s*(کردم|شده))|کلیپ\s?بورد|clipboard/i.test(String(origCmd || ''));
+            const bareYt = /^(https?:\/\/)?(www\.)?(youtube\.com\/?(?:[?#].*)?|youtu\.be\/?)(\s|$)/i.test(vq0) || /__clipboard__/i.test(vq0);
+            let vq = vq0.replace(/__clipboard__/gi, '').trim();
+            if (!vq || mentionsCopy || bareYt) {
+              let cbUrl = '';
+              try {
+                const cb = (bridge && bridge.sys && bridge.sys.clipboard) ? await bridge.sys.clipboard() : null;
+                const mt = String((cb && cb.text) || '').match(/https?:\/\/[^\s"'<>]+/i);
+                if (mt) cbUrl = mt[0];
+              } catch (_) { /* noop */ }
+              if (cbUrl) { actLog('video_play clipboard → ' + cbUrl.slice(0, 90)); vq = cbUrl; }
+              else if (!vq || bareYt) {
+                outs.push(LANG === 'en' ? 'No video link found in the clipboard — copy the full video link first.' : 'لینک ویدیویی در کلیپ‌بورد نبود — اول لینک کامل ویدیو را کپی کن.');
+                break;
+              }
+            }
             if (!vq) { outs.push(LANG === 'en' ? 'No title was given to play.' : 'عنوانی برای پخش داده نشد.'); break; }
             if (!bridge || !bridge.player || !bridge.player.open) { outs.push(t('toast.onlyApp')); break; }
             try {
@@ -8537,20 +8597,26 @@
               if (res && res.ok && res.via === 'browser-fallback') outs.push(LANG === 'en'
                 ? `Your player could not stream it — opened "${vq}" in the browser.`
                 : `پلیر نتوانست یوتیوب را پخش کند — «${vq}» را در مرورگر باز کردم.`);
+              else if (res && res.noVideoId) outs.push(LANG === 'en' ? 'That YouTube link has no video — copy the full video link and say it again.' : 'این آدرس یوتیوب ویدیوی مشخصی ندارد — لینک کامل ویدیو را کپی کن و دوباره بگو.');
               else if (res && res.ok) outs.push(LANG === 'en' ? `Playing "${vq}"${res.fa ? ' in ' + res.fa : ''}.` : `«${vq}» را پخش کردم${res.fa ? ' — در ' + res.fa : ''}.`);
               else outs.push(LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
             } catch (_) { outs.push(LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'); }
             break;
           }
           case 'video_ctl': {
-            /* v0.61 — کنترل پلیر سیستم (play_pause/next/prev/fullscreen/stop/close/vol_up/vol_down) */
-            const vc = String(a.value || '').trim().toLowerCase();
-            const okSet = new Set(['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down']);
-            if (!okSet.has(vc)) { outs.push(LANG === 'en' ? 'Unknown player action.' : 'اقدامِ پلیر ناشناخته.'); break; }
+            /* v0.61 — کنترل پلیر سیستم؛ v0.63 — گرامر گسترده با videoCtlParse:
+               pin/unpin/move/grow/shrink/seek هم اجرا می‌شوند (پنجرهٔ پلیر) */
+            const pr = videoCtlParse(a.value);
+            if (!pr) { outs.push(LANG === 'en' ? 'Unknown player action.' : 'اقدامِ پلیر ناشناخته.'); break; }
             if (!bridge || !bridge.player || !bridge.player.ctl) { outs.push(t('toast.onlyApp')); break; }
             try {
-              const res = await bridge.player.ctl({ action: vc, arg: 0 });
-              outs.push(res && res.ok ? (LANG === 'en' ? `Done (${vc}).` : 'انجام شد.') : (LANG === 'en' ? `Could not: ${res && res.error || ''}` : `انجام نشد: ${res && res.error || ''}`));
+              const res = await bridge.player.ctl({ action: pr.action, arg: pr.arg });
+              const _lbl = {
+                pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.',
+                grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.',
+                move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: 'پرش انجام شد.',
+              }[pr.action];
+              outs.push(res && res.ok ? (LANG === 'en' ? `Done (${pr.action}).` : (_lbl || 'انجام شد.')) : (LANG === 'en' ? `Could not: ${res && res.error || ''}` : `انجام نشد: ${res && res.error || ''}`));
             } catch (_) { outs.push(LANG === 'en' ? 'Control failed.' : 'کنترل پلیر ممکن نشد.'); }
             break;
           }
@@ -9032,7 +9098,24 @@
       if (r && r.ok) {
         /* v0.20 — اول پروتکل اجرای عملی (Function Calling): اگر AI تصمیم گرفت
            کاری انجام شود، اجرای واقعی با کد محلی و مسیرهای امن آوا است */
-        const doRes = parseDo(r.text);
+        let _rEff = r;
+        let doRes = parseDo(r.text);
+        /* v0.63 — حکم اجرا: اگر فکرِ AI گفت «command/فرمان» ولی بلوک DO نداد،
+           یک دور ترمیم اجرا می‌شود — فرمانِ شناخته‌شده هرگز بی‌اجرا نمی‌ماند
+           (لاگ v0.62: «ببند/پین کن/ببر بالا سمت راست» فهمیده شدند ولی هیچ
+           DO ای صادر نشد و سکوت مطلق) */
+        if (!doRes.do && _bt.think && /(command|فرمان)/i.test(String(_bt.think).slice(0, 60))) {
+          actLog('ai DO-repair: فکر=فرمان ولی بلوک DO نبود — دور ترمیم');
+          const _rp = await aiAsk(cmd, (extraCtx || '') +
+            '\n[دور ترمیم — قانون مهم: در فکرِ قبلی خودت این درخواست را «فرمان/command» خواندی ولی بلوک DO ندادی. الان فقط یکی از این دو را بنویس: اگر واقعاً فرمانِ اجرایی است، فقط و فقط بلوک DO معتبر با act از فهرست مجاز؛ اگر اشتباه کردی و سوال/گفتگو بود، فکر را با question/سوال شروع کن و هیچ بلوکی نده.]');
+          if (_rp && _rp.ok) {
+            const _rd = parseDo(_rp.text);
+            if (_rd.do) {
+              doRes = _rd; _rEff = _rp;
+              actLog('ai DO-repair ok: ' + _rd.do.actions.map((x) => x.act + (x.value ? '(' + String(x.value).slice(0, 20) + ')' : '')).join(' + '));
+            }
+          }
+        }
         if (doRes.do) {
           /* v0.51 — فاز تحقیق (ریشهٔ توهم «نازنین» لاگ v0.50): اگر AI خواست اول
              تحقیق کند (act=research)، نتایج واقعی وب گرفته می‌شود و دور دوم AI
@@ -9098,7 +9181,7 @@
           pushChatHist('user', cmd); pushChatHist('assistant', finalReply);
           setState('success');
           statusText.textContent = t('ai.got');
-          rcTag.textContent = t('tag.aiDo') + (r.via ? ' · ' + r.via : '');
+          rcTag.textContent = t('tag.aiDo') + (_rEff.via ? ' · ' + _rEff.via : '');
           typeText(rcReply, finalReply || '…');
           speak(finalReply);
           pushHistory(cmd, true);

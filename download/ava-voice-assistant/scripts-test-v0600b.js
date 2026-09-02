@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0600b.js — Wave 2 / PACKAGE A UI (v0.62.0-beta line, A12–A18)
+/* scripts-test-v0600b.js — Wave 2 / PACKAGE A UI (v0.63.0-beta line, A12–A18)
    فیکس‌های رابط کاربری روی پایهٔ v0.57.0-beta + موج ۱ (A1–A11) — بدون bump نسخه
    ------------------------------------------------------------
    چک‌ها:
@@ -250,7 +250,7 @@ ok(JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'dict', 'voic
    'v0570: ترتیب ۱۱ پنل دقیقاً همان v0.36');
 ok(cssSrc.includes('.set-row.first { border-top: none; }') && !cssSrc.includes('.set-row:first-of-type'),
    'v0570: جداکنندهٔ first سالم');
-ok(appSrc.includes("let appVersion = '0.62.0-beta';"), 'نسخه: bump والد به v0.62.0-beta اعمال شد');
+ok(appSrc.includes("let appVersion = '0.63.0-beta';"), 'نسخه: bump والد به v0.63.0-beta اعمال شد');
 for (const k of ['set.ptt.onoff', 'set.navg.speak', 'set.sub.appLook']) {
   ok((appSrc.split("'" + k + "'").length - 1) >= 1, 'v0570 i18n: کلید ' + k + ' در دیکشنری ادغام‌شدهٔ D1 موجود است');
 }

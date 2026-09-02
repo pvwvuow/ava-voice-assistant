@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* scripts-test-v0570.js — doctest v0.62.0-beta
+/* scripts-test-v0570.js — doctest v0.63.0-beta
    درخواست کاربر: «تنظیمات رو تمیز کن فقط — کل صفحه تنظیمات یکم نا مرتبه حس میکنم — با دقت»
    (روی پایهٔ v0.54.0-beta — بدون هیچ ویژگی v0.55/0.56)
    چک‌ها:
@@ -9,7 +9,7 @@
      4) صفر استایل inline در صفحهٔ تنظیمات + کلاس‌های ptt-controls/w150/w190 + تولتیپ دوزبانه PTT
      5) i18n — ۹ کلید تازه هر یک بار (دیکشنری ادغام‌شدهٔ D1 — بلوک مرده حذف شد) با جفت فارسی/انگلیسی
      6) نگهبان‌های ساختاری — ترتیب پنل‌ها، تگ‌های دقیق، یکتایی idهای حیاتی، گارد showSettingsPane
-     7) نسخه 0.62.0-beta چهارگانه
+     7) نسخه 0.63.0-beta چهارگانه
 */
 const fs = require('fs');
 const path = require('path');
@@ -142,12 +142,12 @@ ok(appSrc.includes("if (!setPanes.some((p) => p.dataset.pane === id)) id = 'mic'
    'گارد showSettingsPane سر جایش است');
 ok(!htmlSrc.includes('data-i18n="disc.hint"'), 'کلید یتیم disc.hint همچنان غایب (پین v0360)');
 
-console.log('\n[7] نسخه 0.62.0-beta');
-ok(appSrc.includes("let appVersion = '0.62.0-beta';"), 'app.js: 0.62.0-beta');
-ok(pkg.version === '0.62.0-beta', 'package.json: 0.62.0-beta');
-ok(htmlSrc.includes('<span id="abVersion">v0.62.0-beta</span>'), 'index.html: v0.62.0-beta');
-ok(readme.includes('۰.۶۲.۰-بتا') && readme.includes('هستهٔ فهم'), 'README: ۰.۶۲.۰-بتا');
-ok(pkg.description.includes('۰.۶۲') && pkg.description.includes('پلیر'),
+console.log('\n[7] نسخه 0.63.0-beta');
+ok(appSrc.includes("let appVersion = '0.63.0-beta';"), 'app.js: 0.63.0-beta');
+ok(pkg.version === '0.63.0-beta', 'package.json: 0.63.0-beta');
+ok(htmlSrc.includes('<span id="abVersion">v0.63.0-beta</span>'), 'index.html: v0.63.0-beta');
+ok(readme.includes('۰.۶۳.۰-بتا') && readme.includes('هستهٔ فهم'), 'README: ۰.۶۲.۰-بتا');
+ok(pkg.description.includes('۰.۶۳') && pkg.description.includes('پلیر'),
    'description: ۰.۶۲ (forward-relax v0.61)');
 
 console.log('\n-----------------------------');

@@ -19,7 +19,7 @@
    [3] لایهٔ حل‌کنندهٔ yt-dlp خود-شفادار (فرمت/منبع رسمی/دانلود اتمی/شفای کهنه)
    [4] نردبان playerLaunchYt — فالبک مرورگر؛ سیم‌کشی player:open + openWithDefaultPlayer
    [5] پیام‌های صادقانهٔ رندرر (browser-fallback در ۳ مسیر)
-   [6] نسخهٔ 0.62.0-beta در ۴ جای رسمی
+   [6] نسخهٔ 0.63.0-beta در ۴ جای رسمی
 */
 const fs = require('fs');
 const path = require('path');
@@ -105,11 +105,11 @@ ok((appSrc.match(/پلیر نتوانست یوتیوب را پخش کند/g) || 
 ok(!appSrc.includes("Say \"play it in PotPlayer\" instead"), 'پیام انگلیسی قدیمیِ اشتباه (پیشنهاد پت‌پلیر) حذف شد');
 
 /* ============ [6] نسخه ============ */
-section('[6] نسخهٔ 0.62.0-beta در ۴ جای رسمی');
-ok(pkg.version === '0.62.0-beta', 'package.json → 0.62.0-beta');
-ok(/let appVersion = ['"]0\.62\.0-beta['"]/.test(appSrc), 'app.js appVersion → 0.62.0-beta');
-ok(/id="abVersion">v0\.62\.0-beta</.test(idxSrc), 'index.html abVersion → v0.62.0-beta');
-ok(readmeSrc.includes('۰.۶۲.۰-بتا') && readmeSrc.includes('در نسخه ۰.۶۲.۰') && readmeSrc.includes('yt-dlp خود-شفادار'), 'README: تیتر + بلاک ۰.۶۲ حاضر است');
+section('[6] نسخهٔ 0.63.0-beta در ۴ جای رسمی');
+ok(pkg.version === '0.63.0-beta', 'package.json → 0.63.0-beta');
+ok(/let appVersion = ['"]0\.63\.0-beta['"]/.test(appSrc), 'app.js appVersion → 0.63.0-beta');
+ok(/id="abVersion">v0\.63\.0-beta</.test(idxSrc), 'index.html abVersion → v0.63.0-beta');
+ok(readmeSrc.includes('در نسخه ۰.۶۲.۰') && readmeSrc.includes('yt-dlp خود-شفادار'), 'README: تیتر + بلاک ۰.۶۲ حاضر است');
 
 console.log('\n-----------------------------');
 console.log(`RESULT: ${pass} pass / ${fail} fail`);
