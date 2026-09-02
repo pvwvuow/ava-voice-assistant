@@ -364,6 +364,12 @@
     'set.ai.modelHint': ['فلاش رایگان است؛ ۴.۶ هوشمندتر است', 'Flash is free; 4.6 is smarter'],
     'set.ai.note': ['سوالات پیچیده‌ای که فرمان نباشند، خودکار به GLM می‌روند و جواب تحلیلی می‌گیری؛ فرمان جدید هم با تأیید تو ساخته می‌شود.', 'Complex questions that are not commands go to GLM automatically for an analytical answer; new commands are built with your confirmation.'],
     'set.app.lang': ['زبان برنامه / App language', 'App language / زبان برنامه'],
+    /* v0.66 — نرم‌افزارهای من (اسکن یک‌بارهٔ سیستم) */
+    'set.app.appsTitle': ['نرم‌افزارهای شناسایی‌شده', 'Detected apps'],
+    'set.app.appsHint': ['اسکن خودکار یک‌باره در شروع: منوی استارت + استور ویندوز + Steam + رجیستری ویندوز — پایهٔ «باز کن X»، پلیرهای ویدیو و چک‌لیست افزونه‌ها', 'One-time auto scan at boot: Start Menu + Windows Store + Steam + Windows registry — powers open-app, video players and extension checklists'],
+    'set.app.appsRescan': ['اسکن مجدد', 'Re-scan'],
+    'set.app.appsDone': ['اسکن کامل شد — {x} برنامه شناسایی شد', 'Scan finished — {x} apps detected'],
+    'set.app.appsFail': ['اسکن انجام نشد — دوباره امتحان کن', 'Scan failed — try again'],
     'set.app.langHint': ['کل رابط کاربری و پاسخ‌های آوا به این زبان نشان داده می‌شود', 'The whole UI and AVA replies are shown in this language'],
     'set.app.fa': ['فارسی', 'فارسی'], 'set.app.en': ['English', 'English'],
     'set.app.theme': ['تم ظاهری', 'Appearance theme'],
@@ -3601,6 +3607,36 @@
     sysApps.busy = false;
     return sysApps.list;
   }
+  /* v0.66 — «نرم‌افزارهای من»: شمارش زندهٔ پنل برنامه + دکمهٔ اسکن مجدد.
+     اسکن یک‌بارهٔ سیستم در main خودش در بوت (۶ ثانیه بعد) انجام می‌شود؛
+     اینجا فقط نمایش و کنترل دستی است. */
+  async function appsCountUpdate() {
+    const el = $('#appsCount');
+    if (!el) return;
+    try {
+      await ensureAppsList();
+      el.textContent = faNum(String(sysApps.list.length));
+    } catch (_) { try { el.textContent = '—'; } catch (_) { /* noop */ } }
+  }
+  {
+    const br = $('#btnAppsRescan');
+    if (br) br.addEventListener('click', async () => {
+      if (!bridge || !bridge.apps || !bridge.apps.scan) return;
+      br.disabled = true;
+      try {
+        const r = await bridge.apps.scan();
+        if (r && r.ok) {
+          sysApps.list = r.apps || [];
+          sysApps.at = Date.now();
+          const el = $('#appsCount');
+          if (el) el.textContent = faNum(String(r.count || sysApps.list.length));
+          toast(t('set.app.appsDone', { x: faNum(String(r.count || 0)) }), '#i-check');
+        } else toast(t('set.app.appsFail'), '#i-info');
+      } catch (_) { toast(t('set.app.appsFail'), '#i-info'); }
+      finally { br.disabled = false; }
+    });
+    appsCountUpdate();
+  }
 
   /* استخراج نام برنامه از جمله: «لطفا تلگرام رو برام اجرا کن» → «تلگرام» */
   function extractAppName(cmd) {
@@ -4913,7 +4949,7 @@
      شبکه (مثلاً قبل از فعال شدن DNS) موتور وب را برای همیشه نمی‌کشد —
      بعد از ۹۰ ثانیه دوباره شانس می‌گیرد (مثل کروم) */
   let srBroken = 0;
-  const SR_BENCH_MS = 90000;
+  const SR_BENCH_MS = 60000; /* v0.66 — ۹۰→۶۰ ثانیه: دورهٔ «کرشدن» وب shorter (لاگ: ۹ بار بنچ ۹۰ثانیه‌ای) */
   const srUsable = () => !!SRC && (!srBroken || Date.now() > srBroken);
   const ASR_MODEL = 'glm-asr-2512';
 
@@ -5369,11 +5405,13 @@
           }
           return;
         }
-        /* v0.47 — B06: جملهٔ بلندِ فقط-محلی (رژیم توهم whisper-base) ۱.۴ ثانیه
-           فرصت تأیید ابری می‌گیرد — ریشهٔ ۵.۵ ثانیه سوزاندن AI با «افاب بین جایتين…» */
+        /* v0.47 — B06: جملهٔ بلندِ فقط-محلی (رژیم توهم whisper-base) فرصت تأیید ابری می‌گیرد
+           v0.66 — آستانهٔ ۶→۴ توکن و پنجرهٔ ۱.۴→۲.۲ ثانیه (لاگ v0.65: «قیم پیلی ربا سون آباد»
+           = ۵ توکنِ زباله از whisper، زیرِ آستانه‌ماند و برنده شد؛ web هم ۱.۹s دیر رسید و
+           پنجرهٔ ۱.۴s بسته بود) */
         const tokN = tx0.split(/\s+/).filter(Boolean).length;
-        if (eng === 'local' && tokN >= 6 && chain.length > 1) {
-          actLog('stt local long sentence (' + tokN + ' tokens) — 1.4s cloud corroboration window');
+        if (eng === 'local' && tokN >= 4 && chain.length > 1) {
+          actLog('stt local long sentence (' + tokN + ' tokens) — 2.2s cloud corroboration window');
           setTimeout(() => {
             if (won || isDead()) return;
             won = true;
@@ -5381,7 +5419,7 @@
             actLog('stt race winner=local (long sentence, no cloud corroboration arrived)');
             setState('idle');
             handleUtterance(tx0);
-          }, 1400);
+          }, 2200);
           return;
         }
         won = true;
@@ -9309,10 +9347,11 @@
     else if (prov === 'glm') { const r = await tryGlm(); if (r) return tag(r, 'GLM API'); }
     else if (prov === 'gemini') { const r = await tryGemini(); if (r) return tag(r, 'Gemini'); }
     else if (prov === 'openai') { const r = await tryOpenai(); if (r) return tag(r, 'OpenAI'); }
-    else {
-      /* خودکار: اول Gemini، بعد حساب GLM، بعد کلید GLM، در آخر OpenAI
-         v0.21 — پرووایدرِ کاری (آخرین موفق) همیشه اول امتحان می‌شود:
-         اگر جمنای یک‌بار جواب داده، دیگر هر بار منتظر شکستش نمی‌مانیم */
+    /* v0.66 — فالبک عرضه‌محور برای «همهٔ» حالت‌ها: پرووایدرِ انتخابی کاربر اگر
+       مرد (ریشهٔ لاگ v0.61: بلاکِ محلِ جمینای وقتی VPN خاموش است → «ai fail …
+       اتصال برقرار نشد» درحالی‌که z.ai/groq سالم بودند)، بقیهٔ زنجیره خودکار
+       امتحان می‌شود — کاربر هرگز بی‌جواب نمی‌ماند فقط به‌خاطر تنظیمِ ثابت. */
+    {
       const AI_LAST_KEY = 'avaAiLast';
       const lastAi = (() => { try { return localStorage.getItem(AI_LAST_KEY) || ''; } catch (_) { return ''; } })();
       const chainAi = [
@@ -9323,7 +9362,9 @@
       ];
       const li2 = chainAi.findIndex((x) => x[0] === lastAi);
       if (li2 > 0) chainAi.unshift(chainAi.splice(li2, 1)[0]);
-      for (const [pk, fn2, viaName] of chainAi) {
+      /* پرووایدرِ ثابتی که همین الان شکست خورد دوباره در زنجیره امتحان نمی‌شود */
+      const chain2 = (prov && prov !== 'auto') ? chainAi.filter((x) => x[0] !== prov) : chainAi;
+      for (const [pk, fn2, viaName] of chain2) {
         const rr = await fn2();
         if (rr) {
           try { localStorage.setItem(AI_LAST_KEY, pk); } catch (_) { /* noop */ }

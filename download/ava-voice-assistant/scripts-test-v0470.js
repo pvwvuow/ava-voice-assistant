@@ -100,7 +100,7 @@ ok(!W.match('اوه', 'آوا').t1 && !W.match('اوه', 'آوا').near, '«او
 ok(appSrc.includes("replace(/[\\u064A\\u0649]/g, '\\u06CC')") && appSrc.includes("sttCleanNoise(String(s || '').toLowerCase()"), 'B06: نرمال‌سازی عربی↔فارسی در فیلتر junk («اين» با ی عربی)');
 ok(appSrc.includes("'بله', 'اره', 'آره'"), 'B06: «بله/آره» دیگر junk نیستند');
 ok(/junk\/hallucination result[\s\S]{0,200}skipped, waiting cloud[\s\S]{0,220}if \(fails >= chain\.length/.test(appSrc) && !/junk\/hallucination result[\s\S]{0,260}sttMarkFail/.test(appSrc), 'B06: junk دیگر موتور سالم را بنچ نمی‌کند (ریشهٔ «benched 90s (deaf…)»)');
-ok(appSrc.includes('1.4s cloud corroboration window'), 'B06: جملهٔ بلندِ فقط-محلی فرصت تأیید ابری دارد (ریشهٔ ۵.۵ ثانیه سوزاندن AI)');
+ok(appSrc.includes('2.2s cloud corroboration window') || appSrc.includes('1.4s cloud corroboration window'), 'B06: جملهٔ بلندِ فقط-محلی فرصت تأیید ابری دارد (v0.66: ۴ توکن/۲.۲ ثانیه)');
 ok(appSrc.includes('decode rate capped (15/min)'), 'B07: سقف نرخ decode در اتاق نویز');
 ok(appSrc.includes('گیت نسبت گفتار') || appSrc.includes('voiced < Math.max(2'), 'B07: گیت نسبت گفتار قبل از whisper');
 
@@ -145,7 +145,7 @@ ok(appSrc.includes('(پینگ|تست|سرعت)'), 'B16: «دی ان اس امو 
 ok(appSrc.includes('ممنوعیت‌های سخت (v0.47)'), 'B17: پرامپت AI مثال منفی دارد');
 ok(appSrc.includes("speakWindows(t('wake.yes'))"), 'B20: «بله؟» بدون شبکه (صدای ویندوز)');
 ok(mainSrc.includes("writeJsonAtomic(path.join(ud, 'dns-map.json')"), 'B21: dns-map اتمیک');
-ok(mainSrc.includes('const enu, steam, uwp') === false && mainSrc.includes('const [menu, steam, uwp]'), 'B23: scanUwpApps تکراری حذف شد');
+ok(mainSrc.includes('const [menu, steam, uwp, reg] = await Promise.all') && mainSrc.includes('const enu, steam, uwp] =') === false, 'B23: scanUwpApps تکراری حذف شد (v0.66: + رجیستری)');
 ok(mainSrc.includes("new Promise((res) => setTimeout(() => res(null), 35000))"), 'B30: z.ai bridge ۳۵ ثانیه');
 /* v0.60 forward-relax (B5): بلوک allowlist درون‌خطی serveMediaFile به تابع مشترک
    mediaDirAllowed() منتقل شد (همان منطق — و حالا music:readHead هم از آن استفاده می‌کند)؛

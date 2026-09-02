@@ -523,6 +523,8 @@ body.has-card #wave { height: 0; opacity: 0; }
 .ptt-preset { font-size: 11.5px; padding: 3px 12px; }
 .ptt-preset:hover { border-color: rgba(96, 165, 250, 0.6); }
 .set-hint.warn { color: #fbbf24; }
+/* v0.66 — ردیف «نرم‌افزارهای شناسایی‌شده» */
+.apps-count-wrap { display: inline-flex; align-items: center; gap: 8px; }
 .tdots { display: inline-flex; gap: 3px; align-items: center; }
 .tdots i {
   width: 4px; height: 4px; border-radius: 50%;

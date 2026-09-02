@@ -1003,24 +1003,61 @@ function scanUwpApps() {
   });
 }
 
+/* v0.66 — اسکن رجیستری (Uninstall keys) — خواستهٔ کاربر: «نرم‌افزارهای کاربر
+   حداقل باید یک بار اسکن کنه رو سیستمش». برنامه‌هایی که شورتکات Start Menu
+   ندارند (نصب پرتابل، ابزار توسعه، بازی‌های خارج از Steam) اینجا پیدا می‌شوند:
+   HKLM/HKCU\...\Uninstall\* → DisplayName + DisplayIcon (نخستین exe داخلش) */
+function scanRegistryApps() {
+  return new Promise((resolve) => {
+    const ps = 'powershell -NoProfile -Command "'
+      + '$out=@(); '
+      + "$paths=@('HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'); "
+      + 'foreach($p in $paths){ try{ Get-ItemProperty -Path $p -ErrorAction SilentlyContinue | ForEach-Object { '
+      + 'if($_.DisplayName -and $_.SystemComponent -ne 1){ '
+      + "$icon=''; if($_.DisplayIcon){ $icon=($_.DisplayIcon -split ',')[0].Trim().Replace('\"','') }; "
+      + '$out += ($_.DisplayName + \'|\' + $icon) } } }catch{} }; '
+      + 'Write-Output ($out -join [Environment]::NewLine)"';
+    exec(ps, { windowsHide: true, timeout: 25000, maxBuffer: 2 * 1024 * 1024 }, (err, stdout) => {
+      const out = [];
+      if (!err && stdout) {
+        for (const line of String(stdout).split(/\r?\n/)) {
+          const s = line.trim();
+          const ix = s.indexOf('|');
+          if (ix < 1) continue;
+          const name = s.slice(0, ix).trim();
+          let exe = s.slice(ix + 1).trim();
+          if (!name || APP_NAME_JUNK.test(name)) continue;
+          if (exe && !/\.exe$/i.test(exe)) exe = ''; /* فقط مسیرهای واقعی exe */
+          if (exe && exe.startsWith('"') && exe.endsWith('"')) exe = exe.slice(1, -1);
+          if (exe && !fs.existsSync(exe)) exe = ''; /* آیکنِ مرده = بدون exe؛ نام همچنان برای open_app به ذهن AI می‌رود */
+          out.push({ name, exe, lnk: '', kind: 'reg' });
+        }
+      }
+      resolve(out);
+    });
+  });
+}
+
 async function scanAllApps(force = false) {
   const cache = readAppsCache();
   if (!force && cache && cache.at && Date.now() - cache.at < APPS_TTL && Array.isArray(cache.apps)) return cache.apps;
   if (appsScanning) return appsScanning;
   appsScanning = (async () => {
-    /* v0.43 — + UWP (Get-StartApps) */
-    const [menu, steam, uwp] = await Promise.all([scanStartMenu(), scanSteam(), scanUwpApps()]);
-    /* حذف تکراری بر اساس نام نرمال‌شده — اولویت با .exe واقعی */
+    /* v0.43 — + UWP (Get-StartApps)؛ v0.66 — + رجیستری (Uninstall keys) */
+    const [menu, steam, uwp, reg] = await Promise.all([scanStartMenu(), scanSteam(), scanUwpApps(), scanRegistryApps()]);
+    /* حذف تکراری بر اساس نام نرمال‌شده — اولویت با .exe واقعی، بعد UWP/Steam، آخر reg */
     const seen = new Map();
-    for (const a of [...menu, ...uwp, ...steam]) {
+    for (const a of [...menu, ...uwp, ...steam, ...reg]) {
       const k = normAppName(a.name);
       if (!k) continue;
       const prev = seen.get(k);
-      if (!prev || (prev.kind === 'steam' && a.kind === 'app') || (prev.kind === 'uwp' && a.kind === 'app')) seen.set(k, a);
+      if (!prev || (prev.kind === 'steam' && a.kind === 'app') || (prev.kind === 'uwp' && a.kind === 'app') || (prev.kind === 'reg' && a.kind !== 'reg')) seen.set(k, a);
     }
     const apps = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
     appsCache = { at: Date.now(), apps };
     saveAppsCache();
+    /* v0.66 — مشاهده‌پذیری اسکن (درخواست «لاگ رو بررسی کن»): نتیجهٔ هر منبع لاگ شود */
+    try { actLog('app scan done: ' + apps.length + ' apps (menu=' + menu.length + ', uwp=' + uwp.length + ', steam=' + steam.length + ', registry=' + reg.length + ')', 'apps', { ev: 'app-scan', total: apps.length, menu: menu.length, uwp: uwp.length, steam: steam.length, registry: reg.length }); } catch (_) { /* noop */ }
     return apps;
   })();
   try { return await appsScanning; } finally { appsScanning = null; }
@@ -1052,6 +1089,7 @@ ipcMain.handle('apps:scan', async () => {
 
 /* اجرای برنامه اسکن‌شده — فقط مسیرهایی که واقعا در نتیجه اسکن بودند
    (فهرست سفید امن؛ هیچ ورودی دلخواهی به شل تزریق نمی‌شود) */
+
 ipcMain.handle('apps:launch', async (_e, p) => {
   try {
     const apps = await scanAllApps();

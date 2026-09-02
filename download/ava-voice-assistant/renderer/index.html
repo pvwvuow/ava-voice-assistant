@@ -613,8 +613,14 @@
 
             <!-- برنامه -->
               <div class="set-pane" data-pane="app">
-                <div class="set-subhead" data-i18n="set.sub.appLook">زبان و ظاهر</div>
+                <!-- v0.66 — «نرم‌افزارهای من»: اسکن یک‌بارهٔ سیستم + شمارش + اسکن مجدد
+                     (خواستهٔ کاربر: «نرم‌افزارهای کاربر حداقل باید یک بار اسکن کنه») -->
                 <div class="set-row first">
+                  <span class="set-info"><b data-i18n="set.app.appsTitle">نرم‌افزارهای شناسایی‌شده</b><span data-i18n="set.app.appsHint">اسکن خودکار یک‌باره در شروع: منوی استارت + استور ویندوز + Steam + رجیستری ویندوز — پایهٔ «باز کن X»، پلیرهای ویدیو و چک‌لیست افزونه‌ها</span></span>
+                  <span class="apps-count-wrap"><span class="wake-now-badge" id="appsCount">…</span><button class="chip sm" id="btnAppsRescan" data-i18n="set.app.appsRescan">اسکن مجدد</button></span>
+                </div>
+                <div class="set-subhead" data-i18n="set.sub.appLook">زبان و ظاهر</div>
+                <div class="set-row">
                   <span class="set-info"><b data-i18n="set.app.lang">زبان برنامه / App language</b><span data-i18n="set.app.langHint">کل رابط کاربری و پاسخ‌های آوا به این زبان نشان داده می‌شود</span></span>
                   <select id="optLang" class="set-select">
                     <option value="fa" data-i18n="set.app.fa">فارسی</option>

@@ -891,7 +891,7 @@ app.whenReady().then(async () => {
         hosts: libjs.includes("'www.google.com'") && libjs.includes("'api.groq.com'") && libjs.includes("'translate.google.com'") && libjs.includes("'generativelanguage.googleapis.com'") && libjs.includes("'api.z.ai'"),
         lookupPatch: mainjs24.includes('__avaPatched') && mainjs24.includes('nodeNet.connect'),
         selfcheck: mainjs24.includes('net selfcheck:') && mainjs24.includes("send('ava:net-status'") && mainjs24.includes('netSelfCheck'),
-        webBench: appjs24.includes('SR_BENCH_MS = 90000') && appjs24.includes('const srUsable = () => !!SRC') && !appjs24.includes('srBroken = true'),
+        webBench: (appjs24.includes('SR_BENCH_MS = 90000') || appjs24.includes('SR_BENCH_MS = 60000')) && appjs24.includes('const srUsable = () => !!SRC') && !appjs24.includes('srBroken = true'),
         webErrLog: appjs24.includes("actLog('stt web error: ' + e.error)"),
         netToast: appjs24.includes("'net.googleFail'") && appjs24.includes('ava.netToast') && appjs24.includes('bridge.net.onStatus'),
         preloadBridge: preload24.includes("on('ava:net-status'"),

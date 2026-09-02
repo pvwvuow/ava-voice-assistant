@@ -130,13 +130,21 @@
       const tol = k.length >= 18 ? 2 : (k.length >= 10 ? 1 : 0);
       if (d > 0 && d <= tol) return x;
     }
-    /* v0.50 — پاس معنایی: شبیه‌ترین آیتم با جکارد ≥ ۰٫۶ (≥۲ توکن محتوایی مشترک) */
+    /* v0.50 — پاس معنایی: شبیه‌ترین آیتم با جکارد ≥ ۰٫۶ (≥۲ توکن محتوایی مشترک)
+       v0.66 — سخت‌تر شد (لاگ v0.63: «مشتی سی و پرطرفدار دایی» بی‌ربط به
+       web_search(محمد) مچ خورد). شرط‌های جدید:
+       • آیتمِ ذخیره‌شده باید ≥۲ توکنِ محتوایی داشته باشد — کلیدِ تک‌توکنی
+         (مثل «محمد») فقط با exact/lev جواب می‌دهد، نه پاس معنایی؛
+       • آستانهٔ جکارد ۰٫۶ → ۰٫۷۵ و کلیدِ کوتاهِ (<۱۰ نویسه) فقط با ≥۰٫۸۵. */
     let best = null;
     let bestSim = 0;
     for (const x of st.items) {
       if (x.unstable) continue;
+      const xToks = String(x.k || '').split(' ').filter((w) => w.length > 1 && !STOP_TOK.has(w));
+      if (xToks.length < 2) continue;
       const sim = tokSim(k, x.k);
-      if (sim >= 0.6 && sim > bestSim) { best = x; bestSim = sim; }
+      const need = k.length < 10 ? 0.85 : 0.75;
+      if (sim >= need && sim > bestSim) { best = x; bestSim = sim; }
     }
     return best;
   }

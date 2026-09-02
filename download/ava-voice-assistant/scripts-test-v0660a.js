@@ -143,6 +143,21 @@ ok(/id="btnDcSelftest"/.test(idxSrc) && /dcBtn\('#btnDcSelftest', 'selftest'/.te
 ok(/disc\.selftestBtn':/.test(appSrc) && /disc\.selftestOk':/.test(appSrc), 'i18n: برچسب/پیام تست دیسکورد');
 ok(/'discord_mute'/.test(appSrc) && /'discord_hangup'/.test(appSrc) && /'discord_answer'/.test(appSrc) && /'discord_decline'/.test(appSrc) && /'discord_deafen'/.test(appSrc) && /'discord_unmute'/.test(appSrc), 'DO: هر ۶ اکشن دیسکورد سیم‌کشی‌شده');
 
+/* ---------- [9] v0.66 — اسکن اپ‌ها (G) + فیکس‌های لاگ‌محور (I) ---------- */
+section('9] اسکن نرم‌افزارها + فالبک AI + learn + ریس STT');
+ok(/function scanRegistryApps\(\)/.test(mainSrc) && /Uninstall\\\\\*/.test(mainSrc) || /CurrentVersion\\\\Uninstall/.test(mainSrc), 'G: اسکن رجیستری (HKLM/HKCU Uninstall)');
+ok(/scanRegistryApps\(\)/.test(mainSrc) && /menu, steam, uwp, reg/.test(mainSrc), 'G: ادغام رجیستری در scanAllApps');
+ok(/app scan done: ' \+ apps\.length \+ ' apps \(menu=/.test(mainSrc), 'G: لاگ نتیجهٔ اسکن به‌تفکیک منبع');
+ok(/id="appsCount"/.test(idxSrc) && /id="btnAppsRescan"/.test(idxSrc) && /bridge\.apps\.scan\(\)/.test(appSrc), 'G: پنل «نرم‌افزارهای شناسایی‌شده» + دکمهٔ اسکن مجدد');
+ok(/set\.app\.appsTitle':/.test(appSrc) && /set\.app\.appsDone':/.test(appSrc), 'G: i18n پنل اپ‌ها');
+ok(/chain2 = \(prov && prov !== 'auto'\) \? chainAi\.filter\(\(x\) => x\[0\] !== prov\) : chainAi/.test(appSrc), 'I1: فالبک عرضه‌محور — پرووایدر ثابتِ شکست‌خورده، زنجیرهٔ بقیه امتحان می‌شود');
+const L2 = require(path.join(APP, 'renderer/js/voiceLearn.js'));
+const stT1 = { items: [{ k: 'محمد', act: 'web_search', value: 'محمد', unstable: false }] };
+ok(L2.match(stT1, 'مشتی سی و پرطرفدار دایی') === null, 'I3: مچِ بی‌ربطِ یادگیری (لاگ v0.63) دیگر رخ نمی‌دهد');
+ok(L2.match({ items: [{ k: 'آهنگ جدید شادمهر رو بگرد', act: 'web_search', value: 'شادمهر', unstable: false }] }, 'آهنگ جدید شادمهر رو برام بگرد') !== null, 'I3: مچ معنایی سالم سر جایش است');
+ok(/tokN >= 4 && chain\.length > 1/.test(appSrc) && /2\.2s cloud corroboration window/.test(appSrc), 'I2: ریس STT — آستانهٔ ۴ توکن + پنجرهٔ ۲.۲ ثانیه (زبالهٔ ۵توکنی لاگ دیگر برنده نمی‌شود)');
+ok(/SR_BENCH_MS = 60000/.test(appSrc), 'I2: بنچ وب ۹۰→۶۰ ثانیه');
+
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');
 console.log('PASS=' + pass + '  FAIL=' + fail);
