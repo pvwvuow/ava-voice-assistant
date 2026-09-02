@@ -74,7 +74,7 @@ ok(appSrc.includes('cmd = String(m[1] || \'\').trim();'), 'دنبالهٔ فرم
 /* ---------- 6) bare wake word ---------- */
 console.log('\n[6] «آوا»ی تنها فرمان نیست — بدون سوختن Gemini');
 ok(appSrc.includes('const bareWake = (bwm && !String(bwm[1] || \'\').trim()) || (raw.length <= 5 && /\\b(?:ava|awa)\\b/i.test(raw));'), 'گارد bare-wake در runCommand');
-ok(/bareWake\) \{\s*\n\s*wakeSessOpen\(\);/.test(appSrc), 'bare-wake → جلسهٔ گفتگو باز می‌شود');
+ok(/bareWake\) \{\s*\n\s*(?:_dispatchOutcome[^;]*;\s*\n\s*)?wakeSessOpen\(\);/.test(appSrc), 'bare-wake → جلسهٔ گفتگو باز می‌شود'); /* v0.69 forward-relax */
 ok(/bareWake\) \{[\s\S]{0,300}speak\(t\('wake\.yes'\)\);/.test(appSrc), 'bare-wake → پاسخ «بله؟»');
 ok(!(appSrc.match(/bareWake/g) || []).length < 2, 'bare-wake گارد واقعاً present');
 

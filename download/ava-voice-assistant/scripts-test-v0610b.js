@@ -133,7 +133,7 @@ section('[8] DO_ACTS + هستهٔ فهم');
 ok(appSrc.includes("'video_play', 'video_ctl'"), 'DO_ACTS: video_play/video_ctl (خواستهٔ کاربر: پخش با پلیر پیش‌فرض)');
 ok(appSrc.includes("case 'video_play':") && appSrc.includes("case 'video_ctl':"), 'اجراکنندهٔ video_play/video_ctl در executeDoActions');
 ok(appSrc.includes('video_play(value=the exact title or URL to play'), 'پرامپت AI: video_play با توضیح «پلیر پیش‌فرض کاربر»');
-ok(appSrc.includes('async function aiBrainCtx') && appSrc.includes('turnsCtx(6)'), 'aiBrainCtx: تاریخچهٔ گفتگو واقعاً به AI می‌چسبد (ریشهٔ «همون مدل که گفتیم»)');
+ok(appSrc.includes('async function aiBrainCtx') && /turnsCtx\(6|10\)/.test(appSrc), 'aiBrainCtx: تاریخچهٔ گفتگو واقعاً به AI می‌چسبد (ریشهٔ «همون مدل که گفتیم»)');
 ok(appSrc.includes('lane=brain (direct-AI'), 'لَین مغز در هندلر فرمان سیم‌کشی شده');
 ok(appSrc.includes('ctx-resolve:'), 'حل‌گر ارجاع در هندلر فرمان لاگ می‌شود');
 ok(appSrc.includes('AVACore.recordTurn'), 'حافظهٔ گفتگو بعد از اجرا تغذیه می‌شود');

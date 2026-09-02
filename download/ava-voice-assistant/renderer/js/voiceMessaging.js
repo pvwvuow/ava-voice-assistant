@@ -59,7 +59,11 @@
      «به مامان بزرگ تو بله پیام بده که رسیدم» (مقصد چندکلمه‌ای)
      «به Ali پیام بده تو تلگرام که بیا» (مقصد لاتین — مجاز)
      گیومه‌دار اولویت دارد: «به علی تلگرام پیام بده "فردا میام"» */
-  const STOP_TAIL_RE = /(?:\s*(?:پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست|که|رو|را|تو|در|توی|با)\s*)+$/i;
+  const STOP_TAIL_RE = /(?:\s*(?:پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست|بده|که|رو|را|تو|در|توی|با)\s*)+$/i;
+  /* v0.69 — واژه‌های لَیدِ حرفی که گرامر را می‌شکنند («خوب به همین علی…» — در لاگ مسیر مرگِ 2ms)
+     و دستورِ زبانی داخل متن («چطوری اسمشو انگلیسی بنویس کامل» — دستور به‌جای متن ارسال شد!) */
+  const LEAD_FILLER_RE = /^(?:خوب|خب|حالا|ببین|ببینید|آفرین|افرین|باشه|اوکی|لطفا|لطفاً|داداش|حاجی|اقا|آقا|اول|اولش|راستی)(?:\s+(?:که|دیگه))*(?=\s|$)\s*/i;
+  const META_LANG_RE = /(?:اسمشو?|اسماشو?|اسم\s*(?:او|رو|را)|نامشو?)?\s*(?:کامل|درست|خب)?\s*(?:به|به\s*صورت|با)?\s*(?:حروف\s*)?(?:انگلیسی|لاتین|فارسی|english)\s*(?:بنویس|بنویسی|بنویسید|بنویسش|بنیویس|بنویسین)(?:\s*(?:کامل|درست|دیگه|خب|جان))*|(?:بنویس|بنویسی)\s*(?:اسمشو?|اسم\s*رو|اسم\s*را)?\s*(?:به\s*)?(?:انگلیسی|لاتین|فارسی)/i;
   function normWord(s) {
     return String(s || '').toLowerCase().replace(/\u200C/g, ' ').replace(/\s+/g, ' ').trim();
   }
@@ -67,6 +71,12 @@
     let s = String(cmd || '').trim();
     if (!s || s.length < 6) return null;
     if (!/(پیام|پیغام|متن|بگو|بنویس|بده|بفرست|برسون|برسان)/i.test(s)) return null;
+    /* v0.69 — لَیدِ حرفی حذف («خوب به همین علی…» دیگر گرامر را نمی‌شکند) */
+    for (let i = 0; i < 4; i++) {
+      const s2 = s.replace(LEAD_FILLER_RE, '');
+      if (s2 === s) break;
+      s = s2;
+    }
     /* اپ: اولین پیام‌رسانی که در جمله هست؛ «بله/روبیکا/ایتا» فقط با عبارت
        مکانی صریح («تو بله» / «در روبیکا» / «با ایتا») — وگرنه کلمهٔ «بله»
        هر جمله‌ای را می‌ربود (ریسک فالس‌پازیتیو). */
@@ -83,13 +93,25 @@
     if (q) text = q[1].trim();
     /* مقصد: «به X» — تا ۳ کلمهٔ نامی؛ سپس دُمِ فعل/حرف اضافه بریده می‌شود */
     let target = '';
-    const woApp = s.replace(appM.re, ' ');
+    let targetRef = false; /* «به همین اسم / همون مخاطب» — مقصد باید از حافظه حل شود */
+    const woApp = s.replace(appM.re, ' ').replace(/(?:به|برای|برا)\s+(?:همین|همون|همان|اون|این)\s+/gi, 'به ');
     const tm2 = woApp.match(/(?:به|برای|برا)\s+((?:[\u0600-\u06FFa-zA-Z0-9._@]{2,30})(?:\s+[\u0600-\u06FFa-zA-Z0-9._@]{2,30}){0,2})/i);
     if (tm2) {
       target = tm2[1].replace(STOP_TAIL_RE, '').trim();
       target = target.replace(/\s*(پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست)[\s\S]*$/i, '').trim();
+      /* v0.69 — «به همین علی اچ کی» → «همین» حذف، نام می‌ماند؛ «به همین اسم/مخاطب» → ref */
+      target = target.replace(/^(?:همین|همون|همان|اون|این)\s+/i, '');
+      if (!target || /^(?:اسم|نام|مخاطب|شخص)(?:\s+(?:رو|را))?$/i.test(target)) {
+        targetRef = true;
+        target = '';
+      }
+      /* v0.69 — «به شماره ۹۳۷…» پیشوندِ شماره حذف (سرچ بی‌نتیجه می‌ساخت) */
+      target = target.replace(/^شماره\s*/i, '').trim();
     }
+    /* v0.69 — «بهش بگو…/براش بنویس…» — مقصد ضمیری → از حافظه حل می‌شود */
+    if (!tm2 && /(?:^|\s)(?:بهش|براش|برا\s?ش|براى او)(?=$|[\s،؛».!؟?:،])/i.test(s)) targetRef = true;
     /* متن بدون گیومه: بعد از اولین فعلِ پیام، با حذف اتصال */
+    let lang = ''; /* v0.69 — دستورِ زبانی کشف‌شده در متن ('en'|'fa') */
     if (!text) {
       const tm = s.match(/(?:پیام\s*بده|پیغام\s*بده|بفرست|بگو|بنویس|برسون|برسان)\s*(?:که|این\s*که|:|،|,)?\s*([\s\S]{1,300})$/i);
       if (tm) text = tm[1].trim();
@@ -108,14 +130,21 @@
       const leadLoc = text.match(/^(?:تو|در|توی|با)\s*([\u0600-\u06FFa-zA-Z]+)\s*/i);
       if (leadLoc && appM.re.test(leadLoc[1])) text = text.slice(leadLoc[0].length).trim();
       text = text.replace(/^(?:که|این\s*که|:|،|,)\s*/i, '').trim();
-      /* v0.68 — فیکس ریشه‌ای: فعلِ تکراری سرِ متن («…بده تو تلگرام بگو بیا
-         ویس») حذف شود؛ v0.67 «بگو بیا ویس» را به‌عنوان پیام می‌فرستاد */
+      /* v0.68 — فعلِ تکراری سرِ متن («…بده تو تلگرام بگو بیا ویس») حذف شود؛ v0.67 «بگو بیا ویس» را به‌عنوان پیام می‌فرستاد */
       text = text.replace(/^(?:پیام\s*بده|پیغام\s*بده|بگو|بنویس|بفرست|برسون|برسان)\s+/i, '').trim();
+      /* v0.69 — دستورِ زبانی/املایی هرگز داخل متن پیام نمی‌رود
+         (ریشهٔ لاگ: «چطوری اسمشو انگلیسی بنویس کامل» کلمه‌به‌کلمه ارسال شد) */
+      const metaM = text.match(META_LANG_RE);
+      if (metaM) {
+        lang = /فارسی/.test(metaM[0]) ? 'fa' : 'en';
+        text = text.replace(META_LANG_RE, ' ').replace(/\s+/g, ' ').trim();
+        text = text.replace(/^(?:و|بعد|بعدش|هم)\s+/i, '').replace(/\s+(?:و|بعد|بعدش|هم)$/i, '').trim();
+      }
     }
     /* متن نباید خودِ مقصد باشد */
     if (text && target && text.indexOf(target) === 0) text = text.slice(target.length).replace(/^[\s:،,]+/, '').trim();
-    if (!target && !text) return null;
-    return { app: appM.id, appFa: appM.fa, target, text };
+    if (!target && !text && !targetRef) return null;
+    return { app: appM.id, appFa: appM.fa, target, targetRef: !!targetRef, text, lang };
   }
 
   /* ---------- ۳) سازندهٔ لینک اجرا ---------- */
@@ -169,7 +198,7 @@
     ['جواد', 'javad'], ['حامد', 'hamed'], ['صادق', 'sadegh', 'sadeq'],
     ['مصطفی', 'mostafa', 'mustafa'], ['مجید', 'majid'], ['میلاد', 'milad'],
     ['محسن', 'mohsen'], ['محمود', 'mahmoud', 'mahmood'], ['مسعود', 'masoud', 'masood'],
-    ['سینا', 'sina'], ['نیما', 'nima'], ['آرش', 'arash'], ['ارش', 'arash'],
+    ['سینا', 'sina'], ['نیما', 'nima'], ['سیاوش', 'siavash', 'siavush'], ['آرش', 'arash'], ['ارش', 'arash'],
     ['آرمان', 'arman'], ['بابک', 'babak'], ['کاوه', 'kaveh'], ['پویا', 'pouya', 'pooya'],
     ['سعید', 'saeed', 'said'], ['حمید', 'hamid'], ['ناصر', 'naser', 'nasser'],
     ['کریم', 'karim'], ['فرهاد', 'farhad'], ['فرید', 'farid'], ['کیان', 'kian'],
@@ -187,6 +216,80 @@
       const l = String(lat).toLowerCase();
       (LAT2FA_SET[l] = LAT2FA_SET[l] || []).push(fa);
     }
+  }
+
+  /* ---------- ۴ب) تبدیل املایی گفتاری → نوشتار لاتین (v0.69) ----------
+     ریشهٔ لاگ: «اول انگلیسی یادداشت کن علی اچ کی وسطشم یه خط فاصله»
+     ذخیره شد «اول انگلیسی علی اچ کی…» — کاربر Ali-HK می‌خواست.
+     حروف املایی گفتاری (اچ=H، کی=K،…) + علائم گفتاری (خط فاصله=-،
+     نقطه=., آندرلاین=_) + اسم‌های جدول (علی=Ali) + جهت‌دهی (وسطش/بینش). */
+  const SPELL_LETTERS = [
+    ['دبلیو|دبل\\s?یو', 'W'], ['اکس', 'X'], ['وای', 'Y'], ['زد', 'Z'],
+    ['کیو', 'Q'], ['اچ', 'H'], ['کی', 'K'], ['جی', 'G|J'], ['اِف|اف', 'F'], ['ال', 'L'], ['ام', 'M'], ['ان', 'N'], ['او', 'O'], ['پی', 'P'], ['آر', 'R'], ['اس', 'S'], ['تی', 'T'], ['یو', 'U'], ['وی', 'V'], ['دی', 'D'], ['بی', 'B'], ['سی', 'C'], ['ای', 'A'],
+  ];
+  const PUNCT_WORDS = [
+    /* ⚠️ در string literal باید \\s بنویسیم — '\s' در JS به «s» ساده تبدیل
+       می‌شود و «خط فاصله» هیچ‌وقت علامت شناخته نمی‌شد (باگ واقعی v0.69-بتا) */
+    ['خط\\s*فاصله|خط\\s*تیره', '-'],
+    ['آندرلاین|زیر\\s?خط', '_'],
+    ['نقطه', '.'],
+  ];
+  const SPELL_TOKEN_RE = new RegExp(
+    /* v0.69 — ترتیب حیاتی: اول علامتِ چندکلمه‌ای («خط فاصله»)؛ بعد رشتهٔ فارسیِ کامل
+       (وگرنه حروفِ املایی داخلِ نام‌ها می‌خورند: «سیاوش» → سی(C)+او(O) = «CO»!) */
+    '(' + PUNCT_WORDS.map((p) => p[0]).join('|') + '|[a-zA-Z0-9]+|[\u0600-\u06FF\u200c]+)', 'gi'
+  );
+  function _spellToken(tok) {
+    const t = normFa(tok);
+    if (!t) return { t: '', k: '' };
+    for (const [re, v] of PUNCT_WORDS) if (new RegExp('^(?:' + re + ')$', 'i').test(t)) return { t: v, k: 'p' };
+    for (const [re, v] of SPELL_LETTERS) if (new RegExp('^(?:' + re + ')$', 'i').test(t)) return { t: v.split('|')[0], k: 'l' };
+    if (/^[a-zA-Z0-9]+$/.test(t)) return { t, k: 'w' }; /* لاتین از قبل */
+    for (const pp of PHON_PAIRS) { if (t === normFa(pp[0])) return { t: pp[1].split('|')[0].charAt(0).toUpperCase() + pp[1].split('|')[0].slice(1), k: 'n' }; }
+    return { t: '', k: '' };
+  }
+  /* «علی اچ کی وسطشم یه خط فاصله» → { out: 'Ali-HK', dir: 'en' }
+     بدون دستورِ انگلیسی → null (متن عادی) */
+  function noteLatinOf(text) {
+    const s = normFa(String(text || ''));
+    if (!s) return null;
+    if (!/(انگلیسی|لاتین|english)/i.test(s)) return null;
+    /* فقط بخشِ بعد از دستورِ زبانی تبدیل می‌شود */
+    const m = s.match(/(?:انگلیسی|لاتین|english)(?:\s*(?:بنویس|بنویسی|یادداشت|بگم|بگو))?(?:\s*(?:کن|کنه))?\s*([\s\S]+)$/i);
+    const body = (m && m[1] ? m[1] : s).replace(/(?:وسطش|وسطشم|بینش|بینشوم|بینشون|وسط)(?:م|ش|مان|شان)?\s*(?:یه?\s*)?/g, ' ').trim();
+    const toks = body.match(SPELL_TOKEN_RE) || [];
+    const parts = [];
+    let punct = '';
+    for (const tk of toks) {
+      const r = _spellToken(tk);
+      if (!r.k) continue;
+      if (r.k === 'p') { punct = r.t; continue; } /* علامتِ بین اجزا (وسطش/بینش) */
+      parts.push({ t: r.t, k: r.k });
+    }
+    if (!parts.length) return null;
+    /* «علی اچ کی … خط فاصله» → Ali-HK — گروه‌بندی: هر اسم/واژه = یک گروه؛
+       حروفِ املاییِ پشت‌سرهم = یک گروه؛ علامت فقط «بینِ گروه‌ها» می‌آید
+       (ریشهٔ لاگ: «AliH» بی‌خط فاصله ذخیره شد) */
+    const groups = [];
+    for (const p of parts) {
+      const last = groups[groups.length - 1];
+      if (p.k === 'l' && last && last.kind === 'l') last.t += p.t;
+      else groups.push({ kind: p.k, t: p.t });
+    }
+    let out;
+    if (groups.length === 1) out = groups[0].t;
+    else if (punct) out = groups.map((g) => g.t).join(punct);
+    else {
+      let acc = '';
+      for (const g of groups) {
+        if (acc && g.kind === 'l') acc += g.t;
+        else if (acc) acc += ' ' + g.t;
+        else acc = g.t;
+      }
+      out = acc;
+    }
+    out = out.trim();
+    return out ? { out, dir: 'en' } : null;
   }
 
   /* ---------- ۵) مخاطبین (نام گفته‌شده → شناسهٔ واقعی) ----------
@@ -340,7 +443,7 @@
     return d.replace(/\+/g, '').length >= 8 ? d.replace(/\+/g, '') : '';
   }
 
-  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, isLatinUsername, phoneLike };
+  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAMessaging = api;
 })(typeof window !== 'undefined' ? window : null);

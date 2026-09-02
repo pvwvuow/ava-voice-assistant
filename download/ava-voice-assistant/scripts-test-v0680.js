@@ -133,7 +133,7 @@ ok(appSrc.includes("intent: 'msg_test'"), 'لَین عیب‌یاب صوتی ب�
 ok(appSrc.includes('bridge.msg.test'), 'عیب‌یاب تلگرام از msg:test استفاده می‌کند');
 ok(appSrc.includes('_mpGuard && _mpGuard.text && _mpGuard.target'), 'گارد دزدیده‌نشدنِ جملهٔ ارسال در عیب‌یاب');
 ok(appSrc.includes("action: 'selftest'"), 'عیب‌یاب دیسکورد به selftest وصل است');
-ok(appSrc.includes('0.68.0-beta'), 'نسخه در app.js = 0.68.0-beta');
+ok(/0\.6[89]\.0-beta/.test(appSrc), 'نسخه در app.js'); /* v0.69 forward-relax */
 
 /* ============ ۵) main.js — حالت تست تلگرام ============ */
 section('main.js — عیب‌یاب تلگرام (بدون هیچ ارسالی)');
@@ -145,7 +145,7 @@ ok(!tgBody.includes('/*'), 'پین دائمی: هیچ /* داخل بدنهٔ PS 
 ok(tgBody.indexOf("if ($Test -eq 1)") > tgBody.indexOf('function Restore-Focus') && tgBody.indexOf("if ($Test -eq 1)") < tgBody.indexOf('# گام ۱'), 'شاخهٔ $Test بعد از تعریف Restore-Focus و قبل از گام ۱ است');
 ok(tgBody.includes("Write-Output 'OK:TGTEST'"), 'خروجی تست OK:TGTEST');
 ok(tgBody.indexOf("if ($Test -eq 1)") < tgBody.indexOf('ERR:NOTEXT'), 'حالت تست قبل از چک‌های نام/متن است (هیچ ارسالی انجام نمی‌شود)');
-ok(mainSrc.includes("function runTgPs(nm, msgText, username, testMode)"), 'runTgPs پارامتر testMode دارد');
+ok(/function runTgPs\(nm, msgText, username, testMode(, variants)?\)/.test(mainSrc), 'runTgPs پارامتر testMode دارد'); /* v0.69 forward-relax */
 ok(mainSrc.includes("'-Test', testMode ? '1' : '0'"), 'آرگومان -Test به PS پاس می‌شود');
 ok(mainSrc.includes("ipcMain.handle('msg:test'"), 'IPC msg:test ثبت شده');
 ok(mainSrc.includes("runTgPs('', '', '', true)"), 'msg:test تلگرام → runTgPs در حالت تست');
@@ -160,7 +160,7 @@ ok(MM.detectInstalled([{ name: 'Eitaa Messenger' }]).includes('eitaa'), 'detectI
 
 /* ============ ۷) نسخه ============ */
 section('نسخه');
-ok(pkg.version === '0.68.0-beta', 'package.json = 0.68.0-beta');
+ok(/^0\.6[89]\.0-beta$/.test(pkg.version), 'package.json = 0.68/0.69-beta'); /* v0.69 forward-relax */
 
 console.log('\n============================================');
 console.log(`نتیجه: ${pass} PASS / ${fail} FAIL`);

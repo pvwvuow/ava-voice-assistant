@@ -2386,7 +2386,10 @@
     if (/یادداشت[^.]{0,20}(پاک|حذف)|پاک[^.]{0,10}یادداشت|حذف[^.]{0,10}یادداشت|clear (my )?notes|delete (my )?notes/i.test(s)) {
       return { op: /همه|تمام|کل|all/i.test(s) ? 'delAll' : 'delLast' };
     }
-    if (/یادداشت[^.]{0,16}(بخون|بخوان|خوندن|نشون|لیست|کدوم)|یادداشت‌?هام|یادداشت\s*ها|my notes|read (my )?notes|list notes/i.test(s)) {
+    /* v0.69 — شکل‌های خواندن گسترده‌تر — ریشهٔ لاگ:
+       «میگم همون اسمی که الان یادداشت کردیم با هم … ببینم چطور یادداشت کردیم»
+       به چت AI رفت و هیچ محتوایی نشان داده نشد */
+    if (/یادداشت[^.]{0,26}(بخون|بخوان|خوندن|نشون|لیست|کدوم|چی|چیه|چی\s?بود|چطور)|یادداشت\s*(کردیم|نوشتیم|کردم|نوشتم|شده|شد)|یادداشت‌?هام|یادداشت\s*ها|همون[^.]{0,20}یادداشت|همین[^.]{0,20}یادداشت|my notes|read (my )?notes|list notes/i.test(s)) {
       return { op: 'read' };
     }
     if (/یادداشت|note (down|to self)|take a note/i.test(s)) {
@@ -2395,9 +2398,12 @@
         .replace(/(بنویس|ثبت\s*کن|اضافه\s*کن|بگیر)[^.]{0,8}یادداشت/gi, ' ')
         .replace(/یادداشت(‌هام|ها|م)?/gi, ' ')
         .replace(/note (down|to self)|take a note/gi, ' ')
+        /* v0.69 — عبارتِ ارجاعیِ آغازین حذف («همون اسمی که بهت گفتم بنویس…» —
+           ریشهٔ لاگ: کل جمله به‌عنوان یادداشت ذخیره می‌شد) */
+        .replace(/(?:همون|همین|اون)\s+[^.]{0,24}?\s+که\s+(?:بهت|به\s+تو|برات|برای\s+تو)\s+(?:گفتم|گفتی|گفتید|دادم)/gi, ' ')
         /* فقط حرف‌پرانه‌های «آغاز» بریده می‌شوند (نه همه‌جا — «یک ساعت» داخل
            متن یادداشت باید سالم بماند) + ZWNJ وای‌فای و امثالش حفظ می‌شود */
-        .replace(/^([\s:,،]*(?:لطفا|لطفاً|یه|یک|یکی|که|بازه|باشه)(?=\s|$)\s*)+/gi, ' ')
+        .replace(/^([\s:,،]*(?:لطفا|لطفاً|یه|یک|یکی|که|بازه|باشه|و|بعد|بعدش)(?=\s|$)\s*)+/gi, ' ')
         .replace(/[\s:,،]+/g, ' ')
         .trim();
       x = x.replace(/^(رو|را|کن|بکن|بگو|بده|به\s*من)\s+/i, '').replace(/\s+(رو|را|کن|بکن)$/i, '').trim();
@@ -2411,6 +2417,8 @@
     if (op.op === 'read') {
       const arr = await notesLoad();
       if (!arr.length) return t('notes.empty');
+      /* v0.69 — آخرین یادداشت در حافظهٔ گفتگو می‌نشیند (واقعیت‌های اخیر) */
+      try { if (window.AVACore && window.AVACore._state && arr[0] && arr[0].x) window.AVACore._state.entities.note = String(arr[0].x).slice(0, 200); } catch (_) { /* noop */ }
       const lines = arr.slice(0, 8).map((n, i) => faNum(i + 1) + ') ' + String(n.x || '').slice(0, 80));
       actLog('notes read: ' + arr.length);
       return t('notes.list', { n: faNum(arr.length) }) + ' ' + lines.join(' — ') + (arr.length > 8 ? ' …' : '');
@@ -2433,13 +2441,28 @@
     if (op.op === 'add') {
       const text = String(op.text || '').trim();
       if (text.length < 2) return t('notes.ask');
+      /* v0.69 — تبدیل املایی لاتین: «اول انگلیسی یادداشت کن علی اچ کی وسطشم یه
+         خط فاصله» → «Ali-HK» (ریشهٔ لاگ: متن خام ذخیره می‌شد) */
+      let stored = text;
+      try {
+        const _lat = (typeof AVAMessaging !== 'undefined' && AVAMessaging.noteLatinOf) ? AVAMessaging.noteLatinOf(text) : null;
+        if (_lat && _lat.out && _lat.out.length >= 2) stored = _lat.out;
+      } catch (_) { /* noop */ }
       const arr = await notesLoad();
-      arr.unshift({ t: Date.now(), x: text.slice(0, 500) });
+      arr.unshift({ t: Date.now(), x: stored.slice(0, 500) });
       const kept = arr.slice(0, 200);
       const ok = await bridge.notes.save(kept);
       if (ok) NOTES = kept;
-      actLog('notes add ok=' + String(ok) + ' total=' + kept.length);
-      return ok ? t('notes.added', { n: faNum(kept.length), x: text.slice(0, 90) }) : t('notes.saveFail');
+      actLog('notes add ok=' + String(ok) + ' total=' + kept.length + ' x=' + String(stored).slice(0, 40));
+      /* v0.69 — یادداشت تازه در حافظهٔ گفتگو می‌نشیند (واقعیت‌های اخیر —
+       «دو دقیقه بعد یادش رفته» دیگر ممکن نیست) */
+      try {
+        if (window.AVACore && window.AVACore._state) {
+          window.AVACore._state.entities.note = String(stored).slice(0, 200);
+          if (/^[A-Za-z0-9 ._@\-]{2,40}$/.test(String(stored))) window.AVACore._state.entities.person = String(stored).slice(0, 80);
+        }
+      } catch (_) { /* noop */ }
+      return ok ? t('notes.added', { n: faNum(kept.length), x: stored.slice(0, 90) }) : t('notes.saveFail');
     }
     return t('notes.ask');
   }
@@ -3350,6 +3373,12 @@
         : a);
       if (!safe.length) return;
       const lr = Le.learn(learnStore, cmd, safe, reply || '');
+      /* v0.69 — گیت کیفیت: نویز STT («دو تلیگرام بیدی بیدی بید») هرگز
+         فرمانِ دائمی نمی‌شود — قبلاً open_url(web.telegram.org) یاد گرفته بود! */
+      if (lr && lr.updated && window.AVACore && window.AVACore.isGibberish && window.AVACore.isGibberish(cmd)) {
+        actLog('learn skip: جملهٔ نامفهوم (نویز STT) — ذخیره نشد: ' + String(cmd).slice(0, 44));
+        return;
+      }
       if (lr.changed && lr.entry) {
         lr.entry.lastHit = Date.now(); /* AI همین حالا انجامش داد */
         await saveLearnStore();
@@ -3505,8 +3534,9 @@
     const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(cmd || ''), await avaStateCtx()];
     if (_intentCands) parts.push(_intentCands);
     if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
-    /* v0.61 — حافظهٔ گفتگو برای فالبک هم — هیچ مسیر AI بی‌حافظه نیست */
-    try { if (window.AVACore) { const t = window.AVACore.turnsCtx(6); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
+    /* v0.61 — حافظهٔ گفتگو برای فالبک هم — هیچ مسیر AI بی‌حافظه نیست
+       v0.69 — تاریخچه ۱۰ رد و بدل (ریشهٔ «دو دقیقه بعد یادش رفته») */
+    try { if (window.AVACore) { const t = window.AVACore.turnsCtx(10); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
     return parts.filter(Boolean).join('\n');
   }
   /* v0.61 — بستهٔ زمینهٔ لَین مغز (ستون ۴): مثل فالبک + حافظهٔ گفتگو +
@@ -3514,7 +3544,8 @@
      تاریخچه دارد — ریشهٔ «همون مدل موتوری که گفتیم» همین بود. */
   async function aiBrainCtx() {
     const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(arguments.length ? arguments[0] : ''), await avaStateCtx()];
-    try { if (window.AVACore) { const t = window.AVACore.turnsCtx(6); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
+    /* v0.69 — تاریخچه ۱۰ رد و بدل + واقعیت‌های اخیر (یادداشت/مقصد پیام/نتیجهٔ سرچ) */
+    try { if (window.AVACore) { const t = window.AVACore.turnsCtx(10); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
     return parts.filter(Boolean).join('\n');
   }
 
@@ -4540,6 +4571,9 @@
   async function runCommand(cmd, opts) {
     if (!cmd) return;
     let raw = String(cmd).trim();
+    /* v0.69 — observability: هیچ برگشتِ زودهنگامِ بی‌نام دیگر وجود ندارد؛
+       لاگ «2ms [ai-brain]» با تگِ کهنه از run قبلی دیگر ممکن نیست */
+    _dispatchOutcome = 'unrouted';
     /* v0.47 — B02: گارد busy قبل از actLog بود → تکرار کاربر در پنجرهٔ ~۳ثانیه‌ای
        بدون لاگ/UI/صدا دور ریخته می‌شد (ریشهٔ کل خانوادهٔ «۳ تا ۱۰ms و هیچ» در لاگ) */
     if (cmdBusyGuard()) {
@@ -4644,6 +4678,7 @@
       const bwm = raw.match(AVAWake.prefixRe(wakeWordCfg()));
       const bareWake = (bwm && !String(bwm[1] || '').trim()) || (raw.length <= 5 && /\b(?:ava|awa)\b/i.test(raw));
       if (bareWake) {
+        _dispatchOutcome = 'wake-bare';
         wakeSessOpen();
         setState('idle');
         statusText.textContent = t('wake.sessOn');
@@ -4964,13 +4999,22 @@
        ============================================================ */
     {
       const _mp = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgParse) ? AVAMessaging.msgParse(raw) : null;
-      if (_mp && (_mp.target || _mp.text)) {
-        try { actLog('lane=messaging (deterministic): app=' + _mp.app + ' target=' + String(_mp.target).slice(0, 24) + ' text=' + String(_mp.text).slice(0, 30), 'ui', { ev: 'lane', lane: 'messaging', app: _mp.app }); } catch (_) { /* noop */ }
+      /* v0.69 — آنافورا مقصد («بهش/براش/همین اسم/همون مخاطب») از حافظه حل می‌شود —
+         ریشهٔ لاگ: «همین اسم» لفظی در سوییچر دیسکورد تایپ شد و «بهش بگو» با مقصد خالی رفت */
+      if (_mp && _mp.targetRef && !_mp.target) {
+        const _rt = (window.AVACore && window.AVACore.resolveRefTarget) ? window.AVACore.resolveRefTarget(raw) : '';
+        if (_rt) _mp.target = _rt;
+      }
+      if (_mp && (_mp.target || _mp.text || _mp.targetRef)) {
+        try { actLog('lane=messaging (deterministic): app=' + _mp.app + ' target=' + String(_mp.target).slice(0, 24) + ' text=' + String(_mp.text).slice(0, 30) + (_mp.targetRef ? ' REF-UNRESOLVED' : ''), 'ui', { ev: 'lane', lane: 'messaging', app: _mp.app }); } catch (_) { /* noop */ }
         _dispatchOutcome = 'messaging';
         let _mrep = '';
         let _mok = false;
         try {
-          if (!_mp.text) {
+        if (!_mp.target) {
+          /* مقصدِ حل‌نشده → سؤال صادقانه؛ هیچ ارسالِ بی‌مقصد یا لفظیِ «همین اسم» */
+          _mrep = LANG === 'en' ? `Who should I message on ${_mp.appFa}? Say the name, e.g. "message Ali on ${_mp.appFa} …".` : `به کی تو ${_mp.appFa} پیام بدم؟ اسمش رو بگو — مثلاً «به علی تو ${_mp.appFa} پیام بده که …»`;
+        } else if (!_mp.text) {
             /* v0.67 — بدون متن پیام هیچ ارسالی وجود ندارد؛ قبلاً deep-link لخت
                می‌زد که در تلگرام هیچ بود (ریشهٔ «هیچ‌کاری نمی‌کنه») */
             _mrep = LANG === 'en' ? `What should I send to "${_mp.target}" on ${_mp.appFa}? Say: «…message them that …»` : `چی برای «${_mp.target}» تو ${_mp.appFa} بفرستم؟ بگو «به ${_mp.target} پیام بده که …»`;
@@ -4979,11 +5023,31 @@
                پیست/ارسال می‌شود؛ deep-link فقط فالبکِ «اپ باز نیست» است */
             const _cts = (typeof settings !== 'undefined' && Array.isArray(settings.msgContacts)) ? settings.msgContacts : [];
             const _ct = AVAMessaging.contactFind(_cts, _mp.app, _mp.target);
-            const _name = (_ct && _ct.name) || _mp.target;
+            const _name = (_mp.app === 'discord' && _ct && AVAMessaging.isLatinUsername(_ct.handle)) ? _ct.handle.replace(/^@/, '') : ((_ct && _ct.name) || _mp.target);
             const _handle = (_ct && _ct.handle) || '';
+            /* v0.69 — واریانت‌های جستجو: نام گفته‌شده + نام مخاطب + مستعارها + یوزرنیم
+               + آخرین یادداشت لاتین‌شکل + آوانگاری لاتین (ریشهٔ لاگ: سرچ «علی اچ کی»
+           در دیسکوردِ انگلیسی‌نویس هیچ بود) */
+            const _vs = [];
+            const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
+            _pushV(_mp.target);
+            if (_ct) { _pushV(_ct.name); (Array.isArray(_ct.aliases) ? _ct.aliases : []).forEach(_pushV); _pushV(_ct.handle); }
+            try {
+              if (window.AVACore && window.AVACore._state) {
+                const _ne = window.AVACore._state.entities.note || '';
+                if (_ne && /[a-zA-Z]/.test(_ne) && String(_ne).length <= 40) _pushV(_ne);
+                const _pe = window.AVACore._state.entities.person || '';
+                if (_pe && String(_pe).length <= 40) _pushV(_pe);
+              }
+            } catch (_) { /* noop */ }
+            if (/(انگلیسی|لاتین)/i.test(raw) && AVAMessaging.noteLatinOf) { try { const _lv = AVAMessaging.noteLatinOf(raw); if (_lv && _lv.out) _pushV(_lv.out); } catch (_) { /* noop */ } }
+            if (!AVAMessaging.phoneLike(_mp.target)) { try { const _fl = AVAMessaging.faToLatin(_mp.target); if (_fl && _fl.length >= 3) _pushV(_fl); } catch (_) { /* noop */ } }
             const _uname = (_mp.app === 'telegram' && AVAMessaging.isLatinUsername(_handle)) ? _handle.replace(/^@/, '') : (AVAMessaging.isLatinUsername(_mp.target) ? _mp.target.replace(/^@/, '') : '');
-            const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname }).catch(() => null) : null;
-            if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) {
+            const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname, variants: _vs }).catch(() => null) : null;
+            if (r && r.error && /NO_MATCH/.test(String(r.error))) {
+              /* v0.69 — وارسی عنوان چت شکست خورد → صادقانه؛ دیگر پیام به چتِ اشتباه نمی‌رود */
+              _mrep = LANG === 'en' ? `Could not find "${_name}" in ${_mp.appFa} with confidence — nothing was sent. Search them manually once and I'll remember.` : `چت «${_name}» رو تو ${_mp.appFa} مطمئن پیدا نکردم — هیچی نفرستادم. یک بار خودت سرچش کن تا اسم دقیقش رو یاد بگیرم.`;
+            } else if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) {
               _mok = true;
               _mrep = LANG === 'en' ? `Sent to "${_name}" on ${_mp.appFa} — double-check it landed.` : `فرستادم به «${_name}» تو ${_mp.appFa} — یه نگاه بنداز که رسیده باشه.`;
             } else if (r && r.ok) {
@@ -5026,12 +5090,39 @@
         typeText(rcReply, _mrep);
         speak(_mrep);
         pushHistory(raw, true);
-        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'msg_send', params: { app: _mp.app }, reply: _mrep }); } catch (_) { /* noop */ }
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'msg_send', params: { app: _mp.app, msgTarget: String(_mp.target || '').slice(0, 80), msgApp: _mp.app }, reply: _mrep }); } catch (_) { /* noop */ }
         if (_mok) { try { playDoneSound(); } catch (_) { /* noop */ } }
         cmdBusy = false;
         setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
         return;
       }
+    }
+
+    /* ============================================================
+       v0.69 — لَینِ قطعیِ یادداشت — پیش از مغز و پیش از تایپ یک‌باره
+       ----------------------------------------------------------
+       ریشهٔ لاگ Ali-HK:
+       «همون اسمی که بهت گفتم بنویس یادداشت کن…» به type-once رفت و در
+       پنجرهٔ متمرکز تایپ شد؛ «میگم همون اسمی که الان یادداشت کردیم…»
+       به چت AI رفت و هیچ محتوایی نشان داده نشد. حالا هر جملهٔ حاوی
+       «یادداشت» همین‌جا قطعی حل می‌شود (add/read/delete)، با تبدیل
+       املایی لاتین، و هرگز به تایپ/چت نمی‌ریزد.
+       ============================================================ */
+    if (/یادداشت|یادداشتم|note (down|to self)|take a note/i.test(raw)) {
+      _dispatchOutcome = 'rule:notes';
+      try { actLog('lane=notes (deterministic): «' + raw.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'notes' }); } catch (_) { /* noop */ }
+      const _nrep = await notesReply(raw);
+      setState('success');
+      statusText.textContent = t('status.done');
+      rcTag.textContent = t('tag.done');
+      typeText(rcReply, _nrep);
+      speak(_nrep);
+      pushHistory(raw, true);
+      try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'rule', intent: 'notes', params: { noteText: (window.AVACore._state && window.AVACore._state.entities.note) || '' }, reply: _nrep }); } catch (_) { /* noop */ }
+      if (!/نشده|Could not|ذخیره نشد/.test(String(_nrep))) { try { playDoneSound(); } catch (_) { /* noop */ } }
+      cmdBusy = false;
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2800);
+      return;
     }
 
     /* ============================================================
@@ -5066,9 +5157,14 @@
              بدون فعل پژوهشیِ دیگر و بدون سؤال. ترکیبی (اول تحقیق کن بعد بنویس)
              → مغز AI می‌رود (قانون ۱۲ پرامپت، آخرین act=type_once). */
           const _to = (typeof AVAIntent !== 'undefined' && AVAIntent.typeOnceOf) ? AVAIntent.typeOnceOf(vcText) : '';
+          /* v0.69 — گاردِ متا/سؤال/دوفعل: «میشه دقیقا آدرسشو برام بنویسی» و
+             «انگلیسی بنویسی جان جدت بنویس…» قبلاً لخت تایپ می‌شدند */
           const _pureType = !!_to
             && !/(سرچ|جستجو|پیدا|بگرد|تحلیل|بررسی|دنبال|بخون|ترجمه|خلاصه|تحقیق|پخش|اجرا|باز\s?کن|برو\s?به)/i.test(vcText)
-            && !/[؟?]/.test(vcText);
+            && !/[؟?]/.test(vcText)
+            && !/(میشه|ممکنه|می\s?شه|فکر\s?کنم|اگه\s?میشه|اگر\s?میشه|برای\s?من\s?بنویسی|دقیق\s?بنویسی|دقیقا)/i.test(vcText)
+            && !/(بنویس|بنویسی|بنیویس)[^.]{0,24}(بنویس|بنویسی|بنیویس)/i.test(vcText)
+            && !/(انگلیسی|فارسی|لاتین)\s*(بنویس|بنویسی|بنیویس)|بنویس[^.]{0,12}(انگلیسی|فارسی|لاتین)/i.test(vcText);
           if (_pureType) {
             try { actLog('lane=type-once (deterministic): «' + vcText.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'type-once', q: _to.slice(0, 60) }); } catch (_) { /* noop */ }
             _dispatchOutcome = 'type-once';
@@ -5086,7 +5182,9 @@
           }
           try { actLog('lane=brain (direct-AI, reason=' + _vc.reason + '): «' + vcText.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'brain', reason: _vc.reason }); } catch (_) { /* noop */ }
           _dispatchOutcome = 'ai-brain';
-          await aiHandleCommand(vcText, await aiBrainCtx());
+          /* v0.69 — حاشیه‌های ارجاع فقط به مغز می‌چسبند (جملهٔ اصلی دست‌نخورده برای لاین‌های قطعی) */
+          const _hints = (_vc && _vc.hints && _vc.hints.length) ? ' (' + _vc.hints.join('؛ ') + ')' : '';
+          await aiHandleCommand(vcText + _hints, await aiBrainCtx());
           return;
         }
       }
@@ -7817,7 +7915,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.68.0-beta';
+  let appVersion = '0.69.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

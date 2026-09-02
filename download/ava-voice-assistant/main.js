@@ -1716,9 +1716,10 @@ ipcMain.handle('msg:send', async (_e, p) => {
   const username = String((p && p.username) || '').replace(/[^a-zA-Z0-9_@.]/g, '').replace(/[.@]/g, '').trim();
   if (!name) return { ok: false, error: 'نام مخاطب پیدا نشد' };
   if (!text) return { ok: false, error: 'متن پیام پیدا نشد' };
-  actLog(`msg:send app=${app} name=${name.slice(0, 24)} text=${text.slice(0, 40)}`, 'msg', { ev: 'msg-send', app });
+  const variants = Array.isArray(p && p.variants) ? p.variants : [];
+  actLog(`msg:send app=${app} name=${name.slice(0, 24)} text=${text.slice(0, 40)} variants=${variants.length}`, 'msg', { ev: 'msg-send', app });
   if (app === 'discord') return runDiscordPs('msgsend', 'fg', name, 46, 52, text);
-  if (app === 'telegram') return runTgPs(name, text, username);
+  if (app === 'telegram') return runTgPs(name, text, username, false, variants);
   return { ok: false, error: 'این پیام‌رسان اتوماسیون دسکتاپ ندارد' };
 });
 
@@ -5393,6 +5394,7 @@ const TG_PS_BODY = `param(
   [string]$Name = '',
   [string]$Text = '',
   [string]$Username = '',
+  [string]$Variants = '',
   [int]$WaitMs = 25000,
   [int]$Test = 0
 )
@@ -5479,6 +5481,31 @@ function Poke-Alt {
   Start-Sleep -Milliseconds 40
   [AvaTg2.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
 }
+# v0.69 — وارسی عنوان چت: تیترِ پنجره بعد از سرچ باید با واریانتِ نام جور دربیاد.
+# ریشهٔ لاگ: سرچِ «ان» چتِ «فرزاد بریس | اقتصاد انلاین @ stagVII» را باز کرد و
+# پیام به غریبه رفت — «ان» داخلِ «انلاین» بود (بدون مرزِ واژه).
+function Test-TgMatch($title, $cand) {
+  if (-not $title -or -not $cand) { return $false }
+  $tn = ($title.ToLower() -replace '\u200c',' ') -replace '[^\\p{L}\\p{Nd}]+',' '
+  $tn = (($tn -split '\\s+') | Where-Object { $_ }) -join ' '
+  $cn = ($cand.ToLower() -replace '\u200c',' ') -replace '[^\\p{L}\\p{Nd}]+',' '
+  $cn = (($cn -split '\\s+') | Where-Object { $_ }) -join ' '
+  if (-not $cn) { return $false }
+  if ($tn -eq $cn) { return $true }
+  if (($tn + ' ').Contains(' ' + $cn + ' ')) { return $true }
+  $toks = @($cn -split ' ' | Where-Object { $_.Length -ge 3 })
+  if ($toks.Count -gt 0) {
+    $all = $true
+    foreach ($w in $toks) { if (($tn + ' ').IndexOf(' ' + $w + ' ') -lt 0) { $all = $false; break } }
+    if ($all) { return $true }
+  }
+  # حروف فقط (ali-hk ↔ alihk) — فقط وقتی حروفِ نام ≥۴ حرف باشد
+  $tl = ($tn -replace ' ','')
+  $cl = ($cn -replace ' ','')
+  if ($cl.Length -ge 4 -and $tl.Contains($cl)) { return $true }
+  return $false
+}
+
 function Focus-TgHard {
   if (Test-Fg) { return $true }
   if ([AvaTg2.W]::IsIconic($hwnd)) { [AvaTg2.W]::ShowWindow($hwnd, 9) | Out-Null }
@@ -5555,17 +5582,45 @@ if ($Username) {
   # باز شدن چت ممکن است فوکوس را موقتاً جابه‌جا کند — دوباره تایید می‌شود
   if (-not (Focus-TgHard)) { Write-Output 'ERR:NOFOCUS2'; exit }
 } else {
-  # نام فارسی/عنوان: Esc×2 (بستن چت/سرچ باز تا Ctrl+F سرچ سراسری شود)، بعد سرچ
-  Send-Combo 'esc'
-  Start-Sleep -Milliseconds 200
-  Send-Combo 'esc'
-  Start-Sleep -Milliseconds 250
-  Send-Combo 'ctrl,f'
-  Start-Sleep -Milliseconds 800
-  Send-Combo 'ctrl,v'
-  Start-Sleep -Milliseconds 1400
-  Send-Combo 'enter'
-  Start-Sleep -Milliseconds 1200
+  # v0.69 — سرچ با واریانت‌ها + وارسی عنوان چت. ریشهٔ لاگ: سرچِ «ان» چتِ
+  # «اقتصاد انلاین» را باز می‌کرد و پیام به غریبه می‌رفت (UNVERIFIED دروغین).
+  # حالا: هر واریانت امتحان می‌شود؛ تیترِ پنجره باید با نام جور دربیاد؛
+  # وگرنه Esc و واریانت بعدی؛ هیچ → ERR:TG_NO_MATCH بدون هیچ ارسالی.
+  $variants = @()
+  try { if ($Variants) { $variants = @($Variants -split '\\|' | Where-Object { $_ -and $_.Trim() }) } } catch { }
+  if ($variants.Count -eq 0) { $variants = @($nm) }
+  if ($variants -notcontains $nm) { $variants = @($nm) + $variants }
+  Write-Output ('DBG:VARIANTS=' + ($variants -join ' , '))
+  $opened = $false
+  $usedVar = ''
+  foreach ($v in $variants) {
+    Send-Combo 'esc'
+    Start-Sleep -Milliseconds 200
+    Send-Combo 'esc'
+    Start-Sleep -Milliseconds 250
+    Send-Combo 'ctrl,f'
+    Start-Sleep -Milliseconds 800
+    try { Set-Clipboard -Value $v -ErrorAction Stop | Out-Null } catch { }
+    $cok = $false
+    try { $gv = Get-Clipboard -Raw; $cok = ($gv -eq $v) } catch { }
+    if (-not $cok) { Write-Output 'DBG:CLIP_FAIL_V'; continue }
+    Send-Combo 'ctrl,v'
+    Start-Sleep -Milliseconds 1400
+    Send-Combo 'enter'
+    Start-Sleep -Milliseconds 1200
+    $tb2 = New-Object System.Text.StringBuilder 512
+    try { [AvaTg2.W]::GetWindowText($hwnd, $tb2, 512) | Out-Null } catch { }
+    $title2 = $tb2.ToString().Trim()
+    Write-Output ('DBG:TRY=' + $v + ' TITLE=' + $title2)
+    if (Test-TgMatch $title2 $v) { $opened = $true; $usedVar = $v; break }
+    try { Send-Combo 'esc'; Start-Sleep -Milliseconds 250 } catch { }
+  }
+  if (-not $opened) {
+    Restore-Focus
+    Write-Output 'ERR:TG_NO_MATCH'
+    exit
+  }
+  Write-Output ('DBG:MATCHED=' + $usedVar)
 }
 # گام ۳ — پیست متن پیام و ارسال با Enter واقعی
 try { Set-Clipboard -Value $msg -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
@@ -5604,10 +5659,11 @@ Write-Output ('DBG:TITLE=' + $tb.ToString().Trim())
 Restore-Focus
 if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }`;
 
-function runTgPs(nm, msgText, username, testMode) {
+function runTgPs(nm, msgText, username, testMode, variants) {
   const safeName = String(nm || '').replace(/['’‘“”`"…]/g, '');
   const safeText = String(msgText || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch]));
   const safeUser = String(username || '').replace(/[^a-zA-Z0-9_]/g, '');
+  const safeVars = Array.isArray(variants) ? variants.map((v) => String(v || '').replace(/[|'’‘“”`"…]/g, '').trim()).filter((v) => v && v.length >= 2).slice(0, 6) : [];
   let psFile = '';
   try {
     psFile = path.join(app.getPath('userData'), 'ava-tg.ps1');
@@ -5617,7 +5673,7 @@ function runTgPs(nm, msgText, username, testMode) {
     return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت تلگرام ممکن نشد' });
   }
   const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
-    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-WaitMs', '25000', '-Test', testMode ? '1' : '0'];
+    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-Variants', safeVars.join('|'), '-WaitMs', '25000', '-Test', testMode ? '1' : '0'];
   const t0 = Date.now();
   return new Promise((resolve) => {
     let stdout = '', stderr = '', killed = false;

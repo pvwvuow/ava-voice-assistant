@@ -102,14 +102,14 @@ ok(mainSrc.slice(tgEnd, tgEnd + 2200).includes("'-STA'"), 'spawn پاورشل ب
 console.log('\n[4] IPC msg:send و پل preload');
 ok(/ipcMain\.handle\('msg:send'/.test(mainSrc), 'هندلر msg:send در main');
 ok(mainSrc.includes("runDiscordPs('msgsend', 'fg', name, 46, 52, text)"), 'دیسکورد → موتور اثبات‌شدهٔ v0.35 (پارادوکس deep-link حل شد)');
-ok(mainSrc.includes('if (app === \'telegram\') return runTgPs(name, text, username)'), 'تلگرام → موتور جدید');
+ok(mainSrc.includes("return runTgPs(name, text, username, false, variants)"), 'تلگرام → موتور جدید (+واریانت‌ها)');
 ok(mainSrc.includes("String((p && p.username) || '').replace(/[^a-zA-Z0-9_@.]/g, '')"), 'پاک‌سازی username (قاعدهٔ B8)');
 ok(/send: \(p\) => ipcRenderer\.invoke\('msg:send', p\)/.test(preloadSrc), 'پل preload msg.send');
 
 /* ---------- ۵) لَین پیام‌رسانی v2 در app.js ---------- */
 console.log('\n[5] لَین پیام‌رسانی v2 — مسیریابی صادقانه');
 ok(appSrc.includes('v0.67 — لَین قطعیِ پیام‌رسانی (اکستنشن مرحلهٔ ۲ — اتوماسیون واقعی)'), 'کامنت لَین v0.67');
-ok(appSrc.includes('bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname })'), 'لَین: ارسال با اتوماسیون (msg.send)');
+ok(appSrc.includes('bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname, variants: _vs })'), 'لَین: ارسال با اتوماسیون (msg.send + واریانت‌ها)');
 ok(appSrc.includes('AVAMessaging.contactFind(_cts, _mp.app, _mp.target)'), 'لَین: حل مخاطب قبل از ارسال');
 ok(appSrc.includes('/UNVERIFIED/.test(String(r.result || \'\'))'), 'لَین: پاسخ UNVERIFIED صادقانه («چک کن رسیده باشه»)');
 ok(appSrc.includes('چی برای «'), 'لَین: بدون متن پیام سؤال صادقانه می‌شود (نه deep-link لخت)');

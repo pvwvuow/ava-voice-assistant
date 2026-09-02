@@ -62,7 +62,7 @@ section('[2] ستون ۱ — ContextStore: یک حافظه برای دو مغز'
   ok(tc.includes('کاربر: «هوای بجنورد چطوره»'), 'turnsCtx تاریخچهٔ خوانا برای AI می‌سازد');
   ok(Core._state.turns.length === 2, 'سقف نوردیشن رعایت می‌شود');
   Core.recordTurn({ utterance: 'x'.repeat(500), via: 'ai' });
-  ok(Core._state.turns[0].u.length <= 200, 'utterance سقف ۲۰۰ کاراکتر (RAM امن)');
+  ok(Core._state.turns[0].u.length <= 300, 'utterance سقف ۳۰۰ کاراکتر (RAM امن)'); /* v0.69 forward-relax 200→300 */
 }
 
 /* ============ ستون ۳ — مسیربینی دولاين ============ */

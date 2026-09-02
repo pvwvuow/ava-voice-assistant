@@ -67,13 +67,43 @@
   /* ============================================================
      ستون ۱ — ContextStore
      ============================================================ */
-  const MAX_TURNS = 10;
+  const MAX_TURNS = 12;
   const state = {
     turns: [],   /* [{u, via, intent, params, reply, at}] — تازه اول */
     entities: {  /* آخرین موجودیت هر دامنه — فقط رشتهٔ تمیز */
       song: '', video: '', site: '', app: '', city: '', model: '', query: '', lastTitle: '',
+      /* v0.69 — موجودیت‌های «واقعیت‌های اخیر»: ریشهٔ لاگ Ali-HK
+         («دو دقیقه بعد یادش رفته چی می‌گفتیم») — یادداشت، مقصد پیام،
+         عنوان نتیجهٔ سرچ و نگاشت نام گفتاری↔نوشتاری ذخیره می‌شوند */
+      note: '', msgTarget: '', msgApp: '', searchTitle: '', person: '',
     },
   };
+
+  /* v0.69 — آشکارساز جملهٔ بی‌معنی (گیت کیفیت یادگیری)
+     ریشهٔ لاگ: «دو تلیگرام بیدی بیدی بید» → open_url(web.telegram.org)
+     «تو تهلگ روم بایم بایم بایم بایم بایم بایم» → ذخیرهٔ دائمیِ نویز STT.
+     قاعده‌ها: تکرار متوالی توکن، نسبت توکن یکتا، و اجبارِ واژهٔ محتوادار. */
+  function isGibberish(s) {
+    const t = String(s || '').replace(/[\u200c\u200f\u200e]/g, ' ').trim();
+    if (!t) return true;
+    const toks = t.toLowerCase().split(/[\s،؛,.!؟?:]+/).filter(Boolean);
+    if (!toks.length) return true;
+    if (toks.length <= 2) return false; /* جملات خیلی کوتاه را قضاوت نمی‌کنیم */
+    /* ۱) توکن تکراری متوالی (≥۲ بار پشت‌سرهم ×۲) */
+    let maxRun = 1, run = 1;
+    for (let i = 1; i < toks.length; i++) {
+      run = (toks[i] === toks[i - 1]) ? run + 1 : 1;
+      if (run > maxRun) maxRun = run;
+    }
+    if (maxRun >= 3) return true;
+    /* ۲) نسبت یکتا — «بایم بایم بایم بایم» حتی غیرمتوالی هم زباله است */
+    const uniq = new Set(toks).size;
+    if (toks.length >= 5 && uniq / toks.length <= 0.4) return true;
+    /* ۳) «بیدی بیدی بید» — جملات کوتاه با تکرارِ جفتی + تنوعِ کم
+       (نویز STT واقعی لاگ: «دو تلیگرام بیدی بیدی بید») */
+    if (toks.length >= 4 && maxRun >= 2 && uniq / toks.length <= 0.8) return true;
+    return false;
+  }
 
   /* استخراج موجودیت از «متن» — بدون دانش بیرونی، فقط الگوهای فارسی امن */
   /* v0.66 — واژه‌های مجازِ حکمی/حرف اضافه که هرگز «عنوان» نیستند.
@@ -100,11 +130,11 @@
   function recordTurn(o) {
     try {
       const t = {
-        u: String((o && o.utterance) || '').slice(0, 200),
+        u: String((o && o.utterance) || '').slice(0, 300),
         via: String((o && o.via) || '').slice(0, 24),
         intent: String((o && o.intent) || '').slice(0, 40),
         params: (o && o.params && typeof o.params === 'object') ? o.params : null,
-        reply: String((o && o.reply) || '').slice(0, 200),
+        reply: String((o && o.reply) || '').slice(0, 300),
         at: Date.now(),
       };
       if (!t.u && !t.reply) return;
@@ -118,6 +148,18 @@
         if (t.params.app) pu.app = String(t.params.app);
         if (t.params.site) pu.site = String(t.params.site);
         if (t.params.wake) { state.entities.wake = String(t.params.wake); }
+        /* v0.69 — واقعیت‌های اخیر از پارامترهای صریح هر لاین */
+        if (t.params.noteText) state.entities.note = String(t.params.noteText).slice(0, 200);
+        if (t.params.msgTarget) state.entities.msgTarget = String(t.params.msgTarget).slice(0, 80);
+        if (t.params.msgApp) state.entities.msgApp = String(t.params.msgApp).slice(0, 20);
+        if (t.params.searchTitle) state.entities.searchTitle = String(t.params.searchTitle).slice(0, 120);
+        if (t.params.person) state.entities.person = String(t.params.person).slice(0, 80);
+      }
+      /* v0.69 — واژه‌سازی موجودیت از لاین‌های شناخته‌شده (یک حافظه، همهٔ مغزها) */
+      const vi = t.via + '/' + t.intent;
+      if (/messaging\/msg_send|msg_test/.test(vi) && t.u) {
+        const mm = t.u.match(/(?:به|برای|برا)\s+([^\s][\u0600-\u06FFa-zA-Z0-9._@\s]{1,40}?)(?=\s+(?:پیام|پیغام|بگو|بنویس|بفرست)|$)/i);
+        if (mm && mm[1] && !/^(همین|همون|بهش|براش|اون)/i.test(mm[1].trim())) { state.entities.msgTarget = mm[1].trim().slice(0, 80); }
       }
       Object.assign(pu, extractFromText(t.u));
       const intent = t.intent || '';
@@ -148,9 +190,14 @@
     { domain: 'city',   re: /(همین|همون|همان|اون|این)?\s?(شهر)/i },
     { domain: 'query',  re: /(همین|همون|همان|اون|این)?\s?(موضوع|مطلب)/i },
   ];
-  /* ضمایرِ لختِ بدون دامنه — به آخرین موجودیت هر دامنه‌ای که هست می‌روند */
+  /* ضمایرِ لختِ بدون دامنه — v0.69: دیگر هرگز بازنویسی نمی‌شوند؛ فقط حاشیه
+     (ریشهٔ لاگ: بازنویسیِ لخت «میگم همون اسمی که یادداشت کردیم…» را به
+     «میگم علی اچ کی وسطشم یه خط فاصله اسمی که…» نابود کرد) */
   const BARE_REF_RE = /(^|[\s،؛«"(])(همینو|همونو|اونو|اینو|همو|همین|همون|همان)(?=$|[\s،؛»").!؟?:،]|و)(?:\s?(رو|را|رو\s?بگرد|رو\s?پخش|رو\s?پلی))?/i;
   const POSSESS_REF_RE = /(^|[\s،؛«"(])(همینو?|همونو?|همان|اونو?|اینو?)\s?(اسمشو?|اسماشو?|اسمش)(?=$|[\s،؛»").!؟?:،])/i;
+  /* v0.69 — «همین/همون + اسم» داخل جمله‌های پیام/یادداشت («به همین اسم پیام بده»)
+     — حل‌گر لاین‌های قطعی از این الگو استفاده می‌کند */
+  const REF_NOUN_RE = /(?:به|برای|برا|از)?\s*(همینو?|همونو?|همان|اونو?|اینو?)\s+(اسم|نام|مخاطب|شخص|یارو|فلانی)(?:\s*(رو|را))?/i;
 
   function pickEntity(key) {
     const e = state.entities;
@@ -166,7 +213,8 @@
 
   function resolveRefs(cmd, opts) {
     const orig = String(cmd || '');
-    const out = { text: orig, resolved: [], unresolved: false };
+    /* v0.69 — hints: حاشیه‌های ارجاع (به AI می‌چسبند، جمله هرگز خراب نمی‌شود) */
+    const out = { text: orig, resolved: [], unresolved: false, hints: [] };
     if (!orig.trim()) return out;
     let s = orig;
     /* v0.66 — حافظهٔ «آخرین لینک ویدیو» از app.js می‌آید (کلیپ‌بورد/لینک گفته‌شده/پخش‌شده).
@@ -200,11 +248,19 @@
       out.text = s;
       return out;
     }
-    /* ۱) «همون اسمش/اسمشو» → آخرین تیتر */
+    /* ۱) «همون اسمش/اسمشو» — v0.69: حاشیه، نه بازنویسی (ریشهٔ لاگ:
+       (last=کپی) و (model=نتیجه) جمله را می‌ساختند و مسیر را خراب)
+       v0.69-نهایی — بازنویسی فقط برای مقادیر کوتاه (≤۳ کلمه، غیر-زباله)
+       مجاز است تا کورپوس طلایی v0.61 سالم بماند؛ مقادیر بلند (تیتر یادداشت،
+       جمله‌های چندکلمه‌ای) فقط حاشیه می‌شوند — ریشهٔ «میگم علی اچ کی
+       وسطشم یه خط فاصله اسمی که…» (نابودی جمله با تیتر ۶کلمه‌ای) */
+    const _wc = (x) => String(x || '').trim().split(/\s+/).filter(Boolean).length;
+    const _shortOk = (v) => v && _wc(v) <= 3 && !ENTITY_STOP_RE.test(String(v).trim());
     let m = POSSESS_REF_RE.exec(s);
     if (m) {
       const v = pickEntity('song');
-      if (v && !ENTITY_STOP_RE.test(String(v).trim())) { s = s.replace(m[0], ' ' + v + ' ').replace(/\s+/g, ' ').trim(); out.resolved.push({ from: m[0].trim(), to: v, domain: 'title' }); }
+      if (_shortOk(v)) { s = s.replace(m[0], ' ' + v + ' ').replace(/\s+/g, ' ').trim(); out.resolved.push({ from: m[0].trim(), to: v, domain: 'title' }); }
+      else if (v && !ENTITY_STOP_RE.test(String(v).trim())) out.hints.push('ارجاع «' + m[0].trim() + '» = ' + v);
       else out.unresolved = true;
     }
     /* ۲) «همون آهنگ جدیدش / همین ویدیو / اون مدل» — دامنه‌دار
@@ -222,30 +278,54 @@
         }
       }
     }
-    /* ۳ب) «NOUN که گفتیم/گفتی» (لاگ: «مدل موتوری که گفتیم» گم شده بود) */
+    /* ۳ب) «NOUN که گفتیم/گفتی» — بازنویسی فقط با مقدار کوتاه؛ بلند → حاشیه */
     if (!out.resolved.length) {
-      const kn = s.match(/(مدل|موتور|آهنگ|ویدیو|فیلم|سایت|موضوع)(ی)?\s?که\s?(گفتیم|گفتی|گفتید)/i);
+      const kn = s.match(/(مدل|موتور|آهنگ|ویدیو|فیلم|سایت|موضوع|مدل موتور)(ی)?\s?که\s?(گفتیم|گفتی|گفتید|بهم\s?گفتی)/i);
       if (kn) {
-        const dom = /مدل|موتور/.test(kn[1]) ? 'model' : /آهنگ/.test(kn[1]) ? 'song' : /ویدیو|فیلم/.test(kn[1]) ? 'video' : /سایت/.test(kn[1]) ? 'site' : 'query';
+        const dom = /مدل|موتور/.test(kn[1]) ? 'model' : /آهنگ/.test(kn[1]) ? 'song' : /ویدیو|فیلم/.test(kn[1]) ? 'video' : /سایت/.test(kn[1]) ? 'site' : /یادداشت/.test(kn[1]) ? 'note' : /اسم|نام/.test(kn[1]) ? 'person' : 'query';
         const v = pickEntity(dom);
-        if (v) { s = s.replace(kn[0], kn[1] + ' ' + v).replace(/\s+/g, ' ').trim(); out.resolved.push({ from: kn[0], to: v, domain: dom }); }
+        if (_shortOk(v)) { s = s.replace(kn[0], kn[1] + ' ' + v).replace(/\s+/g, ' ').trim(); out.resolved.push({ from: kn[0], to: v, domain: dom }); }
+        else if (v) out.hints.push('ارجاع «' + kn[0] + '» = ' + v);
         else out.unresolved = true;
       }
     }
-    /* ۳) ضمیرِ لخت «همینو/اونو» → آخرین موجودیت هر دامنه‌ای که هست */
+    /* ۳آ) «به همین اسم / همون مخاطب» — v0.69: حاشیهٔ نام برای مغز (همیشه حاشیه —
+       بازنویسی «به همین اسم» → «به علی اچ کی اسم» جمله را می‌شکند) */
+    if (!out.resolved.length) {
+      const rn = s.match(REF_NOUN_RE);
+      if (rn) {
+        const v = state.entities.msgTarget || state.entities.person || '';
+        if (v) { out.hints.push('ارجاع «' + rn[0].trim() + '» = ' + v); out.resolved.push({ from: rn[0].trim(), to: v, domain: 'ref-noun' }); }
+        else out.unresolved = true;
+      }
+    }
+    /* ۳) ضمیرِ لخت «همینو/اونو» — بازنویسی فقط با مقدار کوتاه (رفتار v0.61)؛
+       مقدار بلند → فقط حاشیه (ریشهٔ نابودیِ جمله با تیتر ۶کلمه‌ای) */
     if (!out.resolved.length && BARE_REF_RE.test(s)) {
       const v = pickEntity('');
-      if (v) { s = s.replace(BARE_REF_RE, ' ' + v + ' ').replace(/\s+/g, ' ').trim(); out.resolved.push({ from: 'bare-ref', to: v, domain: 'last' }); }
+      if (_shortOk(v)) { s = s.replace(BARE_REF_RE, ' ' + v + ' ').replace(/\s+/g, ' ').trim(); out.resolved.push({ from: 'bare-ref', to: v, domain: 'last' }); }
+      else if (v) out.hints.push('ارجاع «' + (s.match(BARE_REF_RE) || [''])[0].trim() + '» = ' + v);
       else out.unresolved = true;
     }
-    /* ۴) «همین که گفتی/گفتی چی بود» → آخرین موجودیت؛ بدون موجودیت = unresolved */
+    /* ۴) «همین که گفتی» — بازنویسی فقط با مقدار کوتاه؛ بلند → حاشیه */
     if (!out.resolved.length && /(همین|همون|همان|اون)\s?که\s?(گفتی|گفتیم|گفتید|بهم\s?گفتی)/i.test(s)) {
       const v = pickEntity('');
-      if (v) { s = s.replace(/(همین|همون|همان|اون)\s?که\s?(گفتی|گفتیم|گفتید|بهم\s?گفتی)/i, v).replace(/\s+/g, ' ').trim(); out.resolved.push({ from: 'ke-gofti', to: v, domain: 'last' }); }
+      if (_shortOk(v)) { s = s.replace(/(همین|همون|همان|اون)\s?که\s?(گفتی|گفتیم|گفتید|بهم\s?گفتی)/i, v).replace(/\s+/g, ' ').trim(); out.resolved.push({ from: 'ke-gofti', to: v, domain: 'last' }); }
+      else if (v) out.hints.push('ارجاع «همین/همون که گفتیم» = ' + v);
       else out.unresolved = true;
     }
     out.text = s;
     return out;
+  }
+
+  /* v0.69 — «به همین اسم/همون مخاطب/بهش» برای لاین‌های قطعی — مقدارِ قابل‌ارسال
+     برمی‌گرداند یا '' (تا لاین صادقانه سؤال کند؛ هیچ ارسالِ لفظیِ «همین اسم») */
+  function resolveRefTarget(text) {
+    const s = String(text || '');
+    if (!/(همین|همون|همان|بهش|براش|اونو?|اینو?)/i.test(s)) return '';
+    if (REF_NOUN_RE.test(s)) return state.entities.person || state.entities.msgTarget || '';
+    if (/\b(بهش|براش|برا\s?اش)\b/i.test(s) || /(?:^|\s)(بهش|براش|برا\s?اش)(?=$|[\s،؛».!؟?:،])/i.test(s)) return state.entities.msgTarget || '';
+    return '';
   }
 
   /* ============================================================
@@ -314,7 +394,7 @@
      ستون ۴ — بستهٔ زمینهٔ واحد برای مغز ابری
      ============================================================ */
   function turnsCtx(n) {
-    const t = state.turns.slice(0, Math.max(2, Math.min(10, n || 6)));
+    const t = state.turns.slice(0, Math.max(2, Math.min(12, n || 10)));
     if (!t.length) return '';
     const rows = t.map((x) => {
       const u = x.u ? 'کاربر: «' + x.u + '»' : '';
@@ -335,8 +415,13 @@
     if (e.model) rows.push('آخرین مدل/موضوع فنی: ' + e.model);
     if (e.query) rows.push('آخرین عبارت جستجو: ' + e.query);
     if (state.entities.wake) rows.push('کلمهٔ بیداری فعلی: ' + state.entities.wake);
+    /* v0.69 — واقعیت‌های اخیر (ریشهٔ «دو دقیقه بعد یادش رفته») */
+    if (e.note) rows.push('آخرین یادداشت ثبت‌شده: «' + e.note + '»');
+    if (e.msgTarget) rows.push('آخرین مقصد پیام: ' + e.msgTarget + (e.msgApp ? ' (در ' + e.msgApp + ')' : ''));
+    if (e.searchTitle) rows.push('آخرین نتیجهٔ سرچ: ' + e.searchTitle);
+    if (e.person) rows.push('آخرین نام مطرح‌شده: ' + e.person);
     if (!rows.length) return '';
-    return '[موجودیت‌های آخرین گفتگو — برای حل ارجاع و ادامهٔ موضوع:\n' + rows.join('\n') + '\n]';
+    return '[موجودیت‌ها و واقعیت‌های آخرین گفتگو — برای حل ارجاع و ادامهٔ موضوع — ارجاع «همین/همون/بهش» را از همین‌ها حل کن:\n' + rows.join('\n') + '\n]';
   }
   function lastUserText() {
     return (state.turns.find((x) => x.u) || {}).u || '';
@@ -348,10 +433,12 @@
     /* v0.66 — videoUrl به حل‌گر ارجاع می‌رسد (سرنخِ «همین ویدیو» بدون خراب‌کردن جمله) */
     const rr = resolveRefs(cmd, opts);
     const lane = laneOf(rr.text, opts);
-    return { text: rr.text, resolved: rr.resolved, unresolved: rr.unresolved, lane: lane.lane, reason: lane.reason };
+    /* v0.69 — متن «تمیز» برای لاین‌های قطعی؛ حاشیه‌ها جدا برمی‌گردند تا فقط
+       به بستهٔ AI بچسبند (ریشه: پسوندِ پرانتزی در typeOnceOf تایپ می‌شد) */
+    return { text: rr.text, hints: rr.hints || [], resolved: rr.resolved, unresolved: rr.unresolved, lane: lane.lane, reason: lane.reason };
   }
 
-  const api = { normFa, recordTurn, resolveRefs, laneOf, turnsCtx, entityCtx, lastUserText, prepare, reset, _state: state };
+  const api = { normFa, recordTurn, resolveRefs, resolveRefTarget, isGibberish, laneOf, turnsCtx, entityCtx, lastUserText, prepare, reset, _state: state };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVACore = api;
 })(typeof window !== 'undefined' ? window : null);
