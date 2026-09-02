@@ -3949,14 +3949,21 @@ ipcMain.handle('player:ctl', async (_e, p) => {
 async function playerLaunch(player, src, opts) {
   const scan = await playersScan();
   const entry = scan.list.find((x) => x.id === player);
-  if (!entry || !entry.exe) return { ok: false, player, error: 'پلیر پیدا نشد' };
+  if (!entry || !entry.exe) {
+    actLog('player launch FAIL: player=' + player + ' (نصب نیست) src=' + String(src || '').slice(0, 90), 'player', { ev: 'player', stage: 'launch', ok: false, player });
+    return { ok: false, player, error: 'پلیر پیدا نشد' };
+  }
   let feed = String(src || '');
   const isYt = /youtube\.com|youtu\.be/i.test(feed);
   /* v0.62 — یوتیوب در «همهٔ» پلیرها: اول استریم مستقیم با yt-dlp، بعد پخش
      (لینک خام یوتیوب = دیوار ربات/ورود در پارسر داخلی پلیرها) */
   if (isYt && opts && opts.ytdl) {
     const r = await resolveYtStream(feed);
-    if (!r.ok) return { ok: false, player, error: r.error || 'استریم یوتیوب استخراج نشد', ytFail: true };
+    if (!r.ok) {
+      actLog('player ytdl FAIL: player=' + player + ' err=' + String(r.error || '').slice(0, 120), 'player', { ev: 'player', stage: 'ytdl', ok: false, player, error: r.error });
+      return { ok: false, player, error: r.error || 'استریم یوتیوب استخراج نشد', ytFail: true };
+    }
+    actLog('player ytdl OK: stream resolved (' + String(r.url || '').slice(0, 60) + '…)', 'player', { ev: 'player', stage: 'ytdl', ok: true, player });
     feed = r.url;
   }
   /* v0.64 — تک‌لاین ویدیو: پخشِ جدید جایگزین قبلی است — پلیرهای ویدیوی باز
@@ -4000,10 +4007,14 @@ async function playerLaunchYt(player, src) {
     return { ok: false, player, noVideoId: true, error: 'این آدرس یوتیوب ویدیوی مشخصی ندارد' };
   }
   const r = await playerLaunch(player, src, { ytdl: true });
-  if (r.ok) return r;
+  if (r.ok) {
+    actLog('player launched: ' + player + ' (via ' + (r.via || 'spawn') + ')', 'player', { ev: 'player', stage: 'launch', ok: true, player, via: r.via || 'spawn' });
+    return r;
+  }
   /* v0.64 — فالبک مرورگر هم جایگزین است: پلیرهای قبلی بسته شوند تا دو لاین
      صدا همزمان نشود (فقط وقتی استریم حل نشد اینجا می‌رسیم) */
   try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
+  actLog('player fallback → browser: player=' + player + ' err=' + String(r.error || '').slice(0, 100), 'player', { ev: 'player', stage: 'fallback', ok: true, player, via: 'browser', error: r.error });
   try { shell.openExternal(src); return { ok: true, via: 'browser-fallback', player, fa: 'مرورگر', note: r.error || '' }; }
   catch (_) { return { ok: false, player, noYtdl: true, error: r.error || 'پخش ممکن نشد' }; }
 }
@@ -4014,6 +4025,9 @@ ipcMain.handle('player:open', async (_e, p) => {
   const wanted = String(q.player || 'default').toLowerCase();
   /* منبع: عبارت یوتیوب → حل ویدیو؛ لینک → نرمال؛ فایل محلی → همان */
   let src = String(q.src || '').trim();
+  /* v0.66 — مشاهده‌پذیری: خواستهٔ کاربر «لاگ رو بررسی کن» — خروجی پایپ‌لاین
+     پخش قبلاً در لاگ کاملاً نامرئی بود (۷ video_play خراب بدون هیچ ردپایی) */
+  actLog('player:open wanted=' + wanted + ' kind=' + (q.kind || 'url') + ' src=' + src.slice(0, 90), 'player', { ev: 'player', stage: 'open', wanted, src: src.slice(0, 120) });
   if (q.kind === 'query' && src) {
     const res = await ytResolve(src);
     if (!res.ok) return { ok: false, error: res.error };
@@ -4086,6 +4100,19 @@ const SEARCH_INTENT_RE = new RegExp(
   'i'
 );
 
+/* v0.66 — لغو درخواست AI (خواستهٔ صریح کاربر: «گاهی اوا هنگ میکنه و یک درخواست
+   زیاد طول میکشه کاربر بتونه کنسل کنه درخواستو»). پرچم epoch + AbortController
+   جاری: هر فراخوان ai:gemini جدید هر دو را تازه می‌کند؛ ai:cancel هر دو را
+   فعال می‌کند تا هم درخواستِ پرواز حذف شود هم چرخشِ ۱۲مدلی ادامه پیدا نکند. */
+let aiGenCancelEpoch = 0;
+let aiGenAbort = null;
+ipcMain.handle('ai:cancel', async () => {
+  aiGenCancelEpoch += 1;
+  try { if (aiGenAbort) aiGenAbort.abort(); } catch (_) { /* noop */ }
+  actLog('ai cancel requested (epoch=' + aiGenCancelEpoch + ')', 'ai', { ev: 'ai-cancel', epoch: aiGenCancelEpoch });
+  return { ok: true };
+});
+
 ipcMain.handle('ai:gemini', async (_e, p) => {
   const { key, model, messages, search, base } = p || {};
   /* v0.29 — رلهٔ اختیاری (سرور شخصی کاربر) برای دور زدن محدودیت سرزمینی گوگل */
@@ -4097,6 +4124,11 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   const _nowC = Date.now();
   if (_nowC < gemCooldown.netUntil) return { ok: false, error: gemCooldown.chatReason || 'شبکه در دسترس نیست — چند لحظه بعد دوباره امتحان کن' };
   if (_nowC < gemCooldown.chatUntil) return { ok: false, error: gemCooldown.chatReason || 'سهمیه موقتاً تمام شده — چند لحظه بعد دوباره امتحان کن' };
+  /* v0.66 — لغو: epoch این فراخوان + کنترلر قطع مشترک با تایم‌اوت */
+  const myEpoch = aiGenCancelEpoch;
+  const ac = new AbortController();
+  aiGenAbort = ac;
+  const isCancelled = () => aiGenCancelEpoch !== myEpoch;
   let lastErr = null;
   let sawNetFail = false; /* v0.26 */
   /* زنجیرهٔ مدل: اول مدلِ انتخابی کاربر، بعد جدیدترین فلاش (نام مستعار همیشه‌سبز)
@@ -4120,10 +4152,12 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
   let netFailStreak = 0; /* v0.47 — B11: دو شکستِ آنیِ شبکه‌ای = مسیر قطع است، نه مدل */
   for (const k of keys) {
     if (locBlocked) break;
+    if (isCancelled()) { aiGenAbort = null; return { ok: false, cancelled: true, error: 'درخواست لغو شد' }; } /* v0.66 */
     const queue = baseModels.slice();
     const hinted = new Set();
     let guard = 0;
     while (queue.length && guard++ < 24) {
+      if (isCancelled()) { aiGenAbort = null; return { ok: false, cancelled: true, error: 'درخواست لغو شد' }; } /* v0.66 */
       const mdl = queue.shift();
       try {
         const sys = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
@@ -4154,7 +4188,7 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': k }, /* v0.39 — هدر (هر دو فرمت کلید) */
             body: JSON.stringify(body),
-            signal: AbortSignal.timeout(35000), /* v0.21: ۶۰→۳۵ ثانیه */
+            signal: AbortSignal.any([AbortSignal.timeout(35000), ac.signal]), /* v0.21: ۶۰→۳۵ ثانیه؛ v0.66: + لغو کاربر */
           }
         );
         const j = await r.json().catch(() => ({}));
@@ -4186,8 +4220,11 @@ ipcMain.handle('ai:gemini', async (_e, p) => {
         if (!text) { lastErr = 'پاسخ خالی از Gemini رسید'; continue; }
         gemWorkingModel = mdl; /* v0.21 — حافظهٔ مدل کارا */
         gemCoolClear(); /* v0.47 — B09: موفقیت = کول‌داون‌ها پاک */
+        aiGenAbort = null;
         return { ok: true, text, model: mdl, keyIndex: keys.indexOf(k) };
       } catch (e) {
+        /* v0.66 — لغوِ کاربر خطای شبکه نیست: کول‌داون نساز، فوراً برگرد */
+        if (isCancelled()) { aiGenAbort = null; return { ok: false, cancelled: true, error: 'درخواست لغو شد' }; }
         lastErr = netErr(e);
         sawNetFail = sawNetFail || isNetFail(String(lastErr));
         /* v0.47 — B11: شکستِ آنیِ شبکه‌ای (fetch failed/timeout) یعنی مسیر قطع است —

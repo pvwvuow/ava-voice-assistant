@@ -218,6 +218,8 @@
     /* v0.46 — کلمهٔ بیدارباش قابل تغییر (در هر دو دیکشنری) */
     'set.stt.wakeWordText': ['کلمهٔ بیدارباش (اسم صدازدن)', 'Wake word (call name)'],
     'set.stt.wakeWordTextHint': ['اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود', 'If "Ava" is misheard or you prefer another name, change it here — phonetic matching adapts to any word'],
+    'set.stt.wakeWordNow': ['کلمهٔ فعال الان', 'Active wake word now'],
+    'set.stt.wakeWordNowHint': ['هر کلمه‌ای اینجا ببینی، همین الان فعالی است — با گفتن «آوا، از این به بعد … صدازم» یا همین کادر بالا عوض می‌شود', 'Whatever you see here is active right now — change it by voice or with the field above'],
     'toast.wakeWordSet': ['از این به بعد با گفتن «{x}» بیدار می‌شوم', 'From now on say "{x}" to wake me'],
     'set.ai.gemTest': ['تست اتصال جمنای', 'Test Gemini connection'],
     'set.ai.gemTestHint': ['کلید ذخیره‌شده را با یک درخواست واقعی امتحان می‌کند — خطای دقیق (کلید/سهمیه/سرزمین/شبکه) را همین‌جا می‌بینی', 'Sends a tiny real request with the saved key — shows the exact error (key/quota/region/network)'],
@@ -2831,7 +2833,9 @@
           else if (/بعدی/.test(c)) action = 'next';
           else if (/قبلی|قبل/.test(c)) action = 'prev';
           else if (/فول\s?اسکرین|تمام\s?صفحه/.test(c)) action = 'fullscreen';
-          else if (/ببند/.test(c)) action = 'close';
+          /* v0.66 — بستن با فعل‌های بیشتر (لاگ/خواستهٔ کاربر: «دستور بستن ویدیو
+             کار نمیکنه»): ببندش/بس بندش/بسش کن/خاموشش کن/قطعش کن/بخوابونش */
+          else if (/ببند|بس\s?بند|بسش\s?کن|بخوابون|خاموشش?\s?کن|قطعش?\s?کن|استاپش|استوپش|پایانش?\s?بده/i.test(c)) action = 'close';
           else if (/صدا|ولوم/ .test(c)) action = /زیاد|بلند|بالا/.test(c) ? 'volume_up' : 'volume_down';
           else action = 'play_pause'; /* پاز/توقف/استاپ/پلی کن/پخش کن/نگه دار/بی‌فعل */
           try {
@@ -2849,7 +2853,9 @@
          «باز» می‌کرد! حالا فعلِ بستن/خاموش/قطع/استاپ یک نیت واقعی است.
          v0.61 — پنجرهٔ شناور حذف شده؛ بستن یعنی بستن پلیری که آوا اجرا کرده. */
       {
-        k: /(یوتیوب|youtube|پخش|استریم)[^.]{0,12}(ببند|بس\s?بند|بس\s?کن|خاموش\s?کن|قطع\s?کن|استاپ|استوپ|پایان)|(ببندش?|خاموشش?\s?کن|قطعش?\s?کن|استاپش?|استوپش?)[^.]{0,12}(یوتیوب|youtube|پخش)|(از\s*)?(یوتیوب|youtube)[^.]{0,10}(بیرون|کافی)|close (the )?(youtube|player|stream)/i,
+        /* v0.66 — ویدیو/فیلم/کلیپ/پلیر هم به اسم‌های بستن اضافه شدند
+           («ویدیو رو ببند/خاموشش کن» قبلاً فقط با یوتیوب/پخش کار می‌کرد) */
+        k: /(یوتیوب|youtube|پخش|استریم|ویدیو|فیلم|کلیپ|پلیر|مدیا)[^.]{0,12}(ببند|بس\s?بند|بس\s?کن|بسش\s?کن|خاموشش?\s?کن|قطعش?\s?کن|استاپ|استوپ|پایان)|(ببندش?|بسش\s?کن|خاموشش?\s?کن|قطعش?\s?کن|استاپش?|استوپش?)[^.]{0,12}(یوتیوب|youtube|پخش|پلیر|ویدیو|فیلم|کلیپ)|(از\s*)?(یوتیوب|youtube)[^.]{0,10}(بیرون|کافی)|close (the )?(youtube|player|stream|video)/i,
         id: 'yt_close', t: 'بستن پخش', i: '#i-window', r: (c) => ytCloseReply(c),
       },
       /* --- v0.51 — دیکتهٔ یک‌باره بدون «اینجا»: «ببین بنویس …» / «اینو تایپ کن …» /
@@ -4274,6 +4280,23 @@
      (دومین ریشهٔ گزارش کاربر: «درخواست اجرا نمی‌شود»). */
   let cmdBusy = false;
   let cmdBusyAt = 0;
+  /* v0.66 — حافظهٔ «آخرین لینک ویدیو» (جلسه‌ای): از لَین URL / کلیپ‌بورد / پخش
+     موفق پر می‌شود و به «همین ویدیویی که یوتیوب دادم» جواب می‌دهد.
+     ریشهٔ لاگ v0.65: کاربر لینک داد، بعد گفت «همین ویدیو توی کی‌ام‌پلیر» و
+     هیچ حافظه‌ای از لینک نبود → video_play(youtube.com خالی). */
+  let lastVideoUrl = '';
+  /* v0.66 — نسل درخواست AI: با هر لغو/فرمان جدید جلو می‌رود؛ رانِ کهنه UI را دست نمی‌زند */
+  let aiRunEpoch = 0;
+  /* v0.66 — لغو درخواست در جریان (خواستهٔ کاربر: «کاربر بتونه کنسل کنه درخواستو»):
+     هم پرچمِ محلی (رانِ کهنه ساکت می‌شود) هم IPC به main (fetch واقعی abort شود
+     تا چرخش ۱۲مدلی و انتظار ۳۵ثانیه‌ای ادامه پیدا نکند) */
+  async function aiCancelRun(reason) {
+    aiRunEpoch += 1;
+    try { if (bridge && bridge.ai && bridge.ai.cancel) await bridge.ai.cancel(); } catch (_) { /* noop */ }
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { /* noop */ }
+    try { stopGoogleSpeak(); } catch (_) { /* noop */ }
+    try { actLog('ai run cancelled (' + (reason || 'user') + ')', 'ui', { ev: 'ai-cancel', reason: reason || 'user' }); } catch (_) { /* noop */ }
+  }
   /* v0.47 — B18: نتیجهٔ هر dispatch در لاگ ثبت می‌شود تا activity.log قابل دیباگ باشد
      (قبلاً «utterance total 3ms» هیچ دلالتی بر اجرا نداشت و دیباگ جلسات قبل را فلج کرد) */
   let _dispatchOutcome = '';
@@ -4376,10 +4399,12 @@
     /* v0.47 — B02: گارد busy قبل از actLog بود → تکرار کاربر در پنجرهٔ ~۳ثانیه‌ای
        بدون لاگ/UI/صدا دور ریخته می‌شد (ریشهٔ کل خانوادهٔ «۳ تا ۱۰ms و هیچ» در لاگ) */
     if (cmdBusyGuard()) {
-      _dispatchOutcome = 'busy-drop';
-      actLog('cmd busy-drop (previous still running): ' + raw.slice(0, 80));
-      cmdBusyHint();
-      return;
+      /* v0.66 — به‌جای دور ریختنِ بی‌صدای فرمان جدید (ریشهٔ لاگ v0.64:
+         «cmd busy-drop: پینگ dns هامو نشون بده» هرگز اجرا نشد)، فرمانِ جدید
+         برنده است: درخواستِ قبلی لغو و فرمانِ تازه اجرا می‌شود */
+      actLog('cmd busy → previous request cancelled by new command: ' + raw.slice(0, 80), 'ui', { ev: 'busy-cancel', next: raw.slice(0, 60) });
+      await aiCancelRun('new-command');
+      cmdBusy = false;
     }
     actLog('cmd: ' + raw.slice(0, 120));
     /* ---- اولویت: تایپ صوتی و DNS (قبل از قوانین دیگر) ---- */
@@ -4593,6 +4618,63 @@
     rcTag.textContent = t('tag.working');
 
     /* ============================================================
+       v0.66 — لَین قطعیِ URL ویدیو — همیشه قبل از هر لایهٔ دیگر
+       ------------------------------------------------------------
+       ریشهٔ لاگ v0.63/v0.65 (۷ بار): کاربر URL کامل داد
+       («https://www.youtube.com/watch?v=ob3pgk1PDTs پخشش کن»، «لینک +
+       توی کی ام پلیر») ولی جمله به مغز AI رفت و Gemini لینک را به
+       video_play(https://www.youtube.com/) خراب کرد. درمان ریشه‌ای: پیامِ
+       حاوی لینک ویدیو هرگز به AI نمی‌رود — لینک حرف‌به‌حرف از متنِ خام
+       بریده می‌شود، «پلیر مقصد» از همان جمله خوانده می‌شود، لینک در
+       حافظهٔ lastVideoUrl ثبت می‌شود و مستقیم پایپ‌لاین پخش می‌رود.
+       ============================================================ */
+    {
+      const _vl = (typeof AVAIntent !== 'undefined' && AVAIntent.videoUrlLane) ? AVAIntent.videoUrlLane(cmd) : null;
+      if (_vl && _vl.url) {
+        try { actLog('lane=video-url (deterministic): url=' + _vl.url.slice(0, 90) + ' player=' + (_vl.player || 'default'), 'ui', { ev: 'lane', lane: 'video-url', url: _vl.url, player: _vl.player || 'default' }); } catch (_) { /* noop */ }
+        _dispatchOutcome = 'video-url';
+        lastVideoUrl = _vl.url;
+        const _vr = await videoPlayReply(_vl.url, _vl.player, cmd);
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _vr.rep);
+        speak(_vr.rep);
+        pushHistory(cmd, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: cmd, via: 'video-url', intent: 'video_play', params: { q: _vl.url }, reply: _vr.rep }); } catch (_) { /* noop */ }
+        if (_vr.ok) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+        return;
+      }
+    }
+
+    /* ============================================================
+       v0.66 — فرمانِ صوتیِ لغو — «بی‌خیال / کنسل / لغو کن / ولش کن»
+       ------------------------------------------------------------
+       کاربر وقتی آوا معطلِ یک درخواستِ کند است دیگر اسیر آن نیست:
+       • کاری در جریان است → واقعاً لغو می‌شود (epoch + abort) + تأیید
+       • چیزی در جریان نیست → پاسخ کوتاه صادقانه، بدون رفتن به AI
+         (ریشهٔ لاگ: «نه بابا بی‌خیال» ۱ ثانیه منتظر جمینای ماند)
+       فقط فرمانِ خالصِ لغو (anchor به سرِ جمله) — «نه بابا بی‌خیال»
+       همچنان به گفتگوی عادی می‌رود.
+       ============================================================ */
+    if (/^(آوا[\s،,:-]*)?(بی\s?خیال|بیخیال|کنسل(\s?کن)?|لغو(\s?کن|\s?کردن)?|ولش\s?کن|منصرف\s?شدم|استاپ\s?کن|متوقفش?\s?کن)\s*$/i.test(raw)) {
+      const wasBusy = cmdBusy;
+      if (wasBusy) await aiCancelRun('voice');
+      _dispatchOutcome = wasBusy ? 'cancel' : 'cancel-idle';
+      setState('success');
+      rcTag.textContent = t('tag.done');
+      const _crep = wasBusy ? (LANG === 'en' ? 'Okay, cancelled.' : 'خیلی خب، لغو شد.') : (LANG === 'en' ? 'Nothing was running.' : 'الان چیزی در جریان نبود.');
+      typeText(rcReply, _crep);
+      speak(_crep);
+      pushHistory(raw, true);
+      cmdBusy = false;
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2200);
+      return;
+    }
+
+    /* ============================================================
        v0.61 — هستهٔ فهم (AVACore) — چهار ستون معماری جدید پاسخ‌دهی
        ----------------------------------------------------------
        ستون ۲: حل‌گر ارجاع — «همینو/همون آهنگ/اون مدل» با موجودیتِ آخرین
@@ -4610,6 +4692,7 @@
       if (window.AVACore) {
         const _vc = window.AVACore.prepare(cmd, {
           ai: aiConnected(),
+          videoUrl: (typeof lastVideoUrl === 'string' && lastVideoUrl) ? lastVideoUrl : '',
           apps: (typeof sysApps !== 'undefined' && sysApps.list) ? sysApps.list.map((a) => AVACore.normFa(String(a.name || '')).toLowerCase()) : [],
         });
         vcText = _vc.text || cmd;
@@ -6046,6 +6129,8 @@
     const owa = $('#optWakeAlways'); if (owa) owa.checked = !!settings.wakeAlways;
     /* v0.46 — کلمهٔ بیدارباش قابل تغییر */
     const owwt = $('#optWakeWordText'); if (owwt) owwt.value = String(settings.wakeWordText || 'آوا');
+    /* v0.66 — بجِ «کلمهٔ فعال الان»: هر تغییر (دستی/صوتی/AI) بلافاصله رویت است */
+    const wwn = $('#wakeWordNow'); if (wwn) wwn.textContent = String(settings.wakeWordText || 'آوا');
   }
 
   /* ============================================================
@@ -7101,6 +7186,8 @@
       toast(t('toast.wakeWordSet', { x: nw }), '#i-wave');
       actLog('wake word set: ' + nw);
     }
+    /* v0.66 — بجِ «کلمهٔ فعال الان» همیشه تازه شود (تایپ دستی هم) */
+    const elWwn2 = $('#wakeWordNow'); if (elWwn2) elWwn2.textContent = String(settings.wakeWordText || 'آوا');
   }
   const optWakeWordTextEl = $('#optWakeWordText');
   if (optWakeWordTextEl) {
@@ -8687,6 +8774,26 @@
     if (FA[raw]) return { action: FA[raw], arg: 0 };
     return null;
   }
+  /* v0.66 — هلپر مشترک پخش ویدیو (لَین URL + اکشن video_play هر دو همین یک
+     مسیر می‌روند): پلیر مقصد (درخواستی/پیش‌فرض) + بازخورد فارسیِ صادقانه.
+     خروجی { rep, ok } — ok فقط برای گیتِ صدای «انجام شد». */
+  async function videoPlayReply(vq, playerWanted, origCmdForLog) {
+    if (!bridge || !bridge.player || !bridge.player.open) return { rep: t('toast.onlyApp'), ok: false };
+    const want = String(playerWanted || '').trim();
+    try {
+      const res = await bridge.player.open({ player: want || 'default', kind: 'query', src: vq });
+      const where = (res && res.fa) ? ' — در ' + res.fa : '';
+      if (res && res.ok && res.via === 'browser-fallback') return { rep: LANG === 'en'
+        ? `Your player could not stream it — opened "${vq}" in the browser.`
+        : `پلیر نتوانست یوتیوب را پخش کند — «${vq}» را در مرورگر باز کردم.`, ok: true };
+      if (res && res.noVideoId) return { rep: LANG === 'en' ? 'That YouTube link has no video — copy the full video link and say it again.' : 'این آدرس یوتیوب ویدیوی مشخصی ندارد — لینک کامل ویدیو را کپی کن و دوباره بگو.', ok: false };
+      if (res && res.ok) return { rep: LANG === 'en' ? `Playing "${vq}"${where}.` : `«${vq}» را پخش کردم${where}.`, ok: true };
+      return { rep: LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`, ok: false };
+    } catch (e) {
+      try { actLog('videoPlayReply error: ' + String((e && e.message) || e).slice(0, 120)); } catch (_) { /* noop */ }
+      return { rep: LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.', ok: false };
+    }
+  }
   function parseDo(text) {
     const t = String(text || '');
     const m = t.match(/<<<DO>>>\s*([\s\S]*?)\s*<<<END>>>/);
@@ -8853,16 +8960,21 @@
                 vq = _u;
               }
             }
-            if (!bridge || !bridge.player || !bridge.player.open) { outs.push(t('toast.onlyApp')); break; }
-            try {
-              const res = await bridge.player.open({ player: 'default', kind: 'query', src: vq });
-              if (res && res.ok && res.via === 'browser-fallback') outs.push(LANG === 'en'
-                ? `Your player could not stream it — opened "${vq}" in the browser.`
-                : `پلیر نتوانست یوتیوب را پخش کند — «${vq}» را در مرورگر باز کردم.`);
-              else if (res && res.noVideoId) outs.push(LANG === 'en' ? 'That YouTube link has no video — copy the full video link and say it again.' : 'این آدرس یوتیوب ویدیوی مشخصی ندارد — لینک کامل ویدیو را کپی کن و دوباره بگو.');
-              else if (res && res.ok) outs.push(LANG === 'en' ? `Playing "${vq}"${res.fa ? ' in ' + res.fa : ''}.` : `«${vq}» را پخش کردم${res.fa ? ' — در ' + res.fa : ''}.`);
-              else outs.push(LANG === 'en' ? `Could not play: ${res && res.error || ''}` : `پخش نشد: ${res && res.error || ''}`);
-            } catch (_) { outs.push(LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'); }
+            /* v0.66 — دامنهٔ خام/بی‌شناسه + حافظهٔ آخرین لینک → همان لینک واقعی
+               (لاگ v0.65: «همین ویدیویی که یوتیوب دادم توی کی‌ام‌پلیر» بعد از
+               خرابی ctx-resolve به video_play(youtube.com) رسید و جایی رفت). */
+            if (bareYt && lastVideoUrl) {
+              actLog('video_play last-video memory → ' + lastVideoUrl.slice(0, 90));
+              vq = lastVideoUrl;
+            }
+            /* v0.66 — «پلیر مقصد»: «توی کی ام پلیر/با پات پلیر/در VLC» از همان
+               جملهٔ کاربر خوانده می‌شود و به player:open می‌رود (قبلاً همیشه
+               'default' بود — خواستهٔ کاربر: «با یک ویدیو پلیر دیگم پخش کنه»). */
+            const _pw = (typeof AVAIntent !== 'undefined' && AVAIntent.playerTargetOf) ? AVAIntent.playerTargetOf(String(origCmd || '')) : '';
+            if (_pw) actLog('video_play player-target: ' + _pw);
+            if (/(?:watch\?v=|youtu\.be\/|shorts\/|live\/|embed\/|\/v\/)/i.test(vq)) lastVideoUrl = vq;
+            const _vp = await videoPlayReply(vq, _pw, origCmd);
+            outs.push(_vp.rep);
             break;
           }
           case 'video_ctl': {
@@ -8954,6 +9066,7 @@
               settings.wakeWordText = wNew;
               store.set('wakeWordText', wNew);
               const elWw = $('#optWakeWordText'); if (elWw) elWw.value = wNew;
+              const elWwn = $('#wakeWordNow'); if (elWwn) elWwn.textContent = wNew; /* v0.66 — بج فعال */
               actLog('wake word set (AI): ' + wNew);
               outs.push(t('toast.wakeWordSet', { x: wNew }));
             } else {
@@ -9267,12 +9380,27 @@
       }
     } catch (_) { /* noop */ }
   }
+  /* v0.66 — دکمهٔ لغو (✕) روی چیپ فکر: یک‌بار در بوت سیم‌کشی می‌شود */
+  {
+    const _tc = document.getElementById('thinkCancel');
+    if (_tc) _tc.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      await aiCancelRun('button');
+    });
+  }
   async function aiHandleCommand(cmd, extraCtx) {
+    /* v0.66 — نسل‌بندی (epoch): اگر فرمان جدید فرمانِ در جریان را لغو کند،
+       رانِ کهنه هیچ UI ای (چیپ/کارت/وضعیت) نباید دست بزند */
+    const myEpoch = aiRunEpoch;
     thinkChipSet(true);
     try { return await aiHandleCommandRun(cmd, extraCtx); }
-    finally { thinkChipSet(false); }
+    finally { if (aiRunEpoch === myEpoch) thinkChipSet(false); }
   }
   async function aiHandleCommandRun(cmd, extraCtx) {
+    /* v0.66 — لغو: بعد از هر فراخوانِ شبکه‌ای چک می‌شود؛ رانِ لغوشده ساکت برمی‌گردد */
+    const myEpoch = aiRunEpoch;
+    const aiStale = () => aiRunEpoch !== myEpoch;
     setState('processing');
     statusText.textContent = t('ai.asking');
     body.classList.add('has-card');
@@ -9387,6 +9515,7 @@
     try {
       /* v0.52 — مسیر فکر-اول: فکر → در صورت نیاز تحقیق وب واقعی → دور دوم داده‌محور */
       const _bt = await aiThinkRound(cmd, extraCtx);
+      if (aiStale()) return; /* v0.66 — لغو شد؛ فرمان جدید در اختیار UI است */
       const r = _bt.r;
       if (r && r.ok) {
         /* v0.20 — اول پروتکل اجرای عملی (Function Calling): اگر AI تصمیم گرفت
@@ -9402,6 +9531,7 @@
           const _rp = await aiAsk(cmd, (extraCtx || '') +
             '\n[دور ترمیم — قانون مهم: در فکرِ قبلی خودت این درخواست را «فرمان/command» خواندی ولی بلوک DO ندادی. الان فقط یکی از این دو را بنویس: اگر واقعاً فرمانِ اجرایی است، فقط و فقط بلوک DO معتبر با act از فهرست مجاز؛ اگر اشتباه کردی و سوال/گفتگو بود، فکر را با question/سوال شروع کن و هیچ بلوکی نده.]');
           if (_rp && _rp.ok) {
+            if (aiStale()) return; /* v0.66 */
             const _rd = parseDo(_rp.text);
             if (_rd.do) {
               doRes = _rd; _rEff = _rp;
@@ -9421,12 +9551,14 @@
             const _rq = String(_rAct.value || '').trim().slice(0, 150);
             actLog('ai research: «' + _rq + '» → وب‌گردی واقعی، بعد دور دوم');
             const _rr = await bridge.ai.research(_rq).catch(() => null);
+            if (aiStale()) return; /* v0.66 */
             const _resTxt = (_rr && _rr.text) || '';
             const _ctx2 = (extraCtx || '') +
               '\n' + RESEARCH_CTX_MARK + ' برای «' + _rq + '»]' +
               (_resTxt ? '\n' + _resTxt : '\n(تحقیق وب ناموفق بود — صادقانه بگو و هیچ action نساز)') +
               '\n[پایان نتایج — حالا فقط بر پایهٔ همین نتایج بلوک DO نهایی بده؛ act=research دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز]';
             const _r2 = await aiAsk(cmd, _ctx2);
+            if (aiStale()) return; /* v0.66 */
             if (_r2 && _r2.ok) {
               const _do2 = parseDo(_r2.text);
               if (_do2.do) {
@@ -9512,6 +9644,7 @@
           }
         }
       } else {
+        if (aiStale()) return; /* v0.66 — رانِ لغوشده پیامِ شکست روی کارتِ فرمانِ جدید ننویسد */
         setState('success');
         statusText.textContent = r && r.needLogin ? t('ai.noConn') : t('ai.fail');
         rcTag.textContent = t('tag.ai');
@@ -9521,6 +9654,7 @@
         pushHistory(cmd, false);
       }
     } catch (_) {
+      if (aiStale()) return; /* v0.66 */
       setState('success');
       rcTag.textContent = t('tag.ai');
       typeText(rcReply, t('ai.err'));
@@ -9529,7 +9663,7 @@
       pushHistory(cmd, false);
     }
     handsFreeRearm();
-    cmdBusy = false;
+    if (!aiStale()) cmdBusy = false; /* v0.66 — رانِ لغوشده گاردِ فرمانِ جدید را نسوزاند */
     setTimeout(() => {
       if (state === 'success') {
         setState('idle');
@@ -9550,7 +9684,12 @@
     try {
       if (bridge && bridge.player && bridge.player.ctl) {
         const res = await bridge.player.ctl({ action: 'close', arg: 0 });
-        if (res && res.ok) return LANG === 'en' ? 'Closed the player.' : 'پلیر بسته شد.';
+        if (res && res.ok) {
+          /* v0.66 — شمارش صادقانه: «بستم (۲ پلیر)» تا کاربر بداند چند پلیر بسته شد */
+          const n = res && res.count ? Number(res.count) : 0;
+          if (LANG === 'en') return n > 1 ? `Closed ${n} players.` : 'Closed the player.';
+          return n > 1 ? `${faNum(String(n))} پلیر باز را بستم.` : 'پلیر بسته شد.';
+        }
       }
     } catch (_) { /* noop */ }
     return LANG === 'en'

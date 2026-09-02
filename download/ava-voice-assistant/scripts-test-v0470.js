@@ -75,7 +75,7 @@ ok(preloadSrc.includes("ack: (id) => ipcRenderer.invoke('reminders:ack', id)"), 
 
 /* ---------- 3) B02/B03/B18 — سکوت‌ها ---------- */
 console.log('\n[3] B02/B03/B18 — پایان «۳ تا ۱۰ms و هیچ»');
-ok(appSrc.includes("cmd busy-drop (previous still running)"), 'B02: drop در پنجرهٔ busy لاگ دارد (قبلاً کاملاً بی‌لاگ)');
+ok(appSrc.includes("cmd busy → previous request cancelled by new command") || appSrc.includes("cmd busy-drop (previous still running)"), 'B02: drop در پنجرهٔ busy لاگ دارد (قبلاً کاملاً بی‌لاگ؛ v0.66: لغوِ قبلی به‌جای دور ریختن)');
 ok(appSrc.includes('function cmdBusyHint()') && appSrc.includes("t('cmd.busy')"), 'B02: اعلان «دارم کار قبلی را انجام می‌دهم»');
 ok(/_dispatchOutcome = rule \? \('rule:' \+ \(rule\.id/.test(appSrc) && appSrc.includes('B02: پاسخ آماده شد'), 'B02: قفل busy وقتی پاسخ آماده است آزاد می‌شود، نه ۳ ثانیه بعد');
 ok(/statusText\.textContent = r && r\.needLogin[\s\S]{0,260}speak\(statusText\.textContent\)/.test(appSrc), 'B03: شکست AI صدادار شد');

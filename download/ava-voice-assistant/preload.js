@@ -105,6 +105,7 @@ contextBridge.exposeInMainWorld('ava', {
     zaiChat: (payload) => ipcRenderer.invoke('ai:zaiChat', payload),
     /* پرووایدرهای دیگر (v0.11): Gemini (با سرچ گوگل) و OpenAI — v0.12: چرخش چندکلیدی */
     gemini: (payload) => ipcRenderer.invoke('ai:gemini', payload),
+    cancel: () => ipcRenderer.invoke('ai:cancel'), /* v0.66 — لغو درخواست در جریان */
     /* v0.29 — تست اتصال جمنای از تنظیمات (درخواست واقعی کوچک + خطای فارسی دقیق) */
     gemTest: (payload) => ipcRenderer.invoke('ai:gemtest', payload),
     /* v0.39 — فهرست کامل مدل‌های چتِ جمنای برای انتخابگر تنظیمات */

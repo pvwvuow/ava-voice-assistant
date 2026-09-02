@@ -203,6 +203,8 @@
             <div class="think-chip" id="thinkChip" hidden>
               <span class="tdots"><i></i><i></i><i></i></span>
               <span id="thinkTxt">آوا داره فکر می‌کنه…</span>
+              <!-- v0.66 — لغو درخواست (خواستهٔ کاربر: «کاربر بتونه کنسل کنه درخواستو») -->
+              <button type="button" class="think-cancel" id="thinkCancel" title="لغو درخواست" aria-label="لغو درخواست">✕</button>
             </div>
             <div class="rc-row">
               <span class="rc-avatar"><svg class="ic"><use href="#i-mic"/></svg></span>
@@ -329,6 +331,13 @@
                   <span class="set-info"><b data-i18n="set.stt.wakeWordText">کلمهٔ بیدارباش (اسم صدازدن)</b><span data-i18n="set.stt.wakeWordTextHint">اگر «آوا» درست شنیده نمی‌شود یا اسم دیگری می‌پسندی عوضش کن (مثلاً «سارا») — تشخیص آوانگاری برای هر کلمه‌ای فعال می‌شود</span></span>
                   <input type="text" id="optWakeWordText" class="set-input w150" maxlength="20" placeholder="آوا" autocomplete="off" spellcheck="false" />
                 </label>
+                <!-- v0.66 — کلمهٔ بیدارباشِ فعال همیشه رویت باشد (خواستهٔ کاربر:
+                     «wake word جدیدی که کاربر گذاشته تو تنظیمات قابل رویت باشه»)
+                     — با صدای کاربر هم عوض شود، بلافاصله همین‌جا تازه می‌شود -->
+                <div class="set-row" id="wakeWordNowRow">
+                  <span class="set-info"><b data-i18n="set.stt.wakeWordNow">کلمهٔ فعال الان</b><span data-i18n="set.stt.wakeWordNowHint">هر کلمه‌ای اینجا ببینی، همین الان فعالی است — با گفتن «آوا، از این به بعد … صدازم» یا همین کادر بالا عوض می‌شود</span></span>
+                  <span class="wake-now-badge" id="wakeWordNow">آوا</span>
+                </div>
                 <!-- v0.34 — وضعیت سلامت بیدارباش: کاربر دیگر در تاریکی نماند که چرا کار نمی‌کند -->
                 <div class="set-row col" id="wakeHealthRow">
                   <span class="set-info"><b data-i18n="wake.healthTitle">وضعیت بیدارباش</b><span id="wakeHealth" data-i18n="wake.healthIdle">خاموش — سوییچ بالا را روشن کن</span></span>

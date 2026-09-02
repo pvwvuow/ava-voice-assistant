@@ -101,7 +101,7 @@ ok(/taughtLoad\(\)\.catch\(\(\) => \{ \/\* noop \*\/ \}\);/.test(appSrc), 'پی�
 
 /* ---------- [3] چیپ فکر کردن ---------- */
 section('3] چیپ «آوا داره فکر می‌کنه»');
-ok(/async function aiHandleCommand\(cmd, extraCtx\) \{\s*\n\s*thinkChipSet\(true\);\s*\n\s*try \{ return await aiHandleCommandRun\(cmd, extraCtx\); \}\s*\n\s*finally \{ thinkChipSet\(false\); \}\s*\n\s*\}/.test(appSrc), 'رپر try/finally دور کل سفر AI — هیچ مسیر فراری');
+ok(/async function aiHandleCommand\(cmd, extraCtx\) \{[\s\S]{0,220}thinkChipSet\(true\);[\s\S]{0,220}try \{ return await aiHandleCommandRun\(cmd, extraCtx\); \}[\s\S]{0,220}finally \{ if \(aiRunEpoch === myEpoch\) thinkChipSet\(false\); \}\s*\n\s*\}/.test(appSrc), 'رپر try/finally دور کل سفر AI — هیچ مسیر فراری (v0.66: گارد epoch برای لغو)');
 ok(/async function aiHandleCommandRun\(cmd, extraCtx\) \{/.test(appSrc), 'بدنهٔ اصلی به aiHandleCommandRun تغییر نام کرد');
 ok(/function thinkChipSet\(on\) \{/.test(appSrc) && /el\.hidden = !on;/.test(appSrc) && /tx\.textContent = t\('ai\.thinking'\);/.test(appSrc), 'thinkChipSet — نمایش/پنهان + متن i18n');
 ok(/id="thinkChip" hidden/.test(idxSrc) && /class="tdots"/.test(idxSrc) && /id="thinkTxt"/.test(idxSrc), 'DOM چیپ در کارت پاسخ (کوچولو و hidden پیش‌فرض)');

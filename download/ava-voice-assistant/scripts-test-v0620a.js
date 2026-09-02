@@ -92,7 +92,7 @@ section('[3] resolveYtStream — استریم مستقیم + شفای yt-dlp ک�
 /* ============ [4] نردبان فالبک مرورگر ============ */
 section('[4] playerLaunchYt — بن‌بست ندارد (پلیر یا مرورگر)');
 ok(/async function playerLaunchYt\(player, src\)/.test(mainSrc), 'playerLaunchYt تعریف شده است');
-ok(/if \(r\.ok\) return r;[\s\S]{0,400}shell\.openExternal\(src\); return \{ ok: true, via: 'browser-fallback'/.test(mainSrc), 'آخرین طبقه: مرورگر با نتیجهٔ صادقانهٔ browser-fallback');
+ok(/await playerLaunch\(player, src, \{ ytdl: true \}\);[\s\S]{0,900}shell\.openExternal\(src\); return \{ ok: true, via: 'browser-fallback'/.test(mainSrc), 'آخرین طبقه: مرورگر با نتیجهٔ صادقانهٔ browser-fallback');
 ok(mainSrc.includes("if (d.action === 'no-ytdlp' || d.action === 'spawn-ytdlp') {\n    /* v0.62 — یک لاین"), 'player:open: هر دو اقدام تصمیم به یک لاین می‌روند');
 ok(/if \(d\.action === 'no-ytdlp' \|\| d\.action === 'spawn-ytdlp'\) return playerLaunchYt\(d\.player, url\);/.test(mainSrc), 'openWithDefaultPlayer: همان یک لاین (youtube_play/sys-run هم)');
 ok(/if \(isYt && opts && opts\.ytdl\) \{\s*\n\s*const r = await resolveYtStream\(feed\);/.test(mainSrc), 'playerLaunch: یوتیوب اول حل می‌شود، بعد پخش');

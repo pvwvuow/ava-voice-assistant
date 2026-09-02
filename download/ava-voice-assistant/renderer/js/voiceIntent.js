@@ -393,7 +393,59 @@
     return rest.length >= 1 ? rest.slice(0, 300) : '';
   }
 
-  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf };
+  /* ============================================================
+     v0.66 — لَین قطعیِ URL ویدیو + تشخیص «پلیر مقصد»
+     ------------------------------------------------------------
+     ریشهٔ لاگ v0.63/v0.65: کاربر URL کامل می‌دهد
+     («https://www.youtube.com/watch?v=ob3pgk1PDTs پخشش کن» / لینک + «توی کی
+     ام پلیر») ولی جمله به مغز AI می‌رود و Gemini لینک را به
+     video_play(https://www.youtube.com/) خراب می‌کند (۷ بار در لاگ).
+     درمان ریشه‌ای: پیامِ حاوی لینکِ ویدیو هرگز به AI نمی‌رود — لینک حرف‌به‌حرف
+     (case-sensitive، نرمالایز ممنوع) از متنِ خام بریده می‌شود و «پلیر مقصد»
+     (توی/با + X پلیر) از همان جمله تشخیص داده می‌شود.
+     URL از متنِ نرمالایزِ فارسی بریده نمی‌شود چون نرمالایز حروف لاتینِ
+     شناسهٔ ویدیو را خراب می‌کند (id یوتیوب case-sensitive است).
+     ============================================================ */
+  const VIDEO_URL_RE = /https?:\/\/[^\s"'<>«»،؛]+/i;
+  const YT_VIDEO_URL_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=[\w-]{5,}|shorts\/[\w-]{5,}|live\/[\w-]{5,}|embed\/[\w-]{5,})|youtu\.be\/[\w-]{5,})/i;
+  const GENERIC_MEDIA_URL_RE = /^https?:\/\/[^\s]+\.(?:mp4|webm|mkv|avi|mov|m4v|mp3|m4a)(?:\?[^\s]*)?$/i;
+  const PLAY_VERB_RE = /(پخشش?\s?کن|پلی\s?کن|پلاش\s?کن|بذار\s?(پخش|پلی|بزن)|پخش\s?بده|بگذار\s?پخش|پخش\s?شه|پلی\s?شه|بازش\s?کن|پخش\b|play\b|باز\s?کن)/i;
+  function videoUrlOf(rawCmd) {
+    const s = String(rawCmd || '');
+    const m = s.match(VIDEO_URL_RE);
+    if (!m) return '';
+    /* علائم پایانیِ جمله از دنبالهٔ URL بریده شوند (ویرگول/نقطهٔ پایان حرف) */
+    let url = m[0].replace(/[.,؛;:!»)\]…]+$/, '');
+    const isYt = YT_VIDEO_URL_RE.test(url);
+    const isMedia = GENERIC_MEDIA_URL_RE.test(url);
+    if (!isYt && !isMedia) {
+      /* لینکِ غیرویدیویی فقط با فعلِ پخشِ واقعی لَین می‌شود؛ «باز کن» کافی نیست
+         («آدرس دیوار رو باز کن» باید open_url بماند نه پلیر) */
+      const around = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length)).trim();
+      if (!/(پخش|پلی|play)/i.test(around)) return '';
+    }
+    return url;
+  }
+  function playerTargetOf(rawCmd) {
+    /* فقط ZWNJ→فاصله (کی‌ام‌پلیر → کی ام پلیر) — حروف لاتین دست‌نخورده */
+    const s = String(rawCmd || '').replace(/[\u200c\u200f]/g, ' ');
+    /* اَشکال فارسی/انگلیسی/نویزِ STT (لاگ: «کمپ پلیر» = کی‌ام‌پلیر شنیده شد) */
+    if (/پات\s?پلیر|پت\s?پلیر|pot\s?player|potplayer/i.test(s)) return 'potplayer';
+    if (/کی\s?ام\s?پلیر|کی\s?ام|کمپ\s?پلیر|کم\s?پلیر|km\s?player|kmplayer|kmp\b/i.test(s)) return 'kmplayer';
+    if (/وی\s?ال\s?سی|vlc/i.test(s)) return 'vlc';
+    if (/ام\s?پی\s?سی|mpc[\s-]?(hc|be)?/i.test(s)) return 'mpc';
+    if (/ام\s?پی\s?وی|mpv/i.test(s)) return 'mpv';
+    if (/ویندوز\s?مدیا|windows\s?media|wmplayer/i.test(s)) return 'wmplayer';
+    /* «توی پلیر X» لخت بدون اسمِ خاص = پیش‌فرض */
+    return '';
+  }
+  function videoUrlLane(rawCmd) {
+    const url = videoUrlOf(rawCmd);
+    if (!url) return null;
+    return { url, player: playerTargetOf(rawCmd) };
+  }
+
+  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, playerTargetOf, videoUrlLane };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

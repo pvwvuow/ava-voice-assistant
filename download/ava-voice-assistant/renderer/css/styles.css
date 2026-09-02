@@ -469,13 +469,54 @@ body.has-card #wave { height: 0; opacity: 0; }
   position: absolute; top: -9px; inset-inline-end: 16px;
   display: inline-flex; align-items: center; gap: 7px;
   padding: 1px 10px; border-radius: 999px;
-  background: rgba(59, 130, 246, 0.14); color: #93c5fd;
+  background: rgba(30, 41, 59, 0.92); color: #93c5fd;
   border: 1px solid rgba(96, 165, 250, 0.4);
   font-size: 10.5px; line-height: 1.7; white-space: nowrap;
   animation: thinkPulse 1.6s ease-in-out infinite;
   pointer-events: none;
+  isolation: isolate;
 }
+/* v0.66 — بوردر رنگین‌کمانی بانمک دور چیپ فکر کردن (خواستهٔ صریح کاربر:
+   «یک افکت رنگارنگ بانمک دور سفید و زرد و بنفش دور thinking border بیاد»)
+   — حلقهٔ conic-gradient چرخان سفید→زرد→بنفش + هالهٔ نرم بیرونی؛
+   @property در Chromium 130 (Electron 33) پشتیبانی می‌شود. */
+@property --thinkAng { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.think-chip::before {
+  content: ''; position: absolute; inset: -2.5px; border-radius: 999px;
+  z-index: -1;
+  background: conic-gradient(from var(--thinkAng),
+    rgba(255, 255, 255, 0.95), rgba(253, 224, 71, 0.95), rgba(192, 132, 252, 0.95), rgba(255, 255, 255, 0.95));
+  animation: thinkSpin 2.2s linear infinite;
+}
+.think-chip::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 999px;
+  z-index: -2;
+  background: conic-gradient(from var(--thinkAng),
+    rgba(255, 255, 255, 0.45), rgba(253, 224, 71, 0.45), rgba(192, 132, 252, 0.45), rgba(255, 255, 255, 0.45));
+  filter: blur(6px); opacity: 0.85;
+  animation: thinkSpin 2.2s linear infinite;
+}
+@keyframes thinkSpin { to { --thinkAng: 360deg; } }
 .think-chip[hidden] { display: none; }
+/* v0.66 — دکمهٔ لغو (✕) روی چیپ فکر — کلیک‌پذیر با آن‌که چیپ pointer-events:none است */
+.think-cancel {
+  pointer-events: auto; cursor: pointer;
+  width: 15px; height: 15px; margin-inline-start: 2px;
+  border-radius: 50%; border: none;
+  background: rgba(148, 163, 184, 0.25); color: inherit;
+  font-size: 9px; line-height: 1; display: grid; place-items: center;
+  padding: 0;
+}
+.think-cancel:hover { background: rgba(248, 113, 113, 0.4); color: #fff; }
+/* v0.66 — بجِ «کلمهٔ فعال الان» در پنل بیدارباش تنظیمات */
+.wake-now-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 14px; border-radius: 999px;
+  background: rgba(52, 211, 153, 0.14); color: #6ee7b7;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  font-size: 12.5px; font-weight: 700; line-height: 1.8;
+  white-space: nowrap;
+}
 .tdots { display: inline-flex; gap: 3px; align-items: center; }
 .tdots i {
   width: 4px; height: 4px; border-radius: 50%;
