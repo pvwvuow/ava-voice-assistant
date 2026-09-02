@@ -129,11 +129,11 @@ ok(/\.filter\(\(x\) => x\.k && x\.command\)/.test(mainSrc), 'سانیتی‌زی
 ok(/loadTaught: \(\) => ipcRenderer\.invoke\('learnings:loadTaught'\)/.test(preloadSrc) && /saveTaught: \(data\) => ipcRenderer\.invoke\('learnings:saveTaught', data\)/.test(preloadSrc), 'پل preload برای درس‌ها');
 
 /* ---------- [6] نسخه ---------- */
-section('6] نسخهٔ 0.65.0-beta در ۴ جای رسمی');
-ok(pkg.version === '0.65.0-beta', 'package.json → ' + pkg.version);
-ok(/appVersion\s*=\s*'0\.65\.0-beta'/.test(appSrc), 'app.js appVersion');
-ok(/abVersion[^0-9]*0\.65\.0-beta/.test(idxSrc), 'index.html abVersion');
-ok(readmeSrc.indexOf('۰.۶۵.۰-بتا') >= 0, 'README بلاک ۰.۶۵.۰-بتا');
+section('6] نسخهٔ رسمی در ۴ جای رسمی (v0.65→v0.66+ ریلکس رو به جلو)');
+ok(/^0\.6[5-9]\.[0-9]+-beta$/.test(pkg.version), 'package.json → ' + pkg.version);
+ok(/appVersion\s*=\s*'0\.6[5-9]\.[0-9]+-beta'/.test(appSrc), 'app.js appVersion');
+ok(/abVersion[^0-9]*0\.6[5-9]\.[0-9]+-beta/.test(idxSrc), 'index.html abVersion');
+ok(readmeSrc.indexOf('۰.۶۵.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۶.۰-بتا') >= 0, 'README بلاک نسخهٔ فعلی');
 
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');

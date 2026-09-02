@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
-const KEY = process.env.GEMINI_KEY || process.argv[2] || '';
+const KEY = process.env.GEMINI_KEY || (process.argv.slice(2).find((a) => !a.startsWith('--')) || '');
 if (!KEY) { console.error('کلید جیمینای داده نشد — GEMINI_KEY=... node scripts/brain-gemini-test.mjs'); process.exit(2); }
 
 const appSrc = fs.readFileSync(path.join(ROOT, 'renderer/js/app.js'), 'utf8');
@@ -109,9 +109,38 @@ const CASES = [
   ['ویدیو رو دیگه همیشه رویر نباشه', ['video_ctl'], 'unpin'],
   ['ویدیو رو ببر گوشه پایین چپ', ['video_ctl'], 'move'],
   ['ویدیو رو ببر وسط صفحه', ['video_ctl'], 'move'],
+  /* ---- v0.66 — ماتریس تکمیلی: جمله‌های تازهٔ لاگ v0.65 + پیام‌رسانی/بستن ---- */
+  ['همین ویدیویی که یوتیوب دادم به تو برا من توی کی ام پلیر پخشش کن', ['video_play'], null],
+  ['ویدیو رو خاموشش کن', ['video_ctl'], 'close'],
+  ['پلیر رو ببندش', ['video_ctl'], 'close'],
+  ['اپسیتی ویدیو رو یکم کم کن', [], null],
+  ['دیسکورد رو میوت کن', ['discord_mute'], null],
+  ['به علی در تلگرام پیام بده که سلام', ['open_url'], null],
+  ['لینک یوتیوب کپی کردم برام توی ویدیو پلیر پخشش کن', ['video_play'], '__clipboard__'],
 ];
 
 async function main() {
+  /* v0.66 — حالت auth-only: از سرورهای بلاکِ محل هم کار می‌کند — فقط اعتبارِ
+     کلید + کشف مدل را می‌سنجد (ریشه: کلید AQ.Ab8… کاربر با هدر x-goog-api-key
+     احراز هویت شد ولی generateContent به محل حساس است). اجرا:
+     node scripts/brain-gemini-test.mjs --auth-only کلید_تو */
+  if (process.argv.includes('--auth-only')) {
+    /* نکته: endpoint مدلِ بازنشسته (gemini-2.0-flash-lite) برای پروبِ auth —
+       404 «model no longer available» یعنی لایهٔ احراز هویت کلید را پذیرفت
+       (کلید AQ.Ab8… فقط با هدر x-goog-api-key پذیرفته می‌شود)؛ 400 «API key
+       not valid» = کلید خراب؛ 400 «User location» = کلید سالم، مسیر فقط-محل. */
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'hi' }] }] }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const t = await res.text();
+    if (res.status === 404) { console.log('AUTH=OK  کلید معتبر است (لایهٔ احراز هویت پذیرفت). تستِ کامل تولید را روی سیستم خودت اجرا کن: node scripts/brain-gemini-test.mjs کلید_تو'); process.exit(0); }
+    if (/API key not valid/i.test(t)) { console.error('AUTH=FAIL  کلید نامعتبر است'); process.exit(1); }
+    if (/User location/i.test(t)) { console.log('AUTH=OK-LOCATION  کلید سالم است؛ از این سرور فقط مسیر محل-بسته در دسترس است. تست کامل روی سیستم خودت.'); process.exit(0); }
+    console.error('AUTH=UNKNOWN  HTTP ' + res.status + ' — ' + t.slice(0, 160)); process.exit(1);
+  }
   /* انتخاب مدل اولین که جواب داد */
   for (const m of MODELS) {
     try { MODEL = m; await gemini('سلام'); console.log('مدل فعال: ' + m + '\n'); break; }
