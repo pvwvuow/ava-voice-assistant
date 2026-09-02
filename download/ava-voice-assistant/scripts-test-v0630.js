@@ -188,5 +188,5 @@ ok(readmeSrc.indexOf('۰.۶۳.۰-بتا') >= 0, 'README تیتر/بلاک ۰.۶�
 
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');
-console.log('PASS: ' + pass + '  FAIL: ' + fail);
+console.log('PASS=' + pass + ' FAIL=' + fail); /* v0.63 — فرمت قراردادی رانر باتری («N fail» کولن‌دار به‌عنوان شکست پارس می‌شد) */
 process.exit(fail ? 1 : 0);
