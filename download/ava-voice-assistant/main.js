@@ -1872,6 +1872,28 @@ ipcMain.handle('notes:save', (_e, arr) => {
   return writeJsonAtomic(f, arr.slice(0, 200)); /* v0.38.1 — اتمیک */
 });
 
+/* ============================================================
+   v0.70 — هستهٔ حافظه (فاز ۰ طرح بازنویسی): ava-memory.json پایدار
+   «یادت باشه/از این به بعد/ذخیره کن» حالا یک خزانهٔ واقعی دارد.
+   جدا از settings تا سیو تنظیمات هرگز فکت‌ها را نبلعد (الگوی notes).
+   ============================================================ */
+function memoryFile() {
+  try { return path.join(app.getPath('userData'), 'ava-memory.json'); } catch (_) { return ''; }
+}
+ipcMain.handle('mem:load', () => {
+  const f = memoryFile();
+  if (!f) return null;
+  try {
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return (j && typeof j === 'object') ? j : null;
+  } catch (_) { return null; }
+});
+ipcMain.handle('mem:save', (_e, data) => {
+  const f = memoryFile();
+  if (!f || !data || typeof data !== 'object') return false;
+  return writeJsonAtomic(f, data);
+});
+
 /* v0.60 (A22) — هندلر مردهٔ 'sys:type-text' (با خط تیره) حذف شد؛ کانال زندهٔ
    همین قابلیت 'sys:typeText' است (main.js/preload.js/renderer) و هیچ
    فراخوانی‌کننده‌ای برای نسخهٔ خط‌تیره وجود نداشت (grep-راستی‌آزمایی شد).
@@ -5425,8 +5447,8 @@ namespace AvaTg2 {
   }
 }
 '@
-$VKNAME = @{ 'ctrl' = 0x11; 'f' = 0x46; 'v' = 0x56; 'enter' = 0x0D; 'esc' = 0x1B }
-$SCNAME = @{ 'ctrl' = 0x1D; 'f' = 0x21; 'v' = 0x2F; 'enter' = 0x1C; 'esc' = 0x01 }
+$VKNAME = @{ 'ctrl' = 0x11; 'f' = 0x46; 'k' = 0x4B; 'down' = 0x28; 'v' = 0x56; 'enter' = 0x0D; 'esc' = 0x1B }
+$SCNAME = @{ 'ctrl' = 0x1D; 'f' = 0x21; 'k' = 0x25; 'down' = 0x50; 'v' = 0x2F; 'enter' = 0x1C; 'esc' = 0x01 }
 $tgProcs = @(Get-Process -Name Telegram,TelegramDesktop,64Gram,Unigram -ErrorAction SilentlyContinue)
 if (-not $tgProcs -or $tgProcs.Count -eq 0) { Write-Output 'ERR:NO_TG'; exit }
 # پنجرهٔ واقعی حتی وقتی MainWindowHandle=0 است: EnumWindows روی همهٔ PIDها —
@@ -5504,6 +5526,37 @@ function Test-TgMatch($title, $cand) {
   $cl = ($cn -replace ' ','')
   if ($cl.Length -ge 4 -and $tl.Contains($cl)) { return $true }
   return $false
+}
+
+# v0.70 — خواندن نتایج سرچِ گلوبال با UIA و انتخاب بهترین تطبیق نام —
+# به‌جای Enter کورکورانهٔ اولین نتیجه (ریشهٔ لاگ: پیام به غریبه رفت)
+function Read-TgBest($cand) {
+  $best = -1; $bestScore = 0
+  try {
+    Add-Type -AssemblyName UIAutomationClient
+    Add-Type -AssemblyName UIAutomationTypes
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    $lc = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List)
+    $lists = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $lc)
+    foreach ($l in $lists) {
+      $items = $l.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
+      if ($items.Count -lt 2) { continue }
+      $i = 0
+      foreach ($it in $items) {
+        $nm = ''
+        try { $nm = $it.Current.Name } catch { }
+        $i++
+        if (-not $nm) { continue }
+        $sc = 0
+        if ($nm -eq $cand) { $sc = 100 }
+        elseif ($nm.ToLower().StartsWith($cand.ToLower())) { $sc = 80 }
+        elseif ($nm.ToLower().Contains($cand.ToLower())) { $sc = 60 }
+        if ($sc -gt $bestScore) { $bestScore = $sc; $best = $i - 1 }
+      }
+      break
+    }
+  } catch { return -1 }
+  return $best
 }
 
 function Focus-TgHard {
@@ -5598,15 +5651,26 @@ if ($Username) {
     Start-Sleep -Milliseconds 200
     Send-Combo 'esc'
     Start-Sleep -Milliseconds 250
-    Send-Combo 'ctrl,f'
-    Start-Sleep -Milliseconds 800
+    # v0.70 — سرچ گلوبال با Ctrl+K؛ Ctrl+F فقط «داخل چتِ فعلی» جستجو می‌کرد و
+    # تیتر پنجره هرگز عوض نمی‌شد (ریشهٔ سه ERR:TG_NO_MATCH لاگ Ali-HK)
+    Send-Combo 'ctrl,k'
+    Start-Sleep -Milliseconds 900
     try { Set-Clipboard -Value $v -ErrorAction Stop | Out-Null } catch { }
     $cok = $false
     try { $gv = Get-Clipboard -Raw; $cok = ($gv -eq $v) } catch { }
     if (-not $cok) { Write-Output 'DBG:CLIP_FAIL_V'; continue }
     Send-Combo 'ctrl,v'
-    Start-Sleep -Milliseconds 1400
-    Send-Combo 'enter'
+    Start-Sleep -Milliseconds 1500
+    # v0.70 — انتخاب نتیجه با UIA (بهترین تطبیق)؛ نشد → اولین نتیجه با Enter
+    $pick = Read-TgBest $v
+    if ($pick -ge 0) {
+      Write-Output ('DBG:UIAPICK=' + $pick)
+      for ($d = 0; $d -le $pick; $d++) { Send-Combo 'down'; Start-Sleep -Milliseconds 120 }
+      Send-Combo 'enter'
+    } else {
+      Write-Output 'DBG:UIA_MISS'
+      Send-Combo 'enter'
+    }
     Start-Sleep -Milliseconds 1200
     $tb2 = New-Object System.Text.StringBuilder 512
     try { [AvaTg2.W]::GetWindowText($hwnd, $tb2, 512) | Out-Null } catch { }

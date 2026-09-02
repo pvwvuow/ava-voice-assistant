@@ -130,7 +130,7 @@ ok(/loadTaught: \(\) => ipcRenderer\.invoke\('learnings:loadTaught'\)/.test(prel
 
 /* ---------- [6] نسخه ---------- */
 section('6] نسخهٔ رسمی در ۴ جای رسمی (v0.65→v0.66+ ریلکس رو به جلو)');
-ok(/^0\.6[5-9]\.[0-9]+-beta$/.test(pkg.version), 'package.json → ' + pkg.version);
+ok(/^0\.[6-9][0-9]?\.[0-9]+-beta$/.test(pkg.version), 'package.json → ' + pkg.version); /* v0.70 — forward-relax */
 ok(/appVersion\s*=\s*'0\.6[5-9]\.[0-9]+-beta'/.test(appSrc), 'app.js appVersion');
 ok(/abVersion[^0-9]*0\.6[5-9]\.[0-9]+-beta/.test(idxSrc), 'index.html abVersion');
 ok(readmeSrc.indexOf('۰.۶۵.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۶.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۷.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۹.۰-بتا') >= 0, 'README بلاک نسخهٔ فعلی'); /* v0.68→0.69 forward-relax */

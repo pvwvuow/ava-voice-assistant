@@ -160,7 +160,7 @@ ok(MM.detectInstalled([{ name: 'Eitaa Messenger' }]).includes('eitaa'), 'detectI
 
 /* ============ ۷) نسخه ============ */
 section('نسخه');
-ok(/^0\.6[89]\.0-beta$/.test(pkg.version), 'package.json = 0.68/0.69-beta'); /* v0.69 forward-relax */
+ok(/^0\.[6-9][0-9]?\.0-beta$/.test(pkg.version), 'package.json = 0.68/0.69-beta'); /* v0.69 forward-relax */
 
 console.log('\n============================================');
 console.log(`نتیجه: ${pass} PASS / ${fail} FAIL`);

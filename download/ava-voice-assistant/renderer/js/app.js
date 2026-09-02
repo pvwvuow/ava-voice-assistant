@@ -4800,6 +4800,38 @@
     rcTag.textContent = t('tag.working');
 
     /* ============================================================
+       v0.70 — تأییدِ در انتظار (کار حساس مغز: contact_send)
+       کاربر «بله/بفرست» گفت → ارسال واقعی؛ «نه/کنسل» → هیچ.
+       ============================================================ */
+    if (_pendingConfirm) {
+      const _yes = /^(بله|بفرست|اره|آره|اوکی|اکی|باشه|تأیید|تایید|همینه|همینو بفرست|بزن بریم|یواش)\s*[.!.]*$/i.test(raw.trim());
+      const _no = /^(نه|نخیر|کنسل|بی\s?خیال|بیخیال|لغو|نفرست|ولش\s?کن)\s*[.!.]*$/i.test(raw.trim());
+      if (_yes || _no) {
+        const pc = _pendingConfirm;
+        _pendingConfirm = null;
+        let _crep2 = '';
+        if (_yes) {
+          _crep2 = await brainSendResolved(pc.action);
+        } else {
+          _crep2 = LANG === 'en' ? 'Okay, nothing was sent.' : 'باشه، چیزی نفرستادم.';
+        }
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _crep2);
+        speak(_crep2);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: _yes ? 'confirm-send' : 'confirm-cancel', intent: 'contact_send', params: { msgTarget: String((pc.action.params && pc.action.params.name) || '') }, reply: _crep2 }); } catch (_) { /* noop */ }
+        if (_yes && !/انجام نشد|Could not/.test(String(_crep2))) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+        return;
+      }
+      /* جملهٔ دیگر → تأیید منقضی؛ مسیر عادی ادامه می‌یابد */
+      _pendingConfirm = null;
+    }
+
+    /* ============================================================
        v0.66 — لَین قطعیِ URL ویدیو — همیشه قبل از هر لایهٔ دیگر
        ------------------------------------------------------------
        ریشهٔ لاگ v0.63/v0.65 (۷ بار): کاربر URL کامل داد
@@ -4983,6 +5015,41 @@
         setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
         return;
       }
+    }
+
+    /* ============================================================
+       v0.70 — گارد لَین آموزش/حافظه — قبل از همهٔ لَین‌های اجرایی
+       ------------------------------------------------------------
+       ریشهٔ لاگ 17:05:10: «آفرین از این به بعد هر وقت گفتم به میلاد پیام
+       بده…» به گرامر پیام افتاد (target=«بعد هر وقت»!) و تقریباً به
+       غریبه پیام می‌رفت. جمله‌های «از این به بعد/هر وقت گفتم/یادت باشه/
+       ذخیره کن» حالا هرگز به گرامرهای اجرایی نمی‌افتند؛ به مغز واحد با
+       actهای memory_save/contact_save می‌روند. آفلاین: فکتِ خام ذخیره
+       و صادقانه گفته می‌شود.
+       ============================================================ */
+    if (typeof AVABrain !== 'undefined' && AVABrain.isTeach(raw)) {
+      _dispatchOutcome = 'teach';
+      try { actLog('lane=teach (guard): «' + raw.slice(0, 60) + '»', 'ui', { ev: 'lane', lane: 'teach' }); } catch (_) { /* noop */ }
+      if (aiConnected()) {
+        await aiHandleCommand(raw, await aiBrainCtx());
+        return;
+      }
+      /* آفلاین — حداقل: فکت را نگه دار، صادقانه بگو */
+      let _trep3 = LANG === 'en' ? 'I am offline right now — for full learning, connect to the internet.' : 'الان آفلاینم — برای یادگیری کامل اینترنت رو وصل کن.';
+      try {
+        const m = avaMem();
+        if (m) { await m.load(); const id = m.addFact(raw, { src: 'offline' }); const ok = id ? await m.persist() : false; if (ok) _trep3 = LANG === 'en' ? 'Saved as a rough note — I will organize it once I am online.' : 'خام ذخیره‌اش کردم — تا آنلاین شدم مرتبش می‌کنم.'; }
+      } catch (_) { /* noop */ }
+      setState('success');
+      statusText.textContent = t('status.done');
+      rcTag.textContent = t('tag.reply');
+      typeText(rcReply, _trep3);
+      speak(_trep3);
+      pushHistory(raw, true);
+      try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'teach-offline', intent: 'memory_save', reply: _trep3 }); } catch (_) { /* noop */ }
+      cmdBusy = false;
+      setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2800);
+      return;
     }
 
     /* ============================================================
@@ -7915,7 +7982,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.69.0-beta';
+  let appVersion = '0.70.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -9192,6 +9259,18 @@
 
   let chatBusy = false;
   let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
+  /* v0.70 — تأیید در انتظار برای کارهای حساس (ارسال پیام از مسیر مغز) */
+  let _pendingConfirm = null;
+  /* v0.70 — نمونهٔ هستهٔ حافظه (facts پایدار؛ contacts/notes آداپتور) */
+  let _avaMemInst = null;
+  function avaMem() {
+    if (!_avaMemInst) {
+      _avaMemInst = (window.AVAMemory && window.AVAMemory.createMemory)
+        ? window.AVAMemory.createMemory((bridge && bridge.mem) ? { load: () => bridge.mem.load(), save: (d) => bridge.mem.save(d) } : null)
+        : null;
+    }
+    return _avaMemInst;
+  }
   let zaiToken = store.get('zaiToken', '');   /* v0.45 — توکن نشست z.ai کش می‌شود تا وب‌ویو تنبل بماند */
 
   /* در برنامه واقعی همیشه می‌توان AI را صدا زد؛ پل GLM خودش نشست حساب
@@ -9699,16 +9778,21 @@
      یا پرووایدر ثابت از تنظیمات. اولین جواب موفق برگردانده می‌شود. */
   /* v0.37 — extraCtx: پیوستِ اختیاری (مثل فهرست توانایی‌های آوا برای
      سوال‌های «چجوری می‌تونم …؟») — داخل پیام کاربر سوار می‌شود */
-  async function aiAsk(text, extraCtx) {
+  async function aiAsk(text, extraCtx, opts) {
     const t0 = Date.now();
     const userText = extraCtx ? String(text) + '\n\n' + extraCtx : String(text);
-    const msgs = [{ role: 'system', content: aiSystem() }, ...chatHist.slice(-8), { role: 'user', content: userText }];
+    /* v0.70 — مغز واحد: پرامپت سیستم سفارشی (JSON) + بدون تاریخچهٔ چت (تاریخچه در بستهٔ زمینه می‌آید) + بودجهٔ زمانی هر دور */
+    const _sys = (opts && opts.system) ? String(opts.system) : aiSystem();
+    const _msgs = [{ role: 'system', content: _sys }, ...((opts && opts.noHist) ? [] : chatHist.slice(-8)), { role: 'user', content: userText }];
+    const _budget = (opts && opts.timeoutMs) || 0;
+    const _race = (p) => (_budget > 0 ? Promise.race([p, new Promise((res) => setTimeout(() => res(null), _budget))]) : p);
+    const msgs = _msgs;
     const prov = settings.aiProvider || 'auto';
     let lastErr = null;
 
     const tryZai = async () => {
       if (!bridge || !bridge.ai || !bridge.ai.zaiChat) return false;
-      const r = await bridge.ai.zaiChat({ token: zaiToken || '', messages: msgs }).catch(() => null);
+      const r = await _race(bridge.ai.zaiChat({ token: zaiToken || '', messages: msgs }).catch(() => null));
       if (r && r.ok) { setZaiBadge(true); return r; }
       if (r && r.needLogin) {
         zaiToken = '';
@@ -9723,7 +9807,7 @@
       /* v0.29.1 — ریشهٔ «جمینی که بریزد همه چیز می‌میرد»: نتیجهٔ {ok:false} truthy بود
          و زنجیرهٔ خودکار همان‌جا برمی‌گشت — GLM/سایر پرووایدرها هرگز امتحان نمی‌شدند
          و لاگ هم دروغ «ai Gemini ok» می‌نوشت! حالا فقط نتیجهٔ واقعاً ok جواب است */
-      const r = await bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs }).catch(() => null);
+      const r = await _race(bridge.ai.chat({ base: settings.glmBase, key: settings.glmKey, model: settings.glmModel, messages: msgs }).catch(() => null));
       if (r && r.ok && r.text) return r;
       if (r && r.error) lastErr = r;
       return false;
@@ -9733,14 +9817,16 @@
       /* Gemini با ابزار جستجوی گوگل: سوال‌های «سرچ» جواب لحظه‌ای می‌گیرند
          مدل از تنظیمات (v0.13) — پیش‌فرض flash-latest (همیشه جدیدترین فلاش)
          v0.29.1 — فقط نتیجهٔ ok؛ شکستِ {ok:false} دیگر زنجیره را نمی‌بُرد */
-      const r = await bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: true, base: settings.gemBase || '' }).catch(() => null);
+      /* v0.70 — مغز واحد JSON: سرچ زندهٔ گوگل پیش‌فرض خاموش (تحقیق با act=research؛
+         ریشهٔ دمِ تأخیر لاگ: search:true همیشه روشن بود) */
+      const r = await _race(bridge.ai.gemini({ key: settings.geminiKey, model: settings.geminiModel || 'gemini-flash-latest', messages: msgs, search: !(opts && opts.noSearch), base: settings.gemBase || '' }).catch(() => null));
       if (r && r.ok && r.text) return r;
       if (r && r.error) lastErr = r;
       return false;
     };
     const tryOpenai = async () => {
       if (!settings.openaiKey || !bridge || !bridge.ai || !bridge.ai.openai) return false;
-      const r = await bridge.ai.openai({ key: settings.openaiKey, model: settings.openaiModel || 'gpt-4o-mini', messages: msgs }).catch(() => null);
+      const r = await _race(bridge.ai.openai({ key: settings.openaiKey, model: settings.openaiModel || 'gpt-4o-mini', messages: msgs }).catch(() => null));
       if (r && r.ok && r.text) return r; /* v0.29.1 — فقط نتیجهٔ ok */
       if (r && r.error) lastErr = r;
       return false;
@@ -9901,6 +9987,216 @@
       await aiCancelRun('button');
     });
   }
+  /* ============================================================
+     v0.70 — مغز واحد (فاز ۱ طرح بازنویسی AI-First)
+     ------------------------------------------------------------
+     تصمیم کاربر: «منطق اصلی پای جمینای باشه؛ خودش تحلیل کنه چی میگه،
+     چیو ذخیره کنه، چیو بنویسه.» مدل یک JSON سخت‌ساختار می‌دهد؛ کد فقط
+     صحه می‌گذارد و اجرا. شکست JSON → فالبک کامل به مسیر فکر-اول قدیمی
+     (صفر رگرسیون). تحقیق وب فقط با act=research (سرچ زنده خاموش —
+     ریشهٔ دمِ تأخیر p99=42s لاگ).
+     ============================================================ */
+  const BRAIN_TIMEOUT_MS = 14000;
+
+  async function aiBrainRound(cmd, extraCtx, opts) {
+    const teach = !!(opts && opts.teach);
+    const _B = (typeof window !== 'undefined') ? window.AVABrain : null;
+    if (!_B) return { legacy: true, r: null };
+    const sys = _B.brainSystem(LANG);
+    /* بستهٔ زمینه: تاریخچهٔ موضوعی (نه برای سلام/حالِ خالص) + حافظهٔ پایدار + مخاطبین */
+    let ctx = String(extraCtx || '');
+    const _greet = _B.isGreeting(cmd);
+    if (!_greet && window.AVACore) {
+      try { const t = window.AVACore.turnsCtx(6); if (t) ctx += '\n' + t; const e = window.AVACore.entityCtx(); if (e) ctx += '\n' + e; } catch (_) { /* noop */ }
+    }
+    if (teach) ctx += '\n[این جمله آموزش/حافظه است: فقط memory_save و در صورت نیاز contact_save بده؛ هیچ عمل اجرایی و هرگز ارسال پیام]';
+    try {
+      const m = avaMem();
+      if (m) {
+        await m.load();
+        const f = m.factsCtx(cmd, 6);
+        if (f) ctx += '\n' + f;
+        const cl = m.contactsCtx(Array.isArray(settings.msgContacts) ? settings.msgContacts : []);
+        if (cl) ctx += '\n' + cl;
+      }
+    } catch (_) { /* noop */ }
+    /* دور ۱ — JSON */
+    let r = await aiAsk(cmd, ctx, { system: sys, noSearch: true, timeoutMs: BRAIN_TIMEOUT_MS });
+    if (!r || !r.ok) return { legacy: true, r };
+    let b = _B.validateBrain(_B.parseBrainJSON(r.text));
+    if (!b || !b.ok) {
+      /* یک دور ترمیم JSON */
+      const r2 = await aiAsk(cmd + '\n\n[پاسخ قبلی تو JSON معتبر نبود. فقط و فقط یک JSON معتبر با قالب گفته‌شده بده — بدون هیچ متن بیرون JSON.]', ctx, { system: sys, noSearch: true, timeoutMs: BRAIN_TIMEOUT_MS });
+      if (r2 && r2.ok) b = _B.validateBrain(_B.parseBrainJSON(r2.text));
+      if (!b || !b.ok) { actLog('brain JSON invalid ×2 → legacy think-first fallback'); return { legacy: true, r }; }
+    }
+    /* فاز تحقیق (یک دور): act=research → وب واقعی → دور دوم JSON */
+    const _rAct = b.actions.find((a) => a.act === 'research');
+    if (_rAct && bridge && bridge.ai && bridge.ai.research) {
+      const _rq = String(_rAct.value || '').trim().slice(0, 150);
+      actLog('brain research: «' + _rq + '» → وب‌گردی واقعی، بعد دور دوم');
+      const _rr = await bridge.ai.research(_rq).catch(() => null);
+      const _rt = (_rr && _rr.text) || '';
+      const _ctx2 = ctx + '\n' + RESEARCH_CTX_MARK + ' برای «' + _rq + '»]' + (_rt ? '\n' + _rt : '\n(تحقیق وب ناموفق بود — صادقانه بگو و هیچ action نساز)') + '\n[پایان نتایج — فقط بر پایهٔ همین نتایج JSON نهایی بده؛ act=research دیگر مجاز نیست و هرگز اسم/عنوان از حافظه‌ات نساز]';
+      const _r2 = await aiAsk(cmd, _ctx2, { system: sys, noSearch: true, timeoutMs: BRAIN_TIMEOUT_MS });
+      if (_r2 && _r2.ok) {
+        const _b2 = _B.validateBrain(_B.parseBrainJSON(_r2.text));
+        if (_b2 && _b2.ok) { b = _b2; r = _r2; }
+      }
+    }
+    b.actions = b.actions.filter((a) => a.act !== 'research');
+    return { legacy: false, brain: b, via: r.via || '' };
+  }
+
+  /* --- actهای جدید حافظه/مخاطب/یادداشت (خارج از DO قدیمی) --- */
+  async function notesAddDirect(text, lang) {
+    const x = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+    if (x.length < 2 || !bridge || !bridge.notes) return LANG === 'en' ? 'Note text was empty.' : 'متن یادداشت خالی بود.';
+    let stored = x;
+    try {
+      const _lat = (typeof AVAMessaging !== 'undefined' && AVAMessaging.noteLatinOf) ? AVAMessaging.noteLatinOf(x) : null;
+      if (String(lang) === 'en' && _lat && _lat.out && _lat.out.length >= 2) stored = _lat.out;
+    } catch (_) { /* noop */ }
+    const arr = await notesLoad();
+    arr.unshift({ t: Date.now(), x: stored });
+    const kept = arr.slice(0, 200);
+    const ok = await bridge.notes.save(kept);
+    if (ok) NOTES = kept;
+    try { if (window.AVACore && window.AVACore._state) window.AVACore._state.entities.note = String(stored).slice(0, 200); } catch (_) { /* noop */ }
+    actLog('brain note_add ok=' + String(ok) + ' x=' + String(stored).slice(0, 40));
+    return ok ? (LANG === 'en' ? `Noted: "${stored.slice(0, 90)}".` : `یادداشت شد: «${stored.slice(0, 90)}».`) : t('notes.saveFail');
+  }
+
+  async function executeBrainNewActs(actions, cmd) {
+    const outs = [];
+    const m = avaMem();
+    for (const a of actions) {
+      try {
+        if (a.act === 'memory_save') {
+          if (!m) { outs.push(LANG === 'en' ? 'Memory is unavailable.' : 'حافظه در دسترس نیست.'); continue; }
+          await m.load();
+          const id = m.addFact(a.value || cmd, { src: 'brain' });
+          const ok = id ? await m.persist() : false;
+          actLog('brain memory_save id=' + String(id) + ' ok=' + String(ok) + ' x=' + String(a.value || '').slice(0, 60));
+          outs.push(ok ? (LANG === 'en' ? 'Saved to memory.' : 'حفظ شد — دیگه یادم نمیره.') : (LANG === 'en' ? 'Could not save to memory.' : 'ذخیره در حافظه انجام نشد.'));
+        } else if (a.act === 'memory_recall') {
+          if (!m) { outs.push(LANG === 'en' ? 'Memory is unavailable.' : 'حافظه در دسترس نیست.'); continue; }
+          await m.load();
+          const hits = m.findFacts(a.value || cmd, 3);
+          outs.push(hits.length ? hits.map((f) => f.text).join(' | ') : (LANG === 'en' ? 'I have nothing like that in memory.' : 'چیزی شبیه این تو حافظه‌م ندارم.'));
+        } else if (a.act === 'memory_forget') {
+          if (!m) continue;
+          await m.load();
+          const rem = m.delFact(a.value || '');
+          const ok = rem ? await m.persist() : false;
+          outs.push(ok ? (LANG === 'en' ? `Forgot: "${String(rem.text).slice(0, 60)}".` : `فراموش شد: «${String(rem && rem.text).slice(0, 60)}».`) : (LANG === 'en' ? 'Nothing like that in memory.' : 'چیزی شبیه این تو حافظه‌م نبود.'));
+        } else if (a.act === 'contact_save') {
+          const p = a.params || {};
+          if (!Array.isArray(settings.msgContacts)) settings.msgContacts = [];
+          const name = String(p.nameFa || p.name || '').trim() || String(p.nameEn || '').trim();
+          const id = (window.AVAMemory && m) ? m.addContact(settings.msgContacts, { name, app: p.app, handle: p.handle, aliases: [String(p.nameEn || '').trim()].filter(Boolean) }) : null;
+          let ok = false;
+          if (id) { try { store.set('msgContacts', settings.msgContacts); ok = true; } catch (_) { ok = false; } }
+          try { if (window.AVACore && window.AVACore._state) window.AVACore._state.entities.person = String(p.nameEn || name).slice(0, 80); } catch (_) { /* noop */ }
+          actLog('brain contact_save id=' + String(id) + ' ok=' + String(ok) + ' ' + name + '/' + String(p.app || '') + '/' + String(p.nameEn || ''));
+          try { msgContactsRender(); } catch (_) { /* noop */ }
+          outs.push(ok ? (LANG === 'en' ? `Contact saved: ${name}${p.nameEn ? ' (' + p.nameEn + ')' : ''}.` : `مخاطب ذخیره شد: ${name}${p.nameEn ? ' (' + p.nameEn + ')' : ''}.`) : (LANG === 'en' ? 'Could not save the contact.' : 'ذخیرهٔ مخاطب انجام نشد.'));
+        } else if (a.act === 'contact_list') {
+          const _all = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+          outs.push(_all.length ? (LANG === 'en' ? 'Contacts: ' : 'مخاطبینت: ') + _all.slice(0, 8).map((c) => `«${c.name}» (${c.app})`).join('، ') : (LANG === 'en' ? 'No saved contacts yet.' : 'هنوز مخاطبی ذخیره نکردیم.'));
+        } else if (a.act === 'note_add') {
+          outs.push(await notesAddDirect(a.value || (a.params && a.params.text), a.params && a.params.lang));
+        } else if (a.act === 'note_edit' || a.act === 'note_delete') {
+          const arr = await notesLoad();
+          if (!arr.length) { outs.push(t('notes.empty')); continue; }
+          const frag = String(a.value || (a.params && (a.params.match || '')) || '').trim().toLowerCase();
+          const idx = frag ? arr.findIndex((n) => String(n.x || '').toLowerCase().includes(frag)) : 0;
+          if (idx < 0) { outs.push(LANG === 'en' ? 'No matching note.' : 'یادداشتِ مشابهی نبود.'); continue; }
+          if (a.act === 'note_delete') {
+            const rem = arr.splice(idx, 1)[0];
+            const ok = await bridge.notes.save(arr.slice(0, 200));
+            if (ok) NOTES = arr.slice(0, 200);
+            outs.push(ok ? (LANG === 'en' ? `Deleted the note "${String(rem && rem.x).slice(0, 60)}".` : `یادداشت «${String(rem && rem.x).slice(0, 60)}» حذف شد.`) : t('notes.saveFail'));
+          } else {
+            const nt = String((a.params && a.params.text) || a.value || '').trim().slice(0, 500);
+            if (!nt) { outs.push(LANG === 'en' ? 'New note text was empty.' : 'متن جدید یادداشت خالی بود.'); continue; }
+            arr[idx].x = nt; arr[idx].t = Date.now();
+            const ok = await bridge.notes.save(arr.slice(0, 200));
+            if (ok) NOTES = arr.slice(0, 200);
+            outs.push(ok ? (LANG === 'en' ? 'Note updated.' : 'یادداشت به‌روز شد.') : t('notes.saveFail'));
+          }
+        } else {
+          outs.push('');
+        }
+      } catch (e) {
+        actLog('brain act ' + a.act + ' error: ' + String((e && e.message) || e).slice(0, 80));
+        outs.push('');
+      }
+    }
+    return outs.filter(Boolean).join(' — ');
+  }
+
+  /* ارسال پیامِ تأییدشده از مسیر مغز — همان موتور پیام‌رسان واقعی */
+  async function brainSendResolved(a) {
+    const p = (a && a.params) || {};
+    const app = String(p.app || 'telegram').toLowerCase();
+    const _appFa = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا' }[app] || app;
+    const text = String(p.text || '').trim();
+    const list = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+    const ct = (window.AVAMemory && p.contactId) ? list.find((c) => c.id === p.contactId) : null;
+    const name = String((ct && ct.name) || p.name || '').trim();
+    if (!text || !name) return LANG === 'en' ? 'Message target or text was missing — nothing was sent.' : 'مقصد یا متن پیام ناقص بود — چیزی نفرستادم.';
+    try {
+      if (app === 'telegram' || app === 'discord') {
+        const handle = (ct && ct.handle) || '';
+        const uname = (AVAMessaging.isLatinUsername(handle)) ? handle.replace(/^@/, '') : (AVAMessaging.isLatinUsername(name) ? name.replace(/^@/, '') : '');
+        const _vs = [];
+        const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
+        _pushV(name);
+        if (ct) { _pushV(ct.name); (Array.isArray(ct.aliases) ? ct.aliases : []).forEach(_pushV); _pushV(ct.handle); }
+        const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app, name, text, username: uname, variants: _vs }).catch(() => null) : null;
+        if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) return LANG === 'en' ? `Sent to "${name}" on ${_appFa} — double-check it landed.` : `فرستادم به «${name}» تو ${_appFa} — یه نگاه بنداز که رسیده باشه.`;
+        if (r && r.ok) return LANG === 'en' ? `Sent to "${name}" on ${_appFa}.` : `فرستادم به «${name}» تو ${_appFa}.`;
+        return (r && r.error) || (LANG === 'en' ? 'Messaging failed.' : 'ارسال انجام نشد.');
+      }
+      if (app === 'whatsapp') {
+        const phone = AVAMessaging.phoneLike(name) || (ct ? AVAMessaging.phoneLike(ct.handle) : '');
+        if (!phone) return LANG === 'en' ? `WhatsApp needs a phone number for "${name}".` : `برای «${name}» تو واتساپ شماره لازم است.`;
+        const built = AVAMessaging.msgBuild('whatsapp', phone, text, true);
+        const r = bridge && bridge.msg && bridge.msg.open ? await bridge.msg.open(built.link).catch(() => null) : null;
+        return (r && r.ok) ? (LANG === 'en' ? `WhatsApp opened for "${name}" with your text pre-filled — press Enter.` : `واتساپ برای «${name}» با متن باز شد — فقط Enter بزن.`) : (LANG === 'en' ? 'Could not open WhatsApp.' : 'باز کردن واتساپ ممکن نشد.');
+      }
+      const built = AVAMessaging.msgBuild(app, name, text, false);
+      if (built.copyText && bridge && bridge.sys) { try { await bridge.sys.copyText(built.copyText); } catch (_) { /* noop */ } }
+      const r = bridge && bridge.msg && bridge.msg.open ? await bridge.msg.open(built.link).catch(() => null) : null;
+      return (r && r.ok) ? (LANG === 'en' ? `${_appFa} opened; text is on the clipboard — paste and send.` : `${_appFa} باز شد؛ متن تو کلیپ‌بورد است — پیست و ارسال کن.`) : (LANG === 'en' ? 'Could not open the messenger.' : 'باز کردن پیام‌رسان ممکن نشد.');
+    } catch (e) {
+      return LANG === 'en' ? 'Messaging failed: ' + String((e && e.message) || e).slice(0, 60) : 'ارسال انجام نشد: ' + String((e && e.message) || e).slice(0, 60);
+    }
+  }
+
+  /* اجرای تصمیم مغز — فقط actهای صحه‌گذاری‌شده */
+  async function brainExecute(b, cmd) {
+    const _B = window.AVABrain;
+    const cs = b.actions.filter((a) => a.act === 'contact_send');
+    if (cs.length) {
+      const c = cs[0];
+      const p = c.params || {};
+      const nm = String(p.name || '');
+      const app = String(p.app || 'telegram');
+      const appFa = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا' }[app] || app;
+      _pendingConfirm = { action: c, at: Date.now(), cmd };
+      actLog('brain confirm needed: contact_send ' + app + ' name=' + nm.slice(0, 30) + ' text=' + String(p.text || '').slice(0, 30));
+      return { reply: b.confirm || (LANG === 'en' ? `Send "${p.text || ''}" to "${nm}" on ${appFa}?` : `به «${nm}» تو ${appFa} بگم «${p.text || ''}»؟`), kind: 'confirm' };
+    }
+    const legacy = [], newer = [];
+    for (const a of b.actions) ((window.AVABrain && _B.BRAIN_DO_ACTS.has(a.act) && DO_ACTS.includes(a.act)) ? legacy : newer).push(a);
+    let out1 = '', out2 = '';
+    if (newer.length) out1 = await executeBrainNewActs(newer, cmd);
+    if (legacy.length) out2 = await executeDoActions(legacy.map((a) => ({ act: a.act, value: a.value })), cmd);
+    return { reply: [b.speak, out1, out2].filter(Boolean).join(' — ').trim(), kind: (b.actions.length ? 'do' : 'chat') };
+  }
+
   async function aiHandleCommand(cmd, extraCtx) {
     /* v0.66 — نسل‌بندی (epoch): اگر فرمان جدید فرمانِ در جریان را لغو کند،
        رانِ کهنه هیچ UI ای (چیپ/کارت/وضعیت) نباید دست بزند */
@@ -10025,7 +10321,32 @@
       }
     }
     try {
-      /* v0.52 — مسیر فکر-اول: فکر → در صورت نیاز تحقیق وب واقعی → دور دوم داده‌محور */
+      /* v0.70 — مغز واحد: اول JSON-برین (تحلیل کامل توسط مدل)، شکست → فالبک فکر-اول قدیمی */
+      const _br = await aiBrainRound(cmd, extraCtx);
+      if (aiStale()) return; /* v0.66 — لغو شد */
+      if (!_br.legacy) {
+        const _out = await brainExecute(_br.brain, cmd);
+        if (aiStale()) return;
+        actLog('brain JSON ok: actions=' + _br.brain.actions.map((a) => a.act).join(',') + ' kind=' + _out.kind);
+        pushChatHist('user', cmd); pushChatHist('assistant', _out.reply || '…');
+        setState('success');
+        statusText.textContent = t('ai.got');
+        rcTag.textContent = t('tag.aiDo') + (_br.via ? ' · ' + _br.via : '');
+        typeText(rcReply, _out.reply || '…');
+        speak(_out.reply);
+        if (!/انجام نشد|باز نشد|Could not|Couldn't|پیدا نشد|ذخیره نشد/.test(String(_out.reply)) && _out.kind === 'do') playDoneSound();
+        pushHistory(cmd, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: cmd, via: 'ai-brain-json', intent: _br.brain.actions[0] ? _br.brain.actions[0].act : 'chat', reply: String(_out.reply || '').slice(0, 200) }); } catch (_) { /* noop */ }
+        /* یادگیری فقط برای اکشن‌های DO-سازگار (قابل بازپخش آفلاین) */
+        if (_out.kind === 'do' && _br.brain.actions.length && _br.brain.actions.every((a) => DO_ACTS.includes(a.act))) {
+          try { await learnFromAI(cmd, _br.brain.actions.map((a) => ({ act: a.act, value: a.value })), _br.brain.speak || ''); } catch (_) { /* noop */ }
+        }
+        handsFreeRearm();
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3000);
+        return;
+      }
+      /* v0.52 — مسیر فکر-اول (فالبک): فکر → در صورت نیاز تحقیق وب واقعی → دور دوم داده‌محور */
       const _bt = await aiThinkRound(cmd, extraCtx);
       if (aiStale()) return; /* v0.66 — لغو شد؛ فرمان جدید در اختیار UI است */
       const r = _bt.r;

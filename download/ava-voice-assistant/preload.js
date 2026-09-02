@@ -61,6 +61,12 @@ contextBridge.exposeInMainWorld('ava', {
     save: (arr) => ipcRenderer.invoke('notes:save', arr),
   },
 
+  /* v0.70 — هستهٔ حافظه (ava-memory.json): فکت‌ها/قواعد آموزشی پایدار */
+  mem: {
+    load: () => ipcRenderer.invoke('mem:load'),
+    save: (data) => ipcRenderer.invoke('mem:save', data),
+  },
+
   /* مدیریت DNS ویندوز (اعمال با تأیید مدیر/UAC)
      فرم «DNS جدید» حالا داخل خود صفحه اصلی است — رویداد dns:quick-request
      از پروسه اصلی به رندرر می‌آید */

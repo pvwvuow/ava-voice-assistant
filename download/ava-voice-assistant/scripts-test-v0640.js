@@ -141,7 +141,7 @@ ok(!new RegExp('[؟?]').test('بنویس قرار فردا ساعت ۵') , 'sani
 
 /* ---------- [8] نسخه ---------- */
 section('8] نسخهٔ 0.64.0-beta در ۴ جای رسمی');
-ok(/^0\.6[4-9]\.0-beta$/.test(pkg.version), 'package.json → ' + pkg.version + ' (رو به جلو ریلکس)');
+ok(/^0\.[6-9][0-9]?\.0-beta$/.test(pkg.version), 'package.json → ' + pkg.version + ' (رو به جلو ریلکس)');
 ok(/appVersion\s*=\s*'0\.6[4-9]\.0-beta'/.test(appSrc), 'app.js appVersion (رو به جلو ریلکس)');
 ok(/abVersion[^0-9]*0\.6[4-9]\.0-beta/.test(idxSrc), 'index.html abVersion (رو به جلو ریلکس — v0.65)');
 ok(/۰\.۶[۴-۹]\.۰-بتا/.test(readmeSrc), 'README بلاک ۰.۶۴.۰-بتا (رو به جلو ریلکس — v0.65)');

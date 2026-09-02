@@ -91,11 +91,25 @@
     let text = '';
     const q = s.match(/["«']([\s\S]{1,300}?)["»']/);
     if (q) text = q[1].trim();
-    /* مقصد: «به X» — تا ۳ کلمهٔ نامی؛ سپس دُمِ فعل/حرف اضافه بریده می‌شود */
+    /* مقصد: «به X» — تا ۳ کلمهٔ نامی؛ سپس دُمِ فعل/حرف اضافه بریده می‌شود
+       v0.70 — روی «همهٔ» نامزدهای «به X» می‌چرخد و اولین نامزدی را برمی‌دارد
+       که سرش واژهٔ ایستای قیدی نباشد (ریشهٔ لاگ 17:05:10: «از این به بعد هر
+       وقت گفتم به میلاد…» → «به بعد» مقصد شد! «بعد/عنوان/منظور/هر/وقت…»
+       دیگر هرگز مقصد پیام نمی‌شوند) */
     let target = '';
     let targetRef = false; /* «به همین اسم / همون مخاطب» — مقصد باید از حافظه حل شود */
     const woApp = s.replace(appM.re, ' ').replace(/(?:به|برای|برا)\s+(?:همین|همون|همان|اون|این)\s+/gi, 'به ');
-    const tm2 = woApp.match(/(?:به|برای|برا)\s+((?:[\u0600-\u06FFa-zA-Z0-9._@]{2,30})(?:\s+[\u0600-\u06FFa-zA-Z0-9._@]{2,30}){0,2})/i);
+    const _stopW = (typeof AVABrain !== 'undefined' && AVABrain.REF_MSG_STOP_RE) ? AVABrain.REF_MSG_STOP_RE : /^(بعد|عنوان|منظور|گفتم|میگم|هر|وقت|اوکی|باشه|حالا|خب|آفرین|فقط|من|تو|موضوع|مورد)$/i;
+    let tm2 = null;
+    const _rxT = /(?:به|برای|برا)\s+((?:[\u0600-\u06FFa-zA-Z0-9._@]{2,30})(?:\s+[\u0600-\u06FFa-zA-Z0-9._@]{2,30}){0,2})/gi;
+    let _mT;
+    while ((_mT = _rxT.exec(woApp)) !== null) {
+      const _cand = String(_mT[1] || '').trim();
+      const _w0 = (_cand.split(/\s+/)[0] || '').replace(/[\u200c]/g, '');
+      if (_w0 && _stopW.test(_w0)) continue;
+      tm2 = _mT;
+      break;
+    }
     if (tm2) {
       target = tm2[1].replace(STOP_TAIL_RE, '').trim();
       target = target.replace(/\s*(پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست)[\s\S]*$/i, '').trim();
@@ -171,9 +185,18 @@
   }
   const FA2LAT = { 'آ': 'a', 'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'z', 'ر': 'r', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's', 'ض': 'z', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'gh', 'ک': 'k', 'گ': 'g', 'ل': 'l', 'م': 'm', 'ن': 'n', 'و': 'v', 'ه': 'h', 'ی': 'i' };
   const LAT2FA = { 'sh': 'ش', 'ch': 'چ', 'kh': 'خ', 'gh': 'غ', 'zh': 'ژ', 'oo': 'و', 'ou': 'و', 'ee': 'ی', 'ay': 'ای', 'ai': 'ای', 'ei': 'ای', 'a': 'ا', 'b': 'ب', 'c': 'ک', 'd': 'د', 'e': 'ای', 'f': 'ف', 'g': 'گ', 'h': 'ه', 'i': 'ای', 'j': 'ج', 'k': 'ک', 'l': 'ل', 'm': 'م', 'n': 'ن', 'o': 'او', 'p': 'پ', 'q': 'ق', 'r': 'ر', 's': 'س', 't': 'ت', 'u': 'یو', 'v': 'و', 'w': 'و', 'x': 'کس', 'y': 'ی', 'z': 'ز' };
+  /* v0.70 — فاز ۳: دیکشنری واژه‌محورِ نام‌های رایج — سرچ مخاطب با فرم لاتینِ
+     واقعی («میلاد قدوسی» → Milad Ghodousi، «سلفون» → cellphone) */
+  const WORD2LAT = { 'علی': 'Ali', 'علیرضا': 'Alireza', 'محمد': 'Mohammad', 'محمدمهدی': 'MohammadMahdi', 'مهدی': 'Mahdi', 'میلاد': 'Milad', 'مجید': 'Majid', 'مصطفی': 'Mostafa', 'سارا': 'Sarah', 'ساره': 'Sara', 'زهرا': 'Zahra', 'فاطمه': 'Fateme', 'فاطی': 'Fati', 'مریم': 'Maryam', 'نرگس': 'Narges', 'نازنین': 'Nazanin', 'شادمهر': 'Shadmehr', 'حسین': 'Hossein', 'حسن': 'Hassan', 'رضا': 'Reza', 'حیدر': 'Heydar', 'ابوالفضل': 'Abolfazl', 'ابوفضل': 'Abolfazl', 'امیر': 'Amir', 'امیرعلی': 'AmirAli', 'قدوسی': 'Ghodousi', 'قاضی': 'Ghazi', 'حسینی': 'Hosseini', 'محمدی': 'Mohammadi', 'رضایی': 'Rezaei', 'حسنی': 'Hasani', 'اکبری': 'Akbari', 'کریمی': 'Karimi', 'موسوی': 'Mousavi', 'سلفون': 'cellphone', 'سامسونگ': 'Samsung', 'شیائومی': 'Xiaomi', 'اپل': 'Apple', 'گوشی': 'phone', 'تلگرام': 'Telegram', 'دیسکورد': 'Discord', 'واتساپ': 'WhatsApp', 'همساده': 'Hamsadeh', 'همسایه': 'Hamsaye', 'اقتصاد': 'Eghtesad', 'آنلاین': 'Online', 'انلاین': 'Online' };
   function faToLatin(s) {
-    const t = normFa(s).replace(/\s+/g, '');
-    if (!t) return '';
+    const n = normFa(s);
+    if (!n) return '';
+    /* اول واژه‌محور — همهٔ واژه‌ها دیکشنری‌باشند یا عدد؛ وگرنه حرف‌به‌حرف */
+    const words = n.split(/\s+/).filter(Boolean);
+    if (words.length && words.every((w) => WORD2LAT[w] || /^[0-9]+$/.test(w))) {
+      return words.map((w) => WORD2LAT[w] || w).join(' ');
+    }
+    const t = n.replace(/\s+/g, '');
     let out = '';
     for (const ch of t) out += FA2LAT[ch] || ch;
     return out;
@@ -350,8 +373,10 @@
       const vs = variants(c);
       for (const fq of qFaCands) if (vs.has(fq)) return true;
       for (const v of vs) {
-        if (qLat && v === qLat) return true;
-        if (qLat && v.length >= 4 && qLat.length >= 4 && skel(v) === skel(qLat)) return true;
+        /* v0.70.1 — مقایسهٔ لاتین بی‌حساس به بزرگی حروف (دیکشنری واژه‌محور
+           «Milad Ghodousi» می‌دهد؛ سرچ هرگز نباید از سرِ حرف بزرگ جا بماند) */
+        if (qLat && String(v).toLowerCase() === qLat.toLowerCase()) return true;
+        if (qLat && v.length >= 4 && qLat.length >= 4 && skel(String(v).toLowerCase()) === skel(qLat.toLowerCase())) return true;
       }
       return false;
     });
