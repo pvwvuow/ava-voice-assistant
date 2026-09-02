@@ -33,7 +33,7 @@
 (function (root) {
   /* ---------- ۱) رجیستری اپ‌های پیام‌رسان ---------- */
   const MSG_APPS = [
-    { id: 'telegram', fa: 'تلگرام', re: /تلگرام|telegram/i, procs: ['Telegram', 'TelegramDesktop', '64Gram'], link: (t) => 'https://t.me/' + t, desktopLink: (t) => 'tg://resolve?domain=' + t, clipboardText: true, auto: true },
+    { id: 'telegram', fa: 'تلگرام', re: /تلگرام|توتل|تلیگرام|تیلگرام|تله\s?گرام|telegram/i, procs: ['Telegram', 'TelegramDesktop', '64Gram'], link: (t) => 'https://t.me/' + t, desktopLink: (t) => 'tg://resolve?domain=' + t, clipboardText: true, auto: true },
     { id: 'whatsapp', fa: 'واتساپ', re: /واتساپ|واتسآپ|whatsapp/i, procs: ['WhatsApp'], link: (t, txt) => 'https://wa.me/' + String(t || '').replace(/[^0-9]/g, '') + (txt ? '?text=' + encodeURIComponent(txt) : ''), desktopLink: (t, txt) => 'whatsapp://send?phone=' + String(t || '').replace(/[^0-9]/g, '') + (txt ? '&text=' + encodeURIComponent(txt) : ''), clipboardText: false, auto: false },
     { id: 'bale', fa: 'بله', re: /بله(?!ی)|\bbale\b/i, procs: ['Bale', 'BaleMessenger'], link: () => 'https://web.bale.ai/chat', desktopLink: null, clipboardText: true, auto: false, needsLoc: true },
     { id: 'rubika', fa: 'روبیکا', re: /روبیکا|rubika/i, procs: ['Rubika', 'RubikaDesktop'], link: () => 'https://web.rubika.ir/', desktopLink: null, clipboardText: true, auto: false, needsLoc: true },

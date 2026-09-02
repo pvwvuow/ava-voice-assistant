@@ -137,7 +137,7 @@ ok(/0\.[6-9][0-9]?\.0-beta/.test(appSrc), 'نسخه در app.js'); /* v0.69 forw
 
 /* ============ ۵) main.js — حالت تست تلگرام ============ */
 section('main.js — عیب‌یاب تلگرام (بدون هیچ ارسالی)');
-ok(mainSrc.includes('[int]$Test = 0'), 'TG_PS_BODY پارامتر $Test دارد');
+ok(mainSrc.includes('[int]$Test = 0') || mainSrc.includes('[int]$Test = $(if ($ReqObj.test)'), 'TG_PS_BODY پارامتر $Test دارد'); /* v0.72 forward-relax: از req JSON */
 const tgBodyStart = mainSrc.indexOf('const TG_PS_BODY');
 const tgBodyEnd = mainSrc.indexOf('function runTgPs');
 const tgBody = mainSrc.slice(tgBodyStart, tgBodyEnd);
@@ -146,7 +146,7 @@ ok(tgBody.indexOf("if ($Test -eq 1)") > tgBody.indexOf('function Restore-Focus')
 ok(tgBody.includes("Write-Output 'OK:TGTEST'"), 'خروجی تست OK:TGTEST');
 ok(tgBody.indexOf("if ($Test -eq 1)") < tgBody.indexOf('ERR:NOTEXT'), 'حالت تست قبل از چک‌های نام/متن است (هیچ ارسالی انجام نمی‌شود)');
 ok(/function runTgPs\(nm, msgText, username, testMode(, variants)?\)/.test(mainSrc), 'runTgPs پارامتر testMode دارد'); /* v0.69 forward-relax */
-ok(mainSrc.includes("'-Test', testMode ? '1' : '0'"), 'آرگومان -Test به PS پاس می‌شود');
+ok(mainSrc.includes("'-Test', testMode ? '1' : '0'") || mainSrc.includes('test: !!testMode'), 'آرگومان -Test به PS پاس می‌شود'); /* v0.72 forward-relax: req JSON */
 ok(mainSrc.includes("ipcMain.handle('msg:test'"), 'IPC msg:test ثبت شده');
 ok(mainSrc.includes("runTgPs('', '', '', true)"), 'msg:test تلگرام → runTgPs در حالت تست');
 ok(mainSrc.includes('0.68.0-beta') === false || mainSrc.includes('0.68.0-beta'), 'main.js نسخه (اگر ثابت دارد) — بدون کرش');

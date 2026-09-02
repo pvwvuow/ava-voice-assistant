@@ -100,11 +100,11 @@ ok(/if \(_mp && _mp\.targetRef && !_mp\.target\)/.test(appSrc), 'آنافورا 
 
 /* ============ ۷) موتور تلگرام — وارسی عنوان چت ============ */
 section('TG engine — variants + title verify');
-ok(mainSrc.includes('[string]$Variants'), 'پارامتر -Variants در TG_PS_BODY');
+ok(mainSrc.includes('[string]$Variants') || mainSrc.includes('$ReqObj.variants'), 'پارامتر -Variants در TG_PS_BODY'); /* v0.72 forward-relax: از req JSON */
 ok(mainSrc.includes('function Test-TgMatch'), 'تابع Test-TgMatch');
 ok(mainSrc.includes('ERR:TG_NO_MATCH'), 'خروجی صادقانهٔ NO_MATCH');
 ok(mainSrc.includes('DBG:TRY='), 'لاگ هر واریانت + تیتر');
-ok(mainSrc.includes("'-Variants', safeVars.join('|')"), 'واریانت‌ها از argv (نه شل)');
+ok(mainSrc.includes("'-Variants', safeVars.join('|')") || mainSrc.includes('$ReqObj.variants'), 'واریانت‌ها از argv (نه شل)'); /* v0.72 forward-relax: req JSON */
 ok(appSrc.includes('variants: _vs'), 'رندرر واریانت‌ها را می‌فرستد');
 const tgBody = (mainSrc.split('const TG_PS_BODY = `')[1] || '').split('`;')[0];
 ok(tgBody.length > 2000 && !tgBody.includes('/*'), 'بدون کامنت /* در پاورشل');

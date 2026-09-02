@@ -5132,6 +5132,8 @@
               }
             } catch (_) { /* noop */ }
             const _uname = (_mp.app === 'telegram' && AVAMessaging.isLatinUsername(_handle)) ? _handle.replace(/^@/, '') : (AVAMessaging.isLatinUsername(_mp.target) ? _mp.target.replace(/^@/, '') : '');
+            /* v0.72 — ریشه‌یابی میدانی: لیست کامل واریانت‌ها قبل از ارسال لاگ می‌شود (لاگ 0.71: contact ذخیره‌شده «میلاد قدوسی» در واریانت‌های ۹ثانیه بعد غایب بود) */
+            try { actLog('messaging variants: ' + _vs.join(' | ').slice(0, 160), 'ui', { ev: 'msg-vars', app: _mp.app }); } catch (_) { /* noop */ }
             const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname, variants: _vs }).catch(() => null) : null;
             if (r && r.error && /NO_MATCH/.test(String(r.error))) {
               /* v0.69 — وارسی عنوان چت شکست خورد → صادقانه؛ دیگر پیام به چتِ اشتباه نمی‌رود */
@@ -8004,7 +8006,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.71.0-beta';
+  let appVersion = '0.72.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10181,11 +10183,44 @@
           const hits = m.findFacts(a.value || cmd, 3);
           outs.push(hits.length ? hits.map((f) => f.text).join(' | ') : (LANG === 'en' ? 'I have nothing like that in memory.' : 'چیزی شبیه این تو حافظه‌م ندارم.'));
         } else if (a.act === 'memory_forget') {
-          if (!m) continue;
+          /* v0.72 — «تمام داده‌های مربوط به X پاک کن» حالا هم فکت‌ها هم مخاطبِ هم‌نام را پاک می‌کند
+             (لاگ 0.71: «تمام داده‌های مربوط به پوریا روانی فعلاً پاک کن» → فقط JSON بدون اجرای محسوس؛
+             مخاطب ماند و واریانت‌های ارسال بعدی هنوز از آن ساخته می‌شد) */
+          if (!m) { outs.push(LANG === 'en' ? 'Memory is unavailable.' : 'حافظه در دسترس نیست.'); continue; }
           await m.load();
-          const rem = m.delFact(a.value || '');
-          const ok = rem ? await m.persist() : false;
-          outs.push(ok ? (LANG === 'en' ? `Forgot: "${String(rem.text).slice(0, 60)}".` : `فراموش شد: «${String(rem && rem.text).slice(0, 60)}».`) : (LANG === 'en' ? 'Nothing like that in memory.' : 'چیزی شبیه این تو حافظه‌م نبود.'));
+          const _q = String(a.value || '').trim();
+          let _rf = 0; let _rc = 0;
+          if (_q) {
+            try {
+              const _nf = (window.AVAMemory && window.AVAMemory.normFa) ? window.AVAMemory.normFa : (s) => String(s || '');
+              const _nq = _nf(_q).toLowerCase();
+              const _facts = (m.listFacts ? m.listFacts() : (m.data && m.data.facts) || []) || [];
+              for (const _f of _facts) {
+                const _ft = _nf(String((_f && _f.text) || '')).toLowerCase();
+                if (_ft && _nq && (_ft.indexOf(_nq) >= 0 || (_nq.indexOf(_ft) >= 0 && _ft.length >= 4))) { if (m.delFact((_f && _f.id) || _ft)) _rf++; }
+              }
+            } catch (_) { /* noop */ }
+            try {
+              const _arr = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+              const _nf2 = (window.AVAMemory && window.AVAMemory.normFa) ? window.AVAMemory.normFa : (s) => String(s || '');
+              const _nq2 = _nf2(_q).toLowerCase();
+              for (let _i = _arr.length - 1; _i >= 0; _i--) {
+                const _c = _arr[_i] || {};
+                const _hay = [_c.name].concat(Array.isArray(_c.aliases) ? _c.aliases : [], [_c.handle]).map((x) => _nf2(String(x || '')).toLowerCase()).join(' \u0001 ');
+                if (_nq2 && _hay.indexOf(_nq2) >= 0) { _arr.splice(_i, 1); _rc++; }
+              }
+              if (_rc) { try { store.set('msgContacts', settings.msgContacts); } catch (_) { /* noop */ } try { msgContactsRender(); } catch (_) { /* noop */ } }
+            } catch (_) { /* noop */ }
+            try { if (_rf > 0) await m.persist(); } catch (_) { /* noop */ }
+            actLog('brain memory_forget facts=' + _rf + ' contacts=' + _rc + ' q=' + _q.slice(0, 40));
+            outs.push(LANG === 'en'
+              ? `Forgot ${_rf} memory item(s) and ${_rc} contact(s) about "${_q.slice(0, 30)}".`
+              : (_rf + _rc > 0
+                ? `پاک شد: ${_rf} یادداشتِ حافظه${_rc ? ' و ' + _rc + ' مخاطب' : ''} دربارهٔ «${_q.slice(0, 30)}».`
+                : `چیزی دربارهٔ «${_q.slice(0, 30)}» تو حافظه‌ام نبود که پاک کنم.`));
+          } else {
+            outs.push(LANG === 'en' ? 'Tell me whose data to forget — e.g. "forget everything about Pourya".' : 'بگو اطلاعاتِ کی پاک شود — مثلاً «تمام اطلاعاتِ پوریا رو پاک کن».');
+          }
         } else if (a.act === 'contact_save') {
           const p = (a.params && typeof a.params === 'object') ? a.params : {};
           if (!Array.isArray(settings.msgContacts)) settings.msgContacts = [];
@@ -10269,6 +10304,7 @@
         const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
         _pushV(name);
         if (ct) { _pushV(ct.name); (Array.isArray(ct.aliases) ? ct.aliases : []).forEach(_pushV); _pushV(ct.handle); }
+        try { actLog('brain-send variants: ' + _vs.join(' | ').slice(0, 160), 'ui', { ev: 'msg-vars', app }); } catch (_) { /* noop */ }
         const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app, name, text, username: uname, variants: _vs }).catch(() => null) : null;
         if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) return LANG === 'en' ? `Sent to "${name}" on ${_appFa} — double-check it landed.` : `فرستادم به «${name}» تو ${_appFa} — یه نگاه بنداز که رسیده باشه.`;
         if (r && r.ok) return LANG === 'en' ? `Sent to "${name}" on ${_appFa}.` : `فرستادم به «${name}» تو ${_appFa}.`;

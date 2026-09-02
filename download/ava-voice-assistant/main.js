@@ -5413,15 +5413,22 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
    نمی‌نویسد) → Enter (باز شدن بهترین چت) → پیست متن → Enter → تلاش تأیید UIA.
    خروجی صادقانه: OK:MSGSENT / OK:MSGSENT-UNVERIFIED / ERR:… — هیچ OK دروغین. */
 const TG_PS_BODY = `param(
-  [string]$Name = '',
-  [string]$Text = '',
-  [string]$Username = '',
-  [string]$Variants = '',
-  [string]$VariantsB64 = '',
-  [int]$WaitMs = 25000,
-  [int]$Test = 0
+  [string]$Req = ''
 )
 $ErrorActionPreference = 'Stop'
+# v0.72 — همهٔ پارامترها با فایل JSON می‌آیند (ریشهٔ لاگ 0.70/0.71: argv پاورشل «|» را
+# می‌بلعید و کوتیشن‌ها را می‌زد — لاگ 0.71: DBG:VARN=1 با ۷ واریانتِ فاصله‌خورده در یک
+# رشته + آلودگی $Name). argv فقط مسیر فایل را می‌بیند؛ هیچ نویسهٔ فارسی/لوله‌ای در argv نیست.
+$ReqObj = $null
+try {
+  $rawReq = Get-Content -LiteralPath $Req -Raw -Encoding UTF8
+  $ReqObj = $rawReq | ConvertFrom-Json
+} catch { Write-Output 'ERR:REQ'; exit }
+if (-not $ReqObj) { Write-Output 'ERR:REQ'; exit }
+[string]$Name = [string]$ReqObj.name
+[string]$Text = [string]$ReqObj.text
+[string]$Username = [string]$ReqObj.username
+[int]$Test = $(if ($ReqObj.test) { 1 } else { 0 })
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 Add-Type -TypeDefinition @'
 using System;
@@ -5531,12 +5538,22 @@ function Test-TgMatch($title, $cand) {
 
 # v0.70 — خواندن نتایج سرچِ گلوبال با UIA و انتخاب بهترین تطبیق نام —
 # به‌جای Enter کورکورانهٔ اولین نتیجه (ریشهٔ لاگ: پیام به غریبه رفت)
+# v0.72 — استخراج «بخش نام» تیتر: بعضی کلاینت‌ها (مثلاً 64Gram) شمارندهٔ
+# عددیِ متغیر داخل پرانتز به تیتر می‌چسبانند (لاگ: «‎stagVII (5152326)») —
+# مقایسهٔ خامِ تیتر همیشه «عوض‌شده» می‌شد؛ حالا فقط بخش نام مقایسه می‌شود.
+function Get-TgNamePart([string]$s) {
+  $x = [string]$s
+  try { $x = $x -replace '[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]', '' } catch { }
+  try { $x = ($x -replace '\([^)]*\)\s*$', '').Trim() } catch { }
+  return $x.Trim()
+}
+
 function Read-TgBest($cand) {
   # v0.71 (R5) — ریشهٔ DBG:UIA_MISS در هر ۵ ارسال لاگ 0.70: پنجرهٔ نتایج Ctrl+K
   # یک پاپ‌آپِ تاپ‌لول جدا از پنجرهٔ اصلی است و در درختِ پنجرهٔ اصلی دیده نمی‌شود.
   # حالا: همهٔ پنجره‌های تاپ‌لولِ همان پروسهٔ تلگرام (پاپ‌آپ‌ها اول) + پنجرهٔ اصلی؛
   # سقف امن برای سرعت؛ بهترین امتیاز برمی‌گردد (اندیسِ نتیجه برای ناوبری کیبورد).
-  $best = -1; $bestScore = 0
+  $best = -1; $bestScore = 0; $script:UIAScore = 0; $nPop = 0
   try {
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
@@ -5551,7 +5568,7 @@ function Read-TgBest($cand) {
             if ($w.Current.ProcessId -ne $pidTg) { continue }
             $isMain = $false
             try { $isMain = ([int64]$w.Current.NativeWindowHandle -eq [int64]$hwnd) } catch { }
-            if (-not $isMain) { $roots = @($roots) + @($w) } # پاپ‌آپ‌ها اول
+            if (-not $isMain) { $nPop++; $roots = @($roots) + @($w) } # پاپ‌آپ‌ها اول — v0.72: شمرده می‌شود (DBG:POPUP)
           } catch { }
         }
       } catch { }
@@ -5588,7 +5605,8 @@ function Read-TgBest($cand) {
       if ($bestScore -ge 100) { break }
     }
   } catch { return -1 }
-  if ($best -ge 0) { Write-Output ('DBG:UIASCORE=' + $bestScore) }
+  Write-Output ('DBG:POPUP=' + $nPop)
+  if ($best -ge 0) { $script:UIAScore = $bestScore; Write-Output ('DBG:UIASCORE=' + $bestScore) }
   return $best
 }
 
@@ -5665,6 +5683,7 @@ $tb0 = New-Object System.Text.StringBuilder 512
 try { [AvaTg2.W]::GetWindowText($hwnd, $tb0, 512) | Out-Null } catch { }
 $title0 = $tb0.ToString().Trim()
 Write-Output ('DBG:TITLE0=' + $title0)
+$np0 = Get-TgNamePart $title0
 # گام ۲ — باز کردن چت مخاطب
 if ($Username) {
   # نام کاربری لاتین معتبر: مسیر رسمی tg://resolve — چت مستقیم باز می‌شود
@@ -5678,36 +5697,32 @@ if ($Username) {
   # حالا: هر واریانت امتحان می‌شود؛ تیترِ پنجره باید با نام جور دربیاد؛
   # وگرنه Esc و واریانت بعدی؛ هیچ → ERR:TG_NO_MATCH بدون هیچ ارسالی.
   $variants = @()
-  try {
-    if ($VariantsB64) {
-      # v0.71 (R4) — واریانت‌ها با Base64 JSON می‌آیند. ریشهٔ باگ: آرگومانِ حاوی «|»
-      # به powershell.exe -File سالم نمی‌رسید و $Variants خالی می‌شد (لاگ: رندرر
-      # variants=5 فرستاد ولی DBG:VARIANS فقط $nm بود). Base64 نویسهٔ خاص ندارد.
-      $vjson = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($VariantsB64))
-      $variants = @(($vjson | ConvertFrom-Json) | ForEach-Object { [string]$_ } | Where-Object { $_ -and $_.Trim() })
-    } elseif ($Variants) { $variants = @($Variants -split '\\|' | Where-Object { $_ -and $_.Trim() }) }
-  } catch { }
+  # v0.72 — واریانت‌ها از فایل JSON می‌آیند (نه argv، نه Base64 — هر دو در میدان آسیب دیدند)
+  try { $variants = @(($ReqObj.variants | ForEach-Object { [string]$_ }) | Where-Object { $_ -and $_.Trim() }) } catch { }
   if ($variants.Count -eq 0) { $variants = @($nm) }
   if ($variants -notcontains $nm) { $variants = @($nm) + $variants }
   Write-Output ('DBG:VARN=' + $variants.Count)
   Write-Output ('DBG:VARIANTS=' + ($variants -join ' , '))
   $opened = $false
   $usedVar = ''
+  $vi = -1
   foreach ($v in $variants) {
+    $vi++
     Send-Combo 'esc'
-    Start-Sleep -Milliseconds 200
+    Start-Sleep -Milliseconds 220
     Send-Combo 'esc'
-    Start-Sleep -Milliseconds 250
+    Start-Sleep -Milliseconds 260
     # v0.70 — سرچ گلوبال با Ctrl+K؛ Ctrl+F فقط «داخل چتِ فعلی» جستجو می‌کرد و
     # تیتر پنجره هرگز عوض نمی‌شد (ریشهٔ سه ERR:TG_NO_MATCH لاگ Ali-HK)
     Send-Combo 'ctrl,k'
-    Start-Sleep -Milliseconds 900
+    Start-Sleep -Milliseconds 1100
     try { Set-Clipboard -Value $v -ErrorAction Stop | Out-Null } catch { }
     $cok = $false
     try { $gv = Get-Clipboard -Raw; $cok = ($gv -eq $v) } catch { }
     if (-not $cok) { Write-Output 'DBG:CLIP_FAIL_V'; continue }
     Send-Combo 'ctrl,v'
-    Start-Sleep -Milliseconds 1500
+    # v0.72 — نتایجِ سرچِ ابری گاهی کند می‌آیند؛ ۱۵۰۰ms در میدان کافی نبود
+    Start-Sleep -Milliseconds 2000
     # v0.70 — انتخاب نتیجه با UIA (بهترین تطبیق)؛ نشد → اولین نتیجه با Enter
     $uiaPick = Read-TgBest $v
     if ($uiaPick -ge 0) {
@@ -5725,14 +5740,16 @@ if ($Username) {
       $tb2 = New-Object System.Text.StringBuilder 512
       try { [AvaTg2.W]::GetWindowText($hwnd, $tb2, 512) | Out-Null } catch { }
       $title2 = $tb2.ToString().Trim()
-      if ($title2 -ne $title0) { break }
+      if ((Get-TgNamePart $title2) -ne $np0) { break }
       Start-Sleep -Milliseconds 220
     }
-    Write-Output ('DBG:TRY=' + $v + ' TITLE=' + $title2)
-    # پذیرش دوگانه: (تیتر عوض شد و جور است) یا (UIA نتیجهٔ هم‌نام دید و تیتر جور است)
+    $np2 = Get-TgNamePart $title2
+    # v0.72 — تله‌متری کامل هر واریانت (ریشه‌یابی میدانی بدون حدس)
+    Write-Output ('DBG:VSTEP=' + $vi + ' pick=' + $uiaPick + ' score=' + $script:UIAScore + ' NP0=' + $np0 + ' NP=' + $np2)
+    # پذیرش دوگانه روی «بخش نامِ تیتر»: (نام عوض شد و جور است) یا (UIA تطبیقِ کامل دید و نام جور است)
     # تیترِ بدون تغییر بدون شاهد UIA = مبهم → هیچ ارسالی (ریشهٔ ارسال اشتباه به چتِ باز)
-    if (($title2 -ne $title0) -and (Test-TgMatch $title2 $v)) { $opened = $true; $usedVar = $v; break }
-    if (($uiaPick -ge 0) -and (Test-TgMatch $title2 $v)) { $opened = $true; $usedVar = $v; break }
+    if (($np2 -ne $np0) -and (Test-TgMatch $np2 $v)) { $opened = $true; $usedVar = $v; break }
+    if (($uiaPick -ge 0) -and ($script:UIAScore -ge 100) -and (Test-TgMatch $np2 $v)) { $opened = $true; $usedVar = $v; break }
     try { Send-Combo 'esc'; Start-Sleep -Milliseconds 250 } catch { }
   }
   if (-not $opened) {
@@ -5785,19 +5802,21 @@ function runTgPs(nm, msgText, username, testMode, variants) {
   const safeUser = String(username || '').replace(/[^a-zA-Z0-9_]/g, '');
   const safeVars = Array.isArray(variants) ? variants.map((v) => String(v || '').replace(/[|'’‘“”`"…]/g, '').trim()).filter((v) => v && v.length >= 2).slice(0, 6) : [];
   let psFile = '';
+  let reqFile = '';
   try {
     psFile = path.join(app.getPath('userData'), 'ava-tg.ps1');
     fs.writeFileSync(psFile, '\ufeff' + TG_PS_BODY, 'utf8');
+    /* v0.72 — پارامترها فقط با فایل JSON به پاورشل می‌روند؛ argv فقط مسیرِ فایل است.
+       ریشهٔ لاگ 0.70+0.71: argv پاورشل «|» و کوتیشن‌ها را می‌بلعید — واریانت‌ها به یک
+       رشتهٔ فاصله‌خورده می‌چسبیدند (DBG:VARN=1) و حتی $Name آلوده می‌شد. */
+    reqFile = path.join(app.getPath('userData'), 'ava-tg-req.json');
+    fs.writeFileSync(reqFile, JSON.stringify({ name: safeName, text: safeText, username: safeUser, variants: safeVars, test: !!testMode }), 'utf8');
   } catch (e) {
     actLog(`telegram ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'msg');
     return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت تلگرام ممکن نشد' });
   }
-  /* v0.71 (R4) — واریانت‌ها به‌صورت Base64 JSON — «|» در argv به powershell.exe
-     -File سالم نمی‌رسید و همهٔ واریانت‌ها جز $nm گم می‌شدند (لاگ 0.70) */
-  let varsB64 = '';
-  try { varsB64 = Buffer.from(JSON.stringify(safeVars), 'utf8').toString('base64'); } catch (_) { varsB64 = ''; }
-  const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
-    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-VariantsB64', varsB64, '-Variants', safeVars.join('|'), '-WaitMs', '25000', '-Test', testMode ? '1' : '0'];
+  actLog(`telegram req: v=${safeVars.length} [${safeVars.join(' | ').slice(0, 140)}]`, 'msg');
+  const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile, '-Req', reqFile];
   const t0 = Date.now();
   return new Promise((resolve) => {
     let stdout = '', stderr = '', killed = false;
@@ -5832,6 +5851,7 @@ function runTgPs(nm, msgText, username, testMode, variants) {
         const msgs = {
           'ERR:NO_TG': 'تلگرام باز نیست — اول تلگرام را باز کن و دوباره بگو',
           'ERR:NO_TG_WINDOW': 'پنجرهٔ تلگرام پیدا نشد — تلگرام را یک‌بار از داخل باز کن و دوباره بگو',
+          'ERR:REQ': 'ارسال درخواست به موتور تلگرام ناقص ماند — یک بار دیگر امتحان کن',
           'ERR:NONAME': 'نام مخاطب پیدا نشد — دوباره بگو',
           'ERR:NOTEXT': 'متن پیام پیدا نشد — دوباره بگو و آخرش متن پیام را واضح اضافه کن',
           'ERR:CLIP': 'کلیپ‌بورد در دسترس نیست — یک‌بار دیگر امتحان کن، یا مخاطب را در تنظیمات › افزونه‌ها ثبت کن',

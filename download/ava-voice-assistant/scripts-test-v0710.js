@@ -131,9 +131,9 @@ ok(MM.faToLatin('میلاد') === 'Milad', 'faToLatin(میلاد)=Milad (رجی�
 
 /* ============ R4/R5/R6 — تلگرام (ساختار main.js) ============ */
 section('تلگرام — B64 واریانت + پاپ‌آپ UIA + شاهد دوگانه');
-ok(/'-VariantsB64', varsB64/.test(mainSrc), 'آرگومان -VariantsB64 پاس می‌شود');
-ok(/\[string\]\$VariantsB64 = ''/.test(mainSrc), 'پارامتر PS تعریف شده');
-ok(/FromBase64String\(\$VariantsB64\)/.test(mainSrc), 'PS واریانت را از B64 دیکود می‌کند');
+ok(/'-VariantsB64', varsB64/.test(mainSrc) || mainSrc.includes('ava-tg-req.json'), 'آرگومان -VariantsB64 پاس می‌شود'); /* v0.72 forward-relax: req JSON جایگزین B64 شد */
+ok(/\[string\]\$VariantsB64 = ''/.test(mainSrc) || mainSrc.includes("[string]$Req = ''"), 'پارامتر PS تعریف شده'); /* v0.72 forward-relax */
+ok(/FromBase64String\(\$VariantsB64\)/.test(mainSrc) || mainSrc.includes('$ReqObj.variants'), 'PS واریانت را از B64 دیکود می‌کند'); /* v0.72 forward-relax: req JSON */
 ok(/DBG:VARN=/.test(mainSrc), 'شمارش واریانت در لاگ دیباگ');
 {
   const enc = Buffer.from(JSON.stringify(['میلاد', 'Milad Ghodousi', 'پوریا رحمانی']), 'utf8').toString('base64');
@@ -146,9 +146,9 @@ ok(/NativeWindowHandle -eq \[int64\]\$hwnd/.test(mainSrc), 'پنجرهٔ اصل�
 ok(/DBG:UIASCORE=/.test(mainSrc), 'امتیاز UIA در لاگ دیباگ');
 ok(/DBG:TITLE0=/.test(mainSrc), 'تیتر اولیه ثبت می‌شود');
 ok(/for \(\$pt = 0; \$pt -lt 6; \$pt\+\+\)/.test(mainSrc), 'نظرسنجی تیتر (~۲ ثانیه)');
-ok(/\(\$title2 -ne \$title0\) -and \(Test-TgMatch \$title2 \$v\)/.test(mainSrc), 'پذیرش: تیتر عوض شده و جور است');
-ok(/\(\$uiaPick -ge 0\) -and \(Test-TgMatch \$title2 \$v\)/.test(mainSrc), 'پذیرش: شاهد UIA + تیتر جور است');
-ok(mainSrc.indexOf('if (($title2 -ne $title0) -and (Test-TgMatch $title2 $v))') < mainSrc.indexOf('if (($uiaPick -ge 0) -and (Test-TgMatch $title2 $v))'), 'اولویت پذیرش درست');
+ok(/\(\$title2 -ne \$title0\) -and \(Test-TgMatch \$title2 \$v\)/.test(mainSrc) || /\(\$np2 -ne \$np0\) -and \(Test-TgMatch \$np2 \$v\)/.test(mainSrc), 'پذیرش: تیتر عوض شده و جور است'); /* v0.72 forward-relax: شاهد روی بخش نام تیتر */
+ok(/\(\$uiaPick -ge 0\) -and \(Test-TgMatch \$title2 \$v\)/.test(mainSrc) || /\(\$uiaPick -ge 0\) -and \(\$script:UIAScore -ge 100\) -and \(Test-TgMatch \$np2 \$v\)/.test(mainSrc), 'پذیرش: شاهد UIA + تیتر جور است'); /* v0.72 forward-relax */
+ok(mainSrc.indexOf('if (($title2 -ne $title0) -and (Test-TgMatch $title2 $v))') < mainSrc.indexOf('if (($uiaPick -ge 0) -and (Test-TgMatch $title2 $v))') || mainSrc.indexOf('if (($np2 -ne $np0) -and (Test-TgMatch $np2 $v))') < mainSrc.indexOf('if (($uiaPick -ge 0) -and ($script:UIAScore -ge 100) -and (Test-TgMatch $np2 $v))'), 'اولویت پذیرش درست'); /* v0.72 forward-relax */
 ok(/\$uiaPick = Read-TgBest \$v/.test(mainSrc), 'متغیر شاهد UIA جدا از پذیرش تیتر');
 
 /* ============ رگرسیون — گاردهای قبلی ============ */
