@@ -582,6 +582,23 @@
                   <span class="set-info"><b data-i18n="set.ext.msg">پیام‌دادن صوتی (تلگرام/واتساپ/بله/روبیکا/دیسکورد)</b><span data-i18n="set.ext.msgHint">«به علی در تلگرام پیام بده که سلام» — چت باز و متن آماده می‌شود. نصب‌شده‌ها از اسکن سیستم:</span></span>
                   <div class="ptt-presets" id="msgChecklist"></div>
                 </div>
+                <!-- v0.67 — مخاطبین پیام‌رسان: نامِ گفته‌شده → شناسهٔ واقعی (یوزرنیم/شماره) -->
+                <div class="set-row col">
+                  <span class="set-info"><b data-i18n="set.ext.ctTitle">مخاطبین پیام‌رسان</b><span data-i18n="set.ext.ctHint">«به علی پیام بده که…» با مخاطبِ ثبت‌شده دقیق‌تر می‌شود — یوزرنیم تلگرام، شمارهٔ واتساپ و…</span></span>
+                  <div class="ptt-presets" id="msgContactsList"></div>
+                  <div class="ct-form">
+                    <input type="text" id="ctName" class="ct-in" placeholder="نام (همان که صدا می‌کنی)"/>
+                    <select id="ctApp" class="ct-in">
+                      <option value="telegram">تلگرام</option>
+                      <option value="discord">دیسکورد</option>
+                      <option value="whatsapp">واتساپ</option>
+                      <option value="bale">بله</option>
+                      <option value="rubika">روبیکا</option>
+                    </select>
+                    <input type="text" id="ctHandle" class="ct-in" placeholder="یوزرنیم / شماره / شناسه"/>
+                    <button class="chip sm" id="btnCtAdd" data-i18n="set.ext.ctAdd">افزودن</button>
+                  </div>
+                </div>
                 <!-- v0.66 — اکستنشن VPN اپ‌محور (مرحلهٔ ۱: تشخیص) -->
                 <div class="set-row">
                   <span class="set-info"><b data-i18n="set.ext.vpn">VPN و تونل اپ‌محور</b><span data-i18n="set.ext.vpnHint">تشخیص VPN فعال (آداپتور/کلاینت/پورت پروکسی) — مرحلهٔ بعد: مسیریابی هر برنامه از داخل یا خارج تونل</span></span>
@@ -1128,7 +1145,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.66.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.67.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

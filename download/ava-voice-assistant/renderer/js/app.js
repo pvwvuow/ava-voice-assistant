@@ -373,6 +373,9 @@
     /* v0.66 — اکستنشن پیام‌رسانی + VPN */
     'set.ext.msg': ['پیام‌دادن صوتی (تلگرام/واتساپ/بله/روبیکا/دیسکورد)', 'Voice messaging (Telegram/WhatsApp/Bale/Rubika/Discord)'],
     'set.ext.msgHint': ['«به علی در تلگرام پیام بده که سلام» — چت باز و متن آماده می‌شود. نصب‌شده‌ها از اسکن سیستم:', '"message Ali on Telegram saying hi" — opens the chat with your text ready. Installed apps come from the system scan:'],
+    'set.ext.ctTitle': ['مخاطبین پیام‌رسان', 'Messenger contacts'],
+    'set.ext.ctHint': ['«به علی پیام بده که…» با مخاطبِ ثبت‌شده دقیق‌تر می‌شود — یوزرنیم تلگرام، شمارهٔ واتساپ و…', '"message Ali…" gets precise with saved contacts — Telegram username, WhatsApp number, etc.'],
+    'set.ext.ctAdd': ['افزودن', 'Add'],
     'set.ext.vpn': ['VPN و تونل اپ‌محور', 'VPN & per-app tunneling'],
     'set.ext.vpnHint': ['تشخیص VPN فعال (آداپتور/کلاینت/پورت پروکسی) — مرحلهٔ بعد: مسیریابی هر برنامه از داخل یا خارج تونل', 'Detect active VPN (adapter/client/proxy port) — next step: route any app in or out of the tunnel'],
     'set.ext.vpnDetect': ['تشخیص VPN', 'Detect VPN'],
@@ -1131,6 +1134,8 @@
     whisperModel: store.get('whisperModel', 'whisper-large-v3-turbo'),
     /* v0.17 — افزونهٔ دیسکورد: مخاطبین و اجرای بک‌گراند */
     discordContacts: store.get('discordContacts', []), /* [{id, name, userId, note}] */
+    /* v0.67 — مخاطبین پیام‌رسان‌ها: [{id, name, app, handle}] */
+    msgContacts: store.get('msgContacts', []),
     discordBg: store.get('discordBg', true),           /* بدون به‌هم‌ریختن بازی */
     discordCallMode: store.get('discordCallMode', 'auto'), /* auto=آزمایشی | assist=امن */
     discordCallDx: store.get('discordCallDx', 46),     /* فاصلهٔ دکمهٔ تماس از راست */
@@ -3681,6 +3686,54 @@
       } catch (_) { if (st) st.textContent = '—'; }
       finally { bd.disabled = false; }
     });
+    /* v0.67 — مخاطبین پیام‌رسان: settings.msgContacts=[{id,name,app,handle}]
+       — نامِ گفته‌شده در «به علی پیام بده…» از همین‌جا به شناسهٔ واقعی حل می‌شود */
+    function msgContactsRender() {
+      const box = $('#msgContactsList');
+      if (!box) return;
+      const list = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+      box.innerHTML = '';
+      if (!list.length) {
+        const e = document.createElement('span');
+        e.className = 'wake-now-badge msg-absent';
+        e.textContent = LANG === 'en' ? 'no contacts yet' : 'هنوز مخاطبی ثبت نشده';
+        box.appendChild(e);
+        return;
+      }
+      for (const c of list) {
+        const b = document.createElement('span');
+        b.className = 'wake-now-badge';
+        b.title = c.handle || '';
+        b.textContent = (c.name || '?') + ' · ' + c.app + ' · ' + String(c.handle || '').slice(0, 18);
+        const x = document.createElement('button');
+        x.className = 'ct-del';
+        x.textContent = '×';
+        x.setAttribute('aria-label', 'delete');
+        x.addEventListener('click', () => {
+          settings.msgContacts = settings.msgContacts.filter((y) => y.id !== c.id);
+          store.set('msgContacts', settings.msgContacts);
+          msgContactsRender();
+        });
+        b.appendChild(x);
+        box.appendChild(b);
+      }
+    }
+    msgContactsRender();
+    const ctAdd = $('#btnCtAdd');
+    if (ctAdd) ctAdd.addEventListener('click', () => {
+      const nm = String(($('#ctName') || {}).value || '').trim();
+      const hd = String(($('#ctHandle') || {}).value || '').trim();
+      const ap = String(($('#ctApp') || {}).value || 'telegram').trim();
+      if (!nm || !hd) { toast(LANG === 'en' ? 'Name and handle are required.' : 'نام و شناسه هر دو لازم است.', '#i-info'); return; }
+      if (!Array.isArray(settings.msgContacts)) settings.msgContacts = [];
+      if (settings.msgContacts.length >= 200) { toast(LANG === 'en' ? 'Contacts list is full.' : 'لیست مخاطبین پر است.', '#i-info'); return; }
+      settings.msgContacts.push({ id: 'm' + Date.now().toString(36), name: nm.slice(0, 40), app: ap, handle: hd.slice(0, 80) });
+      store.set('msgContacts', settings.msgContacts);
+      if ($('#ctName')) $('#ctName').value = '';
+      if ($('#ctHandle')) $('#ctHandle').value = '';
+      msgContactsRender();
+      toast(LANG === 'en' ? 'Contact saved.' : 'مخاطب ثبت شد.', '#i-check');
+    });
   }
 
   /* استخراج نام برنامه از جمله: «لطفا تلگرام رو برام اجرا کن» → «تلگرام» */
@@ -4504,6 +4557,9 @@
        اول از همه چک می‌شود تا با تایپ صوتی معمولی قاطی نشود */
     const SYS_DICT_RE = /(اینجا|همینجا|همین\s*جا)\s*(برام|برایم|هم)?\s*(تایپ|بنویس)|(بنویس|تایپ)\s*(کن)?\s*(اینجا|همینجا)/i;
     const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
+    /* v0.67 — جمله‌های حاوی نام پیام‌رسان به لَین پیام‌رسانی می‌روند
+       («به علی تو دیسکورد تایپ کن که…» ارسال پیام است نه دیکته/تایپ در پنجرهٔ فعال) */
+    const MSG_APP_SENT_RE = /تلگرام|دیسکورد|واتساپ|روبیکا|telegram|discord|whatsapp/i;
     if (dictation.active) {
       if (DICT_STOP_RE.test(raw)) { stopDictation(true); _dispatchOutcome = 'dict-stop'; return; }
       /* وسط تایپ: همین متن اضافه شود، نه اجرای فرمان */
@@ -4530,7 +4586,7 @@
       }
       startDictation(true); _dispatchOutcome = 'dict-start'; return;
     }
-    if (DICT_START_RE.test(raw) || wakeDictStart) {
+    if ((DICT_START_RE.test(raw) || wakeDictStart) && !MSG_APP_SENT_RE.test(raw)) {
       /* v0.60 (A6) — «برام تایپ کن سلام» دیگر حالت مودار را قورت نمی‌دهد:
          اگر typeOnceOf محتوای واقعی دارد → مسیر تایپ یک‌باره (همان مسیر type_once)؛
          فقط تایپِ لختِ بی‌محتوا («برام تایپ کن») حالت تایپ صوتی پیوسته می‌ماند */
@@ -4766,13 +4822,16 @@
     }
 
     /* ============================================================
-       v0.66 — لَین قطعیِ پیام‌رسانی (اکستنشن مرحلهٔ ۱) — J
+       v0.67 — لَین قطعیِ پیام‌رسانی (اکستنشن مرحلهٔ ۲ — اتوماسیون واقعی)
        ------------------------------------------------------------
-       «به علی در تلگرام پیام بده که…» / «در بله به مامان بگو…» / «به
-       ۰۹۱۲… واتساپ پیام بده…» — گرامر خالص (AVAMessaging.msgParse) بدون AI؛
-       اجرا با deep-link رسمی (allowlist در main) + متن در کلیپ‌بورد
-       (واتساپ: wa.me متن پیش‌پرشده). مرحلهٔ ۲ (خواندن/پاسخ UIA) روی همین
-       لَین سوار می‌شود.
+       بازخورد کاربر روی مرحلهٔ ۱: «پیام رسان‌ها هیچکدوم کار نمیکنه…
+       به فلانی پیام بده تو تلگرام اصن هیچکاری نمیکنه حتی با تلگرام PC
+       بازه» — ریشه: tg://resolve فقط یوزرنیم لاتین می‌شناسد و نام فارسی
+       ساکت نادیده می‌شود؛ دیسکورد هم channel-ID می‌خواست.
+       درمان ریشه‌ای: تلگرام/دیسکورد → اتوماسیون واقعی دسکتاپ (msg:send →
+       PS: فوکوس تاییدشده + سرچ/سوییچر + پیست + Enter)؛ واتساپ → wa.me
+       پیش‌پرشده با شماره (از جمله یا مخاطبین)؛ بله/روبیکا → وب + کلیپ‌بورد
+       صادقانه. بدون متن پیام هیچ ارسالی نیست — صادقانه می‌پرسد.
        ============================================================ */
     {
       const _mp = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgParse) ? AVAMessaging.msgParse(raw) : null;
@@ -4782,18 +4841,54 @@
         let _mrep = '';
         let _mok = false;
         try {
-          if (_mp.app === 'whatsapp' && _mp.target && !/[0-9]{8,}/.test(String(_mp.target).replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))) {
-            _mrep = LANG === 'en' ? 'WhatsApp needs a phone number — say "message 0912… on WhatsApp …".' : 'برای واتساپ شماره تلفن لازم است — بگو «به ۰۹۱۲… در واتساپ پیام بده که …».';
-          } else if (bridge && bridge.msg && bridge.msg.open) {
-            const built = AVAMessaging.msgBuild(_mp.app, _mp.target, _mp.text, true);
-            if (_mp.text && built.copyText) { try { await bridge.sys.copyText(built.copyText); } catch (_) { /* noop */ } }
-            const r = await bridge.msg.open(built.link).catch(() => null);
-            if (r && r.ok) {
+          if (!_mp.text) {
+            /* v0.67 — بدون متن پیام هیچ ارسالی وجود ندارد؛ قبلاً deep-link لخت
+               می‌زد که در تلگرام هیچ بود (ریشهٔ «هیچ‌کاری نمی‌کنه») */
+            _mrep = LANG === 'en' ? `What should I send to "${_mp.target}" on ${_mp.appFa}? Say: «…message them that …»` : `چی برای «${_mp.target}» تو ${_mp.appFa} بفرستم؟ بگو «به ${_mp.target} پیام بده که …»`;
+          } else if (_mp.app === 'telegram' || _mp.app === 'discord') {
+            /* اتوماسیون واقعی دسکتاپ — نام فارسی با سرچ/سوییچرِ خود اپ باز و
+               پیست/ارسال می‌شود؛ deep-link فقط فالبکِ «اپ باز نیست» است */
+            const _cts = (typeof settings !== 'undefined' && Array.isArray(settings.msgContacts)) ? settings.msgContacts : [];
+            const _ct = AVAMessaging.contactFind(_cts, _mp.app, _mp.target);
+            const _name = (_ct && _ct.name) || _mp.target;
+            const _handle = (_ct && _ct.handle) || '';
+            const _uname = (_mp.app === 'telegram' && AVAMessaging.isLatinUsername(_handle)) ? _handle.replace(/^@/, '') : (AVAMessaging.isLatinUsername(_mp.target) ? _mp.target.replace(/^@/, '') : '');
+            const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname }).catch(() => null) : null;
+            if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) {
               _mok = true;
-              if (_mp.app === 'whatsapp' && built.preFilled) _mrep = LANG === 'en' ? `WhatsApp opened for "${_mp.target}" with your text pre-filled — press Enter.` : `واتساپ برای «${_mp.target}» با متن «${_mp.text}» باز شد — فقط Enter بزن.`;
-              else if (_mp.text) _mrep = LANG === 'en' ? `${_mp.appFa} opened; text is on the clipboard — Ctrl+V then Enter.` : `${_mp.appFa} برای «${_mp.target}» باز شد؛ متن «${_mp.text}» در کلیپ‌بورد است — Ctrl+V و بعد Enter.`;
-              else _mrep = LANG === 'en' ? `${_mp.appFa} opened.` : `${_mp.appFa} برای «${_mp.target}» باز شد.`;
-            } else _mrep = LANG === 'en' ? 'Could not open the messenger.' : `باز کردن ${_mp.appFa} ممکن نشد${r && r.error ? ': ' + r.error : ''}.`;
+              _mrep = LANG === 'en' ? `Sent to "${_name}" on ${_mp.appFa} — double-check it landed.` : `فرستادم به «${_name}» تو ${_mp.appFa} — یه نگاه بنداز که رسیده باشه.`;
+            } else if (r && r.ok) {
+              _mok = true;
+              _mrep = LANG === 'en' ? `Sent to "${_name}" on ${_mp.appFa}.` : `فرستادم به «${_name}» تو ${_mp.appFa}.`;
+            } else if (r && r.error && /باز نیست/.test(String(r.error)) && _uname && _mp.app === 'telegram' && bridge.msg.open) {
+              /* فالبک صادقانه: تلگرام باز نیست ولی یوزرنیم معتبر داریم — چت باز +
+                 متن در کلیپ‌بورد (هیچ ادعای ارسالی وجود ندارد) */
+              try { await bridge.sys.copyText(_mp.text); } catch (_) { /* noop */ }
+              try { await bridge.msg.open('tg://resolve?domain=' + _uname); } catch (_) { /* noop */ }
+              _mrep = LANG === 'en' ? `Telegram was closed — opened the chat with "${_uname}"; your text is on the clipboard (Ctrl+V, Enter).` : `تلگرام باز نبود؛ چت «${_uname}» رو باز کردم و متن تو کلیپ‌بورد است — Ctrl+V و بعد Enter.`;
+            } else {
+              _mrep = (r && r.error) || (LANG === 'en' ? 'Messaging automation failed.' : 'ارسال پیام انجام نشد.');
+            }
+          } else if (_mp.app === 'whatsapp') {
+            const _cts2 = (typeof settings !== 'undefined' && Array.isArray(settings.msgContacts)) ? settings.msgContacts : [];
+            const _ct2 = AVAMessaging.contactFind(_cts2, 'whatsapp', _mp.target);
+            const _phone = AVAMessaging.phoneLike(_mp.target) || (_ct2 ? AVAMessaging.phoneLike(_ct2.handle) : '');
+            if (!_phone) {
+              _mrep = LANG === 'en' ? `WhatsApp needs a phone number for "${_mp.target}" — say "message 0912… on WhatsApp …" or save the contact in Settings › Plugins.` : `برای «${_mp.target}» تو واتساپ شماره لازم است — بگو «به ۰۹۱۲… در واتساپ پیام بده که …» یا مخاطب را در تنظیمات › افزونه‌ها ثبت کن.`;
+            } else if (bridge && bridge.msg && bridge.msg.open) {
+              const built = AVAMessaging.msgBuild('whatsapp', _phone, _mp.text, true);
+              const r = await bridge.msg.open(built.link).catch(() => null);
+              if (r && r.ok) { _mok = true; _mrep = LANG === 'en' ? `WhatsApp opened for "${_mp.target}" with your text pre-filled — press Enter.` : `واتساپ برای «${_mp.target}» با متن «${_mp.text}» باز شد — فقط Enter بزن.`; }
+              else _mrep = LANG === 'en' ? 'Could not open WhatsApp.' : `باز کردن واتساپ ممکن نشد${r && r.error ? ': ' + r.error : ''}.`;
+            } else _mrep = t('toast.onlyApp');
+          } else if (bridge && bridge.msg && bridge.msg.open) {
+            /* بله / روبیکا — وب: لینک باز + متن در کلیپ‌بورد؛ اتوماسیون تایپِ
+               وب نداریم و صادقانه می‌گوییم (قبلاً «باز شد» گفته بودیم و ساکت) */
+            const built = AVAMessaging.msgBuild(_mp.app, _mp.target, _mp.text, false);
+            if (built.copyText) { try { await bridge.sys.copyText(built.copyText); } catch (_) { /* noop */ } }
+            const r = await bridge.msg.open(built.link).catch(() => null);
+            if (r && r.ok) _mrep = LANG === 'en' ? `${_mp.appFa} web opened; your text is on the clipboard — paste (Ctrl+V) and send it yourself.` : `${_mp.appFa} باز شد؛ متن «${_mp.text}» در کلیپ‌بورد است — خودت Ctrl+V کن و بفرست (وب اتوماسیون تایپ ندارم).`;
+            else _mrep = LANG === 'en' ? 'Could not open the messenger.' : `باز کردن ${_mp.appFa} ممکن نشد${r && r.error ? ': ' + r.error : ''}.`;
           } else _mrep = t('toast.onlyApp');
         } catch (e) { _mrep = LANG === 'en' ? 'Messaging failed.' : 'پیام‌رسانی انجام نشد: ' + String((e && e.message) || e).slice(0, 60); }
         setState('success');
@@ -7593,7 +7688,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.66.0-beta';
+  let appVersion = '0.67.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

@@ -214,7 +214,8 @@ ok(appSrc.includes("keep only the quoted part).\\n' +") || appSrc.includes("keep
 console.log('\n[10] A6 — مسیر DICT_START اول یک‌باره را چک می‌کند');
 ok(AVAIntent.typeOnceOf('برام تایپ کن سلام') === 'سلام', 'typeOnceOf: «برام تایپ کن سلام» → «سلام»');
 ok(AVAIntent.typeOnceOf('برام تایپ کن') === '', 'typeOnceOf: «برام تایپ کن» لخت → خالی (حالت مودار)');
-const dA = appSrc.indexOf('if (DICT_START_RE.test(raw) || wakeDictStart) {');
+/* v0.67: گارد پیام‌رسان به شرط اضافه شد ((DICT_START_RE…|| wakeDictStart) && !MSG_APP_SENT_RE) — پین forward-relax */
+const dA = appSrc.indexOf('if ((DICT_START_RE.test(raw) || wakeDictStart) && !MSG_APP_SENT_RE.test(raw)) {');
 const dSlice = (dA > -1) ? appSrc.slice(dA, dA + 1200) : ''; /* v0.65: پنجره ۹۰۰→۱۲۰۰ (چکِ صدای انجام‌شد داخل بلوک اضافه شد) */
 ok(dA > -1, 'بلوک DICT_START_RE پیدا شد');
 ok(dSlice.includes('AVAIntent.typeOnceOf(raw)'), 'اول typeOnceOf روی raw اجرا می‌شود');

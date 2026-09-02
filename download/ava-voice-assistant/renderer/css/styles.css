@@ -526,6 +526,22 @@ body.has-card #wave { height: 0; opacity: 0; }
 /* v0.66 — ردیف «نرم‌افزارهای شناسایی‌شده» */
 .apps-count-wrap { display: inline-flex; align-items: center; gap: 8px; }
 .msg-absent { opacity: 0.45; }
+/* v0.67 — فرم مخاطبین پیام‌رسان (پنل افزونه‌ها) */
+.ct-form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100%; margin-top: 8px; }
+.ct-in {
+  flex: 1 1 130px; min-width: 0;
+  background: rgba(255, 255, 255, 0.04); color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
+  padding: 7px 10px; font-size: 12px; font-family: inherit;
+  outline: none;
+}
+.ct-in:focus { border-color: rgba(96, 165, 250, 0.6); }
+select.ct-in { flex: 0 1 110px; cursor: pointer; }
+.ct-del {
+  background: transparent; border: none; color: #f87171;
+  font-size: 14px; line-height: 1; cursor: pointer; padding: 0 0 0 6px;
+}
+.ct-del:hover { color: #ef4444; }
 .tdots { display: inline-flex; gap: 3px; align-items: center; }
 .tdots i {
   width: 4px; height: 4px; border-radius: 50%;

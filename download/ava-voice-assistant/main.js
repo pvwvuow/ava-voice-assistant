@@ -1701,6 +1701,27 @@ ipcMain.handle('msg:open', (_e, u) => {
   }
 });
 
+/* v0.67 — ارسال واقعی پیام با اتوماسیون دسکتاپ (ریشهٔ گزارش کاربر: deep-link
+   محض مرحلهٔ ۱ با نام فارسی هیچ‌کاری نمی‌کرد). مسیریابی:
+   discord → runDiscordPs('msgsend') — همان موتور اثبات‌شدهٔ v0.35
+     (Quick Switcher + پیست + Enter + تأیید UIA)؛
+   telegram → runTgPs — موتور جدید (فوکوس تاییدشده + Ctrl+F + پیست + Enter).
+   امنیت: نام/متن از argv پاورشل می‌آیند (نه خط فرمان shell)؛ پاک‌سازی
+   گیومه‌ها؛ username فقط [a-zA-Z0-9_] — ورودی رندرر هرگز مستقیم به شل
+   نمی‌رود (قاعدهٔ B8). خروجی همیشه صادقانه است. */
+ipcMain.handle('msg:send', async (_e, p) => {
+  const app = String((p && p.app) || '').toLowerCase();
+  const name = String((p && p.name) || '').replace(/['’‘“”`"…]/g, '').trim();
+  const text = String((p && p.text) || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch])).trim();
+  const username = String((p && p.username) || '').replace(/[^a-zA-Z0-9_@.]/g, '').replace(/[.@]/g, '').trim();
+  if (!name) return { ok: false, error: 'نام مخاطب پیدا نشد' };
+  if (!text) return { ok: false, error: 'متن پیام پیدا نشد' };
+  actLog(`msg:send app=${app} name=${name.slice(0, 24)} text=${text.slice(0, 40)}`, 'msg', { ev: 'msg-send', app });
+  if (app === 'discord') return runDiscordPs('msgsend', 'fg', name, 46, 52, text);
+  if (app === 'telegram') return runTgPs(name, text, username);
+  return { ok: false, error: 'این پیام‌رسان اتوماسیون دسکتاپ ندارد' };
+});
+
 /* v0.66 — اکستنشن VPN اپ‌محور (مرحلهٔ ۱: تشخیص صادقانه).
    خواستهٔ کاربر: «هر vpnی که کاربر فعال داره رو بتونه تونل کنه». قبل از هر
    مسیریابی باید بدانیم چه VPN و چه شکلی فعال است: آداپتور TUN/TAP/WireGuard/WARP
@@ -5341,6 +5362,283 @@ function runDiscordPs(psAction, mode, nm, dxN, dyN, msgText) {
         if (!msg && em.startsWith('ERR:NOBTN:')) msg = 'دکمهٔ دیسکورد پیدا نشد — نام دکمه‌ها در activity.log ثبت شد؛ دیسکورد را یک‌بار ماکسیمم کن و دوباره بگو';
         if (!msg && em.startsWith('ERR:NOFOCUS')) msg = 'فوکوس به پنجرهٔ دیسکورد منتقل نشد — پنجرهٔ دیسکورد را یک‌بار دستی فعال کن و دوباره امتحان کن';
         return resolve({ ok: false, error: (msg || em.replace(/^ERR:/, 'خطا: ')).slice(0, 200) });
+      }
+      resolve({ ok: true, result: out || 'OK' });
+    });
+  });
+}
+
+/* v0.67 — موتور اتوماسیون تلگرام (ریشهٔ «به فلانی پیام بده تو تلگرام — هیچکاری
+   نمیکنه»: tg://resolve فقط یوزرنیم لاتین می‌شناسد و نام فارسی ساکت نادیده
+   می‌شود؛ مرحلهٔ ۱ deep-link محض بن‌بست بود). موتور جدید همان الگوی اثبات‌شدهٔ
+   دیسکورد را دارد: پیدا کردن پنجرهٔ واقعی تلگرام (Qt) → فوکوسِ تاییدشده
+   (AttachThreadInput + SwitchToThisWindow + پوک Alt) → Esc×2 (بستن چت/سرچ باز
+   تا Ctrl+F سرچِ سراسری شود) → Ctrl+F → پیست نام (کلیپ‌بورد — SendKeys فارسی
+   نمی‌نویسد) → Enter (باز شدن بهترین چت) → پیست متن → Enter → تلاش تأیید UIA.
+   خروجی صادقانه: OK:MSGSENT / OK:MSGSENT-UNVERIFIED / ERR:… — هیچ OK دروغین. */
+const TG_PS_BODY = `param(
+  [string]$Name = '',
+  [string]$Text = '',
+  [string]$Username = '',
+  [int]$WaitMs = 25000
+)
+$ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+namespace AvaTg2 {
+  public class W {
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern IntPtr FindWindowEx(IntPtr p, IntPtr c, string cls, string win);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+    [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+    [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder sb, int max);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder sb, int max);
+    public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr lParam);
+  }
+}
+'@
+$VKNAME = @{ 'ctrl' = 0x11; 'f' = 0x46; 'v' = 0x56; 'enter' = 0x0D; 'esc' = 0x1B }
+$SCNAME = @{ 'ctrl' = 0x1D; 'f' = 0x21; 'v' = 0x2F; 'enter' = 0x1C; 'esc' = 0x01 }
+$tgProcs = @(Get-Process -Name Telegram,TelegramDesktop,64Gram,Unigram -ErrorAction SilentlyContinue)
+if (-not $tgProcs -or $tgProcs.Count -eq 0) { Write-Output 'ERR:NO_TG'; exit }
+# پنجرهٔ واقعی حتی وقتی MainWindowHandle=0 است: EnumWindows روی همهٔ PIDها —
+# پنجرهٔ نمایان با عنوان مقدم، بعد هر نمایان، بعد هر چیزی
+function Find-TgHwnd {
+  $pidSet = @{}
+  foreach ($p in $tgProcs) { $pidSet[[uint32]$p.Id] = $true }
+  $box = @{ best = [IntPtr]::Zero; vis = [IntPtr]::Zero; any = [IntPtr]::Zero }
+  $cb = [AvaTg2.W+EnumProc]{
+    param($h, $l)
+    try {
+      [uint32]$wpid = 0
+      [AvaTg2.W]::GetWindowThreadProcessId($h, [ref]$wpid) | Out-Null
+      if (-not $pidSet.ContainsKey($wpid)) { return $true }
+      if ($box['any'] -eq [IntPtr]::Zero) { $box['any'] = $h }
+      if (-not [AvaTg2.W]::IsWindowVisible($h)) { return $true }
+      if ($box['vis'] -eq [IntPtr]::Zero) { $box['vis'] = $h }
+      $sb = New-Object System.Text.StringBuilder 512
+      [AvaTg2.W]::GetWindowText($h, $sb, 512) | Out-Null
+      if ($sb.ToString().Trim().Length -gt 0) { $box['best'] = $h; return $false }
+    } catch { }
+    return $true
+  }
+  try { [AvaTg2.W]::EnumWindows($cb, [IntPtr]::Zero) | Out-Null } catch { }
+  if ($box['best'] -ne [IntPtr]::Zero) { return $box['best'] }
+  if ($box['vis'] -ne [IntPtr]::Zero) { return $box['vis'] }
+  return $box['any']
+}
+$hwnd = [IntPtr]::Zero
+$proc = $tgProcs | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+if ($proc) { $hwnd = $proc.MainWindowHandle }
+if (-not $hwnd -or $hwnd -eq [IntPtr]::Zero) { $hwnd = Find-TgHwnd }
+if ($hwnd -eq [IntPtr]::Zero) {
+  $waited = 0
+  while ($waited -lt 6000) {
+    Start-Sleep -Milliseconds 600
+    $waited += 600
+    $tgProcs = @(Get-Process -Name Telegram,TelegramDesktop,64Gram,Unigram -ErrorAction SilentlyContinue)
+    $proc = $tgProcs | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+    if ($proc) { $hwnd = $proc.MainWindowHandle }
+    if ($hwnd -ne [IntPtr]::Zero) { break }
+    $hwnd = Find-TgHwnd
+    if ($hwnd -ne [IntPtr]::Zero) { break }
+  }
+}
+if ($hwnd -eq [IntPtr]::Zero) { Write-Output 'ERR:NO_TG_WINDOW'; exit }
+Write-Output ('DBG:TGHWND=1 PROC=' + $(if ($proc) { $proc.ProcessName } else { '?' }))
+$prevFg = [AvaTg2.W]::GetForegroundWindow()
+function Test-Fg { return ([AvaTg2.W]::GetForegroundWindow() -eq $hwnd) }
+function Poke-Alt {
+  [AvaTg2.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)
+  Start-Sleep -Milliseconds 40
+  [AvaTg2.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+}
+function Focus-TgHard {
+  if (Test-Fg) { return $true }
+  if ([AvaTg2.W]::IsIconic($hwnd)) { [AvaTg2.W]::ShowWindow($hwnd, 9) | Out-Null }
+  Start-Sleep -Milliseconds 80
+  Poke-Alt
+  Start-Sleep -Milliseconds 60
+  [AvaTg2.W]::SetForegroundWindow($hwnd) | Out-Null
+  Start-Sleep -Milliseconds 180
+  if (Test-Fg) { return $true }
+  try {
+    [uint32]$fgPid = 0
+    $fg = [AvaTg2.W]::GetForegroundWindow()
+    $tidF = [AvaTg2.W]::GetWindowThreadProcessId($fg, [ref]$fgPid)
+    $tidC = [AvaTg2.W]::GetCurrentThreadId()
+    [AvaTg2.W]::AttachThreadInput($tidC, $tidF, $true) | Out-Null
+    [AvaTg2.W]::BringWindowToTop($hwnd) | Out-Null
+    [AvaTg2.W]::SetForegroundWindow($hwnd) | Out-Null
+    [AvaTg2.W]::AttachThreadInput($tidC, $tidF, $false) | Out-Null
+  } catch { Write-Output ('DBG:ATIERR=' + $_.Exception.Message) }
+  Start-Sleep -Milliseconds 200
+  if (Test-Fg) { return $true }
+  try { [AvaTg2.W]::SwitchToThisWindow($hwnd, $true) } catch { }
+  Start-Sleep -Milliseconds 250
+  if (Test-Fg) { return $true }
+  Poke-Alt
+  [AvaTg2.W]::SetForegroundWindow($hwnd) | Out-Null
+  Start-Sleep -Milliseconds 180
+  return (Test-Fg)
+}
+function Send-Combo([string]$seq) {
+  $names = @($seq.Split(',') | ForEach-Object { $_.Trim().ToLower() })
+  foreach ($n in $names) { [AvaTg2.W]::keybd_event([byte]$VKNAME[$n], [byte]$SCNAME[$n], 0x8, [UIntPtr]::Zero) }
+  Start-Sleep -Milliseconds 80
+  for ($i = $names.Count - 1; $i -ge 0; $i--) {
+    $n = $names[$i]
+    [AvaTg2.W]::keybd_event([byte]$VKNAME[$n], [byte]$SCNAME[$n], 0x8 -bor 0x2, [UIntPtr]::Zero)
+  }
+  Start-Sleep -Milliseconds 140
+}
+function Restore-Focus {
+  if ($prevFg -eq [IntPtr]::Zero -or $prevFg -eq $hwnd) { return }
+  if (-not (Test-Fg)) { return }
+  Poke-Alt
+  Start-Sleep -Milliseconds 60
+  [AvaTg2.W]::SetForegroundWindow($prevFg) | Out-Null
+}
+# گام ۱ — نام مخاطب در کلیپ‌بورد با تایید
+$nm = ($Name -replace '[''"]', '')
+foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $nm = $nm.Replace([string]$cq, '') }
+if (-not $nm) { Write-Output 'ERR:NONAME'; exit }
+$msg = ('' + $Text).Trim()
+if (-not $msg) { Write-Output 'ERR:NOTEXT'; exit }
+try { Set-Clipboard -Value $nm -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+$clipOk = $false
+try { $got = Get-Clipboard -Raw; $clipOk = ($got -eq $nm) } catch { $clipOk = $false }
+if (-not $clipOk) { Write-Output 'ERR:CLIP'; exit }
+$fg = Focus-TgHard
+Write-Output ('DBG:FG=' + $(if ($fg) { '1' } else { '0' }))
+if (-not $fg) { Write-Output 'ERR:NOFOCUS'; exit }
+# گام ۲ — باز کردن چت مخاطب
+if ($Username) {
+  # نام کاربری لاتین معتبر: مسیر رسمی tg://resolve — چت مستقیم باز می‌شود
+  try { Start-Process ('tg://resolve?domain=' + $Username) } catch { Write-Output ('DBG:RESOLVEERR=' + $_.Exception.Message) }
+  Start-Sleep -Milliseconds 2600
+  # باز شدن چت ممکن است فوکوس را موقتاً جابه‌جا کند — دوباره تایید می‌شود
+  if (-not (Focus-TgHard)) { Write-Output 'ERR:NOFOCUS2'; exit }
+} else {
+  # نام فارسی/عنوان: Esc×2 (بستن چت/سرچ باز تا Ctrl+F سرچ سراسری شود)، بعد سرچ
+  Send-Combo 'esc'
+  Start-Sleep -Milliseconds 200
+  Send-Combo 'esc'
+  Start-Sleep -Milliseconds 250
+  Send-Combo 'ctrl,f'
+  Start-Sleep -Milliseconds 800
+  Send-Combo 'ctrl,v'
+  Start-Sleep -Milliseconds 1400
+  Send-Combo 'enter'
+  Start-Sleep -Milliseconds 1200
+}
+# گام ۳ — پیست متن پیام و ارسال با Enter واقعی
+try { Set-Clipboard -Value $msg -ErrorAction Stop | Out-Null } catch { Write-Output 'DBG:CLIP_FAIL' }
+$clipOk2 = $false
+try { $got2 = Get-Clipboard -Raw; $clipOk2 = ($got2 -eq $msg) } catch { $clipOk2 = $false }
+if (-not $clipOk2) { Write-Output 'ERR:CLIP'; exit }
+Send-Combo 'ctrl,v'
+Start-Sleep -Milliseconds 500
+Send-Combo 'enter'
+Start-Sleep -Milliseconds 900
+# گام ۴ — تلاش اثبات ارسال: متن پیام در درخت UIA جستجو می‌شود؛ Qt ممکن است
+# درخت خالی بدهد — در آن صورت صادقانه UNVERIFIED (دروغ نمی‌گوییم)
+$probe = $msg
+if ($probe.Length -gt 20) { $probe = $probe.Substring(0, 20) }
+$probeRx = [regex]::Escape($probe)
+$sent = $false
+try {
+  Add-Type -AssemblyName UIAutomationClient | Out-Null
+  Add-Type -AssemblyName UIAutomationTypes | Out-Null
+  $win2 = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hwnd)
+  if ($win2) {
+    $all = $win2.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    $k = 0
+    foreach ($el in $all) {
+      $k++
+      if ($k -gt 900) { break }
+      $en = ''
+      try { $en = $el.Current.Name } catch { }
+      if ($en -and ($en -match $probeRx)) { $sent = $true; break }
+    }
+  }
+} catch { Write-Output ('DBG:MSGVERIFYERR=' + $_.Exception.Message) }
+$tb = New-Object System.Text.StringBuilder 512
+try { [AvaTg2.W]::GetWindowText($hwnd, $tb, 512) | Out-Null } catch { }
+Write-Output ('DBG:TITLE=' + $tb.ToString().Trim())
+Restore-Focus
+if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }`;
+
+function runTgPs(nm, msgText, username) {
+  const safeName = String(nm || '').replace(/['’‘“”`"…]/g, '');
+  const safeText = String(msgText || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch]));
+  const safeUser = String(username || '').replace(/[^a-zA-Z0-9_]/g, '');
+  let psFile = '';
+  try {
+    psFile = path.join(app.getPath('userData'), 'ava-tg.ps1');
+    fs.writeFileSync(psFile, '\ufeff' + TG_PS_BODY, 'utf8');
+  } catch (e) {
+    actLog(`telegram ps write failed: ${String((e && e.message) || e).slice(0, 120)}`, 'msg');
+    return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت تلگرام ممکن نشد' });
+  }
+  const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
+    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-WaitMs', '25000'];
+  const t0 = Date.now();
+  return new Promise((resolve) => {
+    let stdout = '', stderr = '', killed = false;
+    let child = null;
+    try { child = spawn('powershell.exe', args, { windowsHide: true }); }
+    catch (e) { return resolve({ ok: false, error: String((e && e.message) || e).slice(0, 160) }); }
+    const killer = setTimeout(() => { killed = true; try { child.kill(); } catch (_) { /* noop */ } }, 62000);
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr += d; });
+    child.on('error', (e) => {
+      clearTimeout(killer);
+      resolve({ ok: false, error: String((e && e.message) || e).slice(0, 160) });
+    });
+    child.on('close', () => {
+      clearTimeout(killer);
+      const errTxt = String(stderr || '').trim();
+      if (errTxt) actLog(`telegram ps stderr: ${errTxt.slice(0, 260)}`, 'msg');
+      const lines = String(stdout || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      lines.filter((l) => /^DBG:/i.test(l)).forEach((l) => actLog(`telegram ${l.slice(0, 400)}`, 'msg'));
+      const out = lines.filter((l) => !/^DBG:/i.test(l)).pop() || '';
+      actLog(`telegram send -> ${out || (killed ? 'TIMEOUT' : 'EMPTY')} (${Date.now() - t0}ms)`, 'msg', { ev: 'tg-send', out: out.slice(0, 60) });
+      if (/^ERR:PS:/.test(out)) return resolve({ ok: false, error: ('خطای اسکریپت: ' + out.replace(/^ERR:PS:/, '')).slice(0, 160) });
+      if (!out && errTxt) {
+        const el = errTxt.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        const msgLine = el.find((l) => !/^At /.test(l) && !/^\+/.test(l) && !/^CategoryInfo/i.test(l) && !/^FullyQualifiedErrorId/i.test(l)) || el[0] || '';
+        return resolve({ ok: false, error: ('خطای پاورشل: ' + msgLine).slice(0, 240) });
+      }
+      if (!out) {
+        return resolve({ ok: false, error: killed ? 'اسکریپت تلگرام بیش از حد طول کشید — تلگرام را یک‌بار باز/بسته کن و دوباره امتحان کن' : 'PowerShell اجرا نشد' });
+      }
+      if (/^ERR:/.test(out)) {
+        const msgs = {
+          'ERR:NO_TG': 'تلگرام باز نیست — اول تلگرام را باز کن و دوباره بگو',
+          'ERR:NO_TG_WINDOW': 'پنجرهٔ تلگرام پیدا نشد — تلگرام را یک‌بار از داخل باز کن و دوباره بگو',
+          'ERR:NONAME': 'نام مخاطب پیدا نشد — دوباره بگو',
+          'ERR:NOTEXT': 'متن پیام پیدا نشد — دوباره بگو و آخرش متن پیام را واضح اضافه کن',
+          'ERR:CLIP': 'کلیپ‌بورد در دسترس نیست — یک‌بار دیگر امتحان کن، یا مخاطب را در تنظیمات › افزونه‌ها ثبت کن',
+          'ERR:NOFOCUS': 'فوکوس به پنجرهٔ تلگرام منتقل نشد — پنجرهٔ تلگرام را یک‌بار دستی فعال کن و دوباره امتحان کن',
+          'ERR:NOFOCUS2': 'بعد از باز شدن چت، فوکوس به تلگرام برنگشت — تلگرام را یک‌بار دستی فعال کن و دوباره امتحان کن',
+        };
+        const em = out.trim();
+        let msg2 = msgs[em] || '';
+        if (!msg2 && em.startsWith('ERR:NOFOCUS')) msg2 = msgs['ERR:NOFOCUS'];
+        return resolve({ ok: false, error: (msg2 || em.replace(/^ERR:/, 'خطا: ')).slice(0, 200) });
       }
       resolve({ ok: true, result: out || 'OK' });
     });
