@@ -116,9 +116,19 @@ jobs:
             exit 1
           fi
           echo "inspecting: $ASAR"
-          npx asar list "$ASAR" > asar-list.txt
+          # v0.60 CI fix: read the list via the asar JS API (no npx resolution games),
+          # normalize path separators, and fail loudly on an empty list.
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const asar = require('@electron/asar');
+            const list = asar.listPackage(process.argv[1]).map(p => p.split(path.sep).join('/'));
+            fs.writeFileSync('asar-list.txt', list.join('\n') + '\n');
+            console.log('asar entries: ' + list.length);
+            if (!list.length) { console.error('asar list is EMPTY — inspect cannot proceed'); process.exit(1); }
+          " "$ASAR"
           MISSING=0
-          for f in main.js preload.js pipCore.js pipWindowManager.js lib/dns-bypass.js renderer/index.html renderer/js/app.js renderer/css/styles.css renderer/fonts/Vazirmatn-Regular.woff2; do
+          for f in main.js preload.js pipCore.js pipPreload.js pipWindowManager.js lib/dns-bypass.js renderer/index.html renderer/js/app.js renderer/css/styles.css renderer/fonts/Vazirmatn-Regular.woff2; do
             if grep -Eq "(^|/)${f}$" asar-list.txt; then
               echo "  ok      $f"
             else
