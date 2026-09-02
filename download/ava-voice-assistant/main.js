@@ -1722,6 +1722,19 @@ ipcMain.handle('msg:send', async (_e, p) => {
   return { ok: false, error: 'این پیام‌رسان اتوماسیون دسکتاپ ندارد' };
 });
 
+/* v0.68 — عیب‌یاب صوتی («تست تلگرام»): کشف پنجره + فوکوس بدون هیچ ارسالی.
+   خواستهٔ کاربر: باگِ «هیچ‌کاری نمی‌کنه» نباید مبهم بماند — حالا کاربر
+   می‌تواند قبل از ارسال، آمادگی موتور را صوتی بپرسد و پاسخِ دلیل‌دار بگیرد. */
+ipcMain.handle('msg:test', async (_e, p) => {
+  const app = String((p && p.app) || '').trim();
+  try {
+    if (app === 'telegram') return await runTgPs('', '', '', true);
+    return { ok: false, error: 'تست خودکار این پیام‌رسان از این مسیر در دسترس نیست — بگو «تست دیسکورد» یا از دکمهٔ تست استفاده کن' };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e).slice(0, 160) };
+  }
+});
+
 /* v0.66 — اکستنشن VPN اپ‌محور (مرحلهٔ ۱: تشخیص صادقانه).
    خواستهٔ کاربر: «هر vpnی که کاربر فعال داره رو بتونه تونل کنه». قبل از هر
    مسیریابی باید بدانیم چه VPN و چه شکلی فعال است: آداپتور TUN/TAP/WireGuard/WARP
@@ -5380,7 +5393,8 @@ const TG_PS_BODY = `param(
   [string]$Name = '',
   [string]$Text = '',
   [string]$Username = '',
-  [int]$WaitMs = 25000
+  [int]$WaitMs = 25000,
+  [int]$Test = 0
 )
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
@@ -5511,6 +5525,15 @@ function Restore-Focus {
   Start-Sleep -Milliseconds 60
   [AvaTg2.W]::SetForegroundWindow($prevFg) | Out-Null
 }
+if ($Test -eq 1) {
+  # v0.68 — حالت عیب‌یاب («تست تلگرام»): فقط کشف پنجره + فوکوس، بدون هیچ ارسالی
+  $fgT = Focus-TgHard
+  Write-Output ('DBG:FG=' + $(if ($fgT) { '1' } else { '0' }))
+  if (-not $fgT) { Write-Output 'ERR:NOFOCUS'; exit }
+  Restore-Focus
+  Write-Output 'OK:TGTEST'
+  exit
+}
 # گام ۱ — نام مخاطب در کلیپ‌بورد با تایید
 $nm = ($Name -replace '[''"]', '')
 foreach ($cq in [char]0x2018, [char]0x2019, [char]0x201C, [char]0x201D) { $nm = $nm.Replace([string]$cq, '') }
@@ -5581,7 +5604,7 @@ Write-Output ('DBG:TITLE=' + $tb.ToString().Trim())
 Restore-Focus
 if ($sent) { Write-Output 'OK:MSGSENT' } else { Write-Output 'OK:MSGSENT-UNVERIFIED' }`;
 
-function runTgPs(nm, msgText, username) {
+function runTgPs(nm, msgText, username, testMode) {
   const safeName = String(nm || '').replace(/['’‘“”`"…]/g, '');
   const safeText = String(msgText || '').replace(/[’‘“”…]/g, (ch) => ({ '’': "'", '‘': "'", '“': '"', '”': '"', '…': '...' }[ch]));
   const safeUser = String(username || '').replace(/[^a-zA-Z0-9_]/g, '');
@@ -5594,7 +5617,7 @@ function runTgPs(nm, msgText, username) {
     return Promise.resolve({ ok: false, error: 'نوشتن اسکریپت تلگرام ممکن نشد' });
   }
   const args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', psFile,
-    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-WaitMs', '25000'];
+    '-Name', safeName, '-Text', safeText, '-Username', safeUser, '-WaitMs', '25000', '-Test', testMode ? '1' : '0'];
   const t0 = Date.now();
   return new Promise((resolve) => {
     let stdout = '', stderr = '', killed = false;

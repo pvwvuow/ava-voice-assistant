@@ -120,7 +120,7 @@ ok(appSrc.indexOf('v0.67 — لَین قطعیِ پیام‌رسانی') < appSr
 
 /* ---------- ۶) گارد دیکتهٔ پیام‌رسانی ---------- */
 console.log('\n[6] گارد دیکته');
-ok(appSrc.includes('const MSG_APP_SENT_RE = /تلگرام|دیسکورد|واتساپ|روبیکا|telegram|discord|whatsapp/i;'), 'MSG_APP_SENT_RE تعریف شده');
+ok(/const MSG_APP_SENT_RE = \/[^;]*تلگرام[^;]*دیسکورد[^;]*واتساپ[^;]*\/i;/.test(appSrc), 'MSG_APP_SENT_RE تعریف شده (v0.68: forward-relax برای ایتا)');
 ok(appSrc.includes('if ((DICT_START_RE.test(raw) || wakeDictStart) && !MSG_APP_SENT_RE.test(raw)) {'), 'دیکتهٔ صوتی جملهٔ پیام‌رسانی را نمی‌رباید');
 ok(appSrc.indexOf('MSG_APP_SENT_RE') < appSrc.indexOf('v0.67 — لَین قطعیِ پیام‌رسانی'), 'گارد قبل از لَین پیام‌رسانی تعریف شده');
 

@@ -1,29 +1,34 @@
 'use strict';
 /* ============================================================
-   آوا — voiceMessaging.js (v0.67) — اکستنشن پیام‌رسانی (مرحلهٔ ۲)
+   آوا — voiceMessaging.js (v0.68) — اکستنشن پیام‌رسانی (مرحلهٔ ۳)
    ------------------------------------------------------------
-   خواستهٔ صریح کاربر: «اپشن پیام دادن در هر برنامه رو میخام اضافه کنی:
-   telegram discord telegram web robika web bale whatsapp» — و بازخورد
-   واقعی روی v0.66: «پیام رسان‌ها هیچکدوم کار نمیکنه… میگم به فلانی پیام
-   بده تو تلگرام اصن هیچکاری نمیکنه حتی با این ک تلگرام pc بازه».
+   خواستهٔ صریح کاربر پس از v0.67:
+   «این باگ برای همه پیام رسانا هست» + «وسط مکالمه فارسی ممکنه من
+   یک اسم انگلیسی بگم خب اون چی میشه؟» + «اکستنشن هر پیام رسان رو
+   کامل و حرفه ای اضافه کن.. برای ذخیره مخاطب با اسمی ک ذخیره شده».
 
-   ریشه‌های یافت‌شده (v0.66 مرحلهٔ ۱ — deep-link محض):
-   • tg://resolve?domain=فلانی → تلگرام فقط یوزرنیم لاتین می‌شناسد؛ نام
-     فارسی ساکت نادیده گرفته می‌شود (دقیقاً «هیچ‌کاری نمی‌کند»).
-   • discord://…/@me/رضا → رضا یک channel-ID نیست → بی‌اثر.
-   • «به فلانی پیام بده تو تلگرام» → متن پیام «تو تلگرام» برداشته می‌شد!
-   • پاسخ «باز شد؛ متن در کلیپ‌بورد است» حتی وقتی هیچ چتی باز نشده بود.
-
-   معماری مرحلهٔ ۲ (سه ستون + مسیریابی صادقانه):
-   ۱) کشف (detect): از اسکن نرم‌افزارها — «کدام پیام‌رسان‌ها نصب‌اند».
-   ۲) گرامر (parse): استخراج قطعی اپ/مقصد/متن — بدون AI؛ متن هرگز
-      عبارتِ اپ را قورت نمی‌دهد؛ مقصد تا ۳ کلمه؛ گاردِ «بله».
-   ۳) اجرا: هر اپ مسیر واقعی خودش را دارد (در app.js لَین پیاده شده):
-      تلگرام/دیسکورد → اتوماسیون دسکتاپ (msg:send → PS؛ دیسکورد همان
-      موتور اثبات‌شدهٔ v0.35، تلگرام موتور جدید Ctrl+F)؛ واتساپ →
-      wa.me پیش‌پرشده با شماره؛ بله/روبیکا → وب + کلیپ‌بورد صادقانه.
-   + مخاطبین: contactFind — نام گفته‌شده → شناسهٔ ثبت‌شده
-     (settings.msgContacts؛ UI در پنل افزونه‌ها).
+   چه چیزی در v0.68 از ریشه اضافه/فیکس شد:
+   ۱) تطبیق دوزبانهٔ نام — «وسط مکالمهٔ فارسی اسم انگلیسی»: STT هم
+      «علی» می‌دهد هم «Ali»/«Ali.»؛ جدول ۵۰+ اسم رایج ایران
+      (علی↔ali، محمد↔mohammad/muhammad/…) + آوانگاری عمومی کاراکتری
+      دوطرفه (faToLatin/latinToFa) + اسکلتِ هم‌خوان‌ها برای نام‌های
+      بلندتر (سیاوش↔siavash) + تطبیق یوزرنیم (به ali_gh پیام بده).
+      نرمال‌سازی: ي/ك عربی → ی/ک، اعراب/نیم‌فاصله حذف، ارقام فارسی.
+   ۲) مخاطبین صوتی (ctCmdParse) — ذخیره/حذف/لیست با جملهٔ فارسی:
+      «علی رو تو تلگرام با یوزر ali_gh ذخیره کن» / «ذخیره کن رضا رو
+      تو واتساپ با شماره ۰۹۱۲…» / «مخاطب علی رو حذف کن» / «علی رو از
+      مخاطبین پاک کن» / «مخاطبینمو بخون». contactFind حالا alias هم
+      می‌فهمد و فالبک اشتراکِ شماره بین واتساپ/بله/ایتا/روبیکا دارد.
+   ۳) ایتا به رجیستری اپ‌ها اضافه شد (گارد «ایتالیا» با lookahead)؛
+      بله/روبیکا/ایتا همچنان فقط با عبارت مکانی صریح.
+   ۴) فیکس ریشه‌ای گرامر: فعلِ تکراری سرِ متن («…بده تو تلگرام بگو
+      بیا ویس» → «بگو» از سر متن حذف می‌شود؛ v0.67 «بگو بیا ویس»
+      می‌فرستاد!)؛ ذخیره بدون اپ → پیش‌فرض هوشمند (یوزرنیم→تلگرام،
+      شماره→واتساپ).
+   معماری مرحلهٔ ۲ (بدون تغییر): کشف از اسکن اپ‌ها؛ گرامر قطعی بدون
+   AI؛ اجرای واقعی: تلگرام/دیسکورد → اتوماسیون دسکتاپ (msg:send)،
+   واتساپ → wa.me/whatsapp:// پیش‌پرشده، بله/روبیکا/ایتا → وب +
+   کلیپ‌بورد صادقانه. هیچ «OK دروغین» وجود ندارد.
    ============================================================ */
 (function (root) {
   /* ---------- ۱) رجیستری اپ‌های پیام‌رسان ---------- */
@@ -33,6 +38,7 @@
     { id: 'bale', fa: 'بله', re: /بله(?!ی)|\bbale\b/i, procs: ['Bale', 'BaleMessenger'], link: () => 'https://web.bale.ai/chat', desktopLink: null, clipboardText: true, auto: false, needsLoc: true },
     { id: 'rubika', fa: 'روبیکا', re: /روبیکا|rubika/i, procs: ['Rubika', 'RubikaDesktop'], link: () => 'https://web.rubika.ir/', desktopLink: null, clipboardText: true, auto: false, needsLoc: true },
     { id: 'discord', fa: 'دیسکورد', re: /دیسکورد|discord/i, procs: ['Discord', 'DiscordCanary', 'DiscordPTB', 'DiscordDevelopment'], link: () => 'https://discord.com/channels/@me', desktopLink: (t) => 'discord://discord.com/channels/@me/' + (t || ''), clipboardText: true, auto: true },
+    { id: 'eitaa', fa: 'ایتا', re: /ایتا(?!لیا)|\beitaa\b/i, procs: ['Eitaa', 'EitaaDesktop'], link: () => 'https://web.eitaa.com/', desktopLink: null, clipboardText: true, auto: false, needsLoc: true },
   ];
   function msgAppsOf() { return MSG_APPS; }
   /* کشف نصب‌بودن از لیست اسکن‌شدهٔ اپ‌ها (sysApps.list) */
@@ -45,12 +51,13 @@
     return MSG_APPS.find((m) => m.id === s) || MSG_APPS.find((m) => m.re.test(s)) || null;
   }
 
-  /* ---------- ۲) گرامر فارسی «پیام دادن» (v2) ----------
+  /* ---------- ۲) گرامر فارسی «پیام دادن» (v3) ----------
      شکل‌ها (همه با اپ + مقصد + متن):
      «به علی در تلگرام پیام بده که سلام» / «به فلانی پیام بده تو تلگرام»
      «در تلگرام به علی بگو سلام» / «تلگرام به مامان بگو شام خوردی»
      «پیام بده به علی تو دیسکورد که بیا ویس» / «براش تو بله بنویس سلام»
      «به مامان بزرگ تو بله پیام بده که رسیدم» (مقصد چندکلمه‌ای)
+     «به Ali پیام بده تو تلگرام که بیا» (مقصد لاتین — مجاز)
      گیومه‌دار اولویت دارد: «به علی تلگرام پیام بده "فردا میام"» */
   const STOP_TAIL_RE = /(?:\s*(?:پیام|پیغام|بگو|بنویس|متن|برسون|برسان|بفرست|که|رو|را|تو|در|توی|با)\s*)+$/i;
   function normWord(s) {
@@ -60,12 +67,12 @@
     let s = String(cmd || '').trim();
     if (!s || s.length < 6) return null;
     if (!/(پیام|پیغام|متن|بگو|بنویس|بده|بفرست|برسون|برسان)/i.test(s)) return null;
-    /* اپ: اولین پیام‌رسانی که در جمله هست؛ «بله/روبیکا» فقط با عبارت مکانی
-       صریح («تو بله» / «در روبیکا» / «با بله») — وگرنه کلمهٔ «بله» هر جمله‌ای
-       را می‌ربود (ریسک فالس‌پازیتیو). */
+    /* اپ: اولین پیام‌رسانی که در جمله هست؛ «بله/روبیکا/ایتا» فقط با عبارت
+       مکانی صریح («تو بله» / «در روبیکا» / «با ایتا») — وگرنه کلمهٔ «بله»
+       هر جمله‌ای را می‌ربود (ریسک فالس‌پازیتیو). */
     let appM = MSG_APPS.find((m) => m.re.test(s));
     if (!appM) return null;
-    if (appM.needsLoc && !/(?:تو|در|توی|با)\s*(بله(?!ی)|روبیکا)/i.test(s)) appM = null;
+    if (appM.needsLoc && !/(?:تو|در|توی|با)\s*(بله(?!ی)|روبیکا|ایتا)/i.test(s)) appM = null;
     if (!appM) {
       appM = MSG_APPS.find((m) => !m.needsLoc && m.re.test(s));
       if (!appM) return null;
@@ -101,6 +108,9 @@
       const leadLoc = text.match(/^(?:تو|در|توی|با)\s*([\u0600-\u06FFa-zA-Z]+)\s*/i);
       if (leadLoc && appM.re.test(leadLoc[1])) text = text.slice(leadLoc[0].length).trim();
       text = text.replace(/^(?:که|این\s*که|:|،|,)\s*/i, '').trim();
+      /* v0.68 — فیکس ریشه‌ای: فعلِ تکراری سرِ متن («…بده تو تلگرام بگو بیا
+         ویس») حذف شود؛ v0.67 «بگو بیا ویس» را به‌عنوان پیام می‌فرستاد */
+      text = text.replace(/^(?:پیام\s*بده|پیغام\s*بده|بگو|بنویس|بفرست|برسون|برسان)\s+/i, '').trim();
     }
     /* متن نباید خودِ مقصد باشد */
     if (text && target && text.indexOf(target) === 0) text = text.slice(target.length).replace(/^[\s:،,]+/, '').trim();
@@ -116,9 +126,76 @@
     return { app: m.id, appFa: m.fa, link, copyText: m.clipboardText ? String(text || '') : '', preFilled: m.id === 'whatsapp' && !!text };
   }
 
-  /* ---------- ۴) مخاطبین (نام گفته‌شده → شناسهٔ واقعی) ----------
-     settings.msgContacts = [{id, name, app, handle}] — از UI پنل افزونه‌ها.
-     تطبیق: دقیق → لوانشتاین محافظه‌کار (نویز STT) → شامل‌سنجی دوطرفه. */
+  /* ---------- ۴) نرمال‌سازی فارسی + آوانگاری دوزبانه ----------
+     «وسط مکالمهٔ فارسی ممکنه اسم انگلیسی بگم» — تطبیق دوجهته:
+     جدول اسم‌های رایج (علی↔ali) + آوانگاری عمومی کاراکتری دوطرفه +
+     اسکلت هم‌خوان‌ها (سیاوش↔siavash). نرمال‌سازی: ي/ك عربی → ی/ک،
+     اعراب/نیم‌فاصله حذف، ارقام فارسی → لاتین. */
+  function normFa(s) {
+    return String(s || '')
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+      .replace(/\u200C/g, '')
+      .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/ة/g, 'ه')
+      .replace(/[أإٱ]/g, 'ا').replace(/ؤ/g, 'و').replace(/ئ/g, 'ی')
+      .replace(/[۰-۹]/g, (ch) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(ch)))
+      .replace(/\s+/g, ' ').toLowerCase().trim();
+  }
+  const FA2LAT = { 'آ': 'a', 'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'z', 'ر': 'r', 'ز': 'z', 'ژ': 'zh', 'س': 's', 'ش': 'sh', 'ص': 's', 'ض': 'z', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'gh', 'ک': 'k', 'گ': 'g', 'ل': 'l', 'م': 'm', 'ن': 'n', 'و': 'v', 'ه': 'h', 'ی': 'i' };
+  const LAT2FA = { 'sh': 'ش', 'ch': 'چ', 'kh': 'خ', 'gh': 'غ', 'zh': 'ژ', 'oo': 'و', 'ou': 'و', 'ee': 'ی', 'ay': 'ای', 'ai': 'ای', 'ei': 'ای', 'a': 'ا', 'b': 'ب', 'c': 'ک', 'd': 'د', 'e': 'ای', 'f': 'ف', 'g': 'گ', 'h': 'ه', 'i': 'ای', 'j': 'ج', 'k': 'ک', 'l': 'ل', 'm': 'م', 'n': 'ن', 'o': 'او', 'p': 'پ', 'q': 'ق', 'r': 'ر', 's': 'س', 't': 'ت', 'u': 'یو', 'v': 'و', 'w': 'و', 'x': 'کس', 'y': 'ی', 'z': 'ز' };
+  function faToLatin(s) {
+    const t = normFa(s).replace(/\s+/g, '');
+    if (!t) return '';
+    let out = '';
+    for (const ch of t) out += FA2LAT[ch] || ch;
+    return out;
+  }
+  function latinToFa(s) {
+    const t = String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (!t) return '';
+    let out = '', i = 0;
+    while (i < t.length) {
+      const two = t.slice(i, i + 2);
+      if (LAT2FA[two]) { out += LAT2FA[two]; i += 2; continue; }
+      out += LAT2FA[t[i]] || t[i]; i += 1;
+    }
+    return out;
+  }
+  function skel(s) { return String(s || '').replace(/[^a-z0-9]/gi, '').toLowerCase().replace(/[aeiou]/g, ''); }
+  /* جدول اسم‌های رایج ایران — تلفظ فارسی ↔ نوشتار لاتین */
+  const PHON_PAIRS = [
+    ['علی', 'ali'], ['رضا', 'reza'], ['حسین', 'hossein', 'hosein', 'hussein', 'hussain'],
+    ['حسن', 'hassan', 'hasan'], ['محمد', 'mohammad', 'muhammad', 'mohamed', 'mohammed'],
+    ['مهدی', 'mehdi', 'mahdi'], ['امیر', 'amir'], ['احمد', 'ahmad', 'ahmed'],
+    ['جواد', 'javad'], ['حامد', 'hamed'], ['صادق', 'sadegh', 'sadeq'],
+    ['مصطفی', 'mostafa', 'mustafa'], ['مجید', 'majid'], ['میلاد', 'milad'],
+    ['محسن', 'mohsen'], ['محمود', 'mahmoud', 'mahmood'], ['مسعود', 'masoud', 'masood'],
+    ['سینا', 'sina'], ['نیما', 'nima'], ['آرش', 'arash'], ['ارش', 'arash'],
+    ['آرمان', 'arman'], ['بابک', 'babak'], ['کاوه', 'kaveh'], ['پویا', 'pouya', 'pooya'],
+    ['سعید', 'saeed', 'said'], ['حمید', 'hamid'], ['ناصر', 'naser', 'nasser'],
+    ['کریم', 'karim'], ['فرهاد', 'farhad'], ['فرید', 'farid'], ['کیان', 'kian'],
+    ['یاسر', 'yaser', 'yasser'], ['یوسف', 'yousef', 'yusuf', 'yusef'], ['ایمان', 'iman'],
+    ['سارا', 'sara', 'sarah'], ['مریم', 'maryam'], ['زهرا', 'zahra'],
+    ['فاطمه', 'fatemeh', 'fateme', 'fatima'], ['نگار', 'negar'], ['الهام', 'elham'],
+    ['پریسا', 'parisa'], ['شیما', 'shima'], ['شیرین', 'shirin'], ['سمیرا', 'samira'],
+    ['نیلوفر', 'niloofar', 'niloufar'], ['لیلا', 'leila', 'layla'], ['مینا', 'mina'],
+    ['جان', 'john', 'jon'], ['پدرام', 'pedram'], ['سهیل', 'soheil'],
+  ];
+  const LAT2FA_SET = {};
+  for (const pp of PHON_PAIRS) {
+    const fa = normFa(pp[0]);
+    for (const lat of pp.slice(1)) {
+      const l = String(lat).toLowerCase();
+      (LAT2FA_SET[l] = LAT2FA_SET[l] || []).push(fa);
+    }
+  }
+
+  /* ---------- ۵) مخاطبین (نام گفته‌شده → شناسهٔ واقعی) ----------
+     settings.msgContacts = [{id, name, app, handle, aliases?}] — از UI
+     پنل افزونه‌ها یا فرمان صوتی. تطبیق v3:
+     گذر ۰ دقیق (نام/alias/یوزرنیم) → گذر ۱ آوانگاری دوزبانه (علی↔Ali)
+     → گذر ۲ لوانشتین محافظه‌کار (نویز STT) → گذر ۳ پیشوند دوطرفه.
+     anyApp=true برای حذف (جستجو در همهٔ اپ‌ها). اپ‌های شماره‌محور
+     (واتساپ/بله/ایتا/روبیکا) فالبک اشتراک مخاطب دارند. */
   function _lev(a, b) {
     const m = a.length, n = b.length;
     if (!m) return n; if (!n) return m;
@@ -133,32 +210,137 @@
     }
     return prev[n];
   }
-  function contactFind(contacts, appId, name) {
-    const q = normWord(name);
+  function contactFind(contacts, appId, name, anyApp) {
+    const q = normFa(name);
     if (!q || q.length < 2) return null;
-    const list = (Array.isArray(contacts) ? contacts : []).filter((c) => c && String(c.app || '') === String(appId) && String(c.handle || '').trim());
+    const all = (Array.isArray(contacts) ? contacts : []).filter((c) => c && String(c.handle || '').trim());
+    if (!all.length) return null;
+    const PHONE_APPS = { whatsapp: 1, bale: 1, eitaa: 1, rubika: 1 };
+    const sameApp = String(appId || '') ? all.filter((c) => String(c.app || '') === String(appId)) : [];
+    let list = sameApp;
+    if (!list.length) {
+      if (PHONE_APPS[String(appId)]) list = all.filter((c) => PHONE_APPS[String(c.app)]);
+      else if (anyApp) list = all;
+      else list = [];
+    }
     if (!list.length) return null;
-    let hit = list.find((c) => normWord(c.name) === q);
+    const hdOf = (h) => String(h || '').replace(/^@/, '').toLowerCase().trim();
+    function variants(c) {
+      const vs = new Set();
+      const add = (x) => { const n = normFa(x); if (n && n.length >= 2) { vs.add(n); vs.add(faToLatin(n)); } };
+      add(c.name);
+      (Array.isArray(c.aliases) ? c.aliases : []).forEach(add);
+      return vs;
+    }
+    const qBare = q.replace(/^@/, '');
+    /* گذر ۰ — دقیق: نام/alias/یوزرنیم */
+    let hit = list.find((c) => variants(c).has(q) || hdOf(c.handle) === qBare);
     if (hit) return hit;
-    hit = list.find((c) => { const n = normWord(c.name); if (n.length < 3 || Math.abs(n.length - q.length) > 2) return false; const tol = n.length >= 9 ? 2 : (n.length >= 5 ? 1 : 0); return tol > 0 && _lev(n, q) <= tol; });
+    /* گذر ۱ — آوانگاری دوزبانه: علی↔Ali، محمد↔Mohammad، جدول + عمومی */
+    const qLat = faToLatin(q);
+    const qFaCands = new Set();
+    if (/^[a-z]/.test(q)) {
+      (LAT2FA_SET[qBare] || []).forEach((x) => qFaCands.add(x));
+      qFaCands.add(latinToFa(qBare));
+    }
+    hit = list.find((c) => {
+      const vs = variants(c);
+      for (const fq of qFaCands) if (vs.has(fq)) return true;
+      for (const v of vs) {
+        if (qLat && v === qLat) return true;
+        if (qLat && v.length >= 4 && qLat.length >= 4 && skel(v) === skel(qLat)) return true;
+      }
+      return false;
+    });
     if (hit) return hit;
-    hit = list.find((c) => { const n = normWord(c.name); if (q.length < 3 && n.length < 3) return false; return n.indexOf(q) === 0 || q.indexOf(n) === 0; });
+    /* گذر ۲ — لوانشتین محافظه‌کار (نویز STT) روی نام/alias/یوزرنیم */
+    hit = list.find((c) => {
+      const cands = [...variants(c), hdOf(c.handle)];
+      for (const n of cands) {
+        if (n.length < 3 || Math.abs(n.length - q.length) > 2) continue;
+        /* نام ۳حرفی هم‌طول با فاصلهٔ ≤۱ هم می‌پذیرد (نویز STT روی اسم کوتاه) */
+        const tol = n.length >= 9 ? 2 : (n.length >= 4 ? 1 : (n.length === q.length ? 1 : 0));
+        if (tol > 0 && _lev(n, q) <= tol) return true;
+      }
+      return false;
+    });
+    if (hit) return hit;
+    /* گذر ۳ — پیشوند دوطرفه */
+    hit = list.find((c) => { for (const n of variants(c)) { if (n.length >= 3 && (n.indexOf(q) === 0 || q.indexOf(n) === 0)) return true; } return false; });
     return hit || null;
   }
 
-  /* ---------- ۵) توابع کمکی قطعی مسیریابی ---------- */
+  /* ---------- ۶) گرامر مخاطبین صوتی (v0.68) ----------
+     «علی رو تو تلگرام با یوزر ali_gh ذخیره کن» / «ذخیره کن رضا رو تو
+     واتساپ با شماره ۰۹۱۲…» / «علی رو با آیدی ali_gh ذخیره کن» (اپ
+     پیش‌فرض: یوزرنیم→تلگرام، شماره→واتساپ) / «مخاطب علی رو حذف کن» /
+     «علی رو از مخاطبین پاک کن» / «مخاطبینمو بخون» / «لیست مخاطبین». */
+  function ctCmdParse(cmd) {
+    let s = String(cmd || '').trim();
+    if (!s || s.length < 8) return null;
+    /* جملهٔ ارسال پیام هرگز فرمان مخاطبین نیست (گارد مستقیم) */
+    if (/(پیام|پیغام)\s*(بده|بفرست|برسون|برسان)|بگو\s+(که|این)/i.test(s)) return null;
+    if (/(ذخیره|ثبت|اضافه|سیو|save|add)/i.test(s) && /کن/i.test(s)) {
+      const um = s.match(/(?:با\s*)?(?:یوزر|یوزرنیم|آیدی|ایدی|نام کاربری|username|user)\s*[:\s]*([a-zA-Z0-9_@.]{3,40})/i);
+      const pm = s.match(/(?:با\s*)?(?:شماره|موبایل|تلفن|نمبر|number|phone)\s*[:\s]*([0-9۰-۹+][0-9۰-۹+\s]{5,23})/);
+      let handle = '';
+      let kind = '';
+      if (um) { handle = um[1].trim(); kind = 'username'; }
+      else if (pm) { handle = phoneLike(pm[1]); kind = 'phone'; }
+      if (handle) {
+        let appM = MSG_APPS.find((m) => m.re.test(s));
+        if (appM && appM.needsLoc && !/(?:تو|در|توی|با)\s*(بله(?!ی)|روبیکا|ایتا)/i.test(s)) appM = null;
+        const app = appM ? appM.id : (kind === 'username' ? 'telegram' : 'whatsapp');
+        /* نام: عبارتِ قبل از رو/را (شکل اسم-اول و فعل-اول) */
+        const wo = s.replace(/(?:با\s*)?(?:یوزر|یوزرنیم|آیدی|ایدی|نام کاربری|username|user)\s*[:\s]*[a-zA-Z0-9_@.]{3,40}/i, ' ').replace(/(?:با\s*)?(?:شماره|موبایل|تلفن|نمبر|number|phone)\s*[:\s]*[0-9۰-۹+\s]{6,24}/i, ' ');
+        let name = '';
+        /* ⚠️ \s+ قبل از رو/را اجباری — وگرنه نام‌هایی که به «را» ختم می‌شوند
+           (سارا، زهرا، نگار) نصف می‌شدند («سارا» → «سا») — باگ واقعی v0.68-بتای داخلی */
+        const nm = wo.match(/([آ-ی\u200Ca-zA-Z0-9][آ-ی\u200Ca-zA-Z0-9\s]{0,30}?)\s+(?:رو|را)\s/i);
+        if (nm) name = nm[1].trim();
+        else {
+          const nm2 = wo.match(/(?:ذخیره|ثبت|اضافه|سیو)\s*کن\s+([آ-ی\u200Ca-zA-Z0-9][آ-ی\u200Ca-zA-Z0-9\s]{1,30}?)\s*$/i);
+          if (nm2) name = nm2[1].trim();
+        }
+        /* فعل‌های سرِ نام پشت‌سرهم حذف شوند («ذخیره کن رضا» → «رضا») */
+        for (let i = 0; i < 4; i++) {
+          const n2 = name.replace(/^(?:مخاطب|کن|ذخیره|ثبت|اضافه|سیو)\s+/i, '').trim();
+          if (n2 === name) break;
+          name = n2;
+        }
+        if (name && name.length >= 2) return { op: 'save', name: name.slice(0, 40), app, handle: handle.slice(0, 80), kind };
+      }
+    }
+    const nf = normFa(s);
+    if (/(پاک|حذف|بردار|remove|delete)/i.test(nf) && /مخاطب/.test(nf)) {
+      let name = '';
+      const m1 = s.match(/مخاطب\s+([آ-ی\u200Ca-zA-Z0-9][آ-ی\u200Ca-zA-Z0-9\s]{0,30}?)\s+(?:رو|را)\s/i);
+      const m2 = s.match(/([آ-ی\u200Ca-zA-Z0-9][آ-ی\u200Ca-zA-Z0-9\s]{0,30}?)\s+(?:رو|را)\s*(?:از\s*)?مخاطبین/i);
+      if (m1) name = m1[1].trim();
+      else if (m2) name = m2[1].trim();
+      name = name.replace(/^(?:مخاطب|کن|رو)\s+/i, '').trim();
+      return { op: 'del', name: (name || '').slice(0, 40) };
+    }
+    if (/مخاطب|کانتکت/.test(nf)) {
+      if (/(بخون|بگو|لیست|چین|چیه|کین|نمایش|نشون|باز|چند|تعداد|list|show)/i.test(nf)) return { op: 'list' };
+    }
+    if (/^لیست مخاطبین/.test(nf) || /^مخاطبین$/.test(nf)) return { op: 'list' };
+    return null;
+  }
+
+  /* ---------- ۷) توابع کمکی قطعی مسیریابی ---------- */
   /* یوزرنیم لاتین معتبر تلگرام/دیسکورد (برای فالبک deep-link بعد از NO_TG)
      — @ ابتدای یوزرنیم هم پذیرفته می‌شود (STT هرگز @ نمی‌دهد؛ ورودی دستی می‌دهد) */
   function isLatinUsername(s) {
     return /^[a-zA-Z][a-zA-Z0-9_.@]{2,32}$/.test(String(s || '').trim().replace(/^@/, ''));
   }
-  /* شمارهٔ تلفن قابل‌قبول واتساپ (۸+ رقم، ارقام فارسی هم پذیرفته می‌شود) */
+  /* شمارهٔ تلفن قابل‌قبول (۸+ رقم، ارقام فارسی هم پذیرفته می‌شود) */
   function phoneLike(s) {
     const d = String(s || '').replace(/[۰-۹]/g, (ch) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(ch))).replace(/[^0-9+]/g, '');
     return d.replace(/\+/g, '').length >= 8 ? d.replace(/\+/g, '') : '';
   }
 
-  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, isLatinUsername, phoneLike };
+  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, isLatinUsername, phoneLike };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAMessaging = api;
 })(typeof window !== 'undefined' ? window : null);

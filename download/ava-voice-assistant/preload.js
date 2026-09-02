@@ -122,10 +122,11 @@ contextBridge.exposeInMainWorld('ava', {
     scan: () => ipcRenderer.invoke('apps:scan'),
     launch: (app) => ipcRenderer.invoke('apps:launch', app),
   },
-  /* v0.66 — اکستنشن پیام‌رسانی + VPN — v0.67: send (اتوماسیون دسکتاپ) */
+  /* v0.66 — اکستنشن پیام‌رسانی + VPN — v0.67: send (اتوماسیون دسکتاپ) — v0.68: test (عیب‌یاب) */
   msg: {
     open: (u) => ipcRenderer.invoke('msg:open', u),
     send: (p) => ipcRenderer.invoke('msg:send', p),
+    test: (p) => ipcRenderer.invoke('msg:test', p),
   },
   vpn: {
     detect: () => ipcRenderer.invoke('vpn:detect'),

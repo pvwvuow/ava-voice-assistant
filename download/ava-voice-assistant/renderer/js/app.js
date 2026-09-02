@@ -4557,9 +4557,9 @@
        اول از همه چک می‌شود تا با تایپ صوتی معمولی قاطی نشود */
     const SYS_DICT_RE = /(اینجا|همینجا|همین\s*جا)\s*(برام|برایم|هم)?\s*(تایپ|بنویس)|(بنویس|تایپ)\s*(کن)?\s*(اینجا|همینجا)/i;
     const wakeDictStart = opts && opts.wake && /^(تایپ|تایپ\s*کن|حالت\s*تایپ|تایپ\s*صوتی)$/i.test(raw);
-    /* v0.67 — جمله‌های حاوی نام پیام‌رسان به لَین پیام‌رسانی می‌روند
+    /* v0.67/v0.68 — جمله‌های حاوی نام پیام‌رسان به لَین پیام‌رسانی می‌روند
        («به علی تو دیسکورد تایپ کن که…» ارسال پیام است نه دیکته/تایپ در پنجرهٔ فعال) */
-    const MSG_APP_SENT_RE = /تلگرام|دیسکورد|واتساپ|روبیکا|telegram|discord|whatsapp/i;
+    const MSG_APP_SENT_RE = /تلگرام|دیسکورد|واتساپ|روبیکا|ایتا|telegram|discord|whatsapp|eitaa/i;
     if (dictation.active) {
       if (DICT_STOP_RE.test(raw)) { stopDictation(true); _dispatchOutcome = 'dict-stop'; return; }
       /* وسط تایپ: همین متن اضافه شود، نه اجرای فرمان */
@@ -4819,6 +4819,135 @@
       cmdBusy = false;
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2200);
       return;
+    }
+
+    /* ============================================================
+       v0.68 — عیب‌یاب صوتی پیام‌رسان‌ها («تست تلگرام» / «تست پیام‌رسان‌ها»)
+       --------------------------------------------------------------
+       خواستهٔ کاربر: باگِ «هیچ‌کاری نمی‌کنه» نباید مبهم بماند — هر خطا
+       با دلیل مشخص گفته می‌شود (نصب نیست / پنجره پیدا نشد / فوکوس نشد).
+       تلگرام: کشف پنجره + فوکوس بدون ارسال (msg:test)؛ دیسکورد: selftest
+       موتور؛ بقیه: چک نصب از اسکن اپ‌ها. جملهٔ ارسال پیام هرگز دزدیده
+       نمی‌شود (گارد msgParse با target+text).
+       ============================================================ */
+    {
+      const _hasTest = /(?:تست|چک)/i.test(raw);
+      const _mm = raw.match(/پیام\s*رسان|پیام‌رسان|تلگرام|دیسکورد|واتساپ|بله|روبیکا|ایتا/i);
+      const _mpGuard = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgParse) ? AVAMessaging.msgParse(raw) : null;
+      if (_hasTest && _mm && !(_mpGuard && _mpGuard.text && _mpGuard.target)) {
+        _dispatchOutcome = 'messaging';
+        let _trep = '';
+        try {
+          const _which = String(_mm[0] || '');
+          const _appM = (typeof AVAMessaging !== 'undefined' && AVAMessaging.appOf) ? AVAMessaging.appOf(_which.replace(/\s+/g, '')) : null;
+          const _inst = (typeof AVAMessaging !== 'undefined' && AVAMessaging.detectInstalled && typeof sysApps !== 'undefined' && sysApps.list) ? AVAMessaging.detectInstalled(sysApps.list) : [];
+          const _faAll = { telegram: 'تلگرام', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', discord: 'دیسکورد', eitaa: 'ایتا' };
+          if (!_appM || /پیام/.test(_which)) {
+            _trep = _inst.length
+              ? LANG === 'en' ? ('Installed: ' + _inst.map((x) => _faAll[x] || x).join(', ') + ' — for a deep test say "test telegram".') : ('نصب هست: ' + _inst.map((x) => _faAll[x] || x).join('، ') + ' — برای تست عمیق بگو «تست تلگرام» یا «تست دیسکورد».')
+              : LANG === 'en' ? 'No messenger found in the app list — run the app scan in Settings › Plugins first.' : 'هیچ پیام‌رسانی توی لیست اپ‌ها پیدا نکردم — اول از تنظیمات › افزونه‌ها اسکن اپ‌ها رو بزن.';
+          } else if (_appM.id === 'telegram' && bridge && bridge.msg && bridge.msg.test) {
+            const r = await bridge.msg.test({ app: 'telegram' }).catch(() => null);
+            if (r && r.ok && /TGTEST/.test(String(r.result || ''))) _trep = LANG === 'en' ? 'Telegram window found, focus OK — the send engine is ready.' : 'پنجرهٔ تلگرام رو پیدا کردم، فوکوس هم اوکیه — موتور ارسال آماده‌ست.';
+            else _trep = (r && r.error) || (LANG === 'en' ? 'Telegram test failed.' : 'تست تلگرام انجام نشد.');
+          } else if (_appM.id === 'discord' && bridge && bridge.discord) {
+            const r = await bridge.discord.cmd({ action: 'selftest' }).catch(() => null);
+            _trep = (r && r.ok) ? t('disc.selftestOk') : (LANG === 'en' ? 'Discord self-test failed — details in activity.log.' : 'تست دیسکورد کامل نشد — جزئیات تو activity.log هست.');
+          } else {
+            const _has = _inst.indexOf(_appM.id) !== -1;
+            _trep = _has
+              ? (LANG === 'en' ? `${_appM.fa} is installed and ready — say "message [name] on ${_appM.fa} that …".` : `${_appM.fa} نصبه و مسیر ارسالش آماده‌ست — بگو «به [اسم] پیام بده تو ${_appM.fa} که …».`)
+              : (LANG === 'en' ? `${_appM.fa} not found in installed apps — install it and run the app scan.` : `${_appM.fa} رو توی اپ‌های سیستم پیدا نکردم — نصبش کن و یک‌بار اسکن اپ‌ها رو بزن.`);
+          }
+        } catch (e) { _trep = LANG === 'en' ? 'Messenger test failed.' : 'تست پیام‌رسان انجام نشد: ' + String((e && e.message) || e).slice(0, 60); }
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _trep);
+        speak(_trep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'msg_test', params: {}, reply: _trep }); } catch (_) { /* noop */ }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
+        return;
+      }
+    }
+
+    /* ============================================================
+       v0.68 — لَین مخاطبین صوتی (ذخیرهٔ مخاطب با اسمی که ذخیره شده)
+       --------------------------------------------------------------
+       «علی رو تو تلگرام با یوزر ali_gh ذخیره کن» / «ذخیره کن رضا رو تو
+       واتساپ با شماره ۰۹۱۲…» / «مخاطب علی رو حذف کن» / «علی رو از
+       مخاطبین پاک کن» / «مخاطبینمو بخون» — قطعی، بدون AI؛ قبل از لَین
+       ارسال پیام تا هیچ‌وقت با فرمان ارسال قاطی نشود.
+       ============================================================ */
+    {
+      const _ctc = (typeof AVAMessaging !== 'undefined' && AVAMessaging.ctCmdParse) ? AVAMessaging.ctCmdParse(raw) : null;
+      if (_ctc) {
+        _dispatchOutcome = 'messaging';
+        let _crep = '';
+        try {
+          const _faOf = (id) => { const m = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgAppsOf) ? AVAMessaging.msgAppsOf().find((x) => x.id === id) : null; return m ? m.fa : id; };
+          if (_ctc.op === 'save') {
+            if (!Array.isArray(settings.msgContacts)) settings.msgContacts = [];
+            if (settings.msgContacts.length >= 200) {
+              _crep = LANG === 'en' ? 'Contacts list is full.' : 'لیست مخاطبین پر است — چند تا قدیمی رو پاک کن.';
+            } else {
+              const _hd = (h) => String(h || '').replace(/^@/, '').toLowerCase().trim();
+              const _dup = settings.msgContacts.find((y) => String(y.app || '') === _ctc.app && _hd(y.handle) === _hd(_ctc.handle)) || settings.msgContacts.find((y) => String(y.app || '') === _ctc.app && AVAMessaging.normFa(y.name) === AVAMessaging.normFa(_ctc.name));
+              if (_dup) {
+                _dup.handle = _ctc.handle;
+                if (!Array.isArray(_dup.aliases)) _dup.aliases = [_dup.name];
+                if (_dup.name !== _ctc.name && !_dup.aliases.includes(_ctc.name)) _dup.aliases.push(_ctc.name);
+                _dup.name = _ctc.name;
+                store.set('msgContacts', settings.msgContacts);
+                try { if (typeof msgContactsRender === 'function') msgContactsRender(); } catch (_) { /* noop */ }
+                _crep = LANG === 'en' ? `Updated "${_ctc.name}" on ${_faOf(_ctc.app)} → ${_ctc.handle}.` : `«${_ctc.name}» رو تو ${_faOf(_ctc.app)} به‌روز کردم → ${_ctc.handle}.`;
+              } else {
+                settings.msgContacts.push({ id: 'mc' + Date.now().toString(36), name: _ctc.name, app: _ctc.app, handle: _ctc.handle, aliases: [_ctc.name] });
+                store.set('msgContacts', settings.msgContacts);
+                try { if (typeof msgContactsRender === 'function') msgContactsRender(); } catch (_) { /* noop */ }
+                _crep = LANG === 'en' ? `Saved "${_ctc.name}" on ${_faOf(_ctc.app)} → ${_ctc.handle}. From now on just say: message ${_ctc.name}.` : `ذخیره کردم: «${_ctc.name}» تو ${_faOf(_ctc.app)} با ${_ctc.kind === 'phone' ? 'شمارهٔ' : 'یوزرِ'} ${_ctc.handle}. از این به بعد فقط بگو «به ${_ctc.name} پیام بده».`;
+              }
+            }
+          } else if (_ctc.op === 'del') {
+            const _all = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+            if (!_ctc.name) {
+              _crep = LANG === 'en' ? 'Which contact should I delete? Say its name.' : 'اسم مخاطبی که باید پاک بشه رو بگو.';
+            } else {
+              const _hit = AVAMessaging.contactFind(_all, '', _ctc.name, true);
+              if (_hit) {
+                settings.msgContacts = _all.filter((y) => y.id !== _hit.id);
+                store.set('msgContacts', settings.msgContacts);
+                try { if (typeof msgContactsRender === 'function') msgContactsRender(); } catch (_) { /* noop */ }
+                _crep = LANG === 'en' ? `Deleted "${_hit.name}" from contacts.` : `«${_hit.name}» رو از مخاطبین پاک کردم.`;
+              } else {
+                _crep = LANG === 'en' ? `I don't have "${_ctc.name}" in contacts.` : `«${_ctc.name}» رو توی مخاطبینم ندارم.`;
+              }
+            }
+          } else {
+            const _all = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+            if (!_all.length) {
+              _crep = LANG === 'en' ? 'No contacts yet — say: save Ali on Telegram with user ali_gh.' : 'هنوز مخاطبی نداریم — بگو: «علی رو تو تلگرام با یوزر ali_gh ذخیره کن».';
+            } else {
+              _crep = LANG === 'en'
+                ? 'Contacts: ' + _all.slice(0, 8).map((y) => `${y.name} (${y.app}: ${y.handle})`).join(', ') + (_all.length > 8 ? ` … (${_all.length} total)` : '')
+                : 'مخاطبینت: ' + _all.slice(0, 8).map((y) => `«${y.name}» (${_faOf(y.app)}: ${y.handle})`).join('، ') + (_all.length > 8 ? ` … و ${_all.length - 8} تا دیگه` : '') + '.';
+            }
+          }
+        } catch (e) { _crep = LANG === 'en' ? 'Contacts command failed.' : 'فرمان مخاطبین انجام نشد: ' + String((e && e.message) || e).slice(0, 60); }
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _crep);
+        speak(_crep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'contacts_' + _ctc.op, params: { op: _ctc.op, app: _ctc.app || '' }, reply: _crep }); } catch (_) { /* noop */ }
+        playDoneSound();
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
+        return;
+      }
     }
 
     /* ============================================================
@@ -7688,7 +7817,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.67.0-beta';
+  let appVersion = '0.68.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
