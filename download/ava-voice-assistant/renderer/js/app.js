@@ -370,6 +370,12 @@
     'set.app.appsRescan': ['اسکن مجدد', 'Re-scan'],
     'set.app.appsDone': ['اسکن کامل شد — {x} برنامه شناسایی شد', 'Scan finished — {x} apps detected'],
     'set.app.appsFail': ['اسکن انجام نشد — دوباره امتحان کن', 'Scan failed — try again'],
+    /* v0.66 — اکستنشن پیام‌رسانی + VPN */
+    'set.ext.msg': ['پیام‌دادن صوتی (تلگرام/واتساپ/بله/روبیکا/دیسکورد)', 'Voice messaging (Telegram/WhatsApp/Bale/Rubika/Discord)'],
+    'set.ext.msgHint': ['«به علی در تلگرام پیام بده که سلام» — چت باز و متن آماده می‌شود. نصب‌شده‌ها از اسکن سیستم:', '"message Ali on Telegram saying hi" — opens the chat with your text ready. Installed apps come from the system scan:'],
+    'set.ext.vpn': ['VPN و تونل اپ‌محور', 'VPN & per-app tunneling'],
+    'set.ext.vpnHint': ['تشخیص VPN فعال (آداپتور/کلاینت/پورت پروکسی) — مرحلهٔ بعد: مسیریابی هر برنامه از داخل یا خارج تونل', 'Detect active VPN (adapter/client/proxy port) — next step: route any app in or out of the tunnel'],
+    'set.ext.vpnDetect': ['تشخیص VPN', 'Detect VPN'],
     'set.app.langHint': ['کل رابط کاربری و پاسخ‌های آوا به این زبان نشان داده می‌شود', 'The whole UI and AVA replies are shown in this language'],
     'set.app.fa': ['فارسی', 'فارسی'], 'set.app.en': ['English', 'English'],
     'set.app.theme': ['تم ظاهری', 'Appearance theme'],
@@ -3637,6 +3643,45 @@
     });
     appsCountUpdate();
   }
+  /* v0.66 — اکستنشن پیام‌رسانی: چک‌لیست نصب‌شده‌ها + اکستنشن VPN: تشخیص زنده */
+  {
+    const wrap = $('#msgChecklist');
+    if (wrap && typeof AVAMessaging !== 'undefined' && AVAMessaging.detectInstalled) {
+      (async () => {
+        try {
+          await ensureAppsList();
+          const ids = AVAMessaging.detectInstalled(sysApps.list);
+          wrap.innerHTML = '';
+          for (const m of AVAMessaging.msgAppsOf()) {
+            const has = ids.indexOf(m.id) >= 0;
+            const b = document.createElement('span');
+            b.className = 'wake-now-badge' + (has ? '' : ' msg-absent');
+            b.textContent = m.fa + (has ? ' ✓' : ' —');
+            wrap.appendChild(b);
+          }
+        } catch (_) { /* noop */ }
+      })();
+    }
+    const bd = $('#btnVpnDetect');
+    if (bd) bd.addEventListener('click', async () => {
+      const st = $('#vpnStatus');
+      if (!bridge || !bridge.vpn || !bridge.vpn.detect) return;
+      bd.disabled = true;
+      if (st) st.textContent = '…';
+      try {
+        const r = await bridge.vpn.detect();
+        if (st) st.textContent = r && r.active ? (LANG === 'en' ? 'active' : 'فعال') : (LANG === 'en' ? 'none' : 'ندارم');
+        if (r && r.active) {
+          const det = [];
+          if (r.adapters.length) det.push(LANG === 'en' ? 'adapter' : 'آداپتور: ' + r.adapters[0].name);
+          if (r.procs.length) det.push((LANG === 'en' ? 'client: ' : 'کلاینت: ') + r.procs.join(', '));
+          if (r.ports.length) det.push((LANG === 'en' ? 'proxy ports: ' : 'پورت پروکسی: ') + r.ports.map((p) => p.port + ' (' + p.proc + ')').join(', '));
+          toast(det.join(' — ').slice(0, 180), '#i-check');
+        } else toast(LANG === 'en' ? 'No active VPN detected.' : 'VPN فعالی پیدا نشد.', '#i-info');
+      } catch (_) { if (st) st.textContent = '—'; }
+      finally { bd.disabled = false; }
+    });
+  }
 
   /* استخراج نام برنامه از جمله: «لطفا تلگرام رو برام اجرا کن» → «تلگرام» */
   function extractAppName(cmd) {
@@ -4718,6 +4763,51 @@
       cmdBusy = false;
       setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2200);
       return;
+    }
+
+    /* ============================================================
+       v0.66 — لَین قطعیِ پیام‌رسانی (اکستنشن مرحلهٔ ۱) — J
+       ------------------------------------------------------------
+       «به علی در تلگرام پیام بده که…» / «در بله به مامان بگو…» / «به
+       ۰۹۱۲… واتساپ پیام بده…» — گرامر خالص (AVAMessaging.msgParse) بدون AI؛
+       اجرا با deep-link رسمی (allowlist در main) + متن در کلیپ‌بورد
+       (واتساپ: wa.me متن پیش‌پرشده). مرحلهٔ ۲ (خواندن/پاسخ UIA) روی همین
+       لَین سوار می‌شود.
+       ============================================================ */
+    {
+      const _mp = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgParse) ? AVAMessaging.msgParse(raw) : null;
+      if (_mp && (_mp.target || _mp.text)) {
+        try { actLog('lane=messaging (deterministic): app=' + _mp.app + ' target=' + String(_mp.target).slice(0, 24) + ' text=' + String(_mp.text).slice(0, 30), 'ui', { ev: 'lane', lane: 'messaging', app: _mp.app }); } catch (_) { /* noop */ }
+        _dispatchOutcome = 'messaging';
+        let _mrep = '';
+        let _mok = false;
+        try {
+          if (_mp.app === 'whatsapp' && _mp.target && !/[0-9]{8,}/.test(String(_mp.target).replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))) {
+            _mrep = LANG === 'en' ? 'WhatsApp needs a phone number — say "message 0912… on WhatsApp …".' : 'برای واتساپ شماره تلفن لازم است — بگو «به ۰۹۱۲… در واتساپ پیام بده که …».';
+          } else if (bridge && bridge.msg && bridge.msg.open) {
+            const built = AVAMessaging.msgBuild(_mp.app, _mp.target, _mp.text, true);
+            if (_mp.text && built.copyText) { try { await bridge.sys.copyText(built.copyText); } catch (_) { /* noop */ } }
+            const r = await bridge.msg.open(built.link).catch(() => null);
+            if (r && r.ok) {
+              _mok = true;
+              if (_mp.app === 'whatsapp' && built.preFilled) _mrep = LANG === 'en' ? `WhatsApp opened for "${_mp.target}" with your text pre-filled — press Enter.` : `واتساپ برای «${_mp.target}» با متن «${_mp.text}» باز شد — فقط Enter بزن.`;
+              else if (_mp.text) _mrep = LANG === 'en' ? `${_mp.appFa} opened; text is on the clipboard — Ctrl+V then Enter.` : `${_mp.appFa} برای «${_mp.target}» باز شد؛ متن «${_mp.text}» در کلیپ‌بورد است — Ctrl+V و بعد Enter.`;
+              else _mrep = LANG === 'en' ? `${_mp.appFa} opened.` : `${_mp.appFa} برای «${_mp.target}» باز شد.`;
+            } else _mrep = LANG === 'en' ? 'Could not open the messenger.' : `باز کردن ${_mp.appFa} ممکن نشد${r && r.error ? ': ' + r.error : ''}.`;
+          } else _mrep = t('toast.onlyApp');
+        } catch (e) { _mrep = LANG === 'en' ? 'Messaging failed.' : 'پیام‌رسانی انجام نشد: ' + String((e && e.message) || e).slice(0, 60); }
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _mrep);
+        speak(_mrep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'msg_send', params: { app: _mp.app }, reply: _mrep }); } catch (_) { /* noop */ }
+        if (_mok) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
+        return;
+      }
     }
 
     /* ============================================================

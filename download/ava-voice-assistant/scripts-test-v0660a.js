@@ -158,6 +158,29 @@ ok(L2.match({ items: [{ k: 'آهنگ جدید شادمهر رو بگرد', act: 
 ok(/tokN >= 4 && chain\.length > 1/.test(appSrc) && /2\.2s cloud corroboration window/.test(appSrc), 'I2: ریس STT — آستانهٔ ۴ توکن + پنجرهٔ ۲.۲ ثانیه (زبالهٔ ۵توکنی لاگ دیگر برنده نمی‌شود)');
 ok(/SR_BENCH_MS = 60000/.test(appSrc), 'I2: بنچ وب ۹۰→۶۰ ثانیه');
 
+/* ---------- [10] v0.66 — پیام‌رسان‌ها (J) + VPN (K) ---------- */
+section('10] اکستنشن پیام‌رسانی + VPN — مرحلهٔ ۱');
+const MM = require(path.join(APP, 'renderer/js/voiceMessaging.js'));
+const m1 = MM.msgParse('به علی در تلگرام پیام بده که فردا میام');
+ok(m1 && m1.app === 'telegram' && m1.target === 'علی' && m1.text === 'فردا میام', 'J: پارس کامل اپ/مقصد/متن (تلگرام)');
+const m2 = MM.msgParse('در بله به مامان پیام بده شام خوردی');
+ok(m2 && m2.app === 'bale' && m2.target === 'مامان', 'J: بله');
+const m3 = MM.msgParse('به رضا واتساپ پیام بده سلام داری؟');
+ok(m3 && m3.app === 'whatsapp' && m3.text === 'سلام داری؟', 'J: واتساپ');
+ok(MM.msgParse('سلام خوبی') === null, 'J: نگاتیو — جملهٔ عادی');
+const wb = MM.msgBuild('whatsapp', '989121234567', 'سلام');
+ok(wb && /wa\.me\/989121234567\?text=/.test(wb.link) && wb.preFilled, 'J: wa.me با متن پیش‌پرشده (encodeURIComponent)');
+const tb = MM.msgBuild('telegram', 'ali_dev', 'سلام', true);
+ok(tb && tb.link === 'tg://resolve?domain=ali_dev' && tb.copyText === 'سلام', 'J: دیپ‌لینک tg:// + متن کلیپ‌بورد');
+ok(MM.detectInstalled([{ name: 'Telegram Desktop' }, { name: 'Bale' }]).join(',') === 'telegram,bale', 'J: کشف نصب‌بودن از اسکن اپ‌ها');
+ok(/ipcMain\.handle\('msg:open'/.test(mainSrc) && /MSG_SCHEME_RE/.test(mainSrc) && mainSrc.includes(String.raw`whatsapp:\/\/`), 'J: main — allowlist اسکیم‌های deep-link');
+ok(/open: \(u\) => ipcRenderer\.invoke\('msg:open', u\)/.test(preloadSrc), 'J: پل preload msg.open');
+ok(/lane=messaging \(deterministic\)/.test(appSrc) && /AVAMessaging\.msgParse\(raw\)/.test(appSrc), 'J: لَین قطعی پیام‌رسانی در runCommand');
+ok(/id="msgChecklist"/.test(idxSrc) && /AVAMessaging\.detectInstalled\(sysApps\.list\)/.test(appSrc), 'J: چک‌لیست نصب‌شده‌ها در پنل افزونه‌ها');
+ok(/ipcMain\.handle\('vpn:detect'/.test(mainSrc) && /Get-NetAdapter/.test(mainSrc) && /v2rayN,nekoray|v2rayN,v2ray/.test(mainSrc) && /Get-NetTCPConnection/.test(mainSrc), 'K: vpn:detect — آداپتور TUN/WARP + کلاینت‌ها + پورت پروکسی');
+ok(/detect: \(\) => ipcRenderer\.invoke\('vpn:detect'\)/.test(preloadSrc) && /id="btnVpnDetect"/.test(idxSrc), 'K: پل preload + دکمهٔ «تشخیص VPN»');
+ok(/set\.ext\.vpnDetect':/.test(appSrc), 'K: i18n VPN');
+
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');
 console.log('PASS=' + pass + '  FAIL=' + fail);

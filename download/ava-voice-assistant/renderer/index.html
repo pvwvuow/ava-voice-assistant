@@ -577,7 +577,17 @@
 
             <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
               <div class="set-pane" data-pane="ext">
-                <div class="set-row first">
+                <!-- v0.66 — اکستنشن پیام‌رسانی: چک‌لیست نصب‌شده‌ها از اسکن سیستم -->
+                <div class="set-row col first">
+                  <span class="set-info"><b data-i18n="set.ext.msg">پیام‌دادن صوتی (تلگرام/واتساپ/بله/روبیکا/دیسکورد)</b><span data-i18n="set.ext.msgHint">«به علی در تلگرام پیام بده که سلام» — چت باز و متن آماده می‌شود. نصب‌شده‌ها از اسکن سیستم:</span></span>
+                  <div class="ptt-presets" id="msgChecklist"></div>
+                </div>
+                <!-- v0.66 — اکستنشن VPN اپ‌محور (مرحلهٔ ۱: تشخیص) -->
+                <div class="set-row">
+                  <span class="set-info"><b data-i18n="set.ext.vpn">VPN و تونل اپ‌محور</b><span data-i18n="set.ext.vpnHint">تشخیص VPN فعال (آداپتور/کلاینت/پورت پروکسی) — مرحلهٔ بعد: مسیریابی هر برنامه از داخل یا خارج تونل</span></span>
+                  <span class="apps-count-wrap"><span class="wake-now-badge" id="vpnStatus">—</span><button class="chip sm" id="btnVpnDetect" data-i18n="set.ext.vpnDetect">تشخیص VPN</button></span>
+                </div>
+                <div class="set-row">
                   <span class="set-info"><b data-i18n="set.ext.dns">افزونهٔ DNS Changer</b><span data-i18n="set.ext.dnsHint">با فعال‌کردن، دکمه‌اش در ستون کنار می‌آید و مدیریت کامل DNS را همان‌جا باز می‌کند</span></span>
                   <span class="sw"><input type="checkbox" id="extDnsOpt"/><i></i></span>
                 </div>
@@ -1139,6 +1149,7 @@
   <!-- v0.37 — پارسر فرمان‌های صوتی PiP + رجیستری «چجوری می‌تونم …؟» — قبل از app.js -->
   <script src="js/voiceCommandParser.js"></script>
   <script src="js/voiceIntent.js"></script>
+  <script src="js/voiceMessaging.js"></script>
   <script src="js/voiceCore.js"></script>
   <script src="js/voiceUnderstand.js"></script>
   <script src="js/voiceWake.js"></script>

@@ -122,6 +122,13 @@ contextBridge.exposeInMainWorld('ava', {
     scan: () => ipcRenderer.invoke('apps:scan'),
     launch: (app) => ipcRenderer.invoke('apps:launch', app),
   },
+  /* v0.66 — اکستنشن پیام‌رسانی + VPN */
+  msg: {
+    open: (u) => ipcRenderer.invoke('msg:open', u),
+  },
+  vpn: {
+    detect: () => ipcRenderer.invoke('vpn:detect'),
+  },
 
   /* افزونهٔ کنترل دیسکورد (v0.16) */
   discord: {

@@ -1682,6 +1682,57 @@ ipcMain.handle('sys:copy-text', (_e, txt) => {
   try { clipboard.writeText(String(txt || '')); return true; } catch (_) { return false; }
 });
 
+/* v0.66 — اکستنشن پیام‌رسانی (مرحلهٔ ۱): بازکردن deep-link رسمی پیام‌رسان‌ها.
+   امنیت: فقط اسکیم‌های رسمیِ allowlist — لینک همیشه از سازندهٔ خالص
+   voiceMessaging.msgBuild می‌آید؛ ورودی دلخواه رندرر هرگز به شل نمی‌رود (قاعدهٔ B8). */
+const MSG_SCHEME_RE = /^(tg:\/\/|whatsapp:\/\/|discord:\/\/)|(https:\/\/(t\.me\/|wa\.me\/|web\.bale\.ai|web\.rubika\.ir|discord\.com\/))/i;
+ipcMain.handle('msg:open', (_e, u) => {
+  const s = String(u || '').trim().replace(/["^|<>]/g, '');
+  if (!s || !MSG_SCHEME_RE.test(s)) {
+    actLog('msg:open REJECTED: ' + s.slice(0, 60), 'msg', { ev: 'msg-open', ok: false });
+    return { ok: false, error: 'لینک پیام‌رسان نامعتبر است' };
+  }
+  try {
+    shell.openExternal(s);
+    actLog('msg:open → ' + s.slice(0, 90), 'msg', { ev: 'msg-open', ok: true, link: s.slice(0, 140) });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e).slice(0, 120) };
+  }
+});
+
+/* v0.66 — اکستنشن VPN اپ‌محور (مرحلهٔ ۱: تشخیص صادقانه).
+   خواستهٔ کاربر: «هر vpnی که کاربر فعال داره رو بتونه تونل کنه». قبل از هر
+   مسیریابی باید بدانیم چه VPN و چه شکلی فعال است: آداپتور TUN/TAP/WireGuard/WARP
+   + پروسس‌های معروف کلاینت + پورت‌های پروکسی لوکالِ گوش‌دهنده (netstat).
+   خروجی ساخت‌یافته است تا مرحلهٔ ۲ (قواعد مسیریابی sing-box/Clash.Meta/v2rayN)
+   روی همین تشخیص سوار شود. */
+ipcMain.handle('vpn:detect', () => new Promise((resolve) => {
+  const ps = 'powershell -NoProfile -Command "'
+    + '$out=@(); '
+    + 'try{ Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {$_.Status -eq \'Up\' -and $_.InterfaceDescription -match \'TAP|TUN|WireGuard|WARP|CloudFlare|OpenVPN|SSTP|SSL-VPN|Cisco AnyConnect\'} | ForEach-Object { $out += (\'ADAPTER|\' + $_.Name + \'|\' + $_.InterfaceDescription) } }catch{}; '
+    + '$procs=\'v2rayN,v2ray,nekoray,nekobox,sing-box,xray,clash,clash-verge,verge-mihomo,mihomo,hiddify,warp-svc,Cloudflare WARP,openvpn,openvpn-gui,wireguard,proxifier\'.Split(\',\'); '
+    + 'foreach($pn in $procs){ try{ $p=Get-Process -Name $pn -ErrorAction SilentlyContinue; if($p){ $out += (\'PROC|\' + $pn) } }catch{} }; '
+    + '$ports=\'1080,10808,10809,7890,7891,7897,2080,20171,20172,8889\'.Split(\',\'); '
+    + 'try{ $conns=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains [string]$_.LocalPort } | Select-Object -First 12; foreach($c in $conns){ $pn2=\'?\'; try{ $pn2=(Get-Process -Id $c.OwningProcess -ErrorAction Stop).ProcessName }catch{}; $out += (\'PORT|\' + $c.LocalPort + \'|\' + $pn2) } }catch{}; '
+    + 'Write-Output ($out -join [Environment]::NewLine)"';
+  exec(ps, { windowsHide: true, timeout: 15000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+    const res = { adapters: [], procs: [], ports: [], ok: !err };
+    if (!err && stdout) {
+      for (const line of String(stdout).split(/\r?\n/)) {
+        const s = line.trim();
+        if (s.startsWith('ADAPTER|')) { const p = s.split('|'); res.adapters.push({ name: p[1] || '', desc: p[2] || '' }); }
+        else if (s.startsWith('PROC|')) res.procs.push(s.slice(5).trim());
+        else if (s.startsWith('PORT|')) { const p = s.split('|'); res.ports.push({ port: Number(p[1]) || 0, proc: p[2] || '?' }); }
+      }
+    }
+    res.active = res.adapters.length > 0 || res.procs.length > 0 || res.ports.length > 0;
+    try { actLog('vpn detect: adapters=' + res.adapters.length + ' procs=' + res.procs.join('/') + ' ports=' + res.ports.map((p) => p.port + '(' + p.proc + ')').join(','), 'vpn', { ev: 'vpn-detect', ok: true, active: res.active }); } catch (_) { /* noop */ }
+    resolve(res);
+  });
+}));
+
+
 /* v0.61 — خواندن کلیپ‌بورد (جایگزین pip:clip بعد از حذف پنجرهٔ شناور):
    «لینکی که کپی کردم رو باز کن» / «با وی‌ال‌سی پخش کن» از همین می‌خواند */
 ipcMain.handle('sys:clipboard', () => {
