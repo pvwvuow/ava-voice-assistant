@@ -5096,6 +5096,7 @@
                + آخرین یادداشت لاتین‌شکل + آوانگاری لاتین (ریشهٔ لاگ: سرچ «علی اچ کی»
            در دیسکوردِ انگلیسی‌نویس هیچ بود) */
             const _vs = [];
+            let _flPushed = null; /* v0.73 — آوانگاریِ حدسیِ faToLatin از «ذخیره‌شده» جدا می‌شود */
             const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
             _pushV(_mp.target);
             if (_ct) { _pushV(_ct.name); (Array.isArray(_ct.aliases) ? _ct.aliases : []).forEach(_pushV); _pushV(_ct.handle); }
@@ -5108,29 +5109,35 @@
               }
             } catch (_) { /* noop */ }
             if (/(انگلیسی|لاتین)/i.test(raw) && AVAMessaging.noteLatinOf) { try { const _lv = AVAMessaging.noteLatinOf(raw); if (_lv && _lv.out) _pushV(_lv.out); } catch (_) { /* noop */ } }
-            if (!AVAMessaging.phoneLike(_mp.target)) { try { const _fl = AVAMessaging.faToLatin(_mp.target); if (_fl && _fl.length >= 3) _pushV(_fl); } catch (_) { /* noop */ } }
+            if (!AVAMessaging.phoneLike(_mp.target)) { try { const _fl = AVAMessaging.faToLatin(_mp.target); if (_fl && _fl.length >= 3) { _flPushed = _fl; _pushV(_fl); } } catch (_) { /* noop */ } }
             /* v0.71 (R3) — واریانت از فکت‌های حافظه + قانون «انگلیسی سرچ کن» — ریشهٔ لاگ:
                «Milad Ghodousi این اسمو هم یادت باشه…انگلیسی سرچ کنی» فکتش ذخیره شد ولی
                لاین قطعی فکت‌ها را نمی‌خواند → فقط «میلاد» سرچ شد → ERR:TG_NO_MATCH ×۲ */
+            let _latinFirst = /(انگلیسی|لاتین)\s*(سرچ|جستجو|تایپ|بنویس|بگرد)/i.test(raw);
             try {
               const _mem2 = avaMem();
               if (_mem2) {
                 await _mem2.load();
                 const _fh = _mem2.findFacts(_mp.target, 4);
-                let _latinFirst = /(انگلیسی|لاتین)\s*(سرچ|جستجو|تایپ|بنویس|بگرد)/i.test(raw);
                 for (const _fx of _fh) {
                   const _ft = String(_fx && _fx.text || '');
                   if (/(انگلیسی|لاتین)\s*(سرچ|جستجو|تایپ|بگرد)/.test(_ft)) _latinFirst = true;
                   (String(_ft).match(/[A-Za-z][A-Za-z0-9_'’\-]*(?:\s+[A-Za-z][A-Za-z0-9_'’\-]*)+/g) || []).forEach(_pushV);
                 }
-                if (_latinFirst) {
-                  const _lat = _vs.filter((x) => /[A-Za-z]/.test(x));
-                  const _fao = _vs.filter((x) => !/[A-Za-z]/.test(x));
-                  _vs.length = 0; _lat.forEach(_pushV); _fao.forEach(_pushV);
-                  try { actLog('messaging variants latin-first (taught rule): ' + _vs.join(' | ').slice(0, 90)); } catch (_) { /* noop */ }
-                }
               }
             } catch (_) { /* noop */ }
+            /* v0.73 — ریشهٔ شکایت میدانی 0.72 («همون اسم فارسی ک خودم میگمو مینویسه.. ن اونی ک ذخیره شده»):
+               هویتِ ذخیره‌شدهٔ لاتین (مخاطب/فکت/یادداشت) در لیست هست ولی پشتِ اسمِ گفته‌شدهٔ فارسی می‌ماند
+               و (با کرشِ PS) هرگز نوبتش نمی‌رسد. حالا: وجود هر واریانت لاتینِ ذخیره‌شده = لاتین‌اولِ
+               پیش‌فرض؛ اسمِ گفته‌شده به آخرِ صف می‌رود. آوانگاریِ حدسیِ faToLatin به‌تنهایی تریگر نمی‌شود
+               (وگرنه هر اسمِ فارسی معمولی یک سرچِ بیهودهٔ لاتین می‌گیرد). راستی‌آزمایی تیتر چتِ اشتباه را رد می‌کند.
+               بیرونِ بلاک حافظه است — اگر حافظه نبود هم مخاطبِ ذخیره‌شدهٔ لاتین جلو می‌رود */
+            if (!_latinFirst && _vs.some((x) => /[A-Za-z]/.test(String(x || '')) && x !== _flPushed)) _latinFirst = true;
+            if (_latinFirst) {
+              const _ordered = AVAMessaging.latinFirstOrder ? AVAMessaging.latinFirstOrder(_vs.slice()) : _vs.slice();
+              _vs.length = 0; _ordered.forEach(_pushV);
+              try { actLog('messaging variants latin-first (taught rule): ' + _vs.join(' | ').slice(0, 90)); } catch (_) { /* noop */ }
+            }
             const _uname = (_mp.app === 'telegram' && AVAMessaging.isLatinUsername(_handle)) ? _handle.replace(/^@/, '') : (AVAMessaging.isLatinUsername(_mp.target) ? _mp.target.replace(/^@/, '') : '');
             /* v0.72 — ریشه‌یابی میدانی: لیست کامل واریانت‌ها قبل از ارسال لاگ می‌شود (لاگ 0.71: contact ذخیره‌شده «میلاد قدوسی» در واریانت‌های ۹ثانیه بعد غایب بود) */
             try { actLog('messaging variants: ' + _vs.join(' | ').slice(0, 160), 'ui', { ev: 'msg-vars', app: _mp.app }); } catch (_) { /* noop */ }
@@ -8006,7 +8013,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.72.0-beta';
+  let appVersion = '0.73.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];

@@ -5553,7 +5553,7 @@ function Read-TgBest($cand) {
   # یک پاپ‌آپِ تاپ‌لول جدا از پنجرهٔ اصلی است و در درختِ پنجرهٔ اصلی دیده نمی‌شود.
   # حالا: همهٔ پنجره‌های تاپ‌لولِ همان پروسهٔ تلگرام (پاپ‌آپ‌ها اول) + پنجرهٔ اصلی؛
   # سقف امن برای سرعت؛ بهترین امتیاز برمی‌گردد (اندیسِ نتیجه برای ناوبری کیبورد).
-  $best = -1; $bestScore = 0; $script:UIAScore = 0; $nPop = 0
+  $best = -1; $bestScore = 0; $script:UIAScore = 0; $script:UIAPop = 0; $nPop = 0
   try {
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
@@ -5605,8 +5605,12 @@ function Read-TgBest($cand) {
       if ($bestScore -ge 100) { break }
     }
   } catch { return -1 }
-  Write-Output ('DBG:POPUP=' + $nPop)
-  if ($best -ge 0) { $script:UIAScore = $bestScore; Write-Output ('DBG:UIASCORE=' + $bestScore) }
+  # v0.73 — ریشهٔ کرش لاگ 0.72 (DBG:UIAPICK=«DBG:POPUP=0 DBG:UIASCORE=60 0» → «Could not compare "0"
+  # to ... at ava-tg.ps1:316» → send EMPTY): Write-Output داخلِ تابعی که خروجی‌اش captured می‌شود
+  # جریانِ خروجی را به Object[] آلوده می‌کند. تله‌متری حالا فقط در $script: می‌رود و از
+  # جای فراخوانی چاپ می‌شود — return همیشه یک int خالص است.
+  $script:UIAPop = $nPop
+  if ($best -ge 0) { $script:UIAScore = $bestScore }
   return $best
 }
 
@@ -5725,8 +5729,13 @@ if ($Username) {
     Start-Sleep -Milliseconds 2000
     # v0.70 — انتخاب نتیجه با UIA (بهترین تطبیق)؛ نشد → اولین نتیجه با Enter
     $uiaPick = Read-TgBest $v
+    # v0.73 — گارد دوبل: اگر روزی خروجیِ تابع دوباره آلوده شد، فقط آخرین عددِ خالص برمی‌داریم
+    # (هرگز مقایسهٔ int با Object[] — همان ava-tg.ps1:316 لاگ 0.72)
+    $uiaPick = @($uiaPick | Where-Object { ("$_") -match '^-?\d+$' })[-1]
+    if ($null -eq $uiaPick) { $uiaPick = -1 }
+    $uiaPick = [int]$uiaPick
+    Write-Output ('DBG:UIAPICK=' + $uiaPick + ' POPUP=' + $script:UIAPop + ' SCORE=' + $script:UIAScore)
     if ($uiaPick -ge 0) {
-      Write-Output ('DBG:UIAPICK=' + $uiaPick)
       for ($d = 0; $d -le $uiaPick; $d++) { Send-Combo 'down'; Start-Sleep -Milliseconds 120 }
       Send-Combo 'enter'
     } else {

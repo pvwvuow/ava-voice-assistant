@@ -133,7 +133,7 @@ section('6] نسخهٔ رسمی در ۴ جای رسمی (v0.65→v0.66+ ریلک
 ok(/^0\.[6-9][0-9]?\.[0-9]+-beta$/.test(pkg.version), 'package.json → ' + pkg.version); /* v0.70 — forward-relax */
 ok(/appVersion\s*=\s*'0\.[6-9][0-9]?\.[0-9]+-beta'/.test(appSrc), 'app.js appVersion');
 ok(/abVersion[^0-9]*0\.[6-9][0-9]?\.[0-9]+-beta/.test(idxSrc), 'index.html abVersion');
-ok(readmeSrc.indexOf('۰.۶۵.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۶.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۷.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۹.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۰.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۱.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۲.۰-بتا') >= 0, 'README بلاک نسخهٔ فعلی'); /* v0.72 forward-relax */
+ok(readmeSrc.indexOf('۰.۶۵.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۶.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۷.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۶۹.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۰.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۱.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۲.۰-بتا') >= 0 || readmeSrc.indexOf('۰.۷۳.۰-بتا') >= 0, 'README بلاک نسخهٔ فعلی'); /* v0.73 forward-relax */
 
 /* ---------- نتیجه ---------- */
 console.log('\n———————————————');

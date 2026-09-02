@@ -467,8 +467,18 @@
     const d = String(s || '').replace(/[۰-۹]/g, (ch) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(ch))).replace(/[^0-9+]/g, '');
     return d.replace(/\+/g, '').length >= 8 ? d.replace(/\+/g, '') : '';
   }
+  /* v0.73 — لاتین‌اولِ پایدار (stable partition): واریانت‌های لاتین جلو، فارسی عقب.
+     ریشهٔ لاگ میدانی 0.72: «همون اسم فارسی ک خودم میگمو مینویسه.. ن اونی ک ذخیره شده» —
+     هویتِ ذخیره‌شده (مخاطب/فکت) پشتِ اسمِ گفته‌شده می‌ماند و هرگز نوبتش نمی‌رسید.
+     ترتیب نسبی داخل هر گروه حفظ می‌شود؛ تکراری‌ها هم از قبل با _pushV حذف شده‌اند. */
+  function latinFirstOrder(vs) {
+    const list = (Array.isArray(vs) ? vs : []).map((x) => String(x || '').trim()).filter(Boolean);
+    const lat = list.filter((x) => /[A-Za-z]/.test(x));
+    const fao = list.filter((x) => !/[A-Za-z]/.test(x));
+    return lat.concat(fao);
+  }
 
-  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike };
+  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike, latinFirstOrder };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAMessaging = api;
 })(typeof window !== 'undefined' ? window : null);
