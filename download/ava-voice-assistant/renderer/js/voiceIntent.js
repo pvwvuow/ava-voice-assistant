@@ -444,6 +444,20 @@
     if (!url) return null;
     return { url, player: playerTargetOf(rawCmd) };
   }
+  /* ============================================================
+     v0.81 — strictVideoUrlOf: اعتبارسنجی سخت‌گیرانه برای لینکِ
+     کلیپ‌بورد (خواستهٔ کاربر: «لینکو که توی کلیپ بردشه خودش تشخیص بده»)
+     فقط یوتیوب (watch/shorts/live/embed/youtu.be) یا فایلِ ویدیویی مستقیم
+     (mp4/webm/mkv/avi/mov/m4v) قبول می‌شود؛ هر URL دیگری (گوگل/سایت/…)
+     رد می‌شود تا کلیپ‌بوردِ روزمرهٔ کاربر هرگز به پلیر نرود.
+     ============================================================ */
+  function strictVideoUrlOf(text) {
+    const s = String(text || '');
+    const m = s.match(VIDEO_URL_RE);
+    if (!m) return '';
+    const url = m[0].replace(/[.,؛;:!»)\]…]+$/, '');
+    return (YT_VIDEO_URL_RE.test(url) || GENERIC_MEDIA_URL_RE.test(url)) ? url : '';
+  }
 
   /* ============================================================
      v0.74 — videoCtlOf: گرامر کامل فارسی/انگلیسی کنترل پلیر ویدیو
@@ -634,7 +648,7 @@
     { acc: 'Alt+Q', fa: 'Alt+Q' },
   ];
 
-  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, playerTargetOf, videoUrlLane, videoCtlOf, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
+  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, strictVideoUrlOf, playerTargetOf, videoUrlLane, videoCtlOf, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

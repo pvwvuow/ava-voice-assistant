@@ -2849,6 +2849,13 @@
           let src = ytQueryOf(c)
             .replace(/(وی\s?ال\s?سی|vlc|ام\s?پی\s?وی|mpv|پت\s?پلیر|potplayer|کی\s?ام\s?پلیر|kmplayer|ام\s?پی\s?سی|mpc|پلیر\s?پیش\s?فرض)/gi, ' ')
             .replace(/\s+/g, ' ').trim();
+          /* v0.81 — «لینک رو پخش کن توی پات پلیر»: پسماندِ ارجاعی («لینک/اینو/همین»)
+             عنوانِ جستجو نیست — کلیپ‌بورد خوانده شود و لینکِ عینِ آن مستقیم پخش شود
+             (قبلاً «لینک» به‌عنوان عبارتِ سرچ می‌رفت → ویدیوی غلط/هیچ) */
+          if (src && /^(لینکو?|این\s?لینک|همین\s?لینک|اینو|این\s?رو|همینو|همین\s?رو|کلیپ\s?بورد)\b/i.test(src)) {
+            try { actLog('player_open: link-ref leftover «' + src.slice(0, 24) + '» → clipboard', 'ui', { ev: 'lane', lane: 'player_open-clip' }); } catch (_) { /* noop */ }
+            src = '';
+          }
           let kind = src ? 'query' : 'url';
           if (!src) {
             try {
@@ -3056,8 +3063,8 @@
     video: {
       fa: 'ویدیو و پلیر سیستم', en: 'Video & System Player',
       items: {
-        fa: ['ویدیو رو پلی کن', 'ویدیو رو پاز کن', 'ویدیو رو فول اسکرین کن', 'ویدیو رو ببند', 'برو جلو ۳۰ ثانیه', 'با وی‌ال‌سی آهنگ X رو پخش کن', 'با پت‌پلیر پخش کن', 'با پلیر پیش‌فرض پخش کن', 'تو یوتیوب آهنگ X رو سرچ کن', 'فقط سرچ کن X تو یوتیوب پخش نکن', 'دومی رو پخش کن', 'ویدیو رو تصویر در تصویر کن', 'ویدیو رو شفاف کن', 'ببرش مانیتور ۲', 'کنار هم بچینشون', 'چی بازه', 'برو سراغ اون یکی ویدیو', 'دوتا ویدیو کنار هم پخش کن', 'سرعتش کن ۲ برابر', 'کیفیتش کن ۳۶۰', 'سایزش کن کوچیک', 'وضعیت ویدیو چیه', 'از ویدیو عکس بگیر'],
-        en: ['Play the video', 'Pause the video', 'Fullscreen the video', 'Close the video', 'Forward 30s', 'Play X in VLC', 'Play in PotPlayer', 'Play in my default player', 'Search YouTube for X', 'Just search X on YouTube, do not play', 'Play the second result', 'Picture-in-picture the video', 'Make the video translucent', 'Move it to monitor 2', 'Arrange them side by side', 'What is open', 'Switch to the other video', 'Play two videos together', 'Speed 2x', 'Quality 360', 'Resize small', 'Video status', 'Screenshot the video'],
+        fa: ['ویدیو رو پلی کن', 'ویدیو رو پاز کن', 'ویدیو رو فول اسکرین کن', 'ویدیو رو ببند', 'برو جلو ۳۰ ثانیه', 'با وی‌ال‌سی آهنگ X رو پخش کن', 'با پت‌پلیر پخش کن', 'با پلیر پیش‌فرض پخش کن', 'تو یوتیوب آهنگ X رو سرچ کن', 'فقط سرچ کن X تو یوتیوب پخش نکن', 'دومی رو پخش کن', 'لینکو پخش کن', 'ویدیو رو تصویر در تصویر کن', 'ویدیو رو شفاف کن', 'ببرش مانیتور ۲', 'کنار هم بچینشون', 'چی بازه', 'برو سراغ اون یکی ویدیو', 'دوتا ویدیو کنار هم پخش کن', 'سرعتش کن ۲ برابر', 'کیفیتش کن ۳۶۰', 'سایزش کن کوچیک', 'وضعیت ویدیو چیه', 'از ویدیو عکس بگیر'],
+        en: ['Play the video', 'Pause the video', 'Fullscreen the video', 'Close the video', 'Forward 30s', 'Play X in VLC', 'Play in PotPlayer', 'Play in my default player', 'Search YouTube for X', 'Just search X on YouTube, do not play', 'Play the second result', 'Play the link in my clipboard', 'Picture-in-picture the video', 'Make the video translucent', 'Move it to monitor 2', 'Arrange them side by side', 'What is open', 'Switch to the other video', 'Play two videos together', 'Speed 2x', 'Quality 360', 'Resize small', 'Video status', 'Screenshot the video'],
       },
     },
     music: {
@@ -5075,6 +5082,71 @@
         cmdBusy = false;
         setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
         return;
+      }
+    }
+
+    /* ============================================================
+       v0.81 — لَین قطعیِ «لینکِ کلیپ‌بورد» — خواستهٔ صریح کاربر:
+       «می خوام وقتی کاربر لینکو فقط توی کلیپ بردش گذاشته خودش تشخیص
+       بده و همونو پخش کنه»
+       ------------------------------------------------------------
+       جملهٔ فعلِ پخش که در متنش نه لینکی هست نه عنوانِ صریح (یا به لینک
+       ارجاع می‌دهد: «لینکو پخش کن»، «اینو پخش کن»، یا لخت: «پخش کن») →
+       کلیپ‌بورد خوانده می‌شود؛ اگر لینک ویدیو (یوتیوب/فایل ویدیویی) در
+       آن باشد همان — حرف‌به‌حرف — با پایپ‌لاین قطعی (yt-dlp → پلیر مقصد)
+       پخش می‌شود. «آهنگ فلان رو پخش کن» (عنوانِ صریح) هرگز کلیپ‌بورد را
+       نمی‌دزدد؛ کلیپ‌بوردِ بی‌لینک هم ساکت رد می‌شود.
+       ============================================================ */
+    {
+      const _pbVerb = /(پخشش?\s?کن|پلی\s?کن|پلاش\s?کن|پخش\s?بده|پخش\s?شه|پلی\s?شه|بذار\s?پخش|بذار\s?پلی|بازش\s?کن|\bplay\s?it\b)/i.test(raw);
+      const _pbNoUrl = !/https?:\/\//i.test(raw);
+      const _pbRef = /(لینکو?|کلیپ\s?بورد|کپی\s?(کردم|شده)|\bpaste\b|\bclipboard\b|اینو|این\s?رو|همینو|همین\s?رو|همین\s?لینک|این\s?لینک)/i.test(raw);
+      const _pbBare = /^(آوا[\s،,:-]*)?(پخشش?\s?کن|پلی\s?کن|پلاش\s?کن|پخش\s?بده|پخش\s?شه|پلی\s?شه|بذار\s?پخش\s?شه|\bplay\s?it\b)\s*$/i.test(String(raw).trim());
+      if (_pbVerb && _pbNoUrl && (_pbRef || _pbBare) && bridge && bridge.sys && bridge.sys.clipboard && bridge.player && bridge.player.open) {
+        let _cbUrl = '';
+        try {
+          const _cb = await bridge.sys.clipboard();
+          const _mt = String((_cb && _cb.text) || '').match(/https?:\/\/[^\s"'<>«»،؛]+/i);
+          if (_mt) {
+            /* v0.81 — سخت‌گیرانه: فقط یوتیوب/فایل ویدیویی — گوگل/سایت هرگز به پلیر نمی‌رود */
+            _cbUrl = (typeof AVAIntent !== 'undefined' && AVAIntent.strictVideoUrlOf) ? AVAIntent.strictVideoUrlOf(_mt[0])
+              : ((typeof AVAIntent !== 'undefined' && AVAIntent.videoUrlOf) ? AVAIntent.videoUrlOf('پخش کن ' + _mt[0]) : '');
+          }
+        } catch (_) { /* noop */ }
+        if (_cbUrl) {
+          try { actLog('lane=clipboard-play: url=' + _cbUrl.slice(0, 90) + ' player=' + ((typeof AVAIntent !== 'undefined' && AVAIntent.playerTargetOf) ? AVAIntent.playerTargetOf(raw) : 'default'), 'ui', { ev: 'lane', lane: 'clipboard-play', url: _cbUrl }); } catch (_) { /* noop */ }
+          _dispatchOutcome = 'clipboard-play';
+          lastVideoUrl = _cbUrl;
+          const _pbPlayer = (typeof AVAIntent !== 'undefined' && AVAIntent.playerTargetOf) ? AVAIntent.playerTargetOf(raw) : '';
+          let _cpre = '';
+          let _cpOk = false;
+          try {
+            const _cres = await bridge.player.open({ player: _pbPlayer || 'default', kind: 'url', src: _cbUrl });
+            const _where = (_cres && _cres.fa) ? ' — در ' + _cres.fa : '';
+            if (_cres && _cres.ok && _cres.via === 'browser-fallback') {
+              _cpre = LANG === 'en'
+                ? 'Got the link from your clipboard — your player could not stream it, so I opened it in the browser.'
+                : 'لینک رو از کلیپ‌بورد برداشتم — پلیر نتوانست پخش کند، در مرورگر باز کردم.';
+              _cpOk = true;
+            } else if (_cres && _cres.ok) {
+              _cpre = (LANG === 'en' ? `Got the link from your clipboard and played it${_where}.` : `لینک رو از کلیپ‌بورد برداشتم و پخش کردم${_where}.`);
+              _cpOk = true;
+            } else {
+              _cpre = (LANG === 'en' ? 'Found the link in your clipboard but could not play it: ' : 'لینک تو کلیپ‌بورد بود ولی پخش نشد: ') + ((_cres && _cres.error) || '');
+            }
+          } catch (_) { _cpre = LANG === 'en' ? 'Clipboard playback failed.' : 'پخش لینکِ کلیپ‌بورد ممکن نشد.'; }
+          setState('success');
+          statusText.textContent = t('status.done');
+          rcTag.textContent = t('tag.done');
+          typeText(rcReply, _cpre);
+          speak(_cpre);
+          pushHistory(raw, true);
+          try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'clipboard-play', intent: 'video_play', params: { q: _cbUrl.slice(0, 120) }, reply: _cpre }); } catch (_) { /* noop */ }
+          if (_cpOk) { try { playDoneSound(); } catch (_) { /* noop */ } }
+          cmdBusy = false;
+          setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+          return;
+        }
       }
     }
 
@@ -8676,7 +8748,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.80.0-beta';
+  let appVersion = '0.81.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10198,12 +10270,17 @@
   }
   /* v0.66 — هلپر مشترک پخش ویدیو (لَین URL + اکشن video_play هر دو همین یک
      مسیر می‌روند): پلیر مقصد (درخواستی/پیش‌فرض) + بازخورد فارسیِ صادقانه.
-     خروجی { rep, ok } — ok فقط برای گیتِ صدای «انجام شد». */
+     خروجی { rep, ok } — ok فقط برای گیتِ صدای «انجام شد».
+     v0.81 — فیکس رگرسیون «لینک در جا پخش نمی‌شود» (گزارش کاربر نسخهٔ 0.80):
+     وقتی src خودش URL ویدیوست، هرگز به‌عنوان «عبارت جستجو» به ytResolve
+     داده نمی‌شود (search اولین نتیجهٔ صفحهٔ نتایج را می‌دهد — گاهی ویدیوی
+     اشتباه یا هیچ!) — kind='url' می‌رود: ytNormalizeUrl شناسهٔ دقیق را
+     می‌گیرد و yt-dlp همان ویدیو را در همان پلیر پخش می‌کند. */
   async function videoPlayReply(vq, playerWanted, origCmdForLog, keepExisting) {
     if (!bridge || !bridge.player || !bridge.player.open) return { rep: t('toast.onlyApp'), ok: false };
     const want = String(playerWanted || '').trim();
     try {
-      const res = await bridge.player.open({ player: want || 'default', kind: 'query', src: vq, keepExisting: !!keepExisting });
+      const res = await bridge.player.open({ player: want || 'default', kind: /^https?:\/\//i.test(vq) ? 'url' : 'query', src: vq, keepExisting: !!keepExisting });
       const where = (res && res.fa) ? ' — در ' + res.fa : '';
       if (res && res.ok && res.via === 'browser-fallback') return { rep: LANG === 'en'
         ? `Your player could not stream it — opened "${vq}" in the browser.`
