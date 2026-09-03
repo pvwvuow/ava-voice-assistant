@@ -3298,6 +3298,31 @@
     } catch (_) { return ''; }
   }
 
+  /* ============================================================
+     v0.77 — فهرست فرمان‌های سفارشی کاربر برای مغز (باگ C2)
+     ------------------------------------------------------------
+     ریشهٔ «کامندهای قدیمی هیچ کدوم کار نمی‌کنند»: act=run_custom از
+     v0.42 در DO_ACTS هست ولی مغز هرگز فرمان‌های سفارشی کاربر را
+     نمی‌دید → جملهٔ مترادفِ فرمان سفارشی به web_search/چتِ بی‌ربط
+     می‌رفت. حالا فهرست (عنوان + عبارت‌ها) به بستهٔ مغز می‌چسبد و
+     مدل با act=run_custom و value=عنوانِ عینِ فرمان اجرا می‌کند.
+     سقف ۱۰ عدد — فقط وقتی فرمانی واقعاً وجود دارد (هزینهٔ توکن ≈ صفر).
+     ============================================================ */
+  function customCmdsCtx() {
+    try {
+      const live = (Array.isArray(customCmds) ? customCmds : []).filter((c) => c && (c.title || (c.phrases || []).length)).slice(0, 10);
+      if (!live.length) return '';
+      const rows = live.map((c) => {
+        const ps = (Array.isArray(c.phrases) ? c.phrases : []).filter(Boolean).slice(0, 4).join(' | ');
+        return '- «' + String(c.title || 'فرمان سفارشی').slice(0, 40) + '»' + (ps ? ' (عبارت‌ها: ' + ps + ')' : '');
+      });
+      return (LANG === 'en'
+        ? '[User custom commands — if the request means one of these (exact or paraphrase), reply with ONLY a DO block using act=run_custom and value=<exact title>. If none fits, ignore this list.\n'
+        : '[فرمان‌های سفارشیِ خودِ کاربر — اگر درخواست کاربر هم‌معنای یکی از این‌ها بود (عینِ عبارت یا مترادفش)، فقط بلوک DO بده با act=run_custom و value=عنوانِ همان فرمان (عیناً). اگر به هیچ‌کدام ربط نداشت این فهرست را نادیده بگیر.\n')
+        + rows.join('\n') + ']';
+    } catch (_) { return ''; }
+  }
+
   /* v0.41 — حافظهٔ نگاشت AI (درخواست کاربر: «سریعتر به AI وصلش کنیم»):
      بار اول AI عبارتِ نامتعارف را به فرمان واقعی آوا نگاشت می‌کند (run_cmd)؛
      از دفعهٔ بعد همان عبارت «بی‌شبکه و در لحظه» اجرا می‌شود — نگاشت‌های
@@ -3552,7 +3577,7 @@
     } catch (_) { return ''; }
   }
   async function aiFallbackCtx(rule, cmd) {
-    const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(cmd || ''), await avaStateCtx()];
+    const parts = [aiCmdCatalogCtx(), customCmdsCtx(), appsNamesCtx(), learnedExamplesCtx(cmd || ''), await avaStateCtx()];
     if (_intentCands) parts.push(_intentCands);
     if (rule && rule.__aiExtra) parts.push(rule.__aiExtra);
     /* v0.61 — حافظهٔ گفتگو برای فالبک هم — هیچ مسیر AI بی‌حافظه نیست
@@ -3564,7 +3589,7 @@
      موجودیت‌ها. قانون ۹ِ پرامپت («ارجاع را از تاریخچه حل کن») حالا واقعاً
      تاریخچه دارد — ریشهٔ «همون مدل موتوری که گفتیم» همین بود. */
   async function aiBrainCtx() {
-    const parts = [aiCmdCatalogCtx(), appsNamesCtx(), learnedExamplesCtx(arguments.length ? arguments[0] : ''), await avaStateCtx()];
+    const parts = [aiCmdCatalogCtx(), customCmdsCtx(), appsNamesCtx(), learnedExamplesCtx(arguments.length ? arguments[0] : ''), await avaStateCtx()];
     /* v0.69 — تاریخچه ۱۰ رد و بدل + واقعیت‌های اخیر (یادداشت/مقصد پیام/نتیجهٔ سرچ) */
     try { if (window.AVACore) { const t = window.AVACore.turnsCtx(10); if (t) parts.push(t); const e = window.AVACore.entityCtx(); if (e) parts.push(e); } } catch (_) { /* noop */ }
     return parts.filter(Boolean).join('\n');
@@ -5439,6 +5464,42 @@
          recordTurn() هر دو لَین را از یک حافظه تغذیه می‌کند.
        همیشه دقیقاً یک لَین — دوبار اجرا ساختاراً ناممکن است.
        ============================================================ */
+    /* ============================================================
+       v0.77 — لاینِ قطعیِ فرمان‌های سفارشی کاربر — پیش از مغز
+       ------------------------------------------------------------
+       ریشهٔ «کامندهای قدیمی هیچ کدوم کار نمی‌کنند»: بازنویسیِ brain-first
+       v0.61 چکِ فرمان سفارشی را از قبلِ AI به بعدِ بازگشتِ مغز برد و
+       مغز هم فرمان‌های سفارشی را نمی‌بیند (باگ C2) → با AIِ وصل هیچ
+       فرمان سفارشی‌ای اجرا نمی‌شد. حالا مثل لاینِ TEACH، فرمانِ
+       سفارشیِ خودِ کاربر (با مچ سخت‌گیرانه) پیش از مغز اجرا می‌شود —
+       چه AI وصل باشد چه نباشد؛ مالکیتِ درسِ کاربر بر حدسِ مغز مقدم است.
+       ============================================================ */
+    {
+      const _cust = (typeof customMatchOf === 'function') ? customMatchOf(cmd) : null;
+      if (_cust) {
+        _dispatchOutcome = 'custom';
+        try { actLog('lane=custom (deterministic, pre-brain): «' + cmd.slice(0, 48) + '» → «' + String(_cust.title || '').slice(0, 40) + '»', 'ui', { ev: 'lane', lane: 'custom', title: String(_cust.title || '').slice(0, 40) }); } catch (_) { /* noop */ }
+        let _custRep = '';
+        try { _custRep = await runCustom(_cust); }
+        catch (e) { _custRep = (LANG === 'en' ? 'Custom command failed: ' : 'اجرای فرمان سفارشی نشد: ') + String((e && e.message) || e).slice(0, 60); }
+        setState('success');
+        statusText.textContent = t('status.done');
+        body.classList.add('has-card');
+        rcHeard.textContent = `«${cmd}»`;
+        rcTag.textContent = LANG === 'en' ? 'CUSTOM' : 'سفارشی';
+        typeText(rcReply, _custRep);
+        speak(_custRep);
+        if (!/نشده|Could not|Failed|پیدا نشد|نشد/i.test(String(_custRep))) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        pushHistory(cmd, !/نشده|Could not|Failed/i.test(String(_custRep)));
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: cmd, via: 'custom', intent: 'run_custom', params: { site: String((_cust.action && _cust.action.value) || '').slice(0, 80) }, reply: String(_custRep || '').slice(0, 200) }); } catch (_) { /* noop */ }
+        try { toast(_cust.title || (LANG === 'en' ? 'Custom command' : 'فرمان سفارشی'), '#i-spark'); } catch (_) { /* noop */ }
+        cmdBusy = false;
+        handsFreeRearm();
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2600);
+        return;
+      }
+    }
+
     let vcText = cmd;
     try {
       if (window.AVACore) {
@@ -8216,7 +8277,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.76.0-beta';
+  let appVersion = '0.77.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -9284,7 +9345,8 @@
   function findCustomRule(cmd) {
     const n = normFa(cmd);
     if (!n) return null;
-    const cc = customCmds.find((c) => (c.phrases || []).some((p) => n.includes(normFa(p))));
+    /* v0.77 — عنوانِ فرمان هم نامزدِ مچ است (فرمان‌های بدون phrases از قبل هم اجرا نمی‌شدند) */
+    const cc = customCmds.find((c) => [String(c && c.title || '')].concat(Array.isArray(c && c.phrases) ? c.phrases : []).some((p) => { const np = normFa(p); return np && np.length >= 3 && n.includes(np); }));
     if (!cc) return null;
     return {
       custom: true,
@@ -9293,6 +9355,46 @@
       i: '#i-spark',
       r: async () => runCustom(cc),
     };
+  }
+
+  /* ============================================================
+     v0.77 — مچِ سخت‌گیرانهٔ فرمان سفارشی + لاینِ قطعیِ پیش از مغز
+     ------------------------------------------------------------
+     ریشهٔ «کامندهای قدیمی هیچ کدوم کار نمی‌کنند» (لاگ میدانی v0.76):
+     در v0.60 چکِ فرمان سفارشی (خط 4778 آن‌زمان) قبل از aiHandleCommand
+     بود؛ بازنویسیِ brain-first v0.61 آن را به بعد از مسیرِ بازگشتِ مغز
+     برد — از آن روز، وقتی AI وصل است (حالت عادی)، هر جملهٔ موضوع‌دار
+     (lane=brain، پیش‌فرض laneOf) قبل از رسیدن به findCustomRule به
+     aiHandleCommand برمی‌گشت و فرمان سفارشی هرگز اجرا نمی‌شد. مغز هم
+     (باگ C2) فرمان‌های سفارشی را نمی‌بیند → بن‌بست کامل.
+     درمان: لاینِ قطعیِ فرمان سفارشی پیش از مغز — مثل لاینِ TEACH —
+     با مچِ سخت‌گیرانه تا هیچ جملهٔ بی‌ربطی ربوده نشود:
+     • پرسش/متا (؟، چرا، حذف، لیست، …) هرگز فرمان سفارشی نیست
+     • جمله = عبارت (بعد از بریدن «آوا،») → قطعی
+     • عبارتِ ≥۵نویسه با ≥۲واژه که در جمله هست → قطعی
+     • عبارتِ ≥۴نویسه در جملهٔ کوتاه (≤عبارت+۱۰نویسه) → قطعی
+     • بلندترین عبارت برنده است
+     ============================================================ */
+  function customMatchOf(cmd) {
+    const w = (typeof AVALearn !== 'undefined' && AVALearn.wakeStrip) ? AVALearn.wakeStrip(String(cmd || '')) : String(cmd || '');
+    const n = normFa(w);
+    if (!n || n.length < 2) return null;
+    if (/[؟?]/.test(n)) return null;
+    if (/(چرا|چطور|چطوری|چیه|چیست|کجاست|کیه|چندتا|چند\s|حذف|پاک\s*کن|پاکش|ویرایش|لیست|فهرست|نشون\s*بده|نشان\s*بده|کدوم|کدام|فرمان.*چیه|می\s*تونی|میشه)/.test(n)) return null;
+    let best = null, bestLen = 0;
+    for (const cc of customCmds) {
+      const cands = [String(cc && cc.title || '')].concat(Array.isArray(cc && cc.phrases) ? cc.phrases : []);
+      for (const p of cands) {
+        const np = normFa(p);
+        if (!np || np.length < 2) continue;
+        let hit = false;
+        if (n === np) hit = true;
+        else if (np.length >= 5 && np.split(/\s+/).filter(Boolean).length >= 2 && n.includes(np)) hit = true;
+        else if (np.length >= 4 && n.length <= np.length + 10 && n.includes(np)) hit = true;
+        if (hit && np.length > bestLen) { bestLen = np.length; best = cc; }
+      }
+    }
+    return best;
   }
 
   async function runCustom(cc) {
@@ -9378,7 +9480,7 @@
     '<<<END>>>\n' +
     'سوالِ دانش عمومی پایدار (مثل پایتخت کشورها) را خودت از روی فکر جواب بده و بلوک ننویس. اگر جمله مبهم بود، به جای اجرای حدسی یک سوال کوتاه شفاف‌سازی بپرس.\n' +
     /* v0.39 — نگاشت فرمان نامتعارف به فرمان واقعی آوا */
-    'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن.\n' +
+    'قانون مهم ۴: اگر زیر پیام کاربر «فهرست فرمان‌های آوا» آمده و درخواستش هم‌معنای یکی از آن فرمان‌ها بود (حتی با تعبیر کاملاً متفاوت)، فقط بلوک DO بده با act=run_cmd و value=همان id — خودت آن کار را شبیه‌سازی نکن. اگر «فرمان‌های سفارشیِ خودِ کاربر» هم زیر پیام بود و درخواستش هم‌معنای یکی از آن‌ها بود، فقط بلوک DO بده با act=run_custom و value=عنوانِ همان فرمان (عیناً) — فرمانِ سفارشیِ کاربر مقدم بر راه‌حلِ جایگزین توست.\n' +
     /* v0.44 — قانون «فهم-اول» (خواستهٔ صریح کاربر: «توی دیوار دنبال موتور بگرد،
        نره گوگل سرچ کنه» + «اول تحلیل کنه واقعاً بفهمه») */
     'قانون مهم ۵ (بسیار مهم): اگر کاربر خواست «درون» یک هدف مشخص جستجو/پخش/باز شود (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X)، هرگز کل درخواست را به جستجوی عمومی گوگل تبدیل نکن — این سوءتفاهم بزرگ است. اول تحلیل کن: اگر X وب‌سایت معروفی است، URL واقعی جستجوی درون-سایتی خودِ X را بساز و با open_url بده (دیوار=divar.ir/s/{شهر-با-حروف-انگلیسی}?q=… — شهرِ خواسته‌شده را به اسلاگ لاتینِ خودِ دیوار تبدیل کن: بجنورد=bojnurd، تهران=tehran، مشهد=mashhad، اصفهان=isfahan، شیراز=shiraz، تبریز=tabriz، کرج=karaj، قم=qom، اهواز=ahvaz، رشت=rasht، کرمان=kerman، یزد=yazd، همدان=hamedan، …؛ شهر نگفته=tehran؛ هرگز /s/<city>/<دسته‌بندی>/ بساز نکن چون ۴۰۴ می‌شود)، شیپور=sheypoor.com/search?q=…، آپارات=aparat.com/search?text=…، دیجی‌کالا=digikala.com/search/?q=…، ترب=torob.com/search/?query=…، ایمالز=emalls.ir/?s=…، اینستاگرام=instagram.com/explore/tags/…، ردیت=reddit.com/search/?q=…). اگر X برنامهٔ نصب‌شده است (فهرست پایین را ببین) با open_app بازش کن و در reply بگو که برنامه باز شد. اگر X را واقعاً نمی‌شناسی، صادقانه در reply بگو نمی‌شناسم و نزدیک‌ترین برداشت درست را بپرس — جستجوی گوگلِ جایگزین فقط وقتی مجاز است که کاربر خودش «گوگل» را خواسته باشد.\n' +
@@ -9455,7 +9557,7 @@
     '<<<END>>>\n' +
     'Stable general-knowledge questions: answer yourself from THINK, no block. If the request is ambiguous, ask one short clarifying question instead of guessing.\n' +
     /* v0.39 — map differently-phrased requests onto real AVA commands */
-    'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself.\n' +
+    'Important rule 4: if an "AVA command catalog" is attached below the user message and the request means one of those commands (even with totally different wording), reply with ONLY a DO block using act=run_cmd and value=<id> — do not simulate the action yourself. If a "User custom commands" list is attached and the request means one of them, reply with ONLY a DO block using act=run_custom and value=<exact title> — the user\u2019s own command takes priority over any substitute you invent.\n' +
     /* v0.44 — understand-first law (user: "توی دیوار دنبال موتور بگرد must not become a Google search") */
     'Important rule 5 (critical): when the user asks to search/play/open INSIDE a specific target (توی X دنبال Y بگرد / توی سایت X سرچ کن Y / برو به سایت X), NEVER turn the whole request into a generic Google search — that is a misunderstanding. Analyze first: if X is a well-known website, build the real in-site search URL and give it via open_url (divar.ir/s/{city-in-english}?q=… — transliterate the city the user named: Bojnord=bojnurd, Tehran=tehran, Mashhad=mashhad, Isfahan=isfahan, Shiraz=shiraz, Tabriz=tabriz, Karaj=karaj, Qom=qom, Ahvaz=ahvaz, Rasht=rasht; no city named = tehran; never build /s/<city>/<category>/ because it 404s, sheypoor.com/search?q=…, aparat.com/search?text=…, digikala.com/search/?q=…, torob.com/search/?query=…, emalls.ir/?s=…, instagram.com/explore/tags/…, reddit.com/search/?q=…). If X is an installed app (see the installed-apps list below) give open_app. If you truly do not know X, say so honestly in reply and ask for the closest correct reading — a substitute Google search is allowed ONLY when the user explicitly said Google.\n' +
     /* v0.46 — real log: AI returned query-less URLs twice for the same emalls request */
