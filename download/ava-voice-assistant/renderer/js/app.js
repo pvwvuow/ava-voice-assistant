@@ -502,6 +502,16 @@
     'toast.autoOn': ['بررسی خودکار فعال شد', 'Auto check enabled'], 'toast.autoOff': ['بررسی خودکار خاموش شد', 'Auto check disabled'],
     'toast.langChanged': ['زبان برنامه عوض شد', 'App language changed'],
     'toast.themeLight': ['تم روشن فعال شد', 'Light theme on'], 'toast.themeDark': ['تم تیره فعال شد', 'Dark theme on'],
+    'toast.themeGold': ['تم سفید طلایی فعال شد — لوکس و روشن', 'White-gold theme on — luxe light look'],
+    'stop.label': ['توقف', 'Stop'],
+    'set.app.gold': ['سفید طلایی (روشنِ لوکس)', 'White gold (luxe light)'],
+    'set.nav.contacts': ['مخاطبین', 'Contacts'], 'set.nav.apps': ['برنامه‌های من', 'My apps'],
+    'set.ct.title': ['مخاطبین من', 'My contacts'], 'set.ct.count': ['۰ مخاطب', '0 contacts'],
+    'set.ct.new': ['مخاطب جدید', 'New contact'], 'set.ct.searchPh': ['جستجو بر اساس نام، لقب، یوزر…', 'Search by name, alias, handle…'],
+    'set.ct.note': ['همین‌جا می‌توانی مخاطب اضافه، ویرایش یا حذف کنی — یا با صدا: «مخاطب جدید برا دیسکورد»، «به علی پیام بده که…». ویرایش = دکمهٔ مداد؛ حذف = دکمهٔ سطل.', 'Add, edit or delete contacts right here — or by voice: "new contact for Discord", "message Ali…". Pencil = edit; trash = delete.'],
+    'set.apps.title': ['برنامه‌های من', 'My apps'], 'set.apps.count': ['هنوز اسکن نشده', 'Not scanned yet'],
+    'set.apps.rescan': ['اسکن مجدد', 'Rescan'], 'set.apps.searchPh': ['جستجو در برنامه‌ها…', 'Search apps…'],
+    'set.apps.note': ['آوا منوی استارت، اپ‌های استور، استیم و رجیستری ویندوز را اسکن می‌کند — با صدا هم می‌توانی بگویی «نرم‌افزارها رو نشون بده» یا «اپ فلان رو باز کن».', 'AVA scans the Start menu, Store apps, Steam and the Windows registry — you can also say "show my apps" or "open <app>" by voice.'],
     'toast.themeDarkLite': ['تم تیرهٔ سبک فعال شد — مخصوص سیستم ضعیف', 'Flat dark theme on — made for weak PCs'],
     'toast.dnsqSaved': ['DNS «{x}» ذخیره شد', 'DNS "{x}" saved'],
     'toast.dnsApplyUac': ['پنجره تأیید مدیر (UAC) ویندوز را تأیید کن', 'Confirm the Windows UAC prompt'],
@@ -874,7 +884,6 @@
     if (sbMicTxt) sbMicTxt.textContent = t('sb.micReady');
     refreshEngineUI();
     buildSuggestions(true);
-    updateDictToggleUI();
   }
 
   /* ---------- عناصر صفحه تنظیمات ---------- */
@@ -908,7 +917,6 @@
   const optGlmKey = $('#optGlmKey');
   const btnKeyShow = $('#btnKeyShow');
   const optGoogleKey = $('#optGoogleKey');
-  const btnGoZai = $('#btnGoZai');
   const optDemo = $('#optDemo');
   const optAiModel = $('#optAiModel');
 
@@ -923,21 +931,9 @@
   const historyList = $('#historyList');
   const historyEmpty = $('#historyEmpty');
 
-  /* ---------- عناصر تایپ صوتی (v0.8) ---------- */
-  const dictPage = $('#dictPage');
-  const btnDict = $('#btnDict');
-  const btnDictBack = $('#btnDictBack');
-  const dictBox = $('#dictBox');
-  const dictInterim = $('#dictInterim');
-  const dictStatus = $('#dictStatus');
-  const btnDictToggle = $('#btnDictToggle');
-  const btnDictCopy = $('#btnDictCopy');
-  const btnDictClear = $('#btnDictClear');
-  const optDictTarget = $('#optDictTarget');
-  const typingCmdsList = $('#typingCmdsList');
-  const tcPhrase = $('#tcPhrase');
-  const tcValue = $('#tcValue');
-  const tcAdd = $('#tcAdd');
+  /* ---------- v0.82 — تایپ صوتی: صفحهٔ «تایپ صوتی» و پنل تنظیماتش حذف شد
+     (خواستهٔ کاربر). موتور تایپ headless شد و به «حباب تایپ صوتی» شناور
+     بالای فیلد تایپِ هر برنامه منتقل — بخش VT در پایین فایل. ---------- */
 
   /* ---------- عناصر مدیریت DNS (v0.9) ---------- */
   const dnsCurrentBox = $('#dnsCurrentBox');
@@ -952,32 +948,9 @@
   const dnsBuiltins = $('#dnsBuiltins');
   const btnQuickDns = $('#btnQuickDns');
 
-  /* ---------- عناصر چت هوش مصنوعی ---------- */
-  const chatPage = $('#chatPage');
-  const btnChat = $('#btnChat');
-  const btnChatBack = $('#btnChatBack');
-  const chatMsgs = $('#chatMsgs');
-  const chatBar = $('#chatBar');
-  const chatInput = $('#chatInput');
-  const tabQuick = $('#tabQuick');
-  const tabZai = $('#tabZai');
-  const quickWrap = $('#quickWrap');
-  const zaiWrap = $('#zaiWrap');
-  const zaiWeb = $('#zaiWeb');
-  const zaiBadge = $('#zaiBadge');
-  /* v0.45 — سبک‌سازی RAM: صفحهٔ chat.z.ai دیگر در بوت لود نمی‌شود
-     (یک صفحهٔ کامل کرومیوم = صدها مگابایت). فقط با اولین باز شدن تب
-     «صفحه چت GLM» بارگذاری می‌شود؛ توکن نشست از اجرای قبل کش می‌ماند
-     تا «چت سریع» و فرمان‌های صوتی هم بدون لود صفحه کار کنند. */
-  let zaiWebLoaded = false;
-  function ensureZaiWebLoaded() {
-    if (zaiWebLoaded || !zaiWeb) return;
-    const src = zaiWeb.getAttribute('data-src');
-    if (!src) return;
-    zaiWebLoaded = true;
-    actLog('zai webview lazy-load (RAM diet: not loaded at boot)');
-    zaiWeb.src = src;
-  }
+  /* ---------- v0.82 — صفحهٔ «چت با هوش مصنوعی» (چت سریع + وب‌ویو GLM) حذف شد
+     (خواستهٔ کاربر). زنجیرهٔ AI و بریج z.ai (پنجرهٔ مخفی در main.js) سرِ خود
+     می‌مانند؛ فقط حافظهٔ کوتاه چت (chatHist) برای پاسخ‌های صوتی حفظ شده است. ---------- */
 
   /* ---------- مودال تأیید ---------- */
   const confirmBox = $('#confirmBox');
@@ -1527,12 +1500,16 @@
   /* ---------- تم روشن/تیره/سبک (v0.15) + تیرهٔ سبک v0.17 + بهینه‌سازی ---------- */
   const flatTheme = () => (settings.theme === 'lite' || settings.theme === 'darklite');
   function applyTheme() {
-    if (settings.theme === 'light') document.body.setAttribute('data-theme', 'light');
-    else if (settings.theme === 'lite') document.body.setAttribute('data-theme', 'lite');
+    /* v0.82 — تم «سفید طلایی» روی تم روشن سوار است: data-theme=light + data-gold=on
+       (یعنی همهٔ قواعد روشن ارث می‌رسد و فقط رنگ‌ها طلایی می‌شوند) */
+    if (settings.theme === 'light') { document.body.setAttribute('data-theme', 'light'); document.body.removeAttribute('data-gold'); }
+    else if (settings.theme === 'gold') { document.body.setAttribute('data-theme', 'light'); document.body.setAttribute('data-gold', 'on'); }
+    else { document.body.removeAttribute('data-gold'); }
+    if (settings.theme === 'lite') document.body.setAttribute('data-theme', 'lite');
     else if (settings.theme === 'darklite') document.body.setAttribute('data-theme', 'darklite');
-    else document.body.removeAttribute('data-theme');
+    else if (settings.theme !== 'light' && settings.theme !== 'gold') document.body.removeAttribute('data-theme');
     const ti = $('#themeIcon');
-    if (ti) ti.setAttribute('href', settings.theme === 'dark' ? '#i-sun' : '#i-moon');
+    if (ti) ti.setAttribute('href', (settings.theme === 'dark' || settings.theme === 'darklite') ? '#i-sun' : '#i-moon');
     refreshWaveColors(); /* رنگ اکولایزر با تم همگام شود */
   }
   /* کلیدهای بهینه‌سازی: بدون انیمیشن / بدون افکت (v0.15) + حالت امن (v0.16.1) */
@@ -1547,7 +1524,7 @@
     if (btnLiteTheme) btnLiteTheme.classList.toggle('active', flatTheme());
   }
   function setTheme(th, silent = false) {
-    settings.theme = ['light', 'lite', 'darklite'].includes(th) ? th : 'dark';
+    settings.theme = ['light', 'lite', 'darklite', 'gold'].includes(th) ? th : 'dark';
     store.set('theme', settings.theme);
     /* تم‌های سبک خودشان انیمیشن و افکت را کم می‌کنند (برگشت به تم دیگر، کلیدها سرجایشان می‌مانند) */
     if (flatTheme()) {
@@ -1560,10 +1537,10 @@
     applyTheme();
     syncPerfUI();
     if (optTheme) optTheme.value = settings.theme;
-    if (!silent) toast(settings.theme === 'light' ? t('toast.themeLight') : (settings.theme === 'lite' ? t('toast.themeLite') : (settings.theme === 'darklite' ? t('toast.themeDarkLite') : t('toast.themeDark'))), '#i-sun');
+    if (!silent) toast(settings.theme === 'light' ? t('toast.themeLight') : (settings.theme === 'gold' ? t('toast.themeGold') : (settings.theme === 'lite' ? t('toast.themeLite') : (settings.theme === 'darklite' ? t('toast.themeDarkLite') : t('toast.themeDark')))), '#i-sun');
   }
   const btnTheme = $('#btnTheme');
-  if (btnTheme) btnTheme.addEventListener('click', () => setTheme(settings.theme === 'dark' ? 'light' : 'dark'));
+  if (btnTheme) btnTheme.addEventListener('click', () => setTheme(settings.theme === 'dark' ? 'light' : (settings.theme === 'light' ? 'gold' : 'dark')));
   applyPerf();
   applyTheme();
   syncPerfUI();
@@ -2932,6 +2909,30 @@
           return (LANG === 'en' ? 'Could not play it.' : 'پخش نشد: ') + ((op && op.error) || '');
         },
       },
+      /* --- v0.82 — «مخاطبینمو نشون بده / لیست نرم‌افزارا رو نشون بده» --- */
+      {
+        k: /(مخاطبین|مخاطبینم|لیست\s?مخاطب|مخاطب\s?ها|مخاطبام|contacts)\s?(رو|را)?\s?(نشون|باز|بیا|بگو|ببین|بده)?/i,
+        id: 'contacts_show', t: 'نمایش مخاطبین', i: '#i-user',
+        r: async () => {
+          const list = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+          try { showSettings(true); showSettingsPane('contacts'); } catch (_) { /* noop */ }
+          try { window.__renderContactsPane && window.__renderContactsPane(); } catch (_) { /* noop */ }
+          if (!list.length) return (LANG === 'en' ? 'No contacts yet — I opened the Contacts page. Say "new contact for Discord" to add one.' : 'هنوز مخاطبی نداری — صفحهٔ مخاطبین رو باز کردم؛ بگو «مخاطب جدید برا دیسکورد» تا اضافه کنیم.');
+          const lines = list.slice(0, 6).map((x) => `«${x.name}» (${String(x.app || '')})`);
+          return (LANG === 'en' ? `You have ${list.length} contacts — opened the Contacts page. Top ones: ` : `${faNum(String(list.length))} مخاطب داری — صفحهٔ مخاطبین رو باز کردم. اولی‌ها: `) + lines.join('، ');
+        },
+      },
+      {
+        k: /(لیست\s?)?(نرم\s?افزارا?|برنامه\s?ها|اپ\s?ها|app\s?list)\s?(من\s|سیستم\s)?(رو|را)?\s?(نشون|لیست|باز|اسکن|بگو|ببین|بده)|(اسکن|اسن)\s?(نرم\s?افزار|برنامه)/i,
+        id: 'apps_show', t: 'نمایش برنامه‌های سیستم', i: '#i-window',
+        r: async () => {
+          try { showSettings(true); showSettingsPane('apps'); } catch (_) { /* noop */ }
+          const list = await ensureAppsList().catch(() => []);
+          try { window.__renderAppsPane && window.__renderAppsPane(); } catch (_) { /* noop */ }
+          if (!list || !list.length) return (LANG === 'en' ? 'Scanning your apps now — reopen the page in a moment.' : 'دارم برنامه‌هات رو اسکن می‌کنم — چند لحظه دیگر خود صفحه تازه می‌شود.');
+          return (LANG === 'en' ? `Found ${list.length} apps — opened "My apps".` : `${faNum(String(list.length))} برنامه پیدا کردم — صفحهٔ «برنامه‌های من» رو باز کردم؛ با جستجو یا کلیکِ «اجرا» هر کدوم رو بالا بیار.`);
+        },
+      },
       {
         /* v0.61 — بازنگری ریشه‌ای: «ویدیو رو پلی کن» دیگر به نیتِ حذف‌شدهٔ
            پنجرهٔ شناور نمی‌رود (لاگ v0.48: ۶ ثانیه معطلی AI) — کنترل واقعی
@@ -2955,9 +2956,42 @@
           try {
             const _rich = (typeof AVAIntent !== 'undefined' && AVAIntent.videoCtlOf) ? AVAIntent.videoCtlOf(c) : null;
             if (_rich) {
-              const res = await bridge.player.ctl({ action: _rich.action, arg: _rich.arg });
+              /* v0.82 — رزولورِ هدف چند-ویدیو: اردینال/کیفی‌ساز → pid واقعی.
+                 «ویدیو قبلی رو فول اسکرین کن»/«دومی رو پاز کن»/«سومی رو ببند»… */
+              let _vtPid = 0;
+              if (_rich.tgt && _rich.tgt !== 'all') {
+                const _pl = await bridge.player.ctl({ action: 'players' }).catch(() => null);
+                const _ws = (_pl && _pl.wins) || [];
+                if (!_ws.length) return 'هیچ پلیر ویدیویی باز نیست.';
+                let _ix = -1;
+                if (_rich.tgt === 'oldest') _ix = 0;
+                else if (_rich.tgt === 'newest') _ix = _ws.length - 1;
+                else if (typeof _rich.tgt === 'number') {
+                  if (_rich.tgt > _ws.length) return 'الان ' + faNum(String(_ws.length)) + ' پنجره بازه — شمارهٔ ' + faNum(String(_rich.tgt)) + ' وجود ندارد.';
+                  _ix = _rich.tgt - 1;
+                } else if (_rich.tgt === 'other') {
+                  const _ai = _ws.findIndex((w) => w.pid === _pl.activePid);
+                  if (_ws.length === 2) _ix = _ai === 0 ? 1 : 0;
+                }
+                if (_ix >= 0 && _ix < _ws.length) _vtPid = _ws[_ix].pid;
+                else {
+                  /* ابهام واقعی (۳+ ویدیو و «اون یکی») → پرسش شماره‌دار (الگوی needs_clarification) */
+                  _pendingVideoPick = { action: _rich.action, arg: _rich.arg, wins: _ws, activePid: _pl.activePid || 0, at: Date.now() };
+                  return 'چند ویدیو بازه — کدوم؟ ' + videoPickListText(_ws) + ' — بگو «اولی»، «دومی»، «شمارهٔ ۲» یا «بی‌خیال».';
+                }
+              }
+              /* «ببند» لخت با چند ویدیو و بدون هدف دیگر حدس نمی‌زند — می‌پرسد */
+              if (_rich.action === 'close' && String(_rich.arg || 'auto') === 'auto' && !_vtPid) {
+                const _pl2 = await bridge.player.ctl({ action: 'players' }).catch(() => null);
+                const _ws2 = (_pl2 && _pl2.wins) || [];
+                if (_ws2.length > 1) {
+                  _pendingVideoPick = { action: 'close', arg: 'auto', wins: _ws2, activePid: _pl2.activePid || 0, at: Date.now() };
+                  return 'چند ویدیو بازه — کدوم رو ببندم؟ ' + videoPickListText(_ws2) + ' — یا بگو «همه».';
+                }
+              }
+              const res = await bridge.player.ctl({ action: _rich.action, arg: _rich.arg, pid: _vtPid });
               /* v0.78 — پاسخ بستنِ هدفمند */
-              const _closeLbl = _rich.action === 'close' ? ({ oldest: 'ویدیوی قبلی بسته شد.', newest: 'ویدیوی جدید (آخری) بسته شد.', all: 'همهٔ ویدیوها بسته شدند.', auto: 'بسته شد.' })[String(_rich.arg == null || _rich.arg === 0 ? 'auto' : _rich.arg)] || 'بسته شد.' : null;
+              const _closeLbl = _rich.action === 'close' ? (typeof _rich.arg === 'string' && /^ord:\d+$/.test(_rich.arg) ? 'ویدیوی شمارهٔ ' + faNum(String(_rich.arg.split(':')[1])) + ' بسته شد.' : ({ oldest: 'ویدیوی قبلی بسته شد.', newest: 'ویدیوی جدید (آخری) بسته شد.', all: 'همهٔ ویدیوها بسته شدند.', auto: 'بسته شد.' })[String(_rich.arg == null || _rich.arg === 0 ? 'auto' : _rich.arg)] || 'بسته شد.') : null;
               const _faLbl = { pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.', grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.', move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: _rich.arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', fullscreen: 'فول‌اسکرین شد.', close: _closeLbl || 'بسته شد.', play_pause: 'پخش/توقف', resize: 'سایز پنجره عوض شد.', maximize: 'پنجره ماکزیمایز شد.', minimize: 'پنجره مینیمایز شد.', restore: 'پنجره برگشت به حالت عادی.', pip: 'تصویر در تصویر فعال شد — پایین راست، همیشه رویر.', unpip: 'از تصویر در تصویر خارج شد.', opacity: 'شفافیت پنجره عوض شد.', monitor: 'پنجره رفت روی مانیتور مقصد.', arrange: 'پنجره‌ها چیده شدند.' };
               const _extra = (_rich.action === 'seek') ? ' ' + Math.abs(_rich.arg) + ' ثانیه' : (_rich.action === 'move' ? ' (' + _rich.arg + ')' : '');
               if (res && res.ok) {
@@ -3905,6 +3939,183 @@
       }
     }
     msgContactsRender();
+
+    /* ============================================================
+       v0.82 — پنل «مخاطبین من» در تنظیمات (خواستهٔ کاربر: «تو تنظیمات
+       یک بخش جدید برای contact بزار، مرتب و منظم، لیستش رو زیبا ببینه»)
+       • جستجو (نام/لقب/یوزر) + افزودن (همان پاپ‌آپ ctAdd) + ویرایش + حذف
+       ============================================================ */
+    const normFaOf = (s) => String(s || '').toLowerCase().replace(/\u064A/g, '\u06CC').replace(/\u0643/g, '\u06A9').replace(/[\u200C\s]+/g, ' ').trim();
+    const CT_APP_FA = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا', sms: 'پیامک' };
+    function contactsPaneRender() {
+      const box = $('#contactsList');
+      if (!box) return;
+      const all = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+      const cnt = $('#contactsCount');
+      if (cnt) cnt.textContent = faNum(String(all.length)) + (LANG === 'en' ? ' contacts' : ' مخاطب');
+      const q = normFaOf(($('#ctSearch') || {}).value || '');
+      const list = all.filter((c) => !q
+        || normFaOf(c.name).includes(q)
+        || normFaOf((c.aliases || []).join(' ')).includes(q)
+        || String(c.handle || '').toLowerCase().includes(q));
+      box.innerHTML = '';
+      if (!all.length) {
+        const e = document.createElement('div');
+        e.className = 'ct-empty';
+        e.textContent = LANG === 'en' ? 'No contacts yet — click "New contact" or say: new contact for Discord.' : 'هنوز مخاطبی نداری — «مخاطب جدید» را بزن یا بگو: مخاطب جدید برا دیسکورد.';
+        box.appendChild(e);
+        return;
+      }
+      if (!list.length) {
+        const e = document.createElement('div');
+        e.className = 'ct-empty';
+        e.textContent = LANG === 'en' ? 'Nothing matched your search.' : 'چیزی با این جستجو پیدا نشد.';
+        box.appendChild(e);
+        return;
+      }
+      for (const c of list) {
+        const row = document.createElement('div');
+        row.className = 'ct-row';
+        const av = document.createElement('span');
+        av.className = 'ct-av ' + String(c.app || '').replace(/[^a-z]/gi, '');
+        av.textContent = (String(c.name || '?').trim()[0] || '?').toUpperCase();
+        const info = document.createElement('div');
+        info.className = 'ct-info';
+        const nm = document.createElement('b');
+        nm.textContent = c.name || '?';
+        const sub = document.createElement('span');
+        const al = (c.aliases || []).filter((x) => x && x !== c.name).slice(0, 3);
+        sub.textContent = String(c.handle || '') + (al.length ? (LANG === 'en' ? ' · aka ' : ' · لقب: ') + al.join('، ') : '');
+        info.appendChild(nm);
+        info.appendChild(sub);
+        const badge = document.createElement('span');
+        badge.className = 'ct-badge ct-' + String(c.app || 'other').replace(/[^a-z]/gi, '');
+        badge.textContent = CT_APP_FA[String(c.app || '')] || c.app || '?';
+        const actions = document.createElement('div');
+        actions.className = 'ct-actions';
+        const edit = document.createElement('button');
+        edit.className = 'chip sm';
+        edit.title = LANG === 'en' ? 'Edit' : 'ویرایش';
+        edit.innerHTML = '<svg class="ic"><use href="#i-pen"/></svg>';
+        edit.addEventListener('click', () => {
+          try {
+            ctAddOpen({ app: c.app, handle: c.handle, name: c.name });
+            toast(LANG === 'en' ? 'Edit in the popup — confirming updates it.' : 'در پاپ‌آپ ویرایش کن — تایید یعنی به‌روزرسانی.', '#i-pen');
+          } catch (_) { /* noop */ }
+        });
+        const del = document.createElement('button');
+        del.className = 'chip sm danger';
+        del.title = LANG === 'en' ? 'Delete' : 'حذف';
+        del.innerHTML = '<svg class="ic"><use href="#i-trash"/></svg>';
+        del.addEventListener('click', () => {
+          settings.msgContacts = settings.msgContacts.filter((y) => y.id !== c.id);
+          store.set('msgContacts', settings.msgContacts);
+          contactsPaneRender();
+          msgContactsRender();
+          toast(LANG === 'en' ? `Deleted "${c.name}".` : `«${c.name}» حذف شد.`, '#i-trash');
+        });
+        actions.appendChild(edit);
+        actions.appendChild(del);
+        row.appendChild(av);
+        row.appendChild(info);
+        row.appendChild(badge);
+        row.appendChild(actions);
+        box.appendChild(row);
+      }
+    }
+    {
+      const _cs = $('#ctSearch');
+      if (_cs) _cs.addEventListener('input', () => contactsPaneRender());
+      const _cn = $('#btnContactNew');
+      if (_cn) _cn.addEventListener('click', () => { try { ctAddOpen({}); } catch (_) { /* noop */ } });
+      contactsPaneRender();
+      window.__renderContactsPane = contactsPaneRender;
+    }
+
+    /* ============================================================
+       v0.82 — پنل «برنامه‌های من» (خواستهٔ کاربر: «لیست نرم‌افزارای
+       سیستم کاربر اسکن نمیشه») — لیست کامل اسکن + جستجو + اجرا + اسکن مجدد
+       ============================================================ */
+    let appsPaneBusy = false;
+    const APP_KIND_FA = { app: 'برنامه', uwp: 'استور', steam: 'استیم', reg: 'رجیستری' };
+    async function appsPaneRender(force) {
+      const box = $('#appsList');
+      if (!box || appsPaneBusy) return;
+      appsPaneBusy = true;
+      try {
+        const list = force ? await ensureAppsList(true) : await ensureAppsList();
+        sysApps.list = list;
+        const cnt = $('#appsPaneCount');
+        if (cnt) cnt.textContent = list.length
+          ? faNum(String(list.length)) + (LANG === 'en' ? ' apps' : ' برنامه')
+          : (LANG === 'en' ? 'no scan yet' : 'هنوز اسکن نشده');
+        const q = String(($('#appsSearch') || {}).value || '').toLowerCase().trim();
+        const shown = list.filter((a) => !q || String(a.name || '').toLowerCase().includes(q)).slice(0, 500);
+        box.innerHTML = '';
+        if (!shown.length) {
+          const e = document.createElement('div');
+          e.className = 'ct-empty';
+          e.textContent = q ? (LANG === 'en' ? 'Nothing matched.' : 'چیزی پیدا نشد.') : (LANG === 'en' ? 'Scanning… reopen this page in a moment.' : 'در حال اسکن… چند لحظه دیگر برگرد.');
+          box.appendChild(e);
+          return;
+        }
+        for (const a of shown) {
+          const row = document.createElement('div');
+          row.className = 'ct-row app-row';
+          const av = document.createElement('span');
+          av.className = 'ct-av app';
+          av.innerHTML = '<svg class="ic"><use href="#i-window"/></svg>';
+          const info = document.createElement('div');
+          info.className = 'ct-info';
+          const nm = document.createElement('b');
+          nm.textContent = a.name || '?';
+          const sub = document.createElement('span');
+          sub.textContent = APP_KIND_FA[a.kind] || a.kind || '';
+          info.appendChild(nm);
+          info.appendChild(sub);
+          const run = document.createElement('button');
+          run.className = 'chip sm';
+          run.innerHTML = '<svg class="ic"><use href="#i-play"/></svg><span>' + (LANG === 'en' ? 'Run' : 'اجرا') + '</span>';
+          if (!a.exe || String(a.exe).startsWith('shell:')) {
+            /* UWP/استیم با shell: هم اجرا می‌شوند؛ بدون exe فقط غیرفعال */
+            if (!a.exe) { run.disabled = true; run.title = LANG === 'en' ? 'No executable found' : 'فایل اجرایی پیدا نشد'; }
+          }
+          run.addEventListener('click', async () => {
+            if (!bridge || !bridge.apps || !bridge.apps.launch) return;
+            run.disabled = true;
+            try {
+              const r = await bridge.apps.launch({ name: a.name, exe: a.exe });
+              if (r && r.ok) toast((LANG === 'en' ? 'Launched: ' : 'اجرا شد: ') + a.name, '#i-play');
+              else toast((r && r.error) || (LANG === 'en' ? 'Launch failed.' : 'اجرا نشد.'), '#i-info');
+            } catch (_) { toast(LANG === 'en' ? 'Launch failed.' : 'اجرا نشد.', '#i-info'); }
+            finally { run.disabled = false; }
+          });
+          row.appendChild(av);
+          row.appendChild(info);
+          row.appendChild(run);
+          box.appendChild(row);
+        }
+      } catch (_) { /* noop */ }
+      appsPaneBusy = false;
+    }
+    {
+      const _as = $('#appsSearch');
+      if (_as) _as.addEventListener('input', () => appsPaneRender(false));
+      const _ar = $('#btnAppsPaneRescan');
+      if (_ar) _ar.addEventListener('click', async () => {
+        if (!bridge || !bridge.apps || !bridge.apps.scan) return;
+        _ar.disabled = true;
+        try {
+          const r = await bridge.apps.scan();
+          if (r && r.ok) { sysApps.list = r.apps || []; sysApps.at = Date.now(); toast(t('set.app.appsDone', { x: faNum(String(r.count || 0)) }), '#i-check'); }
+          else toast(t('set.app.appsFail'), '#i-info');
+        } catch (_) { toast(t('set.app.appsFail'), '#i-info'); }
+        finally { _ar.disabled = false; }
+        appsPaneRender(false);
+      });
+      appsPaneRender(false);
+      window.__renderAppsPane = () => appsPaneRender(false);
+    }
     const ctAdd = $('#btnCtAdd');
     if (ctAdd) ctAdd.addEventListener('click', () => {
       const nm = String(($('#ctName') || {}).value || '').trim();
@@ -4767,10 +4978,10 @@
     /* v0.67/v0.68 — جمله‌های حاوی نام پیام‌رسان به لَین پیام‌رسانی می‌روند
        («به علی تو دیسکورد تایپ کن که…» ارسال پیام است نه دیکته/تایپ در پنجرهٔ فعال) */
     const MSG_APP_SENT_RE = /تلگرام|دیسکورد|واتساپ|روبیکا|ایتا|telegram|discord|whatsapp|eitaa/i;
-    if (dictation.active) {
+    if (typingModeActive()) {
       if (DICT_STOP_RE.test(raw)) { stopDictation(true); _dispatchOutcome = 'dict-stop'; return; }
-      /* وسط تایپ: همین متن اضافه شود، نه اجرای فرمان */
-      dictateHandle(raw);
+      /* وسط تایپ: همین متن اضافه شود، نه اجرای فرمان (v0.82 — بدون هیچ کامندی) */
+      typePhraseHandle(raw);
       _dispatchOutcome = 'dictation';
       return;
     }
@@ -4791,7 +5002,7 @@
         pushChatHist('user', raw); pushChatHist('assistant', rep);
         return;
       }
-      startDictation(true); _dispatchOutcome = 'dict-start'; return;
+      startDictation(); _dispatchOutcome = 'dict-start'; return;
     }
     if ((DICT_START_RE.test(raw) || wakeDictStart) && !MSG_APP_SENT_RE.test(raw)) {
       /* v0.60 (A6) — «برام تایپ کن سلام» دیگر حالت مودار را قورت نمی‌دهد:
@@ -5003,6 +5214,26 @@
        v0.70 — تأییدِ در انتظار (کار حساس مغز: contact_send)
        کاربر «بله/بفرست» گفت → ارسال واقعی؛ «نه/کنسل» → هیچ.
        ============================================================ */
+    /* ============================================================
+       v0.82 — پاسخ به پرسش شفاف‌ساز چند-ویدیو («کدوم ویدیو؟»)
+       «دومی» / «شمارهٔ ۲» / «همه» / «بی‌خیال» → همان عمل بدون بردن جمله به مغز
+       ============================================================ */
+    if (_pendingVideoPick) {
+      const _vpRep = await videoPickConsume(raw);
+      if (_vpRep !== null) {
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _vpRep);
+        speak(_vpRep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'video-pick', intent: 'video_ctl', params: {}, reply: _vpRep }); } catch (_) { /* noop */ }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2400);
+        return;
+      }
+    }
+
     if (_pendingConfirm) {
       const _yes = /^(بله|بفرست|اره|آره|اوکی|اکی|باشه|تأیید|تایید|همینه|همینو بفرست|بزن بریم|یواش)\s*[.!.]*$/i.test(raw.trim());
       const _no = /^(نه|نخیر|کنسل|بی\s?خیال|بیخیال|لغو|نفرست|ولش\s?کن)\s*[.!.]*$/i.test(raw.trim());
@@ -6132,7 +6363,7 @@
 
   /* بازخورد زنده: متن شنیده‌شده همان لحظه در کارت پاسخ + زیر دکمه */
   function aveLiveHeard(txt) {
-    if (dictation.active) { dictInterim.textContent = txt; return; }
+    if (typingModeActive()) { vtInterimShow(txt); return; }
     hideWakeDropCard(); /* v0.27.1 — کارت قبلی پاک شود تا متن زنده دیده شود */
     statusText.textContent = t('status.heard', { x: txt });
     setLiveText(txt);
@@ -6332,7 +6563,7 @@
     setLiveText('');
     setState('idle');
     sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
-    if (dictation.active) dictateHandle(s);
+    if (typingModeActive()) typePhraseHandle(s);
     else handleUtterance(s);
   }
 
@@ -6364,7 +6595,7 @@
       ave = null;
       statusText.textContent = t('status.silence');
       setTimeout(() => { if (state === 'listening' || state === 'processing') { setState('idle'); statusText.innerHTML = IDLE_HINT; sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`; } }, 1500);
-      if (dictation.active) setTimeout(rearmDictation, 1500);
+      if (typingModeActive()) setTimeout(rearmDictation, 1500);
       return;
     }
     /* ⭐ ساخت WAV از همان صدای همیشه-ضبط‌شده + مسابقهٔ ابری — بدون گوش دادن دوباره */
@@ -6391,7 +6622,7 @@
       setState('idle');
       statusText.innerHTML = t('stt.noEngine', { x: t('stt.noEngineApp') });
       sbMic.innerHTML = `<i class="dot ok"></i>${t('mic.ready')}`;
-      if (dictation.active) setTimeout(rearmDictation, 1500);
+      if (typingModeActive()) setTimeout(rearmDictation, 1500);
       return;
     }
     statusText.textContent = t('stt.racing', { x: chain.map((e) => t('eng.' + e)).join(' + ') });
@@ -6405,7 +6636,7 @@
         /* v0.40 — برندهٔ هذیانی برنده نیست: موتورهای دیرترِ ابری شانس می‌گیرند
            v0.47 — B06: نتیجهٔ junk دیگر موتور را بنچ نمی‌کند (قبلاً دو جملهٔ نویزی
            پشت‌سرهم موتور سالم را ۳ دقیقه کور می‌کرد — «stt web benched 90s (deaf…)») */
-        if (!dictation.active && isJunkUtterance(tx0)) {
+        if (!typingModeActive() && isJunkUtterance(tx0)) {
           actLog('stt ' + eng + ' junk/hallucination result (' + ms + 'ms) — skipped, waiting cloud');
           fails += 1;
           if (fails >= chain.length && !won && !isDead()) {
@@ -6438,7 +6669,7 @@
         actLog('stt race winner=' + eng + ' (' + ms + 'ms)');
         const tx = String(r.text).trim();
         setState('idle');
-        if (dictation.active) dictateHandle(tx);
+        if (typingModeActive()) typePhraseHandle(tx);
         else handleUtterance(tx);
         return;
       }
@@ -6453,7 +6684,7 @@
         /* v0.27 — راه‌حل قطعی وقتی هیچ موتوری جواب نداد: بستهٔ آفلاین */
         if (!localStat.installed) toast(t('stt.noPackHint'), '#i-info');
         else if (lastErr) toast(lastErr.slice(0, 150), '#i-info');
-        if (dictation.active) setTimeout(rearmDictation, 1500);
+        if (typingModeActive()) setTimeout(rearmDictation, 1500);
       }
     };
     /* v0.47 — B08: gemini = موج دوم — لاگ کاربر: ده‌ها «stt gemini late (4-12s) —
@@ -6778,7 +7009,7 @@
     wakeLoop.lastFrame = Date.now(); /* v0.32 — تپش قلب برای واتچ‌داگ خط لوله */
     /* حین جلسهٔ فعال گوش دادن/پردازش/صدای خود آوا/تایپ صوتی، بیدارباش کاملاً ساکت است
        v0.32 — wakeTtsBusy اضافه شد (ریشهٔ بیدارباشِ کاذب بعد از هر پاسخ بلند) */
-    if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }
+    if (state === 'listening' || state === 'processing' || typingModeActive() || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }
     wakeLoop.chunks.push(new Float32Array(f));
     if (wakeLoop.chunks.length > 70) wakeLoop.chunks.shift(); /* v0.36 — سقف ~۶ ثانیه: پنجرهٔ بزرگ‌تر = «آوا»ی بریده‌تازه کمتر */
     let sum = 0, n = 0;
@@ -6790,7 +7021,7 @@
   }
   function wakeVadTick() {
     if (!wakeLoop || wakeLoop.busy) return;
-    if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) return;
+    if (state === 'listening' || state === 'processing' || typingModeActive() || wakeTtsBusy()) return;
     /* v0.32 — کانتکست معلق (خواب ویندوز/تغییر دستگاه) = حلقه زنده ولی کر —
      بدون resume هیچ فریمی نمی‌آید و کاربر فکر می‌کند بیدارباش کار نمی‌کند */
     if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (_) { /* noop */ } }
@@ -7009,11 +7240,11 @@
       if (cmd) handleUtterance(cmd, { force: true });
       else startListening();
     };
-    if (state === 'idle' && !wakeTtsBusy() && !dictation.active) { run(); return; }
+    if (state === 'idle' && !wakeTtsBusy() && !typingModeActive()) { run(); return; }
     const tick = () => {
       tries++;
       if (!wakeSessActive()) return; /* جلسه تمام شد — دیگر هیچ */
-      if (state === 'idle' && !wakeTtsBusy() && !dictation.active) { run(); return; }
+      if (state === 'idle' && !wakeTtsBusy() && !typingModeActive()) { run(); return; }
       if (tries < 24) setTimeout(tick, 700);
     };
     setTimeout(tick, 700);
@@ -7076,7 +7307,7 @@
   async function handleUtterance(text, opts) {
     const h0 = Date.now(); /* v0.19 — لاگ تأخیر کل از شنیدن تا اجرا */
     let cmd = text;
-    const wakeGate = settings.handsFree && settings.wakeWord && !dictation.active && !(opts && opts.force);
+    const wakeGate = settings.handsFree && settings.wakeWord && !typingModeActive() && !(opts && opts.force);
     if (wakeGate && !wakeSessActive()) {
       /* v0.46 — RE پویا از کلمهٔ بیدارباش فعال (قابل تغییر) ساخته می‌شود */
       const m = text.match(AVAWake.prefixRe(wakeWordCfg()));
@@ -7116,7 +7347,7 @@
        نه هوش مصنوعی) — ریشهٔ «۳۶ ثانیه منتظر خطا ماند» در لاگ کاربر
        v0.47 — B06: قبل از دورریختن، تلاشِ wake داخل جمله چک می‌شود
        («او با» قبلاً junk بود و بیدارباش از دست می‌رفت) */
-    if (!dictation.active && !(opts && opts.force) && isJunkUtterance(cmd)) {
+    if (!typingModeActive() && !(opts && opts.force) && isJunkUtterance(cmd)) {
       try {
         if (typeof AVAWake !== 'undefined' && typeof wakeWordCfg === 'function') {
           const wm = AVAWake.match(cmd, wakeWordCfg());
@@ -7137,7 +7368,7 @@
       return;
     }
     /* بازخورد فوری: متن شنیده‌شده همان لحظه در کارت پاسخ بنشیند */
-    if (cmd && !dictation.active) {
+    if (cmd && !typingModeActive()) {
       rcTag.textContent = t('tag.heard');
       rcHeard.textContent = `«${cmd}»`;
       if (!respCard.classList.contains('show')) { body.classList.add('has-card'); respCard.classList.add('show'); }
@@ -7193,12 +7424,18 @@
   }
 
   /* ============================================================
-     حالت تایپ صوتی (v0.8) — «آوا تایپ» شروع، «آوا تموم»/«قطع تایپ» پایان
-     هر جمله‌ای که گفته شود در کادر تایپ نوشته می‌شود (یا با پیست
-     در همان برنامه‌ای که باز است). علائم نگارشی صوتی + فرمان‌های
-     سفارشی تعریف‌شدنی در تنظیمات.
+     v0.82 — موتور تایپ صوتی HEADLESS + حباب تایپ شناور (VT)
+     ------------------------------------------------------------
+     خواستهٔ کاربر: «صفحهٔ voice typing رو کلا پاک کن؛ هر جا کاربر در
+     حال تایپ بود یک چیز کوچولو بالای همون صفحه تایپش پاپ بشه؛ کاربر
+     با کلیک روش ضبط رو شروع کنه، هرچی گفت بدون هیچ کامندی نوشته شه،
+     با کلیک دوباره ضبط متوقف بشه»
+     • دو تریگر: حباب شناور (کلیک) + فرمان صوتی «آوا تایپ»
+     • خروجی همیشه «برنامهٔ فعال» است — SendInput UNICODE با پین hwnd/PID (v0.34/0.64)
+     • علائم نگارشی صوتی + فرمان‌های سفارشی حفظ شد (settings.typingCmds)
      ============================================================ */
-  const dictation = { active: false, busy: false, hwnd: 0, pid: 0, oneShotApps: false };
+  const dictation = { active: false, hwnd: 0, pid: 0, via: 'voice' };
+  const vtRec = { active: false, hwnd: 0, pid: 0 }; /* حباب تایپ شناور */
   /* v0.34 — پنجرهٔ فعالِ خارج از آوا: هنگام blur ثبت می‌شود تا «تایپ در برنامهٔ فعال»
      بداند کجا بنویسد؛ فرمان صوتی هم قبل از هر تمرکزگیری دوباره ثبت می‌کند */
   let lastFgHwnd = 0;
@@ -7272,22 +7509,18 @@
       .replace(/[\s\u200C]+/g, ' ').trim();
   }
 
-  /* تبدیل گفته‌ها به متن: علائم نگارشی + فرمان‌های سفارشی کاربر */
+  /* تبدیل گفته‌ها به متن (v0.82 — تابع خالص، بدون کادر): خروجی = رشتهٔ آمادهٔ
+     تایپ. علائم نگارشی + فرمان‌های سفارشی کاربر. «پاک کن» = بک‌اسپیس واقعی
+     (U+0008 در SendInput UNICODE = VK_BACK) — «پاک کردن همه» سقف‌دار ۳۰ بک‌اسپیس. */
   function applyTypingTokens(raw) {
     const words = String(raw || '').trim().split(/[\s\u200C]+/).filter(Boolean);
     let i = 0;
-    let cleared = false;
-    const dictBuf = () => dictBox.value;
-    const appendToBuf = (s) => { dictBox.value += s; };
-    const delLastWord = () => {
-      const v = dictBox.value.replace(/\s+$/, '');
-      const cut = Math.max(v.lastIndexOf(' '), v.lastIndexOf('\n'));
-      dictBox.value = cut > 0 ? v.slice(0, cut) : '';
-    };
+    let out = '';
+    const append = (s) => { out += (out && !/[\s\n]$/.test(out) ? ' ' : '') + s; };
     const applyValue = (val) => {
-      if (val === '__DEL__') delLastWord();
-      else if (val === '__CLEAR__') { dictBox.value = ''; cleared = true; }
-      else appendToBuf((dictBuf() && !/[\s\n]$/.test(dictBuf()) ? ' ' : '') + val);
+      if (val === '__DEL__') out += '\b';
+      else if (val === '__CLEAR__') out += '\b'.repeat(30);
+      else append(String(val));
     };
     while (i < words.length) {
       let matched = false;
@@ -7320,22 +7553,24 @@
         i += 1;
         continue;
       }
-      appendToBuf((dictBuf() && !/[\s\n]$/.test(dictBuf()) ? ' ' : '') + words[i]);
+      append(words[i]);
       i += 1;
     }
-    return { cleared };
+    return out;
   }
 
-  function renderDictation() {
-    dictInterim.textContent = '';
-    dictStatus.textContent = t('dict.statusOn', { x: faNum(String(dictBox.value || '').length) });
+  /* حالت تایپ فعال؟ (فرمان صوتی «آوا تایپ» یا حباب شناور) */
+  function typingModeActive() { return !!(dictation.active || vtRec.active); }
+  /* متن میانی به حباب شناور (و متن زندهٔ صفحهٔ اصلی اگر دیده می‌شود) */
+  function vtInterimShow(txt) {
+    try { if (bridge && bridge.vt && bridge.vt.interim) bridge.vt.interim(String(txt || '').slice(0, 120)); } catch (_) { /* noop */ }
   }
 
   /* حلقه تایپ: بعد از هر جمله دوباره گوش می‌دهیم */
   function rearmDictation() {
-    if (!dictation.active) return;
+    if (!typingModeActive()) return;
     setTimeout(() => {
-      if (!dictation.active || state !== 'idle') return;
+      if (!typingModeActive() || state !== 'idle') return;
       try {
         if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) { rearmDictation(); return; }
       } catch (_) { /* noop */ }
@@ -7344,33 +7579,39 @@
     }, 350);
   }
 
-  function dictateHandle(text) {
+  /* مقصد تایپ: پنجرهٔ فعال لحظهٔ شروع (کاوش تازه + کش تازه‌سنج ۴۵ثانیه‌ای) */
+  async function typingTargetPick() {
+    let tgt = { hwnd: 0, pid: 0 };
+    try { const f = await refreshFg(); if (f && f.hwnd && !f.self) tgt = { hwnd: f.hwnd, pid: f.pid }; } catch (_) { /* noop */ }
+    if (!tgt.hwnd) { const c = lastFgRecent(45000); if (c) tgt = c; }
+    return tgt;
+  }
+
+  function typePhraseHandle(text) {
     const raw = String(text || '').trim();
     if (!raw) { rearmDictation(); return; }
     if (DICT_STOP_RE.test(raw)) { stopDictation(true); return; }
     /* state به idle برمی‌گردد تا حلقه گوش‌دادن دوباره شروع شود */
     setState('idle');
-    const before = dictBox.value.length;
-    applyTypingTokens(raw);
-    const delta = dictBox.value.slice(before);
-    renderDictation();
+    const tgt = dictation.active ? dictation : vtRec;
+    const delta = applyTypingTokens(raw);
     /* خروجی در برنامهٔ فعال: v0.34 — موتور واقعی تایپ (SendInput UNICODE با
        فوکوس تاییدشده روی پنجرهٔ ثبت‌شده) — قبلی پیست Ctrl+V بود بدون بازیابی
        فوکوس و در پنجرهٔ اشتباه می‌نشست + کلیپ‌بورد کاربر را نابود می‌کرد */
-    if ((settings.dictTarget === 'apps' || dictation.oneShotApps) && delta.trim() && bridge && bridge.system && bridge.system.typeText) {
-      bridge.system.typeText(delta, dictation.hwnd || 0, dictation.pid || 0).then((r) => {
+    if (delta.trim() && bridge && bridge.system && bridge.system.typeText) {
+      bridge.system.typeText(delta, tgt.hwnd || 0, tgt.pid || 0).then((r) => {
         if (!r || !r.ok) {
           actLog('type-into-app failed: ' + String((r && r.error) || 'fail').slice(0, 90));
           if (r && r.stale) {
             /* v0.64 — hwnd بازیافت/عوض شده؛ هرگز در پنجرهٔ اشتباه نمی‌نویسیم —
                از این‌جا مقصد «پنجرهٔ فعالِ لحظهٔ تایپ» می‌شود */
-            dictation.hwnd = 0; dictation.pid = 0;
-            dictation._staleAt = Date.now();
+            tgt.hwnd = 0; tgt.pid = 0;
+            tgt._staleAt = Date.now();
             toast('پنجرهٔ مقصد عوض شده یا بسته شده — از این به بعد در پنجرهٔ فعال می‌نویسم.', '#i-info');
             return;
           }
-          if (!dictation._typeErrAt || Date.now() - dictation._typeErrAt > 10000) {
-            dictation._typeErrAt = Date.now();
+          if (!tgt._typeErrAt || Date.now() - tgt._typeErrAt > 10000) {
+            tgt._typeErrAt = Date.now();
             toast((r && r.error) || t('dict.sysFail'), '#i-info');
           }
         }
@@ -7379,49 +7620,44 @@
     rearmDictation();
   }
 
-  async function startDictation(system) {
+  /* شروع تایپ با فرمان صوتی («آوا تایپ») — مقصد: برنامهٔ فعال */
+  async function startDictation() {
+    const tgt = await typingTargetPick();
     dictation.active = true;
-    /* v0.34 — مقصد تایپ: اگر «برنامهٔ فعال» است، پنجرهٔ فعال همین حالا ثبت شود —
-       قبل از هر تمرکزگیری؛ همان‌جایی که کاربر بود و می‌خواهد همان‌جا نوشته شود
-       v0.64 — کاوشِ تازه + پینِ PID (hwndی منجمد = تایپ در صفحهٔ قدیمی) */
-    dictation.oneShotApps = !!system && settings.dictTarget !== 'apps';
-    dictation.hwnd = 0; dictation.pid = 0;
-    if (settings.dictTarget === 'apps' || system) {
-      let tgt = { hwnd: 0, pid: 0 };
-      try { const f = await refreshFg(); if (f && f.hwnd && !f.self) tgt = { hwnd: f.hwnd, pid: f.pid }; } catch (_) { /* noop */ }
-      if (!tgt.hwnd) { const c = lastFgRecent(45000); if (c) tgt = c; }
-      dictation.hwnd = tgt.hwnd || 0; dictation.pid = tgt.pid || 0;
-    }
-    showView('dict');
-    updateDictToggleUI();
-    renderDictation();
-    const sysOn = system || settings.dictTarget === 'apps';
-    toast(sysOn ? t('dict.sysOn') : t('dict.on'), '#i-note');
-    speak(sysOn ? t('dict.sysSpeak') : t('dict.onSpeak'));
+    dictation.via = 'voice';
+    dictation.hwnd = tgt.hwnd || 0; dictation.pid = tgt.pid || 0;
+    toast(t('dict.sysOn'), '#i-note');
     if (state === 'idle') startListening();
     else if (state === 'listening') { stopListening(); setTimeout(() => { if (dictation.active && state === 'idle') startListening(); }, 300); }
     else setTimeout(() => { if (dictation.active && state === 'idle') startListening(); }, 1500);
   }
 
   function stopDictation(voice = false) {
+    const wasVoice = dictation.active;
     dictation.active = false;
-    dictation.oneShotApps = false;
     dictation.hwnd = 0; dictation.pid = 0;
-    updateDictToggleUI();
-    dictInterim.textContent = '';
-    dictStatus.textContent = voice ? t('dict.offVoice') : t('dict.offSilent');
+    vtRec.active = false; vtRec.hwnd = 0; vtRec.pid = 0;
+    try { if (bridge && bridge.vt && bridge.vt.recState) bridge.vt.recState(false, ''); } catch (_) { /* noop */ }
     if (state === 'listening') stopListening();
-    toast(t('dict.off'), '#i-note');
-    if (voice) speak(t('dict.stopSpoken'));
+    if (wasVoice) { toast(t('dict.off'), '#i-note'); if (voice) speak(t('dict.stopSpoken')); }
   }
 
-  function updateDictToggleUI() {
-    if (btnDictToggle) {
-      btnDictToggle.classList.toggle('active', dictation.active);
-      const sp = btnDictToggle.querySelector('span');
-      if (sp) sp.textContent = dictation.active ? (LANG === 'en' ? 'Stop voice typing' : 'توقف تایپ صوتی') : t('dict.startBtn');
-    }
-    if (dictStatus && !dictation.active) dictStatus.textContent = t('dict.statusOff');
+  /* ---------- v0.82 — حباب تایپ شناور: شروع/توقف ضبط از کلیک حباب ---------- */
+  async function vtRecStart() {
+    if (vtRec.active) return;
+    const tgt = await typingTargetPick();
+    vtRec.active = true;
+    vtRec.hwnd = tgt.hwnd || 0; vtRec.pid = tgt.pid || 0;
+    actLog('vt rec start (bubble) hwnd=' + (vtRec.hwnd || 0) + ' pid=' + (vtRec.pid || 0));
+    try { if (bridge && bridge.vt && bridge.vt.recState) bridge.vt.recState(true, ''); } catch (_) { /* noop */ }
+    if (state === 'idle') startListening();
+    else if (state === 'listening') { stopListening(); setTimeout(() => { if (vtRec.active && state === 'idle') startListening(); }, 300); }
+    else setTimeout(() => { if (vtRec.active && state === 'idle') startListening(); }, 1500);
+  }
+  function vtRecStop() {
+    if (!vtRec.active) return;
+    actLog('vt rec stop (bubble)');
+    stopDictation(false);
   }
 
   /* ============================================================
@@ -8303,7 +8539,6 @@
     });
   }
   wireMultilineInput(cmdInput, cmdBar, 220);
-  wireMultilineInput(chatInput, chatBar, 220);
 
   /* ---------- پیشنهاد شانسی — هر چند ثانیه یک فرمان (نسخه ۰.۱۰) ---------- */
   const BASE_SUGGESTIONS = [
@@ -8362,7 +8597,7 @@
     sgTimer = setInterval(() => {
       /* فقط وقتی صفحه اصلی دیده می‌شود و اورلی‌ای باز نیست بچرخ */
       const overlayOpen = dnsQuickEl && !dnsQuickEl.hidden;
-      const homeVisible = settingsPage.hidden && chatPage.hidden && historyPage.hidden && (dictPage ? dictPage.hidden : true) && (musicPage ? musicPage.hidden : true) && !overlayOpen;
+      const homeVisible = settingsPage.hidden && historyPage.hidden && (musicPage ? musicPage.hidden : true) && !overlayOpen;
       if (!homeVisible) return;
       buildSuggestions();
     }, 4200);
@@ -8401,15 +8636,76 @@
       else if (!about.hidden) about.hidden = true;
       else if (!settingsPage.hidden) showSettings(false);
       else if (historyPage && !historyPage.hidden) showView('home');
-      else if (dictPage && !dictPage.hidden) showView('home');
       else if (musicPage && !musicPage.hidden) showView('home');
       else if (extPage && !extPage.hidden) showView('home');   /* v0.15 */
       else if (dnsPage && !dnsPage.hidden) showView('home');    /* v0.15 */
-      else if (!chatPage.hidden) showView('home');
       else if (state === 'listening') stopListening();
     }
   });
   if (bridge && bridge.voice) bridge.voice.onToggleListen(toggleListen);
+  /* v0.82 — حباب تایپ صوتی شناور: کلیک حباب = شروع/توقف ضبط (بدون هیچ کامندی) */
+  if (bridge && bridge.vt && bridge.vt.onToggleRec) {
+    bridge.vt.onToggleRec(() => {
+      try { if (vtRec.active) vtRecStop(); else vtRecStart(); } catch (_) { /* noop */ }
+    });
+  }
+  try { if (bridge && bridge.vt && bridge.vt.lang) bridge.vt.lang(settings.lang || 'fa'); } catch (_) { /* noop */ }
+  /* v0.82 — واچر کلیپ‌بورد: لینک ویدیوی تازه‌کپی‌شده → چیپ «پخشش کنم؟» */
+  {
+    const _cc = $('#clipChip');
+    const _cct = $('#clipChipTxt');
+    const _ccp = $('#clipChipPlay');
+    const _ccx = $('#clipChipClose');
+    let _ccTimer = null;
+    const _ccHide = () => { if (_cc) _cc.hidden = true; };
+    const _ccShow = (url) => {
+      if (!_cc) return;
+      if (_cct) _cct.textContent = LANG === 'en' ? 'Video link copied — play it?' : 'لینک ویدیو کپی شد — پخشش کنم؟';
+      if (_ccp) _ccp.onclick = async () => {
+        _ccHide();
+        try {
+          const _r = await videoPlayReply(url, 'default', 'clip-chip');
+          typeText(rcReply, _r.rep);
+          speak(_r.rep);
+          if (_r.ok) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        } catch (_) { /* noop */ }
+      };
+      _cc.hidden = false;
+      clearTimeout(_ccTimer);
+      _ccTimer = setTimeout(_ccHide, 15000);
+    };
+    if (_ccx) _ccx.addEventListener('click', _ccHide);
+    if (bridge && bridge.clip && bridge.clip.onVideoLink) bridge.clip.onVideoLink(_ccShow);
+  }
+  /* v0.82 — دکمهٔ توقف: وقتی آوا مشغول/گیر است همیشه در دسترس است */
+  {
+    const _sc = $('#stopChip');
+    if (_sc) {
+      _sc.addEventListener('click', async () => {
+        _sc.hidden = true;
+        try {
+          const _wasListening = state === 'listening';
+          if (_wasListening) stopListening();
+          aveEpoch += 1; /* نتیجهٔ هر تشخیص در جریان باطل شود */
+          await aiCancelRun('stop-chip');
+          cmdBusy = false;
+          if (typingModeActive()) stopDictation(false);
+          setState('idle');
+          statusText.innerHTML = IDLE_HINT;
+          rcTag.textContent = t('tag.done');
+          const _rep = LANG === 'en' ? 'Stopped.' : 'متوقف شد.';
+          typeText(rcReply, _rep);
+          pushHistory('توقف', true);
+          actLog('stop chip: request cancelled by user', 'ui', { ev: 'stop' });
+        } catch (_) { /* noop */ }
+      });
+      setInterval(() => {
+        try {
+          _sc.hidden = !(state === 'processing' || cmdBusy || ttsAudioBusy());
+        } catch (_) { /* noop */ }
+      }, 400);
+    }
+  }
   /* v0.51 — Push-to-Talk: پایین/بالا شدن دکمهٔ فشاری */
   if (bridge && bridge.voice && bridge.voice.onPttDown) bridge.voice.onPttDown(() => pttStart());
   if (bridge && bridge.voice && bridge.voice.onPttUp) bridge.voice.onPttUp(() => pttStop());
@@ -8626,90 +8922,11 @@
     bridge.voice.onToggleHandsFree(() => setHandsFree(!settings.handsFree));
   }
 
-  /* ---------- تایپ صوتی: صفحه، دکمه‌ها، فرمان‌های سفارشی ---------- */
-  if (btnDict) btnDict.addEventListener('click', () => showView(dictPage.hidden ? 'dict' : 'home'));
-  if (btnDictBack) btnDictBack.addEventListener('click', () => showView('home'));
-  if (btnDictToggle) btnDictToggle.addEventListener('click', () => {
-    if (dictation.active) stopDictation(false);
-    else startDictation();
-  });
-  if (btnDictCopy) btnDictCopy.addEventListener('click', async () => {
-    const txt = dictBox.value || '';
-    if (!txt.trim()) { toast(t('toast.noCopyText'), '#i-info'); return; }
-    try {
-      await navigator.clipboard.writeText(txt);
-      toast(t('toast.copied'), '#i-note');
-    } catch (_) {
-      try {
-        dictBox.select();
-        document.execCommand('copy');
-        toast(t('toast.copied'), '#i-note');
-      } catch (__) { toast(t('toast.copyFail'), '#i-info'); }
-    }
-  });
-  if (btnDictClear) btnDictClear.addEventListener('click', () => {
-    dictBox.value = '';
-    renderDictation();
-    toast(t('toast.boxCleared'), '#i-trash');
-  });
-  if (optDictTarget) optDictTarget.addEventListener('change', () => {
-    settings.dictTarget = optDictTarget.value || 'box';
-    store.set('dictTarget', settings.dictTarget);
-    toast(settings.dictTarget === 'apps' ? t('toast.dictTargetApps') : t('toast.dictTargetBox'), '#i-note');
-  });
-  const btnDictStart = $('#btnDictStart');
-  if (btnDictStart) btnDictStart.addEventListener('click', () => startDictation());
-
-  function renderTypingCmds() {
-    if (!typingCmdsList) return;
-    typingCmdsList.innerHTML = '';
-    const list = settings.typingCmds || [];
-    if (!list.length) {
-      const p = document.createElement('p');
-      p.className = 'set-note';
-      p.textContent = LANG === 'en'
-        ? 'No custom commands yet — e.g.: whenever I say "address", write: …'
-        : 'هنوز فرمان سفارشی نداری — مثلاً بگو: هر وقت گفتم «آدرس»، این را بنویس: تهران، خیابان …';
-      typingCmdsList.appendChild(p);
-      return;
-    }
-    list.forEach((tc) => {
-      const row = document.createElement('div');
-      row.className = 'tc-row';
-      row.innerHTML =
-        `<div class="tc-info"><b class="tc-ph"></b><span class="tc-val"></span></div>` +
-        `<button class="chip sm tc-del"><svg class="ic"><use href="#i-trash"/></svg><span>${t('dns.del')}</span></button>`;
-      row.querySelector('.tc-ph').textContent = `«${tc.phrase}»`;
-      row.querySelector('.tc-val').textContent =
-        tc.value === '\n' ? (LANG === 'en' ? '→ new line' : '→ خط جدید')
-        : tc.value === '__DEL__' ? (LANG === 'en' ? '→ delete last word' : '→ پاک‌کردن کلمه آخر')
-        : tc.value === '__CLEAR__' ? (LANG === 'en' ? '→ clear all' : '→ پاک‌کردن همه')
-        : `→ «${tc.value}»`;
-      row.querySelector('.tc-del').addEventListener('click', () => {
-        settings.typingCmds = settings.typingCmds.filter((x) => x.id !== tc.id);
-        store.set('typingCmds', settings.typingCmds);
-        renderTypingCmds();
-        toast(t('toast.typingCmdDel'), '#i-trash');
-      });
-      typingCmdsList.appendChild(row);
-    });
-  }
-  if (tcAdd) tcAdd.addEventListener('click', () => {
-    const ph = (tcPhrase.value || '').trim();
-    const rawVal = (tcValue.value || '').trim();
-    if (!ph || !rawVal) { toast(t('toast.typingCmdNeed'), '#i-info'); return; }
-    let val = rawVal;
-    if (/^(خط\s*جدید|اینتر|new\s*line)$/i.test(rawVal)) val = '\n';
-    else if (/^پاک\s*کردن\s*کلمه(\s*آخر)?$|^(delete|remove)\s*(the\s*)?last\s*word$/i.test(rawVal)) val = '__DEL__';
-    else if (/^پاک\s*کردن\s*همه$|^clear\s*(all|everything)$/i.test(rawVal)) val = '__CLEAR__';
-    settings.typingCmds = settings.typingCmds || [];
-    settings.typingCmds.push({ id: Date.now(), phrase: ph, value: val });
-    store.set('typingCmds', settings.typingCmds);
-    tcPhrase.value = '';
-    tcValue.value = '';
-    renderTypingCmds();
-    toast(t('toast.typingCmdAdded', { x: ph }), '#i-plus');
-  });
+  /* ---------- v0.82 — تایپ صوتی: صفحه/دکمه‌های قدیمی حذف شد؛ فقط فرمان‌های
+     سفارشی تایپ (typingCmds) از تنظیمات حذف‌شده هنوز در موتور تایپ اعمال
+     می‌شوند — ویرایششان بعداً از بخش مخاطبین/فرمان‌ها اضافه می‌شود ---------- */
+  function renderTypingCmds() { return; }
+  void renderTypingCmds;
 
   /* ---------- مدیریت DNS: فرم، ذخیره، باز کردن فرم شیشه‌ای ---------- */
   if (btnQuickDns) btnQuickDns.addEventListener('click', () => openDnsQuickOverlay());
@@ -8748,7 +8965,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.81.0-beta';
+  let appVersion = '0.82.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -8766,22 +8983,21 @@
     setPanes.forEach((p) => p.classList.toggle('active', p.dataset.pane === id));
     settings.settingsPane = id;
     store.set('settingsPane', id);
+    /* v0.82 — پنل مخاطبین/برنامه‌ها با هر باز شدن تازه شود */
+    if (id === 'contacts') { try { window.__renderContactsPane && window.__renderContactsPane(); } catch (_) { /* noop */ } }
+    if (id === 'apps') { try { window.__renderAppsPane && window.__renderAppsPane(); } catch (_) { /* noop */ } }
   }
   setNavItems.forEach((b) => b.addEventListener('click', () => showSettingsPane(b.dataset.pane)));
 
   function showView(v) {
     settingsPage.hidden = v !== 'settings';
-    chatPage.hidden = v !== 'chat';
     if (historyPage) historyPage.hidden = v !== 'history';
-    if (dictPage) dictPage.hidden = v !== 'dict';
     if (musicPage) musicPage.hidden = v !== 'music';
     if (extPage) extPage.hidden = v !== 'ext';   /* v0.15 */
     if (dnsPage) dnsPage.hidden = v !== 'dns';   /* v0.15 */
     hero.style.display = v === 'home' ? '' : 'none';
     btnHome.classList.toggle('active', v === 'home');
     btnSettings.classList.toggle('active', v === 'settings');
-    btnChat.classList.toggle('active', v === 'chat');
-    if (btnDict) btnDict.classList.toggle('active', v === 'dict');
     if (btnHistory) btnHistory.classList.toggle('active', v === 'history');
     if (btnMusic) btnMusic.classList.toggle('active', v === 'music');
     if (btnExt) btnExt.classList.toggle('active', v === 'ext');
@@ -8795,17 +9011,11 @@
       if ((settings.settingsPane || 'mic') === 'dns' && bridge && bridge.dns) refreshDnsCurrent();
     }
     if (v === 'dns' && bridge && bridge.dns) refreshDnsCurrent(); /* v0.15 — وضعیت DNS در صفحهٔ اختصاصی */
-    if (v === 'chat') {
-      if (!chatMsgs.childElementCount) chatWelcome();
-      setTimeout(() => chatInput.focus(), 150);
-    }
   }
   function showSettings(on) { showView(on ? 'settings' : 'home'); }
   btnSettings.addEventListener('click', () => showView(settingsPage.hidden ? 'settings' : 'home'));
   btnHome.addEventListener('click', () => showView('home'));
   btnSettingsBack.addEventListener('click', () => showView('home'));
-  btnChat.addEventListener('click', () => showView(chatPage.hidden ? 'chat' : 'home'));
-  btnChatBack.addEventListener('click', () => showView('home'));
 
   /* ---------- افزونه‌ها (v0.15) — DNS Changer و پلیر موزیک در ستون کنار ---------- */
   function applyExtensions() {
@@ -9122,7 +9332,7 @@
     if (optSttLang) optSttLang.value = settings.sttLang || 'fa-IR';
     if (optLang) optLang.value = settings.lang || 'fa';
     if (optTheme) optTheme.value = settings.theme || 'dark';
-    if (optDictTarget) optDictTarget.value = settings.dictTarget || 'box';
+    /* v0.82 — optDictTarget با پنل تایپ صوتی حذف شد */
     optGlmKey.value = settings.glmKey || '';
     optGoogleKey.value = settings.googleKey || '';
     optAiModel.value = settings.glmModel || 'glm-4.6';
@@ -9398,6 +9608,7 @@
     LANG = settings.lang;
     applyI18n();
     refreshSettingsUI();
+    try { if (bridge && bridge.vt && bridge.vt.lang) bridge.vt.lang(settings.lang); } catch (_) { /* noop */ }
     toast(t('toast.langChanged'), '#i-lang');
   });
   if (optTheme) optTheme.addEventListener('change', () => setTheme(optTheme.value));
@@ -9529,11 +9740,7 @@
     store.set('whisperModel', settings.whisperModel);
   });
 
-  btnGoZai.addEventListener('click', () => {
-    showView('chat');
-    selectChatTab('zai');
-    toast(t('zai.loginHint'), '#i-globe');
-  });
+  /* v0.82 — دکمهٔ ورود GLM با صفحهٔ چت حذف شد */
 
   optAiModel.addEventListener('change', () => {
     settings.glmModel = optAiModel.value;
@@ -10064,10 +10271,55 @@
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
-  let chatBusy = false;
-  let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
+  let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه (مسیر صوتی/AI) — v0.82: چت متنی حذف شد
   /* v0.70 — تأیید در انتظار برای کارهای حساس (ارسال پیام از مسیر مغز) */
   let _pendingConfirm = null;
+  /* ============================================================
+     v0.82 — پرسشِ شفاف‌ساز چند-ویدیو (الگوی needs_clarification معماری مرجع)
+     «ویدیو رو ببند» با ۲+ پنجره و بدون هدف → آوا دیگر حدسِ خطرناک نمی‌زند؛
+     لیست شماره‌دار می‌پرسد و پاسخِ بعدی («دومی»، «شمارهٔ ۲»، «همه»، «بی‌خیال»)
+     همان‌جا اجرا می‌شود.
+     ============================================================ */
+  let _pendingVideoPick = null;
+  const VIDEO_PICK_TTL = 300000;
+  function videoPickListText(wins) {
+    return wins.map((w, i) => faNum(String(i + 1)) + ') «' + String(w.title || w.proc || 'پلیر').slice(0, 44) + '»').join('، ');
+  }
+  async function videoPickConsume(raw) {
+    if (!_pendingVideoPick) return null;
+    const vp = _pendingVideoPick;
+    if (Date.now() - vp.at > VIDEO_PICK_TTL) { _pendingVideoPick = null; return null; }
+    const s = String(raw || '').trim().toLowerCase()
+      .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+    /* عدد لخت (۱/۲/۳) یا شمارهٔ N */
+    const numM = s.match(/(?:شمارهٔ?\s*)?(\d{1,2})/);
+    let ix = -1;
+    if (/(بی\s?خیال|بیخیال|کنسل|لغو|منصرف|ولش\s?کن)/i.test(s)) {
+      _pendingVideoPick = null;
+      return LANG === 'en' ? 'Okay, cancelled.' : 'باشه، منصرف شدم.';
+    }
+    if (/(همه|هر\s*دو|جفت(?:ش|شون)?)/i.test(s)) {
+      _pendingVideoPick = null;
+      try {
+        const r = await bridge.player.ctl({ action: 'close', arg: 'all' });
+        return r && r.ok ? 'همهٔ ویدیوها بسته شدند.' : 'بستن همه انجام نشد: ' + ((r && r.error) || '');
+      } catch (_) { return 'بستن همه انجام نشد.'; }
+    }
+    if (/اولی|اولین|قبلی|قدیمی|first/i.test(s)) ix = 0;
+    else if (/دومی|دوم|جدید|آخری|آخرین|اخری|second|latest/i.test(s)) ix = vp.wins.length - 1;
+    else if (numM) { const n = parseInt(numM[1], 10); if (n >= 1 && n <= vp.wins.length) ix = n - 1; }
+    if (ix < 0 || ix >= vp.wins.length) return null; /* بی‌ربط → dispatch عادی، پرسش زنده می‌ماند */
+    const win = vp.wins[ix];
+    _pendingVideoPick = null;
+    try {
+      const r = await bridge.player.ctl({ action: vp.action, arg: vp.arg, pid: win.pid });
+      if (r && r.ok) {
+        const _left = Math.max(0, (vp.wins.length || 1) - 1);
+        return `انجام شد: «${String(win.title || win.proc || 'پلیر').slice(0, 44)}»` + (vp.action === 'close' && _left > 0 ? ` — ${faNum(String(_left))} ویدیوی دیگه هنوز بازه.` : '.');
+      }
+      return 'انجام نشد: ' + ((r && r.error) || '');
+    } catch (_) { return 'انجام نشد — پلیر در دسترس نبود.'; }
+  }
   /* v0.76 — ریتری بعد از NOMATCH (لاگ 0.75 04:59: «خب چون باید mmd سرچ کنی …
      یک بار دیگ تلاش کن» → هیچ اتفاقی نیفتاد، مغز هم open_app یاد گرفت).
      بعد از هر ارسالِ ناموفقِ «پیدا نشد»، اصلاحِ بعدیِ کاربر (هندل لاتین/
@@ -10142,28 +10394,8 @@
     }
     return _avaMemInst;
   }
-  let zaiToken = store.get('zaiToken', '');   /* v0.45 — توکن نشست z.ai کش می‌شود تا وب‌ویو تنبل بماند */
-
-  /* در برنامه واقعی همیشه می‌توان AI را صدا زد؛ پل GLM خودش نشست حساب
-     را در پنجره مخفی پیدا می‌کند (وگرنه پیام ورود نشان می‌دهد). */
-  const aiConnected = () => !!(bridge && bridge.ai);
-
-  function chatWelcome() {
-    const ready = aiConnected();
-    addMsg('bot', ready ? t('chat.welcomeOn') : t('chat.welcomeOff'));
-  }
-
-  function addMsg(role, text) {
-    const m = document.createElement('div');
-    m.className = `msg ${role === 'user' ? 'user' : role === 'err' ? 'err' : 'bot'}`;
-    m.textContent = text;
-    chatMsgs.appendChild(m);
-    /* v0.44 — سبک‌سازی RAM (خواستهٔ صریح کاربر): حباب‌های خیلی قدیمی چت
-       از DOM آزاد می‌شوند تا نشست‌های طولانی حافظه نگیرند */
-    while (chatMsgs.children.length > 120) chatMsgs.removeChild(chatMsgs.firstChild);
-    chatMsgs.scrollTop = chatMsgs.scrollHeight;
-    return m;
-  }
+  /* v0.82 — صفحهٔ چت حذف شد؛ توکن کش‌شدهٔ z.ai برای زنجیرهٔ AI می‌ماند */
+  let zaiToken = store.get('zaiToken', '');
   /* v0.44 — سقف تاریخچهٔ چت (AI فقط ۸ پیامِ آخر را می‌خواند؛ نگهداشتنِ
      نامحدودش فقط RAM هدر می‌داد) */
   let vcPendingUser = null;
@@ -10211,10 +10443,13 @@
       .replace(/[«»"']/g, '').replace(/\s+/g, ' ');
     const POS = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center', 'top', 'bottom', 'left', 'right'];
     const SIMP = ['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down', 'pin', 'unpin', 'grow', 'shrink', 'maximize', 'minimize', 'restore', 'pip', 'unpip', 'players', 'status', 'shot'];
-    /* v0.78 — بستن هدفمند از مغز: close:oldest (ویدیوی قبلی) / close:newest / close:all */
+    /* v0.78 — بستن هدفمند از مغز: close:oldest (ویدیوی قبلی) / close:newest / close:all
+       v0.82 — close:ord:N («ویدیوی سوم رو ببند» از مغز) */
     if (/^close/.test(raw)) {
       const tail = raw.replace(/^close[:\s]*/, '').trim();
       if (tail === 'oldest' || tail === 'newest' || tail === 'all' || tail === 'other') return { action: 'close', arg: tail };
+      const om = tail.match(/^(?:ord:)?(\d{1,2})$/);
+      if (om) return { action: 'close', arg: 'ord:' + Math.max(1, parseInt(om[1], 10)) };
       return { action: 'close', arg: 'auto' };
     }
     /* v0.80 — توکن‌های جدید کاتالوگ مغز (تطبیق tool_definitions معماری مرجع):
@@ -10676,45 +10911,7 @@
     return outs.filter(Boolean).join(' — ');
   }
 
-  /* --- تب‌های چت: چت سریع / صفحه GLM --- */
-  function selectChatTab(which) {
-    const zai = which === 'zai';
-    if (tabQuick) tabQuick.classList.toggle('active', !zai);
-    if (tabZai) tabZai.classList.toggle('active', zai);
-    if (quickWrap) quickWrap.hidden = zai;
-    if (zaiWrap) zaiWrap.hidden = !zai;
-    if (zai) { ensureZaiWebLoaded(); setTimeout(() => checkZaiToken(), 1200); }
-  }
-  if (tabQuick) tabQuick.addEventListener('click', () => selectChatTab('quick'));
-  if (tabZai) tabZai.addEventListener('click', () => selectChatTab('zai'));
-
-  function setZaiBadge(on, txt) {
-    if (!zaiBadge) return;
-    zaiBadge.textContent = txt || (on ? t('badge.on') : t('badge.off'));
-    zaiBadge.classList.toggle('on', !!on);
-  }
-
-  function checkZaiToken(attempts = 0) {
-    if (!zaiWeb || typeof zaiWeb.executeJavaScript !== 'function') return;
-    try {
-      zaiWeb.executeJavaScript("localStorage.getItem('token')||''", true).then((tk) => {
-        if (tk) {
-          zaiToken = String(tk);
-          try { store.set('zaiToken', zaiToken); } catch (_) { /* noop */ } /* v0.45 — کش توکن برای بوت‌های بعدی */
-          setZaiBadge(true);
-        } else {
-          zaiToken = '';
-          try { store.set('zaiToken', ''); } catch (_) { /* noop */ }
-          setZaiBadge(false, attempts < 4 ? t('badge.needLogin') : t('badge.off'));
-          if (attempts < 4) setTimeout(() => checkZaiToken(attempts + 1), 2500);
-        }
-      }).catch(() => { /* noop */ });
-    } catch (_) { /* noop */ }
-  }
-  if (zaiWeb) {
-    zaiWeb.addEventListener('dom-ready', () => setTimeout(() => checkZaiToken(), 1400));
-    zaiWeb.addEventListener('did-stop-loading', () => setTimeout(() => checkZaiToken(), 800));
-  }
+  /* v0.82 — تب‌های چت و وب‌ویو GLM حذف شدند */
 
   /* --- ارسال پیام: زنجیره پرووایدرها (v0.13) ---
      «خودکار»: اول Gemini (با سرچ زنده گوگل) → حساب GLM (z.ai) → کلید GLM → OpenAI
@@ -10823,79 +11020,8 @@
     return { ok: false, error: 'هیچ‌کدام از موتورهای هوش مصنوعی جواب ندادند — کلیدها و اینترنت را بررسی کن' };
   }
 
-  async function handleChatSend(v) {
-    addMsg('user', v);
-    pushChatHist('user', v);
-    const typing = addMsg('bot', t('chat.thinking'));
-    typing.classList.add('typing');
-    chatBusy = true;
-    try {
-      /* v0.52 — فکر-اول در چت هم: سوال نیازمند اطلاعات تازه → تحقیق واقعی → جواب داده‌محور */
-      const _bt = await aiThinkRound(v);
-      const r = _bt.r;
-      typing.remove();
-      if (!r || !r.ok) {
-        addMsg('err', (r && r.error) || t('chat.noReply'));
-      } else {
-        /* پاسخ بدون خط فکر؛ بلوک RESEARCH قبلاً به دور دومِ داده‌محور تبدیل شده است */
-        const { reply, add } = parseAdd(_bt.body || r.text);
-        pushChatHist('assistant', r.text);
-        const msgEl = addMsg('bot', reply || '…');
-        if (r.via) { const ch = document.createElement('span'); ch.className = 'msg-engine'; ch.textContent = r.via; msgEl.appendChild(ch); }
-        speak(reply);
-        if (add) renderCmdCard(msgEl, add);
-      }
-    } catch (_) {
-      typing.remove();
-      addMsg('err', t('chat.err'));
-    }
-    chatBusy = false;
-    chatInput.focus();
-  }
-
-  chatBar.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const v = chatInput.value.trim();
-    if (!v || chatBusy) return;
-    if (!bridge || !bridge.ai) {
-      addMsg('err', t('chat.onlyApp'));
-      return;
-    }
-    chatInput.value = '';
-    handleChatSend(v);
-  });
-
-  function renderCmdCard(msgEl, cc) {
-    const card = document.createElement('div');
-    card.className = 'cmd-card';
-    card.innerHTML =
-      `<b><svg class="ic"><use href="#i-plus"/></svg><span></span></b>` +
-      `<code></code>` +
-      `<div class="cmd-actions">` +
-      `<button class="chip sm upd-install"><svg class="ic"><use href="#i-plus"/></svg><span>افزودن به فرمان‌ها</span></button>` +
-      `<button class="chip sm"><svg class="ic"><use href="#i-close"/></svg><span>بی‌خیال</span></button>` +
-      `</div>`;
-    card.querySelector('b span').textContent = cc.title || 'فرمان جدید';
-    const codeEl = card.querySelector('code');
-    const act = cc.action || {};
-    codeEl.textContent = (act.type === 'ps' ? 'PowerShell: ' : act.type === 'open_url' ? 'URL: ' : 'Command: ') + (act.value || '');
-    const [btnAdd, btnSkip] = card.querySelectorAll('button');
-    btnAdd.addEventListener('click', () => {
-      cc.id = Date.now();
-      customCmds.push(cc);
-      store.set('customCmds', customCmds);
-      renderCustomChips();
-      card.querySelector('.cmd-actions').remove();
-      const done = document.createElement('p');
-      done.style.cssText = 'margin:8px 0 0;font-size:11.5px;color:var(--acc2)';
-      done.textContent = LANG === 'en' ? 'Added ✓ Now it runs by voice or the command box.' : 'افزوده شد ✓ حالا با صدا یا کادر فرمان قابل اجراست.';
-      card.appendChild(done);
-      toast(t('toast.cmdAdded', { x: cc.title }), '#i-plus');
-    });
-    btnSkip.addEventListener('click', () => { card.remove(); });
-    msgEl.appendChild(card);
-    chatMsgs.scrollTop = chatMsgs.scrollHeight;
-  }
+  /* v0.82 — چت متنی (handleChatSend/renderCmdCard) با صفحهٔ چت حذف شد؛
+     فرمان‌های پیشنهادیِ <<<ADD>>> از مسیر صوتی هنوز با parseAdd خوانده می‌شوند */
 
   /* ---------- مسیریابی سوالات پیچیده به هوش مصنوعی ----------
      اگر متن، فرمان شناخته‌شده نبود و اتصال AI برقرار بود،
@@ -12448,7 +12574,6 @@
   renderMusicList();
   updatePlayerUI();
   updateHandsFreeUI();
-  updateDictToggleUI();
   startSuggestionLoop();
   /* میکروفون از همین لحظه فعال می‌ماند تا اکولایزر به صدای واقعی واکنش نشان دهد */
   setTimeout(() => { attachMic(); }, 1200);

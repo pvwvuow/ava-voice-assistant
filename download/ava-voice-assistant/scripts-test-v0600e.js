@@ -78,8 +78,8 @@ console.log('\n[3] D3-c — --input-bg: توکن + اوراید light/lite + س�
 ok(cssSrc.includes('--input-bg: rgba(11, 15, 13, 0.6);'), ':root شامل --input-bg پیش‌فرض (rgba(11, 15, 13, 0.6))');
 ok(cssSrc.includes('--input-bg: rgba(255, 255, 255, 0.8);'), 'اوراید تم light: --input-bg = rgba(255, 255, 255, 0.8)');
 ok(cssSrc.includes('--input-bg: #ffffff;'), 'اوراید تم lite: --input-bg = #ffffff');
-ok((cssLive.match(/background: var\(--input-bg\);/g) || []).length === 3,
-  'سه سلکتور پایه (.set-select/.dict-box/.set-input) با background: var(--input-bg)');
+ok((cssLive.match(/background: var\(--input-bg\);/g) || []).length >= 3,
+  'سلکتورهای پایه (و v0.82: .ct-search-row) با background: var(--input-bg)');
 ok(cssSrc.includes('[data-theme="light"] .set-select, [data-theme="light"] .set-input, [data-theme="light"] .dict-box {'),
   'گروه اوراید light سر جایش است (border/color + background هم‌ارز توکن)');
 ok(cssSrc.includes('[data-theme="lite"] .set-select,') && cssSrc.includes('[data-theme="lite"] .cmd-bar,'),

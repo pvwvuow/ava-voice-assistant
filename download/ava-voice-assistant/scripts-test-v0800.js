@@ -146,7 +146,7 @@ ok(/if \(a === 'switch'\)/.test(mainSrc) && /videoSwitchTarget\(/.test(mainSrc),
 ok(/if \(a === 'speed'\)/.test(mainSrc) && /rate&val=/.test(mainSrc) && /'set', 'speed', sp\]/.test(mainSrc), 'شاخهٔ speed: VLC rate + mpv set-speed (set_playback_speed)');
 ok(/Math\.max\(0\.25, Math\.min\(3,/.test(mainSrc), 'speed: گیرهٔ 0.25..3.0 (پرامپت مرجع)');
 ok(/if \(a === 'quality'\)/.test(mainSrc) && /ytDlpQualityCmd\(bin, yurl, q\)/.test(mainSrc), 'شاخهٔ quality: استریم تازهٔ yt-dlp (set_video_quality)');
-ok(/const F = \{ '360': '18', '720': '22\/18'/.test(mainSrc), 'ytDlpQualityCmd: فرمت‌های muxed 18/22');
+ok(/const F = \{ '360': '18\/b\[ext=mp4\]\/b\[ext=webm\]\/b'/.test(mainSrc), 'ytDlpQualityCmd: نردبان گسترده (v0.82)');
 ok(mainSrc.includes("if (tgt === 'other')") && mainSrc.includes('closeVideoOther()'), 'close:other در player:ctl');
 ok(/ambiguous: true, wins: or\.wins/.test(mainSrc), 'سه+ ویدیو → شفاف‌سازی با لیست (needs_clarification)');
 

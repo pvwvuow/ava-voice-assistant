@@ -83,7 +83,7 @@ ok(appSrc.includes('Important rule 5'), 'app.js: قانون ۵ انگلیسی');
 ok(appSrc.includes('function appsNamesCtx'), 'app.js: فهرست برنامه‌های نصب‌شده برای AI');
 ok(appSrc.includes('appsNamesCtx()') && appSrc.includes('await avaStateCtx()'), 'app.js: فهرست برنامه‌ها داخل aiFallbackCtx (v0.50: نمونه‌های آموخته هم)');
 ok(appSrc.includes('function pushChatHist'), 'app.js: سقف تاریخچهٔ چت');
-ok(appSrc.includes("chatMsgs.children.length > 120"), 'app.js: سقف DOM چت');
+ok(appSrc.includes('chatHist.length > 40'), 'app.js: سقف تاریخچهٔ چت (v0.82: DOM چت حذف شد، حافظهٔ کوتاه ماند)');
 ok(!/chatHist\.push\(/.test(appSrc.replace(/function pushChatHist[\s\S]*?\n  \}/, '')) || appSrc.match(/chatHist\.push\(/g).length === 0, 'app.js: همهٔ pushهای چت از سقف‌دار می‌گذرند');
 ok(appSrc.includes('js/voiceUnderstand.js') === false, 'app.js: (اسکریپت در index است نه app)');
 

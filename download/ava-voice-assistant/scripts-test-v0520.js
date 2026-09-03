@@ -66,7 +66,7 @@ console.log('\n[4] اتصال به مسیر فرمان و چت');
 ok(appSrc.includes('async function aiThinkRound(text, extraCtx) {'), 'aiThinkRound تعریف شده');
 ok(appSrc.includes("const _bt = await aiThinkRound(cmd, extraCtx);") && appSrc.includes('const r = _bt.r;'), 'aiHandleCommand: مسیر فکر-اول');
 ok(appSrc.includes("parseAdd(_bt.body || r.text)"), 'پاسخ متنی از bodyِ بی‌فکر (فکر هرگز به TTS/نمایش نمی‌رسد)');
-ok(appSrc.includes('const _bt = await aiThinkRound(v);'), 'handleChatSend: چت هم فکر-اول');
+ok(appSrc.includes('async function aiThinkRound') && appSrc.includes('await aiThinkRound('), 'فکر-اول در مسیر صوتی (v0.82: چت متنی حذف شد)');
 ok(appSrc.includes('فهمید(ai فکر)') && appSrc.includes("ev: 'interpret', via: 'ai'"), 'لاگ گفت/فهمید برای مسیر AI (فکر در لاگ می‌ماند)');
 ok(appSrc.includes('ai research(جواب)'), 'تحقیق واقعی وب برای سوال‌ها (نه فقط act=research)');
 ok(appSrc.includes('بلوک RESEARCH دیگر مجاز نیست و هرگز اسم/عنوان را از حافظه‌ات نساز'), 'دور دوم: ضد توهم (فقط بر پایهٔ نتایج)');

@@ -471,6 +471,26 @@
        pin|unpin|grow|shrink|move|seek|volume_up|volume_down
      خروجی null = این جمله کنترل پلیر نیست (نزد لاین‌های دیگر برود).
      ============================================================ */
+  /* ============================================================
+     v0.82 — videoTargetOf: هدف‌سازِ چند-ویدیو (مشکل «شخیص چند ویدیو همزمان»)
+     ------------------------------------------------------------
+     «قبلی/اولی/اولین»=oldest؛ «جدید/آخری/آخرین/دومی»=newest؛
+     «سومی/چهارمی/ویدیوی سوم/شمارهٔ ۳»=عدد اردینال ۳؛
+     «همه/هر دو/جفتشون»=all؛ «اون یکی»=other؛ هیچ=""
+     این هدف به همهٔ افعالِ کنترل ویدیو می‌چسبد — نه فقط بستن:
+     «ویدیو قبلی رو فول اسکرین کن»، «دومی رو پاز کن»، «اولی رو ببند»…
+     ============================================================ */
+  function videoTargetOf(s) {
+    if (!s) return '';
+    if (/(همه|هر\s*دو|جفت(?:ش|شون|شان)?|دوتا(?:ش|شون)?|دو\s*(?:تا\s*)?(?:ویدیو|پلیر|فیلم|کلیپ|پنجره)|هرچی|هر\s*چی\s*(?:ویدیو|پلیر|فیلم|کلیپ)|همه\s*رو)/i.test(s)) return 'all';
+    if (/(اون\s?یکی|اون\s?که\s?دیگه|دیگه(?:ش)?|دیگری)/i.test(s)) return 'other';
+    const ORD = [['سومین|سومی|سوم|third', 3], ['چهارمین?|چهارمی|fourth', 4], ['پنجمین?|پنجمی|fifth', 5], ['ششمین?|ششمی|sixth', 6]];
+    for (const [re, n] of ORD) { if (new RegExp('(?:ویدیو|پلیر|فیلم|کلیپ|پنجره|شمارهٔ?)[^.]{0,8}(' + re + ')|(' + re + ')[^.]{0,6}(ویدیو|پلیر|فیلم|کلیپ|پنجره)|شمارهٔ?\s*' + n, 'i').test(s)) return n; }
+    if (/(قبلی|اولین|(?:^|\s)اول(?:\s|$)|اولی|قدیمی|قبلا?\s*باز|قبلی\s*ک|قبلی\s*که|earlier|oldest|first)/i.test(s)) return 'oldest';
+    if (/(جدید|آخری|آخرین|اخری|تازه|الانی|الان\s*باز|(?:^|\s)دومی|(?:^|\s)دوم(?:\s|$)|second|latest|newest)/i.test(s)) return 'newest';
+    return '';
+  }
+
   function videoCtlOf(rawCmd) {
     /* ارقام فارسی/عربی → لاتین («۳۰ ثانیه» باید seek:30 بدهد) */
     const s = String(rawCmd || '').replace(/[\u200c\u200f]/g, ' ').replace(/[«»"']/g, ' ').toLowerCase()
@@ -480,6 +500,8 @@
     if (!s) return null;
     /* گارد: جملهٔ مرکب با خواستهٔ دیگر کنترل پلیر نیست (هم‌سوی گارد قاعدهٔ player_ctl) */
     if (/(کپی|سرچ|جستجو|بگرد|پیدا\s?کن|تحلیل|بررسی|لینک\s*بده|دانلود)/i.test(s)) return null;
+    /* v0.82 — هدف چند-ویدیو یک‌بار خوانده می‌شود و به هر فعلِ قابل‌هدف می‌چسبد */
+    const vt = videoTargetOf(s);
     /* v0.80 — گارد «کیفیت صدا» / «سرعت اینترنت» — این‌ها کنترل ویدیو نیستند */
     if (/کیفیت\s*(صدا|صدایی|\baudio\b)/i.test(s)) return null;
     if (/(سرعت|کیفیت)[^.]{0,12}(اینترنت|اینترنتی|وای\s?فای|\bنت\b)/i.test(s)) return null;
@@ -532,20 +554,19 @@
       const back = /عقب|ریویند|rewind/i.test(seekM[1]);
       return { action: 'seek', arg: back ? -(n || 10) : (n || 10) };
     }
-    /* فول‌اسکرین */
-    if (/(فول\s?اسکرین|تمام\s?صفحه|fullscreen|full\s?screen)/i.test(s)) return { action: 'fullscreen', arg: 0 };
+    /* فول‌اسکرین — v0.82: با هدف («ویدیو قبلی رو فول اسکرین کن» → همان ویدیو) */
+    if (/(فول\s?اسکرین|تمام\s?صفحه|fullscreen|full\s?screen)/i.test(s)) return vt ? { action: 'fullscreen', arg: 0, tgt: vt } : { action: 'fullscreen', arg: 0 };
     /* بستن — v0.78: هدفِ بستن (قبلی/جدید/همه) — لاگ کاربر: «ویدیو قبلی که
        باز کرده بودم رو ببند (دو ویدیو همزمان بازه)» جفت‌شان بسته می‌شد.
        arg ∈ auto|oldest|newest|all — «دو ویدیو» هم «همه» است نه یک هدف */
     if (/ببند|بس\s?بند|بسش\s?کن|بخوابون|خاموشش?\s?کن|قطعش?\s?کن|استاپش|استوپش|پایانش?\s?بده|close/i.test(s)) {
-      let tgt = 'auto';
+      let tgt = vt; /* v0.82 — اردینال/کیفی‌ساز از videoTargetOf */
       if (/(همه|هر\s*دو|جفت(?:ش|شون|شان)?|دوتا(?:ش|شون)?|دو\s*(?:تا\s*)?(?:ویدیو|پلیر|فیلم|کلیپ|پنجره)|هرچی|هر\s*چی\s*(?:ویدیو|پلیر|فیلم|کلیپ)|همه\s*رو)/i.test(s)) tgt = 'all';
-      else if (/(قبلی|اولین|(?:^|\s)اول(?:\s|$)|قدیمی|قبلا?\s*باز|قبلی\s*ک|قبلی\s*که)/i.test(s)) tgt = 'oldest';
-      else if (/(جدید|آخری|آخرین|اخری|تازه|الانی|الان\s*باز|(?:^|\s)دومی|(?:(?:^|\s)دوم(?:\s|$)))/i.test(s)) tgt = 'newest';
-      /* v0.80 — «اون یکی رو ببند» (الگوی close_window(specific)): با دو ویدیو =
-         غیرِ پنجرهٔ فعال؛ سه ویدیو+ = مغز/قانون شفاف‌سازی (لیست می‌پرسد) */
-      else if (/(اون\s?یکی|اون\s?که\s?دیگه|دیگه(?:ش)?|دیگری)/i.test(s)) tgt = 'other';
-      return { action: 'close', arg: tgt };
+      else if (tgt === 'all') tgt = '';
+      if (tgt === 'oldest' || tgt === 'newest' || tgt === 'other') return { action: 'close', arg: tgt };
+      if (tgt === 'all') return { action: 'close', arg: 'all' };
+      if (typeof tgt === 'number') return { action: 'close', arg: 'ord:' + tgt };
+      return { action: 'close', arg: 'auto' };
     }
     /* v0.80 — خانواده‌های جدید (تطبیق گروه‌های ۵..۱۰ معماری مرجع) —
        PIP، شفافیت، مانیتور دوم، چیدمان، فهرست، سوییچ، سرعت، کیفیت،
@@ -598,8 +619,8 @@
     /* بعدی/قبلی */
     if (/بعدی|بعد|next/i.test(s)) return { action: 'next', arg: 0 };
     if (/قبلی|قبل|prev/i.test(s)) return { action: 'prev', arg: 0 };
-    /* پخش/توقف */
-    if (/پاز|نگه\s?دار|توقف|استاپ|استوپ|پلی\s?کن|پخش\s?کن|پخش|play|pause/i.test(s)) return { action: 'play_pause', arg: 0 };
+    /* پخش/توقف — v0.82: هدف‌دار («دومی رو پاز کن» → همان پنجره) */
+    if (/پاز|نگه\s?دار|توقف|استاپ|استوپ|پلی\s?کن|پخش\s?کن|پخش|play|pause/i.test(s)) return vt ? { action: 'play_pause', arg: 0, tgt: vt } : { action: 'play_pause', arg: 0 };
     return null;
   }
 
@@ -648,7 +669,7 @@
     { acc: 'Alt+Q', fa: 'Alt+Q' },
   ];
 
-  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, strictVideoUrlOf, playerTargetOf, videoUrlLane, videoCtlOf, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
+  const api = { arbitrate, candidatesText, TABLE, gateType, gateReason, blocksActionRule, ytQueryOf, ytPlayVerb, typeOnceOf, videoUrlOf, strictVideoUrlOf, playerTargetOf, videoUrlLane, videoCtlOf, videoTargetOf, pttConflictOf, pttSuggestionsOf: () => PTT_SUGGESTIONS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAIntent = api;
 })(typeof window !== 'undefined' ? window : null);

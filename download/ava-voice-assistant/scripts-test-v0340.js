@@ -52,12 +52,12 @@ ok('single typeText definition (no duplicate key overriding the new engine)',
    (preloadSrc.match(/typeText:/g) || []).length === 1);
 ok('sys:typeText + sys:savefg IPC handlers in main.js',
    mainSrc.includes("ipcMain.handle('sys:typeText'") && mainSrc.includes("ipcMain.handle('sys:savefg'"));
-ok('renderer: dictTarget apps path passes the captured hwnd',
-   appSrc.includes('bridge.system.typeText(delta, dictation.hwnd || 0, dictation.pid || 0)'));
+ok('renderer: typing engine passes the captured hwnd (dictation یا vtRec — v0.82)',
+   appSrc.includes('bridge.system.typeText(delta, tgt.hwnd || 0, tgt.pid || 0)'));
 ok('renderer: fg window tracked on blur + reset on focus',
    appSrc.includes("window.addEventListener('blur'") && appSrc.includes("window.addEventListener('focus'"));
-ok('renderer: startDictation(system) captures the target window BEFORE any focus steal',
-   /async function startDictation\(system\) \{[\s\S]{0,500}refreshFg\(\)/.test(appSrc));
+ok('renderer: startDictation captures the target via typingTargetPick (v0.82 headless)',
+   /async function startDictation\(\) \{[\s\S]{0,200}typingTargetPick/.test(appSrc));
 ok('honest typing failure toast (throttled, not silent)',
    appSrc.includes('type-into-app failed') && appSrc.includes('dict.sysFail'));
 
@@ -65,8 +65,8 @@ console.log('\n[3] T2: «اینجا برام تایپ کن» voice command');
 ok('SYS_DICT_RE defined and dispatched BEFORE the normal dict rule',
    appSrc.indexOf('const SYS_DICT_RE') > -1 &&
    appSrc.indexOf('SYS_DICT_RE.test(raw)') < appSrc.indexOf('DICT_START_RE.test(raw)'));
-ok('system start is a ONE-SHOT apps target (user preference not overwritten)',
-   appSrc.includes('dictation.oneShotApps = !!system && settings.dictTarget !== \'apps\''));
+ok('typing target = active app always (v0.82: صفحهٔ dict حذف شد، خروجی همیشه برنامهٔ فعال)',
+   appSrc.includes('async function typingTargetPick()') && appSrc.includes('const vtRec = { active: false, hwnd: 0, pid: 0 }'));
 
 console.log('\n[4] W1: wake-always decoupled from the offline pack');
 ok('loop starts WITHOUT the pack (engine local|cloud, no early return on missing pack)',

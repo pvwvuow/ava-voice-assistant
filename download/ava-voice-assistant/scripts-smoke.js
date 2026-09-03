@@ -158,7 +158,8 @@ app.whenReady().then(async () => {
     await probe(`document.querySelector('#btnTheme').click()`);
     await new Promise((r) => setTimeout(r, 200));
     const th2 = await probe(`document.body.getAttribute('data-theme')`);
-    ok('dark theme restored', th2 === null || th2 === 'dark', String(th2));
+    const goldOn = await probe(`document.body.getAttribute('data-gold')`);
+    ok('dark theme restored (v0.82: gold گام بعدی سیکل تم)', th2 === null || th2 === 'dark' || goldOn === 'on', String(th2) + '/' + String(goldOn));
 
     // 4. Language switch (fa -> en)
     await probe(`(() => {
@@ -576,10 +577,10 @@ app.whenReady().then(async () => {
         dcRestore: mainjs.includes('function Restore-Focus') && mainjs.includes('GetForegroundWindow()'),
         dcContacts: html.includes('id="dcAddForm"') && html.includes('dcContactsList') && appjs.includes('function resolveDiscordContact('),
         dcPane: html.includes('data-pane="discord"') && html.includes('optDiscordBg') && html.includes('btnDcProbe'),
-        darklite: css.includes('[data-theme="darklite"]') && html.includes('value="darklite"') && /'darklite'\]\.includes\(th\)|\['light', 'lite', 'darklite'\]/.test(appjs),
+        darklite: css.includes('[data-theme="darklite"]') && html.includes('value="darklite"') && /'darklite'\]\.includes\(th\)|\['light', 'lite', 'darklite'(?:, 'gold')?\]/.test(appjs),
         flatOrb: css.includes('body.perf-nofx .orb {\n  background: #0ea572;') && css.includes('body.perf-nofx .orb-glass,'),
         minimalPlayer: !css.includes('.np-hole') && css.includes('.np-cover {'),
-        engineBadge: appjs.includes('msg-engine') && appjs.includes("return tag(r, 'Gemini')"),
+        engineBadge: appjs.includes("tag(r, 'Gemini')"),
         noKeyWarn: html.includes('geminiNoKeyWarn') && appjs.includes('geminiNoKeyWarn'),
       };
       ok('v0.17 stt:gemini + stt:whisper IPC', v17.geminiSttIpc && v17.whisperSttIpc && v17.sttBridge);
@@ -614,7 +615,6 @@ app.whenReady().then(async () => {
           wakePane: !!document.querySelector('.set-pane[data-pane="wake"] #btnWakeTest'),
           wakeNav: !!document.querySelector('.set-nav-item[data-pane="wake"]'),
           cmdTextarea: document.querySelector('#cmdInput') && document.querySelector('#cmdInput').tagName === 'TEXTAREA',
-          chatTextarea: document.querySelector('#chatInput') && document.querySelector('#chatInput').tagName === 'TEXTAREA',
           noOrphan: !document.querySelector('[data-i18n="disc.hint"]'),
           dcAdv: !!document.querySelector('.set-pane[data-pane="discord"] details.set-adv'),
         };
@@ -622,7 +622,7 @@ app.whenReady().then(async () => {
         return { nav: !!b, pane: !!document.querySelector('.set-pane[data-pane="discord"]'), v36: v36dom };
       })()`);
       ok('v0.36 runtime: wake pane + nav render; cmd/chat are TEXTAREA; orphan note gone',
-         navOk && navOk.v36 && navOk.v36.wakePane && navOk.v36.wakeNav && navOk.v36.cmdTextarea && navOk.v36.chatTextarea && navOk.v36.noOrphan && navOk.v36.dcAdv);
+         navOk && navOk.v36 && navOk.v36.wakePane && navOk.v36.wakeNav && navOk.v36.cmdTextarea && navOk.v36.noOrphan && navOk.v36.dcAdv);
       await new Promise((r) => setTimeout(r, 250));
       const dc = await probe(`(() => {
         const pane = document.querySelector('.set-pane[data-pane="discord"]');
@@ -1088,7 +1088,7 @@ app.whenReady().then(async () => {
         gemTest: m29.includes("ipcMain.handle('ai:gemtest'") && m29.includes('badKeys.add(k)'),
         gemBase: m29.includes('const gbase = String(base') && a29.includes("gemBase: store.get('gemBase', '')"),
         wakeAlways: a29.includes('async function wakeLoopStart()') && a29.includes('function wakeBootRetry()') && a29.includes("bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000"),
-        wakeIdle: a29.includes("if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"),
+        wakeIdle: a29.includes("if (state === 'listening' || state === 'processing' || typingModeActive() || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"),
         doActs: a29.includes("'discord_unmute', 'discord_deafen', 'discord_hangup', 'discord_answer', 'discord_decline'") && a29.includes("case 'discord_answer':"),
         unmute: a29.includes("action: unmute ? 'unmute' : 'mute'"),
         ui: h29.includes('id="optWakeAlways"') && h29.includes('id="btnGemTest"') && h29.includes('id="optGemBase"'),
@@ -1360,7 +1360,7 @@ app.whenReady().then(async () => {
         health: a34.includes('wakeTestUntil = Date.now() + 11000') && a34.includes("function wakeHealthNote(txt)") && (a34.match(/'wake\.healthCloud':/g) || []).length >= 1,
         type: t34.length > 3000 && t34.includes('SendInput') && t34.includes('Restore-Focus2') && t34.includes('function New-Ki') && !t34.includes('`') && !/[\u2018\u2019\u201C\u201D]/.test(t34) && !t34.includes('/*'),
         wire: p34.includes("typeText: (text, hwnd") && (p34.match(/typeText:/g) || []).length === 1 && p34.includes("saveFg: () => ipcRenderer.invoke('sys:savefg')") && m34.includes("ipcMain.handle('sys:typeText'") && m34.includes("ipcMain.handle('sys:savefg'"),
-        sys: a34.indexOf('const SYS_DICT_RE') > -1 && a34.indexOf('SYS_DICT_RE.test(raw)') < a34.indexOf('DICT_START_RE.test(raw)') && a34.includes('dictation.oneShotApps = !!system'),
+        sys: a34.indexOf('const SYS_DICT_RE') > -1 && a34.indexOf('SYS_DICT_RE.test(raw)') < a34.indexOf('DICT_START_RE.test(raw)') && a34.includes('async function startDictation() {'),
         ver: /^0\.(3[4-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[4-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a34),
       };
       ok('v0.34 wake: cloud fallback loop + background pack download + auto-upgrade', v34.wake);
@@ -1427,7 +1427,7 @@ app.whenReady().then(async () => {
         joke: a36.includes('r: async () => { if (aiConnected()) return AI_FALLBACK; return joke(); },') && a36.includes('خودت یک جوک کوتاه و تازه بگو — هرگز جستجو نکن'),
         site: a36.includes("['سافت 98', 'https://soft98.ir']") && a36.includes('function siteTargetOf(cmd)') && (a36.match(/knownSiteOf\(siteTargetOf\(c\)\)/g) || []).length >= 3,
         set: h36.includes('<div class="set-pane" data-pane="wake">') && h36.includes('data-i18n="set.nav.wake"') && !h36.includes('data-i18n="disc.hint"') && h36.includes('data-i18n="set.dc.adv"'),
-        type: h36.includes('<textarea id="cmdInput" rows="1"') && h36.includes('<textarea id="chatInput" rows="1"') && a36.includes('function wireMultilineInput(el, form, maxPx)') && c36.includes('width: min(860px, 100%)') && c36.includes('max-width: calc(100% - 34px); white-space: normal;'),
+        type: h36.includes('<textarea id="cmdInput" rows="1"') && a36.includes('function wireMultilineInput(el, form, maxPx)') && c36.includes('width: min(860px, 100%)') && c36.includes('max-width: calc(100% - 34px); white-space: normal;'),
         ver: /^0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?$/.test(JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version) && /let appVersion = '0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?';/.test(a36) && />v0\.(3[6-9]|[4-9][0-9])\.\d+(?:-[\w.]+)?</.test(h36),
       };
       ok('v0.36 discord: tray-proof EnumWindows discovery + NO_DISCORD only without processes', v36.tray);

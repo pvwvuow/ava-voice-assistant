@@ -554,6 +554,226 @@ ipcMain.handle('win:toggle-maximize', () => {
 ipcMain.handle('win:close', () => { if (win) win.close(); });
 ipcMain.handle('win:is-maximized', () => (win ? win.isMaximized() : false));
 
+/* ============================================================
+   v0.82 — حباب تایپ صوتی شناور (VT)
+   ------------------------------------------------------------
+   خواستهٔ کاربر: «هر جا کاربر در حال تایپ بود یک چیز کوچولو بالای
+   همون صفحه تایپش پاپ بشه؛ با کلیک روش ضبط شروع بشه؛ هرچی گفت بدون
+   هیچ کامندی نوشته شه؛ کلیک دوباره = توقف»
+   • دیمون هوک C# (lib/typehook.cs → csc.exe → userData/bin) تایپ/کلیک
+     واقعی کاربر + موقعیت کرسرِ فیلد فعال را استریم می‌کند
+   • vtWin: پیلِ شناورِ alwaysOnTop و focusable:false — کلیک روی آن
+     هرگز فوکوسِ فیلد مقصد را نمی‌دزدد (تایپ همان‌جا می‌نشیند)
+   • ضبط: main → 'vt:toggle-rec' → رندرر اصلی (app.js vtRecStart) →
+     متن هر جمله با SendInput در فیلد فعال تایپ می‌شود (v0.34)
+   ============================================================ */
+const VT_W = 236, VT_H = 48;
+let exiting = false; /* در shutdown، respawn دیمون و ... متوقف شود */
+const vtSt = {
+  win: null, child: null, tries: 0, ready: false, lang: 'fa',
+  info: null,                     /* آخرین STA دیمون */
+  lastTypeAt: 0, lastTypeSelf: true,
+  lastClick: null, lastClickAt: 0, lastClickSelf: true,
+  rec: false, recTxt: '',
+  tickTimer: null,
+};
+function vtLog(m) { try { actLog('vt: ' + m, 'vt'); } catch (_) { /* noop */ } }
+
+function vtCompileHook() {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') return resolve(false);
+    let src = path.join(__dirname, 'lib', 'typehook.cs');
+    const bin = path.join(app.getPath('userData'), 'bin', 'ava-typehook.exe');
+    try {
+      if (fs.existsSync(bin) && fs.statSync(bin).size > 4000) return resolve(true);
+      const tmpSrc = path.join(app.getPath('userData'), 'bin', 'typehook.cs');
+      fs.mkdirSync(path.dirname(bin), { recursive: true });
+      fs.copyFileSync(src, tmpSrc); /* csc نمی‌تواند از asar بخواند */
+      const csCands = [
+        path.join(process.env.windir || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
+        path.join(process.env.windir || 'C:\\Windows', 'Microsoft.NET', 'Framework', 'v4.0.30319', 'csc.exe'),
+      ];
+      const csc = csCands.find((c) => fs.existsSync(c));
+      if (!csc) { vtLog('csc.exe not found — VT auto-show disabled'); return resolve(false); }
+      exec(`"${csc}" /nologo /target:exe /optimize+ /out:"${bin}" "${tmpSrc}"`, { windowsHide: true, timeout: 40000 }, (err) => {
+        if (err || !fs.existsSync(bin)) { vtLog('compile fail: ' + String((err && err.message) || err).slice(0, 120)); return resolve(false); }
+        try { fs.unlinkSync(tmpSrc); } catch (_) { /* noop */ }
+        vtLog('typehook compiled');
+        resolve(true);
+      });
+    } catch (e) { vtLog('compile error: ' + String((e && e.message) || e).slice(0, 120)); resolve(false); }
+  });
+}
+
+async function vtStartHook() {
+  if (vtSt.child || process.platform !== 'win32') return;
+  const okBin = await vtCompileHook();
+  if (!okBin) return;
+  const bin = path.join(app.getPath('userData'), 'bin', 'ava-typehook.exe');
+  try {
+    const ch = spawn(bin, [String(process.pid)], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+    vtSt.child = ch;
+    ch.stdout.setEncoding('utf8');
+    let buf = '';
+    ch.stdout.on('data', (d) => {
+      buf += String(d);
+      let ix;
+      while ((ix = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, ix).trim(); buf = buf.slice(ix + 1);
+        if (!line) continue;
+        const tag = line.slice(0, 3); const js = line.slice(4);
+        let o = null;
+        try { o = JSON.parse(js); } catch (_) { continue; }
+        if (tag === 'STA') {
+          vtSt.info = o;
+        } else if (tag === 'EVT') {
+          if (o.t === 'key') {
+            vtSt.lastTypeAt = Date.now(); vtSt.lastTypeSelf = !!o.self;
+            if (!o.self) vtSt.ready = true;
+          } else if (o.t === 'click') {
+            if (!o.self) { vtSt.lastClick = { x: o.x, y: o.y }; vtSt.lastClickAt = Date.now(); }
+            vtSt.lastClickSelf = !!o.self;
+          }
+        } else if (tag === 'ERR') {
+          vtLog('hook error: ' + String(o && o.e || ''));
+        }
+      }
+    });
+    ch.on('exit', (code) => {
+      vtSt.child = null; vtSt.info = null;
+      if (!exiting) {
+        vtSt.tries += 1;
+        if (vtSt.tries <= 4) { vtLog('hook exit(' + code + ') — respawn in 3s (try ' + vtSt.tries + ')'); setTimeout(vtStartHook, 3000); }
+        else vtLog('hook gave up after ' + vtSt.tries + ' tries');
+      }
+    });
+    vtSt.tries = 0; vtSt.ready = true;
+    vtLog('hook started pid=' + ch.pid);
+  } catch (e) { vtLog('spawn fail: ' + String((e && e.message) || e).slice(0, 120)); }
+}
+
+function vtShowAt(x, y) {
+  try {
+    const wa = screen.getDisplayMatching({ x, y, width: 1, height: 1 }).workArea;
+    const px = Math.max(wa.x + 4, Math.min(wa.x + wa.width - VT_W - 4, Math.round(x - VT_W / 2)));
+    const py = Math.max(wa.y + 4, Math.min(wa.y + wa.height - VT_H - 4, Math.round(y - VT_H - 10)));
+    if (!vtSt.win || vtSt.win.isDestroyed()) {
+      vtSt.win = new BrowserWindow({
+        width: VT_W, height: VT_H, x: px, y: py,
+        frame: false, transparent: true, resizable: false, movable: false,
+        alwaysOnTop: true, skipTaskbar: true, focusable: false, show: false,
+        hasShadow: false,
+        title: 'AVA-VT-Bubble',
+        webPreferences: {
+          preload: path.join(__dirname, 'renderer', 'vt-preload.js'),
+          contextIsolation: true, nodeIntegration: false, spellcheck: false,
+          backgroundThrottling: false,
+        },
+      });
+      vtSt.win.setAlwaysOnTop(true, 'screen-saver');
+      vtSt.win.loadURL('ava://app/renderer/vt.html?lang=' + encodeURIComponent(vtSt.lang));
+      vtSt.win.on('closed', () => { vtSt.win = null; });
+    } else {
+      vtSt.win.setBounds({ x: px, y: py, width: VT_W, height: VT_H });
+    }
+    if (vtSt.win && !vtSt.win.isVisible()) vtSt.win.showInactive();
+  } catch (_) { /* noop */ }
+}
+function vtHide() {
+  try { if (vtSt.win && !vtSt.win.isDestroyed() && vtSt.win.isVisible()) vtSt.win.hide(); } catch (_) { /* noop */ }
+}
+
+/* پریست موقعیت: کرسرِ فیلد فعال ← آخرین کلیک تازه ← موقعیت موس */
+function vtAnchor() {
+  const i = vtSt.info || {};
+  if (i.cok) return { x: i.cx, y: i.cy };
+  if (vtSt.lastClick && Date.now() - vtSt.lastClickAt < 60000) return vtSt.lastClick;
+  if (typeof i.mx === 'number') return { x: i.mx, y: i.my };
+  return null;
+}
+/* فول‌اسکرین (بازی/ویدیو) → حباب مزاحم نشود */
+function vtFgFullscreen() {
+  const i = vtSt.info;
+  if (!i || typeof i.rx !== 'number') return false;
+  try {
+    for (const d of screen.getAllDisplays()) {
+      const b = d.bounds;
+      if (i.rx <= b.x && i.ry <= b.y && i.rw >= b.width && i.rh >= b.height) return true;
+    }
+  } catch (_) { /* noop */ }
+  return false;
+}
+function vtTick() {
+  try {
+    if (vtSt.rec) {
+      const a = vtAnchor();
+      if (a) vtShowAt(a.x, a.y);
+      return;
+    }
+    const i = vtSt.info || {};
+    if (i.self !== false) { vtHide(); return; }             /* آوا خودش جلو است */
+    if (vtFgFullscreen()) { vtHide(); return; }             /* فول‌اسکرین مزاحم نشو */
+    const now = Date.now();
+    const typing = !vtSt.lastTypeSelf && (now - vtSt.lastTypeAt < 12000);
+    const clicked = !vtSt.lastClickSelf && vtSt.lastClick && (now - vtSt.lastClickAt < 8000);
+    if (!typing && !clicked) { vtHide(); return; }
+    const a = vtAnchor();
+    if (a) vtShowAt(a.x, a.y);
+  } catch (_) { /* noop */ }
+}
+function vtKill() {
+  exiting = true; /* جلوی respawn در شutdown */
+  try { if (vtSt.child) { try { vtSt.child.kill(); } catch (_) { /* noop */ } } } catch (_) { /* noop */ }
+  vtSt.child = null;
+  try { if (vtSt.win && !vtSt.win.isDestroyed()) vtSt.win.destroy(); } catch (_) { /* noop */ }
+  vtSt.win = null;
+  if (vtSt.tickTimer) { clearInterval(vtSt.tickTimer); vtSt.tickTimer = null; }
+}
+
+/* IPC — از حباب: کلیک = شروع/توقف ضبط */
+ipcMain.on('vt:toggle', () => {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('vt:toggle-rec');
+});
+/* IPC — از رندرر اصلی: وضعیت ضبط + متن میانی */
+ipcMain.on('vt:rec-state', (_e, on) => {
+  vtSt.rec = !!on;
+  if (vtSt.rec) { const a = vtAnchor(); if (a) vtShowAt(a.x, a.y); }
+  try { if (vtSt.win && !vtSt.win.isDestroyed()) vtSt.win.webContents.send('vt:rec-state', !!on); } catch (_) { /* noop */ }
+});
+ipcMain.on('vt:interim', (_e, txt) => {
+  try { if (vtSt.win && !vtSt.win.isDestroyed()) vtSt.win.webContents.send('vt:interim', String(txt || '').slice(0, 120)); } catch (_) { /* noop */ }
+});
+/* زبان UI حباب — از رندرر اصلی موقع تغییر زبان */
+ipcMain.on('vt:lang', (_e, l) => { vtSt.lang = (String(l || 'fa') === 'en' ? 'en' : 'fa'); });
+
+/* ============================================================
+   v0.82 — واچر کلیپ‌بورد: «لینکی که کپی کردم رو تشخیص نمیده»
+   ------------------------------------------------------------
+   هر ۱.۵ ثانیه محتوای کلیپ‌بورد چک می‌شود؛ اگر یک لینک ویدیوی
+   تازه (یوتیوب/فایل ویدیویی) باشد، به رندرر چیپِ «پخشش کنم؟»
+   می‌رود — کاربر فقط کلیک می‌کند و همان لینک با پایپ‌لاین قطعی
+   (لاین v0.81) در پلیر پخش می‌شود. لینک تکراری در همان نشست
+   دوباره پیشنهاد نمی‌شود؛ کپی‌های خودِ آوا هم بی‌سروصدا رد می‌شوند.
+   ============================================================ */
+const CLIP_VIDEO_RE = /https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/)|youtu\.be\/)[A-Za-z0-9_-]{11}|https?:\/\/[^\s"'<>«»]+\/[^\s"'<>«»]+\.(?:mp4|webm|mkv|avi|mov|m4v)(?:\?[^\s"'<>«»]*)?/i;
+let clipWatchLast = '';
+let clipWatchReady = false; /* فقط محتوای تازه بعد از بوت — کلیپ‌بوردِ قدیمی پیشنهاد نمی‌شود */
+setInterval(() => {
+  try {
+    if (!win || win.isDestroyed()) return;
+    const t = String(clipboard.readText() || '').trim();
+    if (!t || t === clipWatchLast) return;
+    clipWatchLast = t;
+    if (!clipWatchReady) { clipWatchReady = true; return; } /* اولین خواندن = baseline */
+    const m = t.match(CLIP_VIDEO_RE);
+    if (!m) return;
+    const url = m[0];
+    actLog('clip watcher: video link copied → ' + url.slice(0, 80), 'clip');
+    win.webContents.send('clip:video-link', url);
+  } catch (_) { /* noop */ }
+}, 1500);
+
 /* ---------- مجوز میکروفون + هویت کروم برای هر دو نشست ---------- */
 function setupMicPermission() {
   const allow = ['media', 'audioCapture', 'notifications', 'fullscreen', 'clipboard-sanitized-write'];
@@ -3789,20 +4009,30 @@ ipcMain.handle('player:default', () => defaultVideoPlayer());
    بار دیگر تلاش می‌شود. */
 function ytDlpBundledPath() { try { return path.join(app.getPath('userData'), 'bin', 'yt-dlp.exe'); } catch (_) { return ''; } }
 let ytDlpState = { failedAt: 0 }; /* بعد از شکست دانلود، ۳۰ دقیقه دوباره مزاحم شبکه نشو */
-/* فورمت تک‌فایلی muxed: 720p اگر یوتیوب سرو کند، وگرنه 360p — با هر پلیری پخش می‌شود */
+/* فورمت تک‌فایلی — v0.82 نردبانِ گسترده: 720p(22) → 360p(18) → هر mp4 → هر webm
+   → بهترین تک‌فایلی. ریشهٔ «توی نسخهٔ ۷۹ راحت پخش می‌شد الان نه»: یوتیوب فرمت‌های
+   muxed 22/18 را برای خیلی از کلاینت‌ها پس می‌گیرد و نردبانِ قبلی ERROR: requested
+   format not available می‌داد → فالبک مرورگر = «در پلیر پخش نمی‌کند». webm/VP9+opus
+   را همهٔ پلیرهای دسکتاپ (PotPlayer/VLC/KMPlayer/mpv) می‌فهمند. */
 function ytDlpCmd(bin, url) {
-  return `${bin} -f "22/18/b[ext=mp4]/b" -g --no-playlist --no-warnings "${url}"`;
+  return `${bin} -f "22/18/b[ext=mp4]/b[ext=webm]/b" -g --no-playlist --no-warnings "${url}"`;
 }
-/* v0.80 — فرمت بر اساس کیفیت خواسته‌شده (الگوی set_video_quality معماری مرجع):
-   360p=18 / 720p=22 — فرمت‌های muxed تک‌فایلی یوتیوب که با هر پلیری پخش می‌شوند */
+/* v0.80 — فرمت بر اساس کیفیت خواسته‌شده (الگوی set_video_quality معماری مرجع) */
 function ytDlpQualityCmd(bin, url, q) {
-  const F = { '360': '18', '720': '22/18', best: '22/18/b[ext=mp4]/b', worst: '18/b[ext=mp4]/b' };
+  const F = { '360': '18/b[ext=mp4]/b[ext=webm]/b', '720': '22/18/b[ext=mp4]/b[ext=webm]/b', best: '22/18/b[ext=mp4]/b[ext=webm]/b', worst: '18/b[ext=mp4]/b[ext=webm]/b' };
   const f = F[String(q || 'best').toLowerCase()] || F.best;
   return `${bin} -f "${f}" -g --no-playlist --no-warnings "${url}"`;
 }
-function ytdlpGetUrl(bin, url) {
+/* v0.82 — فالبکِ کلاینت: بعضی ویدیوها با کلاینتِ پیش‌فرض web هیچ استریمِ
+   تک‌فایلی‌ای نمی‌دهند (توکن PO)؛ کلاینت ios اغلب m3u8/HLS می‌دهد که
+   PotPlayer/VLC/KMPlayer مستقیم پخش می‌کنند — پس یکی دیگر پلهٔ نجات است. */
+function ytDlpClientCmd(bin, url, client) {
+  return `${bin} -f "22/18/b[ext=mp4]/b[ext=webm]/b" -g --no-playlist --no-warnings --extractor-args "youtube:player_client=${client}" "${url}"`;
+}
+function ytdlpGetUrl(bin, url, cmdBuilder) {
   return new Promise((resolve) => {
-    exec(ytDlpCmd(bin, String(url || '')), { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+    const cmd = (cmdBuilder || ytDlpCmd)(bin, String(url || ''));
+    exec(cmd, { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
       if (err || !stdout) return resolve('');
       const line = String(stdout).split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0] || '';
       resolve(/^https?:\/\//i.test(line) ? line : '');
@@ -3833,20 +4063,28 @@ async function ytDlpFind() {
   if (b && fs.existsSync(b)) return b;
   return (await ytDlpDownload()) ? b : '';
 }
-/* حل ویدیوی یوتیوب → URL استریم مستقیم؛ با شفای خودکار yt-dlp کهنه */
+/* حل ویدیوی یوتیوب → URL استریم مستقیم — v0.82 نردبانِ نجات کامل:
+   ۱) yt-dlp موجود (سیستم یا باندل) با نردبان فرمت گسترده
+   ۲) فالبک کلاینت ios (برای ویدیوهایی که web استریم تک‌فایلی نمی‌دهند)
+   ۳) شفای yt-dlp کهنه — حتی اگر «سیستمی» باشد: نسخهٔ تازهٔ باندل دانلود
+      می‌شود (قبلی فقط yt-dlp باندل را شفا می‌داد؛ yt-dlp کهنهٔ PATH کاربر
+      هرگز شفا نمی‌یافت و ریشهٔ «پلیر پخش نمی‌کند» همان بود)
+   ۴) با نسخهٔ تازه + کلاینت ios یک تلاش دیگر
+   هیچ گونه yt-dlp حذف نمی‌شود؛ فقط نسخهٔ باندلِ خود آوا جایگزین می‌شود. */
 async function resolveYtStream(url) {
   const bin = await ytDlpFind();
   if (!bin) return { ok: false, error: 'yt-dlp پیدا نشد (نصب یا دانلود ناموفق بود)' };
-  const g1 = await ytdlpGetUrl(bin, url);
-  if (g1) return { ok: true, url: g1 };
-  /* شفا: yt-dlp کهنه (یوتیوب مرتب عوض می‌شود) → نسخهٔ تازه → یک تلاش دیگر.
-     باینری «سیستمی» کاربر حذف نمی‌شود — فقط نسخهٔ باندل‌شدهٔ خود آوا. */
-  if (bin === ytDlpBundledPath()) { try { fs.unlinkSync(bin); } catch (_) { /* noop */ } }
+  let g = await ytdlpGetUrl(bin, url);
+  if (!g) g = await ytdlpGetUrl(bin, url, (b, u) => ytDlpClientCmd(b, u, 'ios'));
+  if (g) return { ok: true, url: g };
+  /* شفا: نسخهٔ تازهٔ باندل دانلود شود (مهم نیست قبلی سیستمی بود یا باندل) */
   ytDlpState.failedAt = 0;
   const d = await ytDlpDownload();
   const bin2 = d ? ytDlpBundledPath() : '';
   if (!bin2) return { ok: false, error: 'استریم یوتیوب استخراج نشد و yt-dlp تازه هم نصب نشد' };
-  const g2 = await ytdlpGetUrl(bin2, url);
+  let g2 = await ytdlpGetUrl(bin2, url);
+  if (!g2) g2 = await ytdlpGetUrl(bin2, url, (b, u) => ytDlpClientCmd(b, u, 'ios'));
+  if (!g2) g2 = await ytdlpGetUrl(bin2, url, (b, u) => ytDlpClientCmd(b, u, 'android'));
   return g2 ? { ok: true, url: g2 } : { ok: false, error: 'استریم یوتیوب استخراج نشد — در مرورگر پخش می‌کنم' };
 }
 /* تصمیمِ «چه چیزی با چه پلیری باز شود» — تابع خالص v0.61 برای تست بدون ویندوز */
@@ -4521,7 +4759,8 @@ ipcMain.handle('player:ctl', async (_e, p) => {
   if (a === 'play_pause' && !playerCtl.player) {
     const nOpen = await runningVideoPlayers();
     if (nOpen > 1) {
-      const fc = await focusPlayerWindow(playerCtl.activePid || 0);
+      /* v0.82 — pid هدف‌دار از رزولورِ رندرر («دومی رو پاز کن») برترِ فعالِ کور است */
+      const fc = await focusPlayerWindow(Number(p.pid) || playerCtl.activePid || 0);
       if (fc.ok) { fgKeys(['0x20']); return { ok: true, via: 'fg-keys', focused: fc.proc || '', multi: true }; }
       return { ok: false, ambiguous: true, multi: true, error: 'چند ویدیو همزمان باز است — اول بگو «برو سراغ اون یکی ویدیو» یا نام پلیر را بگو' };
     }
@@ -4529,7 +4768,7 @@ ipcMain.handle('player:ctl', async (_e, p) => {
   if (a === 'seek' && !playerCtl.player) {
     const nOpen = await runningVideoPlayers();
     if (nOpen > 1) {
-      const fc = await focusPlayerWindow(playerCtl.activePid || 0);
+      const fc = await focusPlayerWindow(Number(p.pid) || playerCtl.activePid || 0);
       if (!fc.ok) return { ok: false, ambiguous: true, multi: true, error: 'چند ویدیو همزمان باز است — اول بگو «برو سراغ اون یکی ویدیو»' };
     } else {
       /* تک‌پنجره: فوکوس همان — الگوی فیکس فول‌اسکرین v0.78؛ پرش داخل پلیر
@@ -4557,7 +4796,7 @@ ipcMain.handle('player:ctl', async (_e, p) => {
       if (/mpv|vlc|mpc/.test(s)) return [VK.f];
       return [VK.f11, VK.f];
     };
-    const fc = await focusPlayerWindow();
+    const fc = await focusPlayerWindow(Number(p.pid) || 0); /* v0.82 — هدف‌دار: «ویدیو قبلی رو فول اسکرین کن» */
     if (!fc.ok) return { ok: false, noPlayer: !!fc.error && fc.error.indexOf('پنجرهٔ پلیری') === 0, error: fc.error || 'پنجرهٔ پلیری پیدا نشد' };
     fgKeys(keyFor(fc.proc || (playerCtl.exe ? path.basename(playerCtl.exe) : '')));
     return { ok: true, via: 'fg-keys', focused: fc.proc || '' };
@@ -4581,6 +4820,26 @@ ipcMain.handle('player:ctl', async (_e, p) => {
       if (or.ambiguous) return { ok: false, ambiguous: true, wins: or.wins, error: or.error };
       if (or.noPlayer) return { ok: false, noPlayer: true, error: or.error };
       return { ok: false, error: or.error || 'بستن پلیر ممکن نشد' };
+    }
+    /* v0.82 — هدف‌گیری مستقیم: pid از رزولورِ رندرر (اردینال/کیفی‌ساز چند-ویدیو)
+       یا اردینال خام ord:N — «ویدیوی سوم رو ببند» فقط همان پنجره را می‌بندد */
+    if (Number(p.pid) > 0 || /^ord:\d+$/.test(tgt)) {
+      const l = await videoWinList();
+      const ws = (l && l.ok && l.wins) || [];
+      let _pid = Number(p.pid) || 0;
+      if (!_pid) {
+        const n = Math.max(1, parseInt(tgt.split(':')[1], 10) || 1);
+        const w = ws[n - 1];
+        if (!w) return { ok: false, error: 'ویدیویی با شمارهٔ ' + n + ' باز نیست — الان ' + ws.length + ' پنجره بازه' };
+        _pid = w.pid;
+      }
+      const br = await closeVideoByPid(_pid);
+      if (br && br.ok) {
+        if (playerCtl.activePid === _pid) playerCtl.activePid = 0;
+        try { const rest = await runningVideoPlayers(); if (!rest) { playerCtl.player = null; } } catch (_) { /* noop */ }
+        return { ok: true, via: 'win-ctl', target: 'pid', closed: 1, total: ws.length, closedTitle: br.closedTitle || '' };
+      }
+      return { ok: false, error: (br && br.error) || 'بستن پلیر ممکن نشد' };
     }
     if (tgt !== 'all') {
       const tr = await closeVideoTargeted(tgt);
@@ -7265,6 +7524,11 @@ ipcMain.handle('ptt:get', () => ({ cfg: pttSt.cfg, ok: !!pttSt.ok, watcher: !!pt
 
 app.whenReady().then(() => {
   actLog(`boot v${app.getVersion()} electron=${process.versions.electron} packaged=${app.isPackaged}`);
+  /* v0.82 — حباب تایپ صوتی: دیمون هوک + تیک‌مرسِ موقعیت هر ۵۰۰ms (فقط ویندوز؛ لینوکس/اسموک بی‌اثر) */
+  if (process.platform === 'win32') {
+    setTimeout(() => { vtStartHook(); }, 5000);
+    vtSt.tickTimer = setInterval(vtTick, 500);
+  }
   /* v0.48 — مارکر بوت در JSONL + تایمر تله‌متری + بازپخش جلسهٔ قبل */
   try { logSessionMarker('boot', { electron: process.versions.electron, pid: process.pid }); } catch (_) { /* noop */ }
   /* v0.60 (A22) — بلوک خالیِ بی‌مصرف try{}catch(_){} که این‌جا بود حذف شد. */
@@ -7388,4 +7652,5 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   try { pttStopHoldWatcher(); } catch (_) { /* noop */ } /* v0.51 — پروسهٔ PowerShell نگهبان PTT هم بسته شود */
+  try { vtKill(); } catch (_) { /* noop */ } /* v0.82 — دیمون تایپ‌هوک + پنجرهٔ حباب */
 });

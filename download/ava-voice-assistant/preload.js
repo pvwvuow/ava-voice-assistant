@@ -55,6 +55,21 @@ contextBridge.exposeInMainWorld('ava', {
     wakePsb: (on) => ipcRenderer.invoke('wake:psb', !!on),
   },
 
+  /* v0.82 — حباب تایپ صوتی شناور (VT): ارتباط رندرر اصلی با حباب
+     onToggleRec: کلیک کاربر روی حباب؛ recState: گزارش شروع/توقف ضبط؛
+     interim: متن میانی برای نمایش در حباب؛ lang: زبان UI حباب */
+  vt: {
+    onToggleRec: (cb) => ipcRenderer.on('vt:toggle-rec', () => cb()),
+    recState: (on, txt) => ipcRenderer.send('vt:rec-state', !!on, String(txt || '')),
+    interim: (txt) => ipcRenderer.send('vt:interim', String(txt || '')),
+    lang: (l) => ipcRenderer.send('vt:lang', String(l || 'fa')),
+  },
+
+  /* v0.82 — واچر کلیپ‌بورد: لینک ویدیوی تازه‌کپی‌شده → چیپ «پخشش کنم؟» */
+  clip: {
+    onVideoLink: (cb) => ipcRenderer.on('clip:video-link', (_e, url) => cb(String(url || ''))),
+  },
+
   /* v0.31.0 — یادداشت‌های صوتی (ava-notes.json در پوشهٔ خود برنامه) */
   notes: {
     load: () => ipcRenderer.invoke('notes:load'),

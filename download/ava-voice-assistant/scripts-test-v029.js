@@ -63,7 +63,7 @@ ok('app: energy VAD with adaptive floor (AVE3 math reused)', appSrc.includes('fu
 ok('app: silence-gated wake check (650ms) + cooldowns', appSrc.includes('now - wakeLoop.lastVoice >= 650') && appSrc.includes('coolUntil'));
 ok('app: wake check runs local whisper (stt.local) and matches آوا/اوا/ava', appSrc.includes('bridge.stt.local({ pcm: new Uint8Array(pcm16.buffer), rate: 16000') && (appSrc.includes('/(آوا|اوا|ava)/i.test(normFaFull(txt))') || appSrc.includes('wakeHitText(txt)'))); /* v0.36: fuzzy matcher */
 ok('app: wake hit → chime + wake session + listening (v0.32: via wakePickup, one-breath aware)', appSrc.includes('playWakeChime();\n        wakeSessOpen();') && appSrc.includes('wakePickup(tail)') && appSrc.includes('function wakePickup(cmd)') && appSrc.includes('else startListening();'));
-ok('app: loop idles during active listening/processing/own-TTS (zero CPU then)', appSrc.includes("if (state === 'listening' || state === 'processing' || dictation.active || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"));
+ok('app: loop idles during active listening/processing/own-TTS (zero CPU then)', appSrc.includes("if (state === 'listening' || state === 'processing' || typingModeActive() || wakeTtsBusy()) { wakeLoop.chunks.length = 0; wakeLoop.spoke = false; return; }"));
 ok('app: mic change restarts the wake loop with the new device', appSrc.includes('const wakeWas = !!wakeLoop;') && appSrc.includes('if (wakeWas) wakeLoopStart();'));
 ok('app: detachMic keeps the stream alive while the wake loop runs', appSrc.includes('if (isRecording || ave || wakeLoop) return;'));
 ok('app: pack-ready hook starts the loop automatically', appSrc.includes("if (settings.wakeAlways && !wakeLoop) wakeLoopStart();"));

@@ -191,7 +191,7 @@ ok(/function ytNormalizeUrl\(raw\)/.test(main), 'main: ytNormalizeUrl برای �
 ok(main.includes("ipcMain.handle('player:scan'") && main.includes('VideoLAN/VLC/vlc.exe') && main.includes('PotPlayerMini64.exe') && main.includes('MPC-HC/mpc-hc64.exe'), 'main: اسکن VLC/PotPlayer/MPC (+mpv)');
 ok(main.includes("ipcMain.handle('player:open'") && main.includes("--extraintf', 'http'"), 'main: باز کردن VLC با رابط کنترل HTTP');
 ok(main.includes('--input-ipc-server='), 'main: mpv با IPC pipe کنترل‌پذیر');
-ok(main.includes('-f "22/18/b[ext=mp4]/b"') && main.includes('function resolveYtStream'), 'main: یوتیوب → استریم مستقیم با yt-dlp (v0.62: یک لاین برای همهٔ پلیرها)');
+ok(main.includes('-f "22/18/b[ext=mp4]/b[ext=webm]/b"') && main.includes('function resolveYtStream'), 'main: یوتیوب → استریم مستقیم با yt-dlp (v0.82: نردبان گسترده webm + فالبک کلاینت ios)');
 ok(main.includes('playerLaunchYt') && main.includes("via: 'browser-fallback'"), 'main: بدون yt-dlp → دانلود تازه/فالبک مرورگر (v0.62: بن‌بست ندارد — راهنمای قدیمیِ غلط حذف شد)');
 ok(main.includes("ipcMain.handle('player:ctl'") && main.includes("pl_pause'") && main.includes("['cycle', 'pause']"), 'main: کنترل واقعی VLC HTTP + mpv IPC');
 ok(/const MEDIA_KEYS = \{ play_pause: 'B3', next: 'B0', prev: 'B1', stop: 'B2' \}/.test(main), 'main: کلیدهای مدیای جهانی (v0.61: stop=0xB2 درست)');

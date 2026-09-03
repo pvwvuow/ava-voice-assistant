@@ -150,11 +150,11 @@ ok('wake pane exists with its 4 rows + nav item (stt pane slimmed)',
    htmlSrc.indexOf('id="optHandsFree"') > htmlSrc.indexOf('data-pane="wake"') &&
    htmlSrc.indexOf('id="optWakeAlways"') > htmlSrc.indexOf('data-pane="wake"') &&
    htmlSrc.indexOf('id="btnWakeTest"') > htmlSrc.indexOf('data-pane="wake"') &&
-   htmlSrc.indexOf('id="optHandsFree"') < htmlSrc.indexOf('<div class="set-pane" data-pane="dict">'));
-ok('new pane order: mic, stt, wake, dict, voice, ai, discord, ext, perf, app, update',
+   htmlSrc.indexOf('id="optHandsFree"') < htmlSrc.indexOf('<div class="set-pane" data-pane="voice">'));
+ok('new pane order: mic, stt, wake, voice, ai, discord, contacts, ext, apps, perf, app, update (v0.82: dict حذف، contacts/apps اضافه)',
    (() => {
      const order = [...htmlSrc.matchAll(/<div class="set-pane[^"]*" data-pane="(\w+)"/g)].map((m) => m[1]);
-     return JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'dict', 'voice', 'ai', 'discord', 'ext', 'perf', 'app', 'update']);
+     return JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'voice', 'ai', 'discord', 'contacts', 'apps', 'ext', 'perf', 'app', 'update']);
    })());
 ok('discord advanced (contacts/callMode/cal) collapsed into details.set-adv',
    htmlSrc.includes('data-i18n="set.dc.adv"') &&
@@ -171,10 +171,10 @@ ok('document head intact + all critical IDs unique',
      .every((id) => htmlSrc.split(id).length === 2));
 
 console.log('\n[7] C6: Gemini typing page bigger + readable model tag');
-ok('cmd + chat inputs are auto-growing textareas (Enter sends, Shift+Enter newline)',
-   htmlSrc.includes('<textarea id="cmdInput" rows="1"') && htmlSrc.includes('<textarea id="chatInput" rows="1"') &&
+ok('cmd input is auto-growing textarea (Enter sends, Shift+Enter newline) — v0.82: چت حذف شد',
+   htmlSrc.includes('<textarea id="cmdInput" rows="1"') &&
    appSrc.includes('function wireMultilineInput(el, form, maxPx)') &&
-   appSrc.includes('wireMultilineInput(cmdInput, cmdBar, 220)') && appSrc.includes('wireMultilineInput(chatInput, chatBar, 220)') &&
+   appSrc.includes('wireMultilineInput(cmdInput, cmdBar, 220)') &&
    appSrc.includes("if (e.key === 'Enter' && !e.shiftKey && !e.isComposing)"));
 ok('CSS: card 860px, bars grow (min-height), textareas no-resize with scroll, rc-tag wraps',
    cssSrc.includes('width: min(860px, 100%)') && cssSrc.includes('min-height: 52px; height: auto;') &&

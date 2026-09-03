@@ -75,7 +75,7 @@ section('[3] resolveYtStream — استریم مستقیم + شفای yt-dlp ک�
   if (m) {
     /* eslint-disable no-eval */
     const cmd = eval('(' + m[0] + ')')('C:\\bin\\yt-dlp.exe', 'https://www.youtube.com/watch?v=abc');
-    ok(cmd.includes('-f "22/18/b[ext=mp4]/b"'), 'فورمت تک‌فایلی muxed (720p→360p) — با هر پلیری پخش می‌شود');
+    ok(cmd.includes('-f "22/18/b[ext=mp4]/b[ext=webm]/b"'), 'فورمت تک‌فایلی با نردبان گسترده mp4→webm (v0.82: ریشهٔ «پلیر پخش نمی‌کند» یوتیوب فرمت 22/18 را پس می‌گیرد)');
     ok(cmd.includes(' -g ') && cmd.includes('--no-playlist') && cmd.includes('--no-warnings'), '‎-g + بدون پلی‌لیست/هشدار');
     ok(cmd.includes('"https://www.youtube.com/watch?v=abc"'), 'URL در کوتیشن');
   }
@@ -84,7 +84,7 @@ section('[3] resolveYtStream — استریم مستقیم + شفای yt-dlp ک�
   ok(mainSrc.includes('https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'), 'دانلود فقط از منبع رسمی yt-dlp');
   ok(mainSrc.includes(".part'") && mainSrc.includes('fs.renameSync(part, bin)'), 'دانلود اتمی: .part → rename');
   ok(mainSrc.includes('30 * 60 * 1000'), 'خنک‌کاری ۳۰ دقیقه‌ای بعد از شکست دانلود (بدون مزاحمت مکرر شبکه)');
-  ok(/if \(bin === ytDlpBundledPath\(\)\) \{ try \{ fs\.unlinkSync\(bin\);/.test(mainSrc), 'شفای کهنه فقط باینری باندل‌شده را عوض می‌کند (باینری سیستمی کاربر دست نمی‌خورد)');
+  ok(/ytDlpClientCmd\(b, u, 'ios'\)/.test(mainSrc) && /await ytDlpDownload\(\)/.test(mainSrc), 'شفای yt-dlp کهنه — حتی سیستمی — با دانلود نسخهٔ تازهٔ باندل + فالبک کلاینت ios (v0.82)');
   ok(/resolve\(\/\^https\?:\\\/\\\//i.test(mainSrc) || /\^https\?:\\\/\\\/\//.test(mainSrc), 'خروجی -g فقط اگر http(s) باشد پذیرفته می‌شود');
   ok(mainSrc.includes("const wPath = await execWhere('yt-dlp');") && mainSrc.includes('const ytdl = wPath ||'), 'playersScan: yt-dlp = PATH سیستم یا باندل خود آوا');
 }

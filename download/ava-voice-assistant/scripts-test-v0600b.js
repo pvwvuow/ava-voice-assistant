@@ -240,14 +240,14 @@ ok((appSrc.split("'about.desc': ['نسخه ۰.۲۵").length - 1) === 0,
    ============================================================ */
 console.log('\n[11] نگهبان v0570 — ناوبری گروهی/جداکننده/زیرتیتر/بدون inline/ترتیب پنل/نسخه');
 ok((setSrc.match(/<div class="set-nav-group" data-i18n="/g) || []).length === 4, 'v0570: دقیقاً ۴ برچسب گروه');
-ok((setSrc.match(/class="set-row( col)? first"/g) || []).length === 14, 'v0570: دقیقاً ۱۴ ردیف first');
+ok((setSrc.match(/class="set-row( col)? first"/g) || []).length === 15, 'v0570: دقیقاً ۱۵ ردیف first (v0.82: +contacts/+apps/−dict)');
 ok((setSrc.match(/<div class="set-subhead" data-i18n="/g) || []).length === 4, 'v0570: دقیقاً ۴ زیرتیتر');
 ok(!/ style="/.test(setSrc), 'v0570: صفر استایل inline در صفحهٔ تنظیمات');
 ok(setSrc.includes('class="ptt-controls"') && setSrc.includes('class="set-select w190"') && setSrc.includes('class="set-input w150"'),
    'v0570: کلاس‌های ptt-controls/w190/w150 سر جایشان');
 const order = [...htmlSrc.matchAll(/<div class="set-pane[^"]*" data-pane="(\w+)"/g)].map((m) => m[1]);
-ok(JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'dict', 'voice', 'ai', 'discord', 'ext', 'perf', 'app', 'update']),
-   'v0570: ترتیب ۱۱ پنل دقیقاً همان v0.36');
+ok(JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'voice', 'ai', 'discord', 'contacts', 'apps', 'ext', 'perf', 'app', 'update']),
+   'v0570: ترتیب ۱۲ پنل دقیقاً v0.82');
 ok(cssSrc.includes('.set-row.first { border-top: none; }') && !cssSrc.includes('.set-row:first-of-type'),
    'v0570: جداکنندهٔ first سالم');
 ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'نسخه: bump والد اعمال شد → ' + (appSrc.match(/let appVersion = '[^']+/) || [''])[0]); /* v0.64 forward-relax */

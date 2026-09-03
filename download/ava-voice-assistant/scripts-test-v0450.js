@@ -118,12 +118,9 @@ ok(appSrc.includes("bridge.player.ctl({ action: 'close', arg: 0 })"), 'app.js: �
 ok(/id: 'yt_close', t: 'بستن پخش'/.test(appSrc), 'app.js: قانون yt_close ثبت شده');
 
 /* ---------- ۹) سبک‌سازی RAM دور ۲ — وب‌ویو GLM تنبل ---------- */
-ok(idxSrc.includes('data-src="https://chat.z.ai/"'), 'index.html: webview با data-src (تنبل)');
-ok(!idxSrc.match(/<webview[^>]*\ssrc="https:\/\/chat\.z\.ai/), 'index.html: وب‌ویو دیگر در بوت لود نمی‌شود');
-ok(appSrc.includes('function ensureZaiWebLoaded'), 'app.js: ensureZaiWebLoaded');
-ok(appSrc.includes("if (zai) { ensureZaiWebLoaded(); setTimeout(() => checkZaiToken(), 1200); }"), 'app.js: تب GLM → لود تنبل + خواندن توکن');
-ok(appSrc.includes("let zaiToken = store.get('zaiToken', '')"), 'app.js: توکن کش‌شده در بوت');
-ok(appSrc.includes("store.set('zaiToken', zaiToken)"), 'app.js: ذخیرهٔ توکن موفق');
+ok(mainSrc.includes("partition: 'persist:ai'") && mainSrc.includes('function ensureZaiBridge'), 'main.js: بریج مخفی z.ai (v0.82: وب‌ویو حذف شد، بریج intact)');
+ok(!idxSrc.includes('<webview'), 'index.html: هیچ وب‌ویوئی در UI نیست (v0.82 — صفحهٔ چت GLM حذف شد)');
+ok(appSrc.includes("let zaiToken = store.get('zaiToken', '')"), 'app.js: توکن کش‌شده در بوت (v0.82 — وب‌ویو حذف شد، توکن برای زنجیره AI می‌ماند)');
 ok(mainSrc.includes("--max-old-space-size=512") && mainSrc.includes('lastLocalSttAt > 10 * 60 * 1000'), 'RAM دور ۱ سالم (هیپ + تخلیهٔ whisper)');
 
 /* ---------- ۱۰) نسخه ---------- */

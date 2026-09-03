@@ -48,6 +48,8 @@
       <symbol id="i-calc" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="15.01"/><line x1="8" y1="19" x2="8" y2="19.01"/><line x1="12" y1="19" x2="12" y2="19.01"/><line x1="16" y1="19" x2="16" y2="19.01"/></symbol>
       <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="10" y1="2" x2="14" y2="2"/><line x1="17" y1="5.5" x2="18.5" y2="4"/></symbol>
       <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+      <symbol id="i-pen" viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></symbol>
       <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
       <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
       <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="17" x2="16" y2="17"/></symbol>
@@ -118,8 +120,6 @@
       <aside id="rail">
         <nav class="rail-nav" aria-label="ناوبری">
           <button class="rail-item active" id="btnHome" data-i18n-tip="nav.home"><svg class="ic"><use href="#i-mic"/></svg><i class="rail-ind"></i></button>
-          <button class="rail-item" id="btnDict" data-i18n-tip="nav.dict"><svg class="ic"><use href="#i-type"/></svg></button>
-          <button class="rail-item" id="btnChat" data-i18n-tip="nav.chat"><svg class="ic"><use href="#i-chat"/></svg></button>
           <button class="rail-item" id="btnExt" data-i18n-tip="nav.ext"><svg class="ic"><use href="#i-grid"/></svg><i class="rail-ind"></i></button>
           <button class="rail-item" id="btnDnsExt" data-i18n-tip="nav.dnsExt" hidden><svg class="ic"><use href="#i-shield"/></svg></button>
           <button class="rail-item" id="btnMusic" data-i18n-tip="nav.music" hidden><svg class="ic"><use href="#i-music"/></svg><i class="rail-ind"></i></button>
@@ -227,6 +227,20 @@
             <textarea id="cmdInput" rows="1" data-i18n-ph="cmd.ph" placeholder="فرمان را اینجا بنویس یا دکمه میکروفون را بزن…"></textarea>
             <button type="submit" class="cmd-send" aria-label="اجرا کردن فرمان"><svg class="ic"><use href="#i-send"/></svg></button>
           </form>
+
+          <!-- v0.82 — چیپ «لینک ویدیو کپی شد»: پیشنهاد پخش خودکار لینکِ تازه‌کپی‌شده -->
+          <div class="clip-chip glass" id="clipChip" hidden>
+            <span class="cc-ico"><svg class="ic"><use href="#i-music"/></svg></span>
+            <span class="cc-txt" id="clipChipTxt">لینک ویدیو کپی شد — پخشش کنم؟</span>
+            <button type="button" class="chip sm cc-play" id="clipChipPlay"><svg class="ic"><use href="#i-play"/></svg><span>پخش</span></button>
+            <button type="button" class="cc-x" id="clipChipClose" aria-label="بستن">✕</button>
+          </div>
+
+          <!-- v0.82 — دکمهٔ توقف: وقتی آوا گیر می‌کند کاربر بتواند هر درخواستی را متوقف کند -->
+          <button type="button" class="stop-chip" id="stopChip" hidden>
+            <span class="sc-dot"></span>
+            <span data-i18n="stop.label">توقف</span>
+          </button>
 
         </section>
 
@@ -362,32 +376,6 @@
                 </div>
               </div>
 
-            <!-- تایپ صوتی -->
-              <div class="set-pane" data-pane="dict">
-                <div class="set-row first">
-                  <span class="set-info"><b data-i18n="set.dict.start">شروع و پایان</b><span data-i18n="set.dict.startHint">بگو «آوا تایپ» تا تایپ شروع شود؛ «آوا تموم» یا «قطع تایپ» تا تمام شود — یا از دکمه پایین</span></span>
-                  <button class="chip" id="btnDictStart"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.dict.startBtn">شروع تایپ صوتی</span></button>
-                </div>
-                <div class="set-row">
-                  <span class="set-info"><b data-i18n="set.dict.target">خروجی تایپ</b><span data-i18n="set.dict.targetHint">«کادر آوا»: متن در آوا نوشته و با دکمه کپی برمی‌دارد؛ «برنامه فعال»: همان‌جا که داری کار می‌کنی تایپ می‌شود (پیست خودکار)</span></span>
-                  <select id="optDictTarget" class="set-select">
-                    <option value="box" data-i18n="set.dict.box">کادر تایپ آوا (با کپی)</option>
-                    <option value="apps" data-i18n="set.dict.apps">تایپ مستقیم در برنامه فعال</option>
-                  </select>
-                </div>
-                <div class="set-row col">
-                  <span class="set-info"><b data-i18n="set.dict.custom">فرمان‌های صوتی سفارشی</b><span data-i18n="set.dict.customHint">مثال: عبارت گفتاری «آدرس» → متن «تهران، خیابان …» — یا «خط جدید»، «پاک کردن کلمه آخر»، «پاک کردن همه»</span></span>
-                  <div class="tc-add">
-                    <input type="text" id="tcPhrase" class="set-input" data-i18n-ph="set.dict.phPh" placeholder="وقتی گفتم… (مثلاً: آدرس)" />
-                    <input type="text" id="tcValue" class="set-input" data-i18n-ph="set.dict.valPh" placeholder="این را بنویس / خط جدید / پاک کردن کلمه آخر" />
-                    <button type="button" class="chip sm" id="tcAdd"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.dict.add">افزودن</span></button>
-                  </div>
-                  <div id="typingCmdsList" class="tc-list"></div>
-                </div>
-                <p class="set-note" data-i18n="set.dict.note">علائم داخلی: بگو «نقطه»، «کاما»، «علامت سوال»، «علامت تعجب»، «دو نقطه»، «خط تیره»، «پرانتز باز/بسته»، «خط جدید»، «پاک کن».</p>
-              </div>
-
-
             <!-- صدا و پاسخ گفتاری -->
               <div class="set-pane" data-pane="voice">
                 <label class="set-row first">
@@ -423,8 +411,7 @@
             <!-- هوش مصنوعی GLM -->
               <div class="set-pane" data-pane="ai">
                 <div class="set-row first">
-                  <span class="set-info"><b data-i18n="set.ai.nokey">اتصال بدون کلید API</b><span data-i18n="set.ai.nokeyHint">از صفحه «چت با هوش مصنوعی» › تب «صفحه چت GLM» یک بار وارد حسابت شو — پیام‌ها مستقیم به چت حسابت می‌روند و جوابش برمی‌گردد</span></span>
-                  <button class="chip" id="btnGoZai"><svg class="ic"><use href="#i-globe"/></svg><span data-i18n="set.ai.login">ورود به حساب GLM</span></button>
+                  <span class="set-info"><b data-i18n="set.ai.nokey">اتصال بدون کلید API</b><span data-i18n="set.ai.nokeyHint">اگر قبلاً یک بار وارد حسابت z.ai شده باشی، آوا هنوز بدون کلید کار می‌کند — وگرنه کلید GLM/Gemini/OpenAI همین‌جا کافی است</span></span>
                 </div>
                 <div class="set-row col">
                   <span class="set-info"><b data-i18n="set.ai.key">کلید API GLM (اختیاری)</b><span data-i18n="set.ai.keyHint">فقط اگر کلید داشته باشی — بدون آن هم چت از نشست حساب کار می‌کند</span></span>
@@ -574,6 +561,34 @@
                 <p class="set-note" data-i18n="set.dc.note">فرمان‌ها: «به علی زنگ بزن»، «تماس رو قطع کن»، «دیسکورد رو میوت کن»، «صدای دیسکورد رو قطع کن»، «جواب تماس»، «رد تماس». برای قطع/جواب/رد یک‌بار در Discord › Settings › Keybinds اکشن Disconnect را روی Ctrl+Shift+H، Answer را روی Ctrl+Shift+A و Decline را روی Ctrl+Shift+E بگذار؛ میوت (Ctrl+Shift+M) و کرافت (Ctrl+Shift+D) پیش‌فرض کار می‌کنند.</p>
               </div>
 
+            <!-- v0.82 — مخاطبین: مدیریت کامل و مرتب -->
+              <div class="set-pane" data-pane="contacts">
+                <div class="set-row first">
+                  <span class="set-info"><b data-i18n="set.ct.title">مخاطبین من</b><span id="contactsCount" data-i18n="set.ct.count">۰ مخاطب</span></span>
+                  <button class="chip" id="btnContactNew" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="set.ct.new">مخاطب جدید</span></button>
+                </div>
+                <div class="ct-search-row">
+                  <svg class="ic"><use href="#i-search"/></svg>
+                  <input type="text" id="ctSearch" class="set-input" data-i18n-ph="set.ct.searchPh" placeholder="جستجو بر اساس نام، لقب، یوزر…" autocomplete="off" />
+                </div>
+                <div class="ct-list" id="contactsList"></div>
+                <p class="set-note" data-i18n="set.ct.note">همین‌جا می‌توانی مخاطب اضافه، ویرایش یا حذف کنی — یا با صدا: «مخاطب جدید برا دیسکورد»، «به علی پیام بده که…». ویرایش = دکمهٔ مداد؛ حذف = دکمهٔ سطل.</p>
+              </div>
+
+            <!-- v0.82 — برنامه‌های من: لیست نرم‌افزارهای اسکن‌شدهٔ سیستم -->
+              <div class="set-pane" data-pane="apps">
+                <div class="set-row first">
+                  <span class="set-info"><b data-i18n="set.apps.title">برنامه‌های من</b><span id="appsPaneCount" data-i18n="set.apps.count">هنوز اسکن نشده</span></span>
+                  <button class="chip" id="btnAppsPaneRescan" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.apps.rescan">اسکن مجدد</span></button>
+                </div>
+                <div class="ct-search-row">
+                  <svg class="ic"><use href="#i-search"/></svg>
+                  <input type="text" id="appsSearch" class="set-input" data-i18n-ph="set.apps.searchPh" placeholder="جستجو در برنامه‌ها…" autocomplete="off" />
+                </div>
+                <div class="apps-list" id="appsList"></div>
+                <p class="set-note" data-i18n="set.apps.note">آوا منوی استارت، اپ‌های استور، استیم و رجیستری ویندوز را اسکن می‌کند — با صدا هم می‌توانی بگویی «نرم‌افزارها رو نشون بده» یا «اپ فلان رو باز کن».</p>
+              </div>
+
 
             <!-- افزونه‌ها (v0.13) — امکانات خاص مثل DNS که هر کسی لازمش را ندارد -->
               <div class="set-pane" data-pane="ext">
@@ -659,6 +674,7 @@
                   <select id="optTheme" class="set-select">
                     <option value="dark" data-i18n="set.app.dark">تیره (زمردی)</option>
                     <option value="light" data-i18n="set.app.light">روشن (بنفش و کهربایی)</option>
+                    <option value="gold" data-i18n="set.app.gold">سفید طلایی (روشنِ لوکس)</option>
                     <option value="lite" data-i18n="set.app.lite">سبک روشن (سیستم ضعیف)</option>
                     <option value="darklite" data-i18n="set.app.darklite">سبک تیره (سیستم ضعیف)</option>
                   </select>
@@ -741,14 +757,15 @@
               <button class="set-nav-item active" data-pane="mic" type="button"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="set.nav.mic">میکروفون</span></button>
               <button class="set-nav-item" data-pane="stt" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.stt">تشخیص گفتار</span></button>
               <button class="set-nav-item" data-pane="wake" type="button"><svg class="ic"><use href="#i-wave"/></svg><span data-i18n="set.nav.wake">بیدارباش</span></button>
-              <button class="set-nav-item" data-pane="dict" type="button"><svg class="ic"><use href="#i-type"/></svg><span data-i18n="set.nav.dict">تایپ صوتی</span></button>
               <div class="set-nav-group" data-i18n="set.navg.voice">صدا و هوش</div>
               <button class="set-nav-item" data-pane="voice" type="button"><svg class="ic"><use href="#i-tts"/></svg><span data-i18n="set.nav.voice">صدا و پاسخ</span></button>
               <button class="set-nav-item" data-pane="ai" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="set.nav.ai">هوش مصنوعی</span></button>
               <div class="set-nav-group" data-i18n="set.navg.connect">اتصال‌ها</div>
               <button class="set-nav-item" data-pane="discord" type="button"><svg class="ic"><use href="#i-disc"/></svg><span data-i18n="set.nav.discord">دیسکورد</span></button>
+              <button class="set-nav-item" data-pane="contacts" type="button"><svg class="ic"><use href="#i-user"/></svg><span data-i18n="set.nav.contacts">مخاطبین</span></button>
               <button class="set-nav-item" data-pane="ext" type="button"><svg class="ic"><use href="#i-grid"/></svg><span data-i18n="set.nav.ext">افزونه‌ها</span></button>
               <div class="set-nav-group" data-i18n="set.navg.system">سیستم</div>
+              <button class="set-nav-item" data-pane="apps" type="button"><svg class="ic"><use href="#i-window"/></svg><span data-i18n="set.nav.apps">برنامه‌های من</span></button>
               <button class="set-nav-item" data-pane="perf" type="button"><svg class="ic"><use href="#i-pulse"/></svg><span data-i18n="set.nav.perf">بهینه‌سازی</span></button>
               <button class="set-nav-item" data-pane="app" type="button"><svg class="ic"><use href="#i-power"/></svg><span data-i18n="set.nav.app">برنامه</span></button>
               <button class="set-nav-item" data-pane="update" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="set.nav.update">به‌روزرسانی</span></button>
@@ -771,62 +788,6 @@
             <div id="historyList" class="history-list"></div>
             <p class="set-note" id="historyEmpty" data-i18n="hist.empty">هنوز فرمانی اجرا نکردی — یکی از فرمان‌های سریع را امتحان کن یا با میکروفون حرف بزن.</p>
           </div>
-        </section>
-
-        <!-- صفحه تایپ صوتی -->
-        <section id="dictPage" class="settings" hidden>
-          <header class="set-top">
-            <h2><svg class="ic"><use href="#i-type"/></svg> <span data-i18n="dict.title">تایپ صوتی</span></h2>
-            <button class="chip" id="btnDictBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
-          </header>
-          <div class="set-group">
-            <div class="set-row">
-              <span class="set-info"><b data-i18n="dict.text">متن تایپ‌شده</b><span data-i18n="dict.textHint">هر چه بگویی اینجا نوشته می‌شود؛ علائم را هم با صدا بگو (نقطه، کاما، علامت سوال…)</span></span>
-              <button class="chip" id="btnDictToggle"><svg class="ic"><use href="#i-mic"/></svg><span data-i18n="dict.startBtn">شروع تایپ صوتی</span></button>
-            </div>
-            <div class="set-row col">
-              <textarea id="dictBox" class="dict-box" data-i18n-ph="dict.ph" placeholder="متن اینجا تایپ می‌شود… بگو «آوا تایپ» تا شروع کنم، و «آوا تموم» یا «قطع تایپ» تا تمام کنم."></textarea>
-              <div class="dict-interim" id="dictInterim"></div>
-              <div class="dict-actions">
-                <button class="chip" id="btnDictCopy"><svg class="ic"><use href="#i-copy"/></svg><span data-i18n="dict.copy">کپی متن</span></button>
-                <button class="chip" id="btnDictClear"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="dict.clear">پاک کردن</span></button>
-                <span class="dict-status" id="dictStatus">تایپ صوتی خاموش است — بگو «آوا تایپ» یا دکمه را بزن</span>
-              </div>
-            </div>
-            <p class="set-note" data-i18n="dict.note">پایان تایپ: «آوا تموم» یا «قطع تایپ». محل خروجی (کادر آوا یا برنامه فعال) را از تنظیمات › تایپ صوتی عوض کن. فرمان‌های صوتی دلخواهت را هم همان‌جا تعریف کن.</p>
-          </div>
-        </section>
-
-        <!-- صفحه چت با هوش مصنوعی -->
-        <section id="chatPage" class="chatpage" hidden>
-          <header class="set-top">
-            <h2><svg class="ic"><use href="#i-spark"/></svg> <span data-i18n="chat.title">چت با هوش مصنوعی</span></h2>
-            <button class="chip" id="btnChatBack"><svg class="ic"><use href="#i-send"/></svg><span data-i18n="set.back">بازگشت به خانه</span></button>
-          </header>
-
-          <div class="chat-tabs">
-            <button class="chat-tab active" id="tabQuick" type="button"><svg class="ic"><use href="#i-spark"/></svg><span data-i18n="chat.quick">چت سریع آوا</span></button>
-            <button class="chat-tab" id="tabZai" type="button"><svg class="ic"><use href="#i-globe"/></svg><span data-i18n="chat.zai">صفحه چت GLM (z.ai)</span></button>
-            <span class="zai-badge" id="zaiBadge">بدون کلید API</span>
-          </div>
-
-          <div class="chat-wrap glass" id="quickWrap">
-            <div class="chat-msgs" id="chatMsgs" aria-live="polite"></div>
-            <form id="chatBar" class="chat-bar" autocomplete="off">
-              <textarea id="chatInput" rows="1" data-i18n-ph="chat.ph" placeholder="پیامت را بنویس… مثلاً: چطور حافظه رم رو بهینه کنم؟"></textarea>
-              <button type="submit" class="cmd-send" aria-label="ارسال"><svg class="ic"><use href="#i-send"/></svg></button>
-            </form>
-          </div>
-
-          <div class="zai-wrap glass" id="zaiWrap" hidden>
-            <!-- v0.45 — سبک‌سازی RAM: صفحهٔ chat.z.ai دیگر در بوت لود نمی‌شود
-                 (۱۰۰ تا ۳۰۰ مگابایت حافظه)؛ فقط وقتی کاربر تب «صفحه چت GLM» را
-                 باز کند بارگذاری می‌شود (ensureZaiWebLoaded در app.js) -->
-            <webview id="zaiWeb" class="zai-web" data-src="https://chat.z.ai/" partition="persist:ai"
-                     allowpopups useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"></webview>
-            <p class="zai-hint" data-i18n="chat.zaiHint">یک بار وارد حسابت شو — نشست ذخیره می‌ماند و «چت سریع» و دستیار صوتی هم بدون کلید API به همین حساب وصل می‌شوند.</p>
-          </div>
-          <p class="set-note chat-note" data-i18n="chat.note">آوا سوالات پیچیده را خودش از GLM می‌پرسد و جواب می‌دهد؛ فرمان‌های جدید هم با تأیید تو ساخته و اضافه می‌شوند.</p>
         </section>
 
         <!-- ============ صفحه پلیر موزیک (مینیمال v0.18) ============
@@ -1186,7 +1147,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.81.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.82.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

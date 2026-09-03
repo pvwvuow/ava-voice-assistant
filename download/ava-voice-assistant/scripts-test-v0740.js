@@ -106,7 +106,7 @@ ok(!I.videoCtlOf('اولین ویدیو شادمهر رو کپی کن'), 'جمل
 ok(!I.videoCtlOf('به علی تو دیسکورد پیام بده که سلام'), 'جملهٔ پیام → null');
 /* اتصال به مسیر مغز و قاعدهٔ قطعی */
 ok(appSrc.includes('AVAIntent.videoCtlOf(raw)'), 'videoCtlParse (مسیر مغز) از گرامر کامل استفاده می‌کند');
-ok(appSrc.indexOf('const _rich = (typeof AVAIntent') > -1 && appSrc.includes("bridge.player.ctl({ action: _rich.action, arg: _rich.arg })"), 'قاعدهٔ player_ctl آفلاین از گرامر کامل استفاده می‌کند');
+ok(appSrc.indexOf('const _rich = (typeof AVAIntent') > -1 && appSrc.includes("bridge.player.ctl({ action: _rich.action, arg: _rich.arg, pid: _vtPid })"), 'قاعدهٔ player_ctl آفلاین از گرامر کامل استفاده می‌کند');
 ok(appSrc.includes('(ویدیو|فیلم|کلیپ|پلیر|مدیا|پنجره)[^.]{0,14}(پین|روییر?|بزرگ|کوچک|کوچیک|ببر|بیار|منتقل|جابجا|جابه)'), 'کلیدواژه‌های پین/جابه‌جایی در k قاعدهٔ player_ctl');
 /* چیت‌شیت در پرامپت مغز (FA + EN) */
 ok(B.brainSystem('fa').includes('چیت‌شیت video_ctl') && B.brainSystem('fa').includes('move:top-right'), 'چیت‌شیت video_ctl در پرامپت FA');

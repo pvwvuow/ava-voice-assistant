@@ -1,8 +1,8 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.81.0-beta",
-  "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۶۹: هستهٔ فهم نسخهٔ ۲ (حافظهٔ گفتگو، حل‌گر ارجاع، مسیربینی دولاين) + پلیرهای ویدیوی سیستم (VLC/PotPlayer/KMPlayer/پیش‌فرض کاربر) و حذف پلیر خودساختهٔ آوا",
+  "version": "0.82.0-beta",
+  "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۸۲: حباب تایپ صوتی شناور در هر برنامه + نصاب سفارشی طلایی + فیکس پخش یوتیوب در پلیر + شفاف‌سازی چند-ویدیو + مخاطبین/برنامه‌های من در تنظیمات + دکمهٔ توقف + تم سفید طلایی",
   "main": "main.js",
   "license": "MIT",
   "author": {
@@ -65,7 +65,13 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "آوا"
+      "shortcutName": "آوا",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "license": "build/license.fa.txt",
+      "include": "build/installer.nsh",
+      "uninstallDisplayName": "آوا — دستیار صوتی ویندوز",
+      "uninstallWarningText": "آوا را حذف می‌کنی؟ مخاطبین و تنظیماتِ ذخیره‌شده باقی می‌مانند."
     }
   },
   "allowScripts": {

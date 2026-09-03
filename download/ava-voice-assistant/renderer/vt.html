@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<style>
+  /* v0.82 — حباب تایپ صوتی شناور: پیل شیشه‌ای کوچک بالای فیلد تایپ برنامهٔ فعال.
+     پنجره focusable:false است؛ کلیک فوکوس را نمی‌دزدد و تایپ در همان فیلد می‌نشیند. */
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; cursor: pointer; }
+  html, body { width: 236px; height: 48px; overflow: hidden; background: transparent; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  .pill {
+    width: 236px; height: 48px; border-radius: 24px;
+    display: flex; align-items: center; gap: 9px; padding: 0 14px;
+    background: rgba(14, 17, 22, 0.92);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .pill:hover { border-color: rgba(167, 139, 250, 0.8); }
+  .mic { flex: 0 0 22px; width: 22px; height: 22px; display: grid; place-items: center; }
+  .mic svg { width: 20px; height: 20px; fill: #c4b5fd; }
+  .txt { flex: 1; min-width: 0; direction: rtl; }
+  .lbl { font-size: 12.5px; font-weight: 600; color: #e5e1f7; line-height: 1.2; white-space: nowrap; }
+  .hint { font-size: 10px; color: rgba(196, 181, 253, 0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; }
+  .dot { flex: 0 0 9px; width: 9px; height: 9px; border-radius: 50%; background: #4b5563; transition: background .2s ease; }
+  .pill.rec { border-color: rgba(244, 63, 94, 0.85); box-shadow: 0 6px 24px rgba(244, 63, 94, 0.35), inset 0 1px 0 rgba(255,255,255,0.08); }
+  .pill.rec .dot { background: #f43f5e; animation: pulse 1.1s ease-in-out infinite; }
+  .pill.rec .mic svg { fill: #fda4af; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.78); } }
+</style>
+</head>
+<body>
+  <div class="pill" id="pill" title="AVA voice typing">
+    <span class="dot" id="dot"></span>
+    <span class="mic">
+      <svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 1 0-8 0v5a4 4 0 0 0 4 4zm6-4a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93V22h2v-3.07A8 8 0 0 0 20 11h-2z"/></svg>
+    </span>
+    <span class="txt">
+      <span class="lbl" id="lbl">تایپ صوتی</span>
+      <span class="hint" id="hint">برای شروع کلیک کن</span>
+    </span>
+  </div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const FA = q.get('lang') !== 'en';
+  const lbl = document.getElementById('lbl');
+  const hint = document.getElementById('hint');
+  const pill = document.getElementById('pill');
+  function apply(on, interim) {
+    pill.classList.toggle('rec', !!on);
+    if (on) {
+      lbl.textContent = FA ? 'در حال شنیدن…' : 'Listening…';
+      hint.textContent = (FA ? 'بگو، خودم می‌نویسم — توقف: کلیک' : 'Speak — click to stop') + (interim ? ' — ' + interim : '');
+    } else {
+      lbl.textContent = FA ? 'تایپ صوتی' : 'Voice typing';
+      hint.textContent = FA ? 'برای شروع کلیک کن' : 'Click to start';
+    }
+  }
+  let rec = false;
+  document.getElementById('pill').addEventListener('click', () => { window.vtb && window.vtb.toggle(); });
+  window.vtb && window.vtb.onRecState((on) => { rec = !!on; apply(rec, ''); });
+  window.vtb && window.vtb.onInterim((txt) => { if (rec) apply(true, String(txt || '').slice(0, 40)); });
+  apply(false, '');
+</script>
+</body>
+</html>

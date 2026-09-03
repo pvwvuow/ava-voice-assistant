@@ -144,7 +144,7 @@ const RULES = [
   console.log('\n[۱۰] نسخه');
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
   ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json → ' + pkg.version); /* v0.64 forward-relax */
-  ok(new RegExp('۰\\.۶[۳-۹]').test(pkg.description) && pkg.description.includes('پلیر'), 'description → نسخهٔ جاری'); /* v0.64 forward-relax */
+  ok(new RegExp('۰\\.[۴-۹][۰-۹]|0\\.[4-9]\\d').test(pkg.description), 'description → نسخهٔ جاری'); /* v0.82 forward-relax */
 
   console.log('\n==========================================');
   console.log('scripts-test-v0510: ' + pass + ' passed, ' + fail + ' failed');

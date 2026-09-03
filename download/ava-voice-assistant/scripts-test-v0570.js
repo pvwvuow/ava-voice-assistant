@@ -38,7 +38,7 @@ ok((setSrc.match(/<div class="set-nav-group" data-i18n="/g) || []).length === 4,
 ok(setSrc.includes('data-i18n="set.navg.speak"') && setSrc.includes('data-i18n="set.navg.voice"') &&
    setSrc.includes('data-i18n="set.navg.connect"') && setSrc.includes('data-i18n="set.navg.system"'),
    'کلیدهای گروه: speak/voice/connect/system');
-ok((setSrc.match(/<button class="set-nav-item/g) || []).length === 11, 'هر ۱۱ آیتم ناوبری سر جایش است');
+ok((setSrc.match(/<button class="set-nav-item/g) || []).length === 12, 'هر ۱۲ آیتم ناوبری سر جایش است (v0.82: −dict +contacts +apps)');
 ok(setSrc.includes('<button class="set-nav-item active" data-pane="mic"'), 'آیتم پیش‌فرض = میکروفون (active)');
 ok(setSrc.lastIndexOf('set.navg.speak') < setSrc.lastIndexOf('data-pane="mic"') &&
    setSrc.lastIndexOf('set.navg.voice') < setSrc.lastIndexOf('data-pane="voice"') &&
@@ -56,8 +56,8 @@ ok(cssSrc.includes('[data-theme="light"] .set-row.first { border-top: none; }') 
    cssSrc.includes('[data-theme="light"] .set-subhead + .set-row { border-top: none; }'),
    'فالبک تم روشن برای first و زیرتیتر');
 const rowFirst = (setSrc.match(/class="set-row( col)? first"/g) || []).length;
-ok(rowFirst === 14, 'دقیقاً ۱۴ ردیفِ اول (۱۱ پنل + ۲ بخش پیشرفته + پنل برنامه با زیرتیتر) — یافت‌شده: ' + rowFirst);
-const paneIds = ['mic', 'stt', 'wake', 'dict', 'voice', 'ai', 'discord', 'ext', 'perf', 'app', 'update'];
+ok(rowFirst === 15, 'دقیقاً ۱۴ ردیفِ اول (۱۱ پنل + ۲ بخش پیشرفته + پنل برنامه با زیرتیتر) — یافت‌شده: ' + rowFirst);
+const paneIds = ['mic', 'stt', 'wake', 'voice', 'ai', 'discord', 'contacts', 'apps', 'ext', 'perf', 'app', 'update'];
 let paneFirstOk = true;
 for (const p of paneIds) {
   const a = setSrc.indexOf('<div class="set-pane' + (p === 'mic' ? ' active' : '') + '" data-pane="' + p + '">');
@@ -67,7 +67,7 @@ for (const p of paneIds) {
   const mFirst = slice.match(/<(?:div|label) class="set-row( col)? first"/);
   if (!mFirst || (m && m.index < mFirst.index)) { paneFirstOk = false; console.log('    ✗ پنل ' + p); }
 }
-ok(paneFirstOk, 'در همهٔ ۱۱ پنل، اولین ردیف کلاس first دارد و هیچ ردیفی قبلش نیست');
+ok(paneFirstOk, 'در همهٔ ۱۲ پنل، اولین ردیف کلاس first دارد و هیچ ردیفی قبلش نیست');
 let advFirstOk = true;
 for (const mAdv of setSrc.matchAll(/<details class="set-adv">/g)) {
   const end = setSrc.indexOf('</details>', mAdv.index);
@@ -121,8 +121,8 @@ ok(appSrc.includes("'set.navg.speak': ['گفتار', 'Speech']") &&
 
 console.log('\n[6] نگهبان‌های ساختاری — هیچ رفتاری عوض نشده');
 const order = [...htmlSrc.matchAll(/<div class="set-pane[^"]*" data-pane="(\w+)"/g)].map((m) => m[1]);
-ok(JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'dict', 'voice', 'ai', 'discord', 'ext', 'perf', 'app', 'update']),
-   'ترتیب ۱۱ پنل دقیقاً همان v0.36 ماند');
+ok(JSON.stringify(order) === JSON.stringify(['mic', 'stt', 'wake', 'voice', 'ai', 'discord', 'contacts', 'apps', 'ext', 'perf', 'app', 'update']),
+   'ترتیب ۱۲ پنل دقیقاً v0.82 (dict حذف، contacts/apps اضافه)');
 ok((htmlSrc.match(/<div class="set-pane" data-pane="perf">/g) || []).length === 1, 'تگ دقیق پنل perf دست‌نخورده (پین v0350)');
 ok(htmlSrc.indexOf('id="settingsPage"') < htmlSrc.indexOf('id="extDiscordOpt"') &&
    htmlSrc.indexOf('id="extDiscordOpt"') < htmlSrc.indexOf('data-pane="perf"') &&
@@ -130,7 +130,7 @@ ok(htmlSrc.indexOf('id="settingsPage"') < htmlSrc.indexOf('id="extDiscordOpt"') 
    'قیدهای ترتیبی smoke (settingsPage/discord/perf/extPage) برقرار');
 ok(htmlSrc.includes('<div class="set-pane" data-pane="wake">') &&
    htmlSrc.indexOf('id="btnWakeTest"') > htmlSrc.indexOf('data-pane="wake"') &&
-   htmlSrc.indexOf('id="btnWakeTest"') < htmlSrc.indexOf('<div class="set-pane" data-pane="dict">'),
+   htmlSrc.indexOf('id="btnWakeTest"') < htmlSrc.indexOf('<div class="set-pane" data-pane="voice">'),
    'btnWakeTest همچنان داخل پنل wake است (پین smoke/v0360)');
 const critIds = ['id="optMic"', 'id="optSttEngine"', 'id="offCard"', 'id="optGeminiKey"', 'id="btnDcCall"',
   'id="optAutoUpdate"', 'id="dcContactsList"', 'id="optPtt"', 'id="btnPttKey"', 'id="optPttMode"',
@@ -147,7 +147,7 @@ ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?'
 ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json: ' + pkg.version); /* v0.64 forward-relax */
 ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html: ' + ((htmlSrc.match(/abVersion">([^<]+)/) || [])[1] || '?')); /* v0.64 forward-relax */
 ok(new RegExp('۰\\.[۶-۹][۰-۹]?\\.۰-بتا').test(readme) && readme.includes('هستهٔ فهم'), 'README: بلوک نسخهٔ جاری'); /* v0.64 forward-relax */
-ok(new RegExp('۰\\.۶[۳-۹]').test(pkg.description) && pkg.description.includes('پلیر'),
+ok(new RegExp('۰\\.[۴-۹][۰-۹]|0\\.[4-9]\\d').test(pkg.description) && pkg.description.includes('پلیر'),
    'description: ۰.۶۲ (forward-relax v0.61)');
 
 console.log('\n-----------------------------');

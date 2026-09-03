@@ -144,7 +144,7 @@ section('۵) main.js — فوکوس پلیر / بستن هدفمند / مانی�
   ok(/Sort-Object StartTime/.test(mainSrc), 'مرتب‌سازی پلیرها بر StartTime (قبلی/جدیدترین)');
   ok(/0x0010/.test(mainSrc), 'WM_CLOSE گریس (0x0010) قبل از force');
   const fsBranch = mainSrc.match(/if \(a === 'fullscreen'\) \{[\s\S]*?\n  \}/);
-  ok(!!fsBranch && /focusPlayerWindow\(\)/.test(fsBranch[0]), 'شاخهٔ fullscreen اول فوکوس می‌گیرد');
+  ok(!!fsBranch && /focusPlayerWindow\(Number\(p\.pid\) \|\| 0\)/.test(fsBranch[0]), 'شاخهٔ fullscreen اول فوکوس می‌گیرد (v0.82: با pid هدف‌دار)');
   const clBranch = mainSrc.match(/if \(a === 'close'\) \{[\s\S]*?پلیری باز نیست' \};\n  \}/);
   ok(!!clBranch && /closeVideoTargeted\(tgt\)/.test(clBranch[0]), 'شاخهٔ close مسیر هدفمند دارد');
   ok(!!clBranch && /tgt !== 'all'/.test(clBranch[0]), 'close:all تنها مسیرِ همه‌کش است');

@@ -216,8 +216,8 @@ function makeGem(mockFetch, badSeed) {
   const wSrc = appSrc.slice(wStart, wEnd > wStart ? wEnd : wStart + 18000);
   ok('own-voice gate defined + used on BOTH frame path and vad tick',
      wSrc.includes('function wakeTtsBusy()') &&
-     /if \(state === 'listening' \|\| state === 'processing' \|\| dictation\.active \|\| wakeTtsBusy\(\)\) \{ wakeLoop\.chunks\.length = 0/.test(wSrc) &&
-     /if \(state === 'listening' \|\| state === 'processing' \|\| dictation\.active \|\| wakeTtsBusy\(\)\) return;/.test(wSrc));
+     /if \(state === 'listening' \|\| state === 'processing' \|\| typingModeActive\(\) \|\| wakeTtsBusy\(\)\) \{ wakeLoop\.chunks\.length = 0/.test(wSrc) &&
+     /if \(state === 'listening' \|\| state === 'processing' \|\| typingModeActive\(\) \|\| wakeTtsBusy\(\)\) return;/.test(wSrc));
   ok('frame heartbeat + 4s pipeline watchdog + bounded rebuilds (3/min)',
      wSrc.includes('wakeLoop.lastFrame = Date.now()') && wSrc.includes('Date.now() - wakeLoop.lastFrame > 4000') && wSrc.includes('wakeLoop.restarts.length < 3'));
   ok('suspended AudioContext auto-resume (loop alive-but-deaf class)', wSrc.includes("audioCtx.state === 'suspended'") && wSrc.includes('audioCtx.resume()'));
@@ -226,7 +226,7 @@ function makeGem(mockFetch, badSeed) {
   ok('one-breath «آوا + فرمان»: tail from 3-tier engine (wm.tail) handed to wakePickup(force) — v0.46 forward-relaxed',
      wSrc.includes("wakeNow(wm.tail || '')") && wSrc.includes('wakePickup(tail)'));
   ok('wakePickup waits for idle+no-TTS (dead-wake class killed)',
-     wSrc.includes('function wakePickup(cmd)') && /if \(state === 'idle' && !wakeTtsBusy\(\) && !dictation\.active\) \{ run\(\); return; \}/.test(wSrc) && wSrc.includes('if (!wakeSessActive()) return;'));
+     wSrc.includes('function wakePickup(cmd)') && /if \(state === 'idle' && !wakeTtsBusy\(\) && !typingModeActive\(\)\) \{ run\(\); return; \}/.test(wSrc) && wSrc.includes('if (!wakeSessActive()) return;'));
   ok('buffer 30→47+ frames (~4s+, v0.36: 70 ≈ 6s) so the one-breath command fits', /wakeLoop\.chunks\.length > (47|70)/.test(wSrc));
 
   console.log('\n[11] P1: real pwsh execution (if portable pwsh available)');

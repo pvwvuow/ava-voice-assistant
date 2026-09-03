@@ -101,9 +101,9 @@ ok(/if \(!tgt\.hwnd\) \{ const c = lastFgRecent\(45000\); if \(c\) tgt = c; \}/.
 ok(/مقصد تایپ مشخص نشد — توی برنامهٔ مقصد یک‌بار کلیک کن و دوباره بگو/.test(appSrc), 'بدون مقصد = خطای صادقانه (نه حدس، نه تایپ در اشتباه)');
 ok(/bridge\.system\.typeText\(txt, tgt\.hwnd, tgt\.pid \|\| 0\)/.test(appSrc), 'typeOnceExec — ExpectPid همراه hwnd');
 ok(/'نوشتم' \+ \(r\.pname \? ' توی ' \+ r\.pname : ''\) \+ '\.'/.test(appSrc), 'پاسخ با نام مقصد: «نوشتم توی X»');
-ok(/const dictation = \{ active: false, busy: false, hwnd: 0, pid: 0, oneShotApps: false \};/.test(appSrc), 'دیکته — pid در وضعیت');
-ok(/bridge\.system\.typeText\(delta, dictation\.hwnd \|\| 0, dictation\.pid \|\| 0\)/.test(appSrc), 'دیکته — تایپ با پین PID');
-ok(/if \(r && r\.stale\) \{[\s\S]{0,400}dictation\.hwnd = 0; dictation\.pid = 0;[\s\S]{0,200}پنجرهٔ مقصد عوض شده یا بسته شده/.test(appSrc), 'دیکته — STALE = سوییچ شفاف به پنجرهٔ فعال');
+ok(/const dictation = \{ active: false, hwnd: 0, pid: 0/.test(appSrc), 'دیکته — pid در وضعیت (v0.82: موتور headless + حباب شناور)');
+ok(/bridge\.system\.typeText\(delta, tgt\.hwnd \|\| 0, tgt\.pid \|\| 0\)/.test(appSrc), 'دیکته — تایپ با پین PID (tgt = dictation یا vtRec)');
+ok(/if \(r && r\.stale\) \{[\s\S]{0,400}tgt\.hwnd = 0; tgt\.pid = 0;[\s\S]{0,200}پنجرهٔ مقصد عوض شده یا بسته شده/.test(appSrc), 'دیکته — STALE = سوییچ شفاف به پنجرهٔ فعال');
 ok(/window\.addEventListener\('focus', \(\) => \{ lastFgHwnd = 0; lastFgPid = 0; lastFgAt = 0;/.test(appSrc), 'بازگشت فوکوس به آوا = پاک‌کردن کش مقصد');
 
 /* ---------- [4] renderer — لَین قطعی type-once ---------- */
