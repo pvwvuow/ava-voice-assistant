@@ -146,7 +146,7 @@ console.log('\n[7] نسخه 0.63.0-beta');
 ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js: ' + (appSrc.match(/let appVersion = '[^']+/) || [''])[0]); /* v0.64 forward-relax */
 ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json: ' + pkg.version); /* v0.64 forward-relax */
 ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html: ' + ((htmlSrc.match(/abVersion">([^<]+)/) || [])[1] || '?')); /* v0.64 forward-relax */
-ok(new RegExp('۰\\.[۶۷][۰-۹]?\\.۰-بتا').test(readme) && readme.includes('هستهٔ فهم'), 'README: بلوک نسخهٔ جاری'); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.[۶-۹][۰-۹]?\\.۰-بتا').test(readme) && readme.includes('هستهٔ فهم'), 'README: بلوک نسخهٔ جاری'); /* v0.64 forward-relax */
 ok(new RegExp('۰\\.۶[۳-۹]').test(pkg.description) && pkg.description.includes('پلیر'),
    'description: ۰.۶۲ (forward-relax v0.61)');
 
