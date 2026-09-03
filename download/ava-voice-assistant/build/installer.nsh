@@ -1,26 +1,25 @@
 ; ============================================================
-; v0.82 — نصاب سفارشی آوا (برندینگ + رفتار)
-; ------------------------------------------------------------
-; electron-builder این فایل را include می‌کند (build/installer.nsh).
-; صفحهٔ خوش‌آمد/پایان با آرتور سفید-طلایی خود آوا (installerSidebar.bmp)
-؛ و هدر نصب با installerHeader.bmp — از پیش‌فرض خاکستری NSIS خبری نیست.
+; v0.82 - AVA custom installer (branding + behavior)
+; electron-builder includes this file (build/installer.nsh).
+; Welcome/finish pages use AVA's own gold sidebar art
+; (installerSidebar.bmp) and the install header uses
+; installerHeader.bmp - no default gray NSIS look.
 ; ============================================================
 
-BrandingText "آوا — دستیار صوتی هوشمند ویندوز  |  ava-voice-assistant"
+BrandingText "AVA - ava-voice-assistant"
 
-; --- رفتار نصب ---
+; --- install behavior ---
 !macro customInit
-  ; نام داخلی پنجرهٔ نصاب (نه عنوان قابل‌مشاهده)
-  DetailPrint "در حال آماده‌سازی نصب آوا…"
+  DetailPrint "AVA setup: preparing installation..."
 !macroend
 
-; --- صفحهٔ پایان: اجرای خودکار آوا بعد از نصب (پیش‌فرض روشن) ---
+; --- finish page: run AVA after install (default on) ---
 !macro customInstall
   WriteRegStr HKCU "Software\AVA" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "Software\AVA" "Version" "${VERSION}"
 !macroend
 
-; --- پاک‌سازی رجیستری هنگام حذف ---
+; --- registry cleanup on uninstall ---
 !macro customUnInstall
   DeleteRegKey HKCU "Software\AVA"
 !macroend

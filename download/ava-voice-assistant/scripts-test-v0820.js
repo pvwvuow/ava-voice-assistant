@@ -199,7 +199,14 @@ ok('package.json: nsis با installerHeader/Sidebar/license/include فارسی',
 }
 ok('build/license.fa.txt فارسی + build/installer.nsh با BrandingText آوا',
   fs.existsSync(path.join(R, 'build/license.fa.txt')) &&
-  fs.readFileSync(path.join(R, 'build/installer.nsh'), 'utf8').includes('BrandingText "آوا — دستیار صوتی هوشمند ویندوز'));
+  fs.readFileSync(path.join(R, 'build/installer.nsh'), 'utf8').includes('BrandingText "AVA - ava-voice-assistant"'));
+ok('گارد NSIS: فایل installer.nsh کاملاً ASCII است (کامنت «؛» فارسی = شکست makensis — درس CI v0.82)',
+  (() => {
+    const nsh = fs.readFileSync(path.join(R, 'build/installer.nsh'), 'utf8');
+    const bad = nsh.split('\n').filter((l) => [...l].some((c) => c.charCodeAt(0) > 127));
+    if (bad.length) console.log('    ✗ non-ascii lines: ' + bad.length);
+    return bad.length === 0;
+  })());
 ok('گارد اسکیما electron-builder 25: کلیدهای nsis همگی معتبر (درس CI v0.82)',
   (() => {
     const VALID = ['allowElevation', 'allowToChangeInstallationDirectory', 'artifactName', 'createDesktopShortcut', 'createStartMenuShortcut', 'customNsisBinary', 'deleteAppDataOnUninstall', 'differentialPackage', 'displayLanguageSelector', 'guid', 'include', 'installerHeader', 'installerHeaderIcon', 'installerIcon', 'installerLanguages', 'installerSidebar', 'language', 'license', 'menuCategory', 'multiLanguageInstaller', 'oneClick', 'packElevateHelper', 'perMachine', 'preCompressedFileExtensions', 'publish', 'removeDefaultUninstallWelcomePage', 'runAfterFinish', 'script', 'selectPerMachineByDefault', 'shortcutName', 'unicode', 'uninstallDisplayName', 'uninstallerIcon', 'uninstallerSidebar', 'useZip', 'warningsAsErrors'];
