@@ -128,7 +128,7 @@ ok(appSrc.includes("_dispatchOutcome = 'wake-bare'"), 'مسیر wake-lخت تگ 
 
 /* ============ ۱۱) نسخه ============ */
 section('نسخه');
-ok(/^0\.[6-9][0-9]?\.0-beta$/.test(pkg.version), 'package.json = 0.69.0-beta');
+ok(/^0\.[6-9][0-9]?\.\d+-beta$/.test(pkg.version), 'package.json = 0.69.0-beta');
 
 console.log('\n============================================');
 console.log(`نتیجه: ${pass} PASS / ${fail} FAIL`);

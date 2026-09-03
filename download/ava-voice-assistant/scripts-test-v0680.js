@@ -133,7 +133,7 @@ ok(appSrc.includes("intent: 'msg_test'"), 'لَین عیب‌یاب صوتی ب�
 ok(appSrc.includes('bridge.msg.test'), 'عیب‌یاب تلگرام از msg:test استفاده می‌کند');
 ok(appSrc.includes('_mpGuard && _mpGuard.text && _mpGuard.target'), 'گارد دزدیده‌نشدنِ جملهٔ ارسال در عیب‌یاب');
 ok(appSrc.includes("action: 'selftest'"), 'عیب‌یاب دیسکورد به selftest وصل است');
-ok(/0\.[6-9][0-9]?\.0-beta/.test(appSrc), 'نسخه در app.js'); /* v0.69 forward-relax */
+ok(/0\.[6-9][0-9]?\.\d+-beta/.test(appSrc), 'نسخه در app.js'); /* v0.69 forward-relax */
 
 /* ============ ۵) main.js — حالت تست تلگرام ============ */
 section('main.js — عیب‌یاب تلگرام (بدون هیچ ارسالی)');
@@ -160,7 +160,7 @@ ok(MM.detectInstalled([{ name: 'Eitaa Messenger' }]).includes('eitaa'), 'detectI
 
 /* ============ ۷) نسخه ============ */
 section('نسخه');
-ok(/^0\.[6-9][0-9]?\.0-beta$/.test(pkg.version), 'package.json = 0.68/0.69-beta'); /* v0.69 forward-relax */
+ok(/^0\.[6-9][0-9]?\.\d+-beta$/.test(pkg.version), 'package.json = 0.68/0.69-beta'); /* v0.69 forward-relax */
 
 console.log('\n============================================');
 console.log(`نتیجه: ${pass} PASS / ${fail} FAIL`);

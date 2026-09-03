@@ -162,7 +162,7 @@ ok(/هرگز پیام نمی‌فرستی، هرگز «بعد هر وقت» مق
 
 /* ============ نسخه ============ */
 section('نسخه');
-ok(/^0\.[7-9][0-9]\.0-beta$/.test(pkg.version), 'نسخهٔ 0.71+ (forward-relax) → ' + pkg.version); /* v0.80 forward-relax */
+ok(/^0\.[7-9][0-9]\.\d+-beta$/.test(pkg.version), 'نسخهٔ 0.71+ (forward-relax) → ' + pkg.version); /* v0.80 forward-relax */
 
 console.log('\n=========================================');
 console.log('PASS: ' + pass + '  FAIL: ' + fail);

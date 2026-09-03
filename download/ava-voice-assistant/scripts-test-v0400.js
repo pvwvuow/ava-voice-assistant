@@ -230,9 +230,9 @@ const OP = (r) => (r && r.entities && typeof r.entities.opacity === 'number' ? r
 
 /* ---------- ۹) نسخه و سلامت فایل‌ها ---------- */
 {
-  ok(/^0\.[4-9][0-9]*\.0-beta$/.test(pkg.version), 'نسخهٔ 0.4x/0.5x-beta در package.json (forward-compatible)');
-  ok(/let appVersion = '0\.[4-9][0-9]*\.0-beta';/.test(app), 'نسخه در app.js (forward-compatible)');
-  ok(/v0\.[4-9][0-9]*\.0-beta/.test(idx), 'نسخه در دربارهٔ index.html (forward-compatible)');
+  ok(/^0\.[4-9][0-9]*\.\d+-beta$/.test(pkg.version), 'نسخهٔ 0.4x/0.5x-beta در package.json (forward-compatible)');
+  ok(/let appVersion = '0\.[4-9][0-9]*\.\d+-beta';/.test(app), 'نسخه در app.js (forward-compatible)');
+  ok(/v0\.[4-9][0-9]*\.\d+-beta/.test(idx), 'نسخه در دربارهٔ index.html (forward-compatible)');
   const { execSync } = require('child_process');
   for (const f of ['renderer/js/app.js', 'renderer/js/voiceCommandParser.js', 'main.js', 'preload.js']) {
     let okk = true;

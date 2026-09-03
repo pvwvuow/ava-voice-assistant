@@ -47,6 +47,26 @@ ok('main.js: بریج z.ai (پل GLM بدون کلید) دست‌نخورده م
   mainSrc.includes("ipcMain.handle('ai:zaiChat'"));
 ok('app.js: توکن کش‌شدهٔ z.ai برای زنجیرهٔ AI ماند',
   appSrc.includes("let zaiToken = store.get('zaiToken', '')"));
+/* ---------- v0.82.1 — گارد رگرسیون حذفِ بلوک چت (گزارش کاربر: «درخواست‌ها رو
+   اصلا نمی‌گیره») — حذفِ UI هرگز حذفِ تابعِ مشترکِ dispatch نباید باشد ---------- */
+ok('بحرانی: aiConnected تعریف شده باشد (۱۱ نقطهٔ هستهٔ dispatch به آن وابسته‌اند)',
+  appSrc.includes('const aiConnected = () => !!(bridge && bridge.ai);') &&
+  (appSrc.match(/aiConnected\(/g) || []).length >= 10);
+ok('بحرانی: setZaiBadge تعریف شده باشد (زنجیرهٔ z.ai در aiAsk صدایش می‌زند)',
+  /function setZaiBadge\(on, txt\)/.test(appSrc));
+ok('هیچ ردپای زندهٔ عناصر حذف‌شده نمانده باشد (غیر از کامنت‌ها)',
+  (() => {
+    const live = appSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\n)\s*\/\/[^\n]*/g, '$1');
+    const gone = ['chatBusy', 'chatMsgs', 'chatInput', 'chatBar', 'chatPage', 'btnChat', 'btnGoZai',
+      'dictBox', 'dictInterim', 'dictStatus', 'btnDictToggle', 'btnDictCopy', 'btnDictClear',
+      'btnDictStart', 'optDictTarget', 'typingCmdsList', 'tcAdd', 'tcPhrase', 'tcValue',
+      'zaiWeb', 'zaiBadge', 'tabQuick', 'tabZai', 'quickWrap', 'zaiWrap', 'ensureZaiWebLoaded',
+      'checkZaiToken', 'handleChatSend', 'renderCmdCard', 'chatWelcome', 'updateDictToggleUI',
+      'renderDictation', 'dictPage', 'btnDict'];
+    const bad = gone.filter((n) => new RegExp('\\b' + n + '\\b').test(live));
+    if (bad.length) console.log('    ✗ live refs: ' + bad.join(','));
+    return bad.length === 0;
+  })());
 
 /* ---------- ۲) حباب تایپ صوتی شناور ---------- */
 console.log('\n[2] حباب تایپ صوتی شناور (VT)');

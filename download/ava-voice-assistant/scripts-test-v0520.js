@@ -76,7 +76,7 @@ console.log('\n[5] نسخه 0.63.0-beta');
 ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json → ' + pkg.version); /* v0.64 forward-relax */
 ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html abVersion'); /* v0.64 forward-relax */
 ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js appVersion'); /* v0.64 forward-relax */
-ok(new RegExp('۰\\.[۶-۹][۰-۹]?\\.۰-بتا').test(readme), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.[۶-۹][۰-۹]?\\.[۰-۹]+-بتا').test(readme), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
 ok(readme.includes('پروتکل فکر: اول فکر کن، تحقیق کن، بعد جواب بده'), 'README: عنوان نسخه');
 
 console.log('\n======================');

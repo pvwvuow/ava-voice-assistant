@@ -180,7 +180,7 @@ ok(/bridge\.reminders\.clear\(\)/.test(app), 'app: پاک کردن همهٔ یا
 ok(!app.includes('ویژوالایزر زنده، ویجت') , 'app: ادعای ویژوالایزر زنده از توضیح موزیک حذف شد (بوم ندارد — ریسک سکوت WebAudio)');
 ok(/یورو|ارو\(\?!\[\\u0600-\\u06FF\]\)|euro/.test(app) && !/ارو\\b/.test(app), 'app: alias یورو با lookahead (ب مرده حذف شد)');
 ok(/^0\.(38|39|[4-9][0-9])\./.test(pkg.version), 'نسخه 0.38.x+ در package.json (forward-regex)');
-ok(/0\.38\.1-beta|0\.39\.0-beta|0\.[4-9][0-9]\.0-beta/.test(app), 'نسخه در app.js (forward-regex)');
+ok(/0\.38\.1-beta|0\.39\.0-beta|0\.[4-9][0-9]\.\d+-beta/.test(app), 'نسخه در app.js (forward-regex)');
 
 console.log('');
 console.log(`RESULT: ${pass}/${pass + fail}`);

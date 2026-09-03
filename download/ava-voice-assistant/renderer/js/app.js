@@ -8965,7 +8965,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.82.0-beta';
+  let appVersion = '0.82.1-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10396,6 +10396,16 @@
   }
   /* v0.82 — صفحهٔ چت حذف شد؛ توکن کش‌شدهٔ z.ai برای زنجیرهٔ AI می‌ماند */
   let zaiToken = store.get('zaiToken', '');
+  /* v0.82.1 — رگرسیون بحرانیِ حذفِ صفحهٔ چت: «const aiConnected» با بلوک چت
+     حذف شده بود در حالی که ۱۱ نقطه از هستهٔ dispatch (مگز/interpret/فالبک AI)
+     آن را صدا می‌زنند → ReferenceError روی تقریباً هر درخواست — عین گزارشِ
+     کاربر: «درخواست‌ها رو اصلا نمی‌گیره که انجام بده». بازگردانی در همان جای
+     قبلی؛ بجِ گرافیکی setZaiBadge هم که در زنجیرهٔ z.ai صدا زده می‌شد به
+     گزارشِ لاگ ساده تبدیل شد (UI چت دیگر نیست). */
+  const aiConnected = () => !!(bridge && bridge.ai);
+  function setZaiBadge(on, txt) {
+    try { actLog('z.ai session: ' + (on ? 'ok' : 'off') + (txt ? ' — ' + String(txt).slice(0, 80) : '')); } catch (_) { /* noop */ }
+  }
   /* v0.44 — سقف تاریخچهٔ چت (AI فقط ۸ پیامِ آخر را می‌خواند؛ نگهداشتنِ
      نامحدودش فقط RAM هدر می‌داد) */
   let vcPendingUser = null;

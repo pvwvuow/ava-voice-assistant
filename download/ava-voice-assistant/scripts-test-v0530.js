@@ -80,7 +80,7 @@ console.log('\n[6] نسخه (forward-relax ≥0.54)');
 ok(new RegExp('^0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?$').test(pkg.version), 'package.json → ' + pkg.version); /* v0.64 forward-relax */
 ok(new RegExp('<span id="abVersion">v0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?</span>').test(htmlSrc), 'index.html abVersion'); /* v0.64 forward-relax */
 ok(new RegExp("let appVersion = '" + '0\\.(6[3-9]|[7-9]\\d)\\.\\d+(?:-[\\w.]+)?' + "';").test(appSrc), 'app.js appVersion'); /* v0.64 forward-relax */
-ok(new RegExp('۰\\.[۶-۹][۰-۹]?\\.۰-بتا').test(readme), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
+ok(new RegExp('۰\\.[۶-۹][۰-۹]?\\.[۰-۹]+-بتا').test(readme), 'README بلاک نسخهٔ جاری (ارقام فارسی)'); /* v0.64 forward-relax */
 
 console.log('\n======================');
 console.log('PASS=' + pass + '  FAIL=' + fail);
