@@ -435,6 +435,7 @@
     if (/وی\s?ال\s?سی|vlc/i.test(s)) return 'vlc';
     if (/ام\s?پی\s?سی|mpc[\s-]?(hc|be)?/i.test(s)) return 'mpc';
     if (/ام\s?پی\s?وی|mpv/i.test(s)) return 'mpv';
+    if (/پلیر\s?آوا|پلیرِ?\s?اوا|ava\s?player/i.test(s)) return 'ava'; /* v0.83 — پلیر خود آوا */
     if (/ویندوز\s?مدیا|windows\s?media|wmplayer/i.test(s)) return 'wmplayer';
     /* «توی پلیر X» لخت بدون اسمِ خاص = پیش‌فرض */
     return '';

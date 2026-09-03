@@ -49,14 +49,14 @@ section('[1] playerOpenDecision — یوتیوب برای همهٔ پلیرها�
     const YT = 'https://www.youtube.com/watch?v=x';
     const scan = { list: [{ id: 'vlc' }, { id: 'potplayer' }, { id: 'kmplayer' }, { id: 'mpv' }, { id: 'mpc' }, { id: 'wmplayer' }], ytdl: true };
     const d1 = fn('url', YT, 'default', scan, { id: 'potplayer' });
-    ok(d1.action === 'spawn-ytdlp' && d1.player === 'potplayer', 'پیش‌فرض پت‌پلیر + یوتیوب → spawn-ytdlp (ریشهٔ باگ: قبلاً spawn با لینک خام بود → دیوار ربات)');
-    ok(fn('url', YT, 'default', scan, { id: 'kmplayer' }).action === 'spawn-ytdlp', 'پیش‌فرض کی‌ام‌پلیر + یوتیوب → spawn-ytdlp (بدون استثنا)');
-    ok(fn('url', YT, 'default', scan, { id: 'vlc' }).action === 'spawn-ytdlp', 'پیش‌فرض VLC + یوتیوب → spawn-ytdlp');
+    ok(d1.action === 'ava-player' && d1.player === 'ava', 'پیش‌فرض پت‌پلیر + یوتیوب → ava-player (v0.83: مسیر پیش‌فرض = پلیر آوا؛ پت‌پلیر صریح همان yt-dlp — پین بعدی)');
+    ok(fn('url', YT, 'default', scan, { id: 'kmplayer' }).action === 'ava-player', 'پیش‌فرض کی‌ام‌پلیر + یوتیوب → ava-player (v0.83)');
+    ok(fn('url', YT, 'default', scan, { id: 'vlc' }).action === 'ava-player', 'پیش‌فرض VLC + یوتیوب → ava-player (v0.83)');
     ok(fn('url', YT, 'wmplayer', scan, null).action === 'spawn-ytdlp', 'پلیر صریح WMP + یوتیوب → spawn-ytdlp (استریم مستقیم در WMP هم پخش می‌شود)');
-    ok(fn('url', YT, 'default', { list: scan.list, ytdl: false }, { id: 'vlc' }).action === 'no-ytdlp', 'بدون yt-dlp → no-ytdlp (اجرا: دانلود تازه → حل → پخش؛ بن‌بست نیست)');
-    ok(fn('url', YT, 'default', scan, { id: 'uwp' }).action === 'browser', 'پیش‌فرض UWP (Media Player مایکروسافت) + یوتیوب → مرورگر (ثابت v0.61)');
+    ok(fn('url', YT, 'default', { list: scan.list, ytdl: false }, { id: 'vlc' }).action === 'ava-player', 'بدون yt-dlp هم پیش‌فرض → ava-player (v0.83: پلیر آوا yt-dlp نمی‌خواهد)');
+    ok(fn('url', YT, 'default', scan, { id: 'uwp' }).action === 'ava-player', 'پیش‌فرض UWP (Media Player مایکروسافت) + یوتیوب → ava-player (v0.83: قبلاً مرورگر)');
     ok(fn('file', 'C:\\v\\a.mp4', 'default', scan, { id: 'uwp' }).action === 'os-default', 'فایل محلی + پیش‌فرض UWP → os-default (ثابت)');
-    ok(fn('url', YT, 'default', { list: [], ytdl: false }, { id: '' }).action === 'browser', 'هیچ پلیری نصب نیست → مرورگر (ثابت)');
+    ok(fn('url', YT, 'default', { list: [], ytdl: false }, { id: '' }).action === 'ava-player', 'هیچ پلیری نصب نیست + یوتیوب → ava-player (v0.83: همیشه پخش می‌شود)');
     ok(fn('url', 'https://example.com/v.mp4', 'default', scan, { id: 'potplayer' }).action === 'spawn', 'لینک مستقیم ویدیو (غیر یوتیوب) → spawn مستقیم (بدون resolver)');
   }
 }
@@ -92,7 +92,7 @@ section('[3] resolveYtStream — استریم مستقیم + شفای yt-dlp ک�
 /* ============ [4] نردبان فالبک مرورگر ============ */
 section('[4] playerLaunchYt — بن‌بست ندارد (پلیر یا مرورگر)');
 ok(/async function playerLaunchYt\(player, src(, keep)?\)/.test(mainSrc), 'playerLaunchYt تعریف شده است'); /* v0.80 forward-relax: + keep */
-ok(/await playerLaunch\(player, src, \{ ytdl: true(, keepExisting: !!keep)? \}\);[\s\S]{0,900}shell\.openExternal\(src\); return \{ ok: true, via: 'browser-fallback'/.test(mainSrc), 'آخرین طبقه: مرورگر با نتیجهٔ صادقانهٔ browser-fallback'); /* v0.80 forward-relax */
+ok(/await playerLaunch\(player, src, \{ ytdl: true(, keepExisting: !!keep)? \}\);[\s\S]{0,900}avaPlayerPlay\(s, \{ keepExisting: !!keep, reason: 'ytdl-fail' \}\);[\s\S]{0,700}shell\.openExternal\(src\); return \{ ok: true, via: 'browser-fallback'/.test(mainSrc), 'نردبان فالبک: پلیر صریح شکست → پلیر آوا (v0.83) → مرورگر آخرین طبقه (browser-fallback)'); /* v0.80/v0.83 forward-relax */
 ok(mainSrc.includes("if (d.action === 'no-ytdlp' || d.action === 'spawn-ytdlp') {\n    /* v0.62 — یک لاین"), 'player:open: هر دو اقدام تصمیم به یک لاین می‌روند');
 ok(/if \(d\.action === 'no-ytdlp' \|\| d\.action === 'spawn-ytdlp'\) return playerLaunchYt\(d\.player, url\);/.test(mainSrc), 'openWithDefaultPlayer: همان یک لاین (youtube_play/sys-run هم)');
 ok(/if \(isYt && opts && opts\.ytdl\) \{\s*\n\s*const r = await resolveYtStream\(feed\);/.test(mainSrc), 'playerLaunch: یوتیوب اول حل می‌شود، بعد پخش');

@@ -66,16 +66,18 @@ section('[3] playerOpenDecision — تصمیم واحد برای همهٔ حال
   const scan = { list: [{ id: 'vlc' }, { id: 'potplayer' }, { id: 'kmplayer' }, { id: 'mpv' }, { id: 'mpc' }, { id: 'wmplayer' }], ytdl: true };
   /* v0.62 — یوتیوب یک لاین شد: لینک خام به هیچ پلیری نمی‌رود (دیوار ربات/ورود) —
      جزئیات نردبان جدید در scripts-test-v0620a.js */
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).action === 'spawn-ytdlp' && fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).player === 'potplayer', 'پیش‌فرض پت‌پلیر + یوتیوب → spawn-ytdlp (v0.62: اول استریم مستقیم، بعد پلیر)');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'kmplayer' }).action === 'spawn-ytdlp', 'پیش‌فرض کی‌ام‌پلیر + یوتیوب → spawn-ytdlp (v0.62: بدون استثنا)');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'vlc' }).action === 'spawn-ytdlp', 'پیش‌فرض VLC + یوتیوب + yt-dlp → spawn-ytdlp');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', { list: scan.list, ytdl: false }, { id: 'vlc' }).action === 'no-ytdlp', 'بدون yt-dlp → no-ytdlp (v0.62: اجرا دانلود می‌کند، بن‌بست نیست)');
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'uwp' }).action === 'browser', 'پیش‌فرض Media Player ویندوز (UWP) + یوتیوب → مرورگر (UWP لینک نمی‌فهمد)');
+  /* v0.83 — ری‌ورک: مسیر «پیش‌فرض» یوتیوب = پلیر آوا (embed رسمی — پخش تضمینی)؛
+     پلیرِ صریحِ نام‌برده همان مسیر yt-dlp خودش را می‌رود (پین‌های پایین) */
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).action === 'ava-player' && fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'potplayer' }).player === 'ava', 'پیش‌فرض پت‌پلیر + یوتیوب → ava-player (v0.83: مسیر پیش‌فرض = پلیر آوا؛ پت‌پلیر صریح همچنان yt-dlp)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'kmplayer' }).action === 'ava-player', 'پیش‌فرض کی‌ام‌پلیر + یوتیوب → ava-player (v0.83)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'vlc' }).action === 'ava-player', 'پیش‌فرض VLC + یوتیوب + yt-dlp → ava-player (v0.83: پیش‌فرض = پلیر آوا)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', { list: scan.list, ytdl: false }, { id: 'vlc' }).action === 'ava-player', 'بدون yt-dlp هم پیش‌فرض → ava-player (v0.83: پلیر آوا اصلاً yt-dlp نمی‌خواهد)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', scan, { id: 'uwp' }).action === 'ava-player', 'پیش‌فرض Media Player ویندوز (UWP) + یوتیوب → ava-player (v0.83: قبلاً مرورگر)');
   ok(fn('file', 'C:\\v\\a.mp4', 'default', scan, { id: 'uwp' }).action === 'os-default', 'فایل محلی + پیش‌فرض UWP → os-default (خود ویندوز با همان پلیر باز می‌کند)');
   ok(fn('url', 'https://youtu.be/x', 'vlc', scan, null).action === 'spawn-ytdlp', 'پلیر صریح («با وی‌ال‌سی») مسیر خودش را می‌رود');
   ok(fn('url', 'https://www.youtube.com/watch?v=x', 'wmplayer', scan, null).action === 'spawn-ytdlp', 'پلیر صریح WMP + یوتیوب → spawn-ytdlp (v0.62: استریم مستقیم در WMP هم پخش می‌شود)');
   const noScan = { list: [], ytdl: false };
-  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', noScan, { id: '' }).action === 'browser', 'هیچ پلیری نصب نیست → مرورگر (کاربر بی‌جواب نمی‌ماند)');
+  ok(fn('url', 'https://www.youtube.com/watch?v=x', 'default', noScan, { id: '' }).action === 'ava-player', 'هیچ پلیری نصب نیست + یوتیوب → ava-player (v0.83: پلیر آوا همیشه هست — کاربر بی‌جواب نمی‌ماند)');
 }
 
 /* ============ [4] سیم‌کشی main.js ============ */

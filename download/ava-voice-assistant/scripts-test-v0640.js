@@ -79,9 +79,9 @@ ok(/function closeAllVideoPlayers\(\)/.test(mainSrc), 'closeAllVideoPlayers تع
 ok(/taskkill \/IM \\\\"\$\(\$g\.Name\)\\\\" \/F/.test(mainSrc) || /taskkill/.test(mainSrc) && /Group-Object ProcessName/.test(mainSrc), 'بستن همهٔ نمونه‌های هر exe ویدیویی');
 ok(/function runningVideoPlayers\(\)/.test(mainSrc), 'runningVideoPlayers — شمارش پلیرهای زنده');
 ok(/_vpScanAt = Date\.now\(\); _vpScanCount = 0;/.test(mainSrc), 'کش اسکن پس از بستن صفر می‌شود');
-ok(/if \(!\(opts && opts\.keepExisting\)\) \{\s*\n\s*try \{ const cr = await closeAllVideoPlayers\(\);/.test(mainSrc), 'playerLaunch — قبل از spawn، پلیرهای قبلی بسته می‌شوند (بعد از حل استریم)');
-ok(/فالبک مرورگر هم جایگزین است/.test(mainSrc), 'playerLaunchYt — فالبک مرورگر هم تک‌لاین است');
-ok(/if \(!q\.keepExisting\) \{ try \{ const cr = await closeAllVideoPlayers\(\); if \(cr\.count\) playerCtl\.player = null;[\s\S]{0,240}shell\.openExternal\(src\);/.test(mainSrc), 'player:open — مسیر browser هم قبلی‌ها را می‌بندد'); /* v0.80 forward-relax: گارد keepExisting («کنارش پخش کن») */
+ok(/if \(!\(opts && opts\.keepExisting\)\) \{\s*\n\s*(\/\*[\s\S]{0,160}?\*\/\s*\n\s*)?try \{ const cr = await closeAllVideoTargets\(\);/.test(mainSrc), 'playerLaunch — قبل از spawn، پلیرهای قبلی بسته می‌شوند (v0.83: + پنجره‌های پلیر آوا)');
+ok(/فالبکِ «پلیر آوا» به‌جای مرورگر/.test(mainSrc), 'playerLaunchYt — فالبک پلیر آوا هم تک‌لاین است (v0.83: مرورگر آخرین طبقه)');
+ok(/if \(!q\.keepExisting\) \{ try \{ const cr = await closeAllVideoTargets\(\); if \(cr\.count\) playerCtl\.player = null;[\s\S]{0,240}shell\.openExternal\(src\);/.test(mainSrc), 'player:open — مسیر browser هم قبلی‌ها را می‌بندد (v0.83: + پلیر آوا)'); /* v0.80/v0.83 forward-relax */
 /* v0.78 — «ببند» هدفمند شد: تکی → همان، چندتایی → جدیدترین + گزارش مانده؛ «همه رو ببند» → همه
    (شکایت کاربر: «ویدیو قبلی ک باز کرده بودم رو ببند، دو ویدیو باز بود، جفتشون بسته شد») — ریلکس رو به جلو */
 ok(/const cr = await closeAllVideoPlayers\(\);\s*\n\s*if \(cr\.count > 0\) \{ playerCtl\.player = null; return \{ ok: true, via: 'win-ctl', target: 'all', count: cr\.count \}; \}|closeVideoTargeted\(tgt\)/.test(mainSrc), 'player:ctl close — v0.78: بستن هدفمند + «همه رو ببند» سرجایش');
@@ -90,7 +90,7 @@ ok(/via: 'win-ctl', count: wr\.count \|\| 1/.test(mainSrc), 'پاسخ player:ctl
 ok(/function playerWindowCtl\(kind, arg, all\)/.test(mainSrc), 'playerWindowCtl — حالت all');
 ok(/foreach\(\$p in \$ps\)\{ /.test(mainSrc), 'all-mode — حلقهٔ foreach روی همهٔ پروسس‌ها');
 ok(/noPlayer: true, error: 'پلیری باز نیست — اول ویدیو یا آهنگ را پخش کن'/.test(mainSrc), 'کلید مدیا بدون پلیر = پاسخ صادقانه (نه شلیک به برنامهٔ فعال)');
-ok(/!playerCtl\.player\) \{\s*\n\s*const nOpen = await runningVideoPlayers\(\);/.test(mainSrc), 'گاردِ پلیرِ خالی فقط وقتی آوا پلیری ثبت نکرده');
+ok(/!playerCtl\.player\) \{\s*\n\s*const nOpen = \(await runningVideoPlayers\(\)\)( \+ avaPlayers\.size)?;/.test(mainSrc), 'گاردِ پلیرِ خالی فقط وقتی آوا پلیری ثبت نکرده (v0.83: پلیر آوا هم شمرده می‌شود)');
 
 /* ---------- [3] renderer — تایپ مقصد-درست ---------- */
 section('3] renderer — typeOnceExec مقصد-درست + دیکته');

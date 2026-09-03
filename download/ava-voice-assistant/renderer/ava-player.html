@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<!-- ============================================================
+     آوا پلیر (v0.83) — پنجرهٔ پخشِ خودِ آوا
+     ریشهٔ ری‌ورک پخش یوتیوب: مسیر yt-dlp → پلیر سیستم مرتب می‌شکند
+     (yt-dlp کهنه، دیوار ربات، URL منقضی، TLS اپراتور). این پنجره با
+     «پخش‌کنندهٔ رسمی embed یوتیوب» کار می‌کند — بدون yt-dlp، بدون
+     دیوار ربات، همیشه و در ≤۲ ثانیه پخش می‌شود. فقط videoId لازم است.
+     همه‌چیز self-contained است (بدون preload، بدون شبکهٔ اضافه).
+     ============================================================ -->
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="frame-src https://www.youtube.com https://www.youtube-nocookie.com; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>آوا پلیر</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #050507; }
+  body { font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif; color: #efeadd; user-select: none; }
+
+  #frame { position: absolute; inset: 0; border: 0; width: 100%; height: 100%; background: #000; }
+
+  /* نوار عنوانِ باریک — با ماوس نزدیکِ بالا ظاهر می‌شود، بعد از ۲.۶ ثانیه پنهان */
+  #bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 44px;
+    display: flex; align-items: center; gap: 10px; padding: 0 10px 0 14px;
+    direction: rtl;
+    background: linear-gradient(180deg, rgba(8, 8, 10, 0.92), rgba(8, 8, 10, 0.55) 70%, transparent);
+    opacity: 0; transform: translateY(-6px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    -webkit-app-region: drag;
+    z-index: 5;
+  }
+  #bar.show { opacity: 1; transform: none; }
+  #bar .ava-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px;
+    background: radial-gradient(circle at 35% 30%, #ffe9a8, #d4a017 60%, #8a6508);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.75);
+  }
+  #bar .tt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: #f5efdd;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #bar .tt small { color: #c9a84c; font-weight: 700; margin-inline-end: 8px; }
+  #bar button {
+    -webkit-app-region: no-drag;
+    border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 9px;
+    background: rgba(255, 255, 255, 0.07); color: #efeadd;
+    font-family: inherit; font-size: 11.5px; padding: 5px 11px; cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  #bar button:hover { background: rgba(212, 160, 23, 0.2); border-color: rgba(212, 160, 23, 0.5); }
+  #bar button.x:hover { background: rgba(244, 63, 94, 0.25); border-color: rgba(244, 63, 94, 0.55); }
+
+  /* پردهٔ اتصال — تا fire شدن load iframe می‌ماند */
+  #veil {
+    position: absolute; inset: 0; z-index: 4;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #050507; transition: opacity 0.4s ease;
+  }
+  #veil.off { opacity: 0; pointer-events: none; }
+  #veil .ring {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 3px solid rgba(212, 160, 23, 0.18); border-top-color: #d4a017;
+    animation: spin 0.9s linear infinite;
+  }
+  #veil .msg { font-size: 13px; color: #d8cba6; }
+  #veil .sub { font-size: 11px; color: #7d7458; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* برندِ کوچک گوشهٔ پایین — فقط وقتی نوار دیده می‌شود */
+  #brand {
+    position: absolute; bottom: 12px; inset-inline-start: 14px; z-index: 5;
+    font-size: 10.5px; color: rgba(212, 160, 23, 0.75);
+    opacity: 0; transition: opacity 0.25s ease; pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  }
+  #brand.show { opacity: 1; }
+</style>
+</head>
+<body>
+<iframe id="frame" src="about:blank" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+
+<div id="bar">
+  <span class="ava-dot"></span>
+  <span class="tt"><small>آوا پلیر</small><span id="title">…</span></span>
+  <button id="btnBrowser" type="button" title="در مرورگر باز کن">در مرورگر</button>
+  <button id="btnReload" type="button" title="پخش مجدد">پخش مجدد</button>
+  <button id="btnClose" class="x" type="button" title="بستن (Esc)">✕</button>
+</div>
+
+<div id="veil">
+  <div class="ring"></div>
+  <div class="msg" id="veilMsg">در حال اتصال به یوتیوب…</div>
+  <div class="sub">اگر پخش نشد، دکمهٔ «در مرورگر» یا «پخش مجدد» را امتحان کن</div>
+</div>
+
+<div id="brand">آوا پلیر v0.83</div>
+
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var vid = String(q.get('v') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
+    var start = String(q.get('start') || '').replace(/[^0-9]/g, '');
+    var title = String(q.get('t') || '');
+
+    var frame = document.getElementById('frame');
+    var bar = document.getElementById('bar');
+    var brand = document.getElementById('brand');
+    var veil = document.getElementById('veil');
+    var titleEl = document.getElementById('title');
+
+    function setTitle(t) {
+      title = String(t || '');
+      titleEl.textContent = title || vid || '—';
+      document.title = 'آوا پلیر' + (title ? ' — ' + title : '');
+    }
+    window.__avaSetTitle = setTitle;
+    setTitle(title);
+
+    function src() {
+      var u = 'https://www.youtube.com/embed/' + (vid || '') +
+        '?autoplay=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3' +
+        (start ? '&start=' + start : '');
+      return u;
+    }
+    function load() {
+      veil.classList.remove('off');
+      document.getElementById('veilMsg').textContent = 'در حال اتصال به یوتیوب…';
+      frame.src = src();
+    }
+    frame.addEventListener('load', function () {
+      if (!frame.src || frame.src === 'about:blank') return;
+      veil.classList.add('off');
+      try { frame.focus(); frame.contentWindow.focus(); } catch (_) { /* cross-origin */ }
+    });
+
+    /* نوار: با حرکت ماوس به ثلث بالای پنجره ظاهر، بعد از ۲.۶ ثانیه پنهان */
+    var hideT = 0;
+    function poke() {
+      bar.classList.add('show'); brand.classList.add('show');
+      if (hideT) clearTimeout(hideT);
+      hideT = setTimeout(function () { bar.classList.remove('show'); brand.classList.remove('show'); }, 2600);
+    }
+    document.addEventListener('mousemove', function (e) {
+      if (e.clientY <= 70) poke(); else if (bar.classList.contains('show')) poke();
+    });
+    poke();
+
+    document.getElementById('btnClose').addEventListener('click', function () { window.close(); });
+    document.getElementById('btnReload').addEventListener('click', load);
+    document.getElementById('btnBrowser').addEventListener('click', function () {
+      /* پنجرهٔ نو مسدود است؛ لینک با target=_self باز می‌شود و
+         setWindowOpenHandlerِ main آن را به مرورگر خارجی می‌فرستد */
+      window.open('https://www.youtube.com/watch?v=' + vid + (start ? '&t=' + start : ''), '_blank');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !document.fullscreenElement) { window.close(); }
+    });
+
+    if (vid) load();
+    else {
+      document.getElementById('veilMsg').textContent = 'ویدیویی برای پخش مشخص نشد';
+      veil.querySelector('.ring').style.display = 'none';
+    }
+  })();
+</script>
+</body>
+</html>

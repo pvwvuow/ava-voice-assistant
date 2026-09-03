@@ -140,9 +140,14 @@
             <p class="greet-sub" data-i18n="hero.sub">فرمانت را بگو تا برایت انجامش بدهم.</p>
           </div>
 
-          <!-- اورب صوتی -->
+          <!-- اورب صوتی
+               v0.83 — هالهٔ «ماورایی» چندلایه: orb-halo (شفق چرخان) + orb-aurora
+               (شفق معکوس نرم‌تر) + orb-sparks (سه ذرهٔ نور در مدار) — همه فقط
+               حین شنیدن/پردازش جان می‌گیرند؛ کلیک اورب حین پردازش = توقف درخواست -->
           <div class="orb-stage" id="orbStage">
             <div class="orb-halo"></div>
+            <div class="orb-aurora"></div>
+            <div class="orb-sparks"><i></i><i></i><i></i></div>
             <div class="orb-ring rg1"></div>
             <div class="orb-ring rg2"></div>
             <div class="orb-ring rg3"></div>
@@ -1148,7 +1153,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.82.2-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.83.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

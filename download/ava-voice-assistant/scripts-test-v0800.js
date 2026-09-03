@@ -159,7 +159,7 @@ ok(/if \(a === 'seek' && !playerCtl\.player\)/.test(mainSrc), 'چند-ویدیو
 ok(/playerCtl\.activePid = \(ch && ch\.pid\) \|\| 0/.test(mainSrc), 'پنجرهٔ فعال بعد از هر اجرای پلیر ثبت می‌شود');
 ok(/playerLaunchYt\(player, src, !!q\.keepExisting\)/.test(mainSrc), 'player:open → playerLaunchYt: keepExisting');
 ok(/playerLaunch\(player, src, \{ keepExisting: !!q\.keepExisting \}\)/.test(mainSrc), 'player:open → playerLaunch: keepExisting');
-ok(/if \(!keep\) \{ try \{ const cr = await closeAllVideoPlayers\(\)/.test(mainSrc), 'فالبک مرورگر با keepExisting چیزی نمی‌بندد');
+ok(/if \(!keep\) \{ try \{ (const cr = )?await closeAllVideo(Players|Targets)\(\)/.test(mainSrc), 'فالبکِ آخر با keepExisting چیزی نمی‌بندد (v0.83: پلیر آوا/مرورگر)');
 
 section('main.js — سرچ لیستی یوتیوب');
 ok(/async function ytSearchMany\(query, n\)/.test(mainSrc), 'ytSearchMany تعریف شده');

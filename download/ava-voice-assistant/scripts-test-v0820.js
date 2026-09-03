@@ -151,8 +151,9 @@ console.log('\n[4] شفاف‌سازی چند-ویدیو (الگوی needs_clari
   ok('videoCtlParse مغز: close:ord:N می‌فهمد',
     /close:ord/.test(appSrc) === false || appSrc.includes("const om = tail.match(/^(?:ord:)?(\\d{1,2})$/)"));
 }
-ok('main.js: بستن با pid مستقیم یا ord:N — هرگز پنجرهٔ اشتباه',
-  mainSrc.includes("if (Number(p.pid) > 0 || /^ord:\\d+$/.test(tgt)) {") &&
+ok('main.js: بستن با pid مستقیم یا ord:N — هرگز پنجرهٔ اشتباه (v0.83: pid منفیِ پلیر آوا هم مسیر می‌شود)',
+  (mainSrc.includes('if (Number(p.pid) > 0 || /^ord:\\d+$/.test(tgt)) {') ||
+   mainSrc.includes('if (Number(p.pid) || /^ord:\\d+$/.test(tgt)) {')) &&
   mainSrc.includes('closeVideoByPid(_pid)'));
 ok('app.js: پرسش شماره‌دار + _pendingVideoPick + لاین مصرف («دومی»/«شمارهٔ ۲»/«همه»/«بی‌خیال»)',
   appSrc.includes('let _pendingVideoPick = null;') && appSrc.includes('async function videoPickConsume(raw)') &&

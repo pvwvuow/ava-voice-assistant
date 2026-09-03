@@ -5355,7 +5355,12 @@
             try { statusText.textContent = LANG === 'en' ? 'Preparing playback…' : 'دارم ویدیو رو برای پلیر آماده می‌کنم…'; } catch (_) { /* noop */ }
             const _cres = await bridge.player.open({ player: _pbPlayer || 'default', kind: 'url', src: _cbUrl });
             const _where = (_cres && _cres.fa) ? ' — در ' + _cres.fa : '';
-            if (_cres && _cres.ok && _cres.via === 'browser-fallback') {
+            if (_cres && _cres.ok && _cres.via === 'ava-fallback') {
+              _cpre = LANG === 'en'
+                ? 'Got the link from your clipboard — your player could not stream it, so I played it in Ava\u2019s own player.'
+                : 'لینک رو از کلیپ‌بورد برداشتم — پلیر نتوانست پخش کند، با پلیر خود آوا پخش کردم.';
+              _cpOk = true;
+            } else if (_cres && _cres.ok && _cres.via === 'browser-fallback') {
               _cpre = LANG === 'en'
                 ? 'Got the link from your clipboard — your player could not stream it, so I opened it in the browser.'
                 : 'لینک رو از کلیپ‌بورد برداشتم — پلیر نتوانست پخش کند، در مرورگر باز کردم.';
@@ -8991,7 +8996,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.82.2-beta';
+  let appVersion = '0.83.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10555,6 +10560,9 @@
       try { statusText.textContent = LANG === 'en' ? 'Preparing playback…' : 'دارم ویدیو رو برای پلیر آماده می‌کنم…'; } catch (_) { /* noop */ }
       const res = await bridge.player.open({ player: want || 'default', kind: /^https?:\/\//i.test(vq) ? 'url' : 'query', src: vq, keepExisting: !!keepExisting });
       const where = (res && res.fa) ? ' — در ' + res.fa : '';
+      if (res && res.ok && res.via === 'ava-fallback') return { rep: LANG === 'en'
+        ? `Your player could not stream it — opened it in Ava's own player instead.`
+        : `پلیر نتوانست یوتیوب را پخش کند — با پلیر خود آوا پخش کردم.`, ok: true };
       if (res && res.ok && res.via === 'browser-fallback') return { rep: LANG === 'en'
         ? `Your player could not stream it — opened "${vq}" in the browser.`
         : `پلیر نتوانست یوتیوب را پخش کند — «${vq}» را در مرورگر باز کردم.`, ok: true };
