@@ -81,7 +81,7 @@ ok(/function runningVideoPlayers\(\)/.test(mainSrc), 'runningVideoPlayers — ش
 ok(/_vpScanAt = Date\.now\(\); _vpScanCount = 0;/.test(mainSrc), 'کش اسکن پس از بستن صفر می‌شود');
 ok(/if \(!\(opts && opts\.keepExisting\)\) \{\s*\n\s*try \{ const cr = await closeAllVideoPlayers\(\);/.test(mainSrc), 'playerLaunch — قبل از spawn، پلیرهای قبلی بسته می‌شوند (بعد از حل استریم)');
 ok(/فالبک مرورگر هم جایگزین است/.test(mainSrc), 'playerLaunchYt — فالبک مرورگر هم تک‌لاین است');
-ok(/const cr = await closeAllVideoPlayers\(\); if \(cr\.count\) playerCtl\.player = null; \} catch \(_\) \{ \/\* noop \*\/ \}\s*\n\s*try \{ shell\.openExternal\(src\); \} catch \(_\) \{ \/\* noop \*\/ \}\s*\n\s*return \{ ok: true, via: 'browser',/.test(mainSrc), 'player:open — مسیر browser هم قبلی‌ها را می‌بندد');
+ok(/if \(!q\.keepExisting\) \{ try \{ const cr = await closeAllVideoPlayers\(\); if \(cr\.count\) playerCtl\.player = null;[\s\S]{0,240}shell\.openExternal\(src\);/.test(mainSrc), 'player:open — مسیر browser هم قبلی‌ها را می‌بندد'); /* v0.80 forward-relax: گارد keepExisting («کنارش پخش کن») */
 /* v0.78 — «ببند» هدفمند شد: تکی → همان، چندتایی → جدیدترین + گزارش مانده؛ «همه رو ببند» → همه
    (شکایت کاربر: «ویدیو قبلی ک باز کرده بودم رو ببند، دو ویدیو باز بود، جفتشون بسته شد») — ریلکس رو به جلو */
 ok(/const cr = await closeAllVideoPlayers\(\);\s*\n\s*if \(cr\.count > 0\) \{ playerCtl\.player = null; return \{ ok: true, via: 'win-ctl', target: 'all', count: cr\.count \}; \}|closeVideoTargeted\(tgt\)/.test(mainSrc), 'player:ctl close — v0.78: بستن هدفمند + «همه رو ببند» سرجایش');

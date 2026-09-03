@@ -2862,7 +2862,15 @@
             ? 'Tell me what to play, e.g. "play Shahram in VLC" — or copy the video link first.'
             : 'بگو چی پخش کنم — مثل «با وی‌ال‌سی آهنگ شادمهر رو پخش کن» — یا اول لینک ویدیو را کپی کن.';
           try {
-            const res = await bridge.player.open({ player, kind, src });
+            /* v0.80 — پخش همزمان/کنارهم: «با وی‌ال‌سی X رو کنارش پخش کن» پلیرهای
+               قبلی را نمی‌بندد (الگوی چند-ویدیوی همزمان معماری مرجع) */
+            const _keep = /کنارش|کنارشون|همزمان|با\s?هم|کنار\s?هم/i.test(c);
+            const res = await bridge.player.open({ player, kind, src, keepExisting: _keep });
+            if (res && res.ok && _keep && res.via !== 'browser' && res.via !== 'browser-fallback') {
+              return (LANG === 'en'
+                ? `Playing alongside the previous video in ${res.fa}.`
+                : `کنار ویدیوی قبلی در ${res.fa} پخش شد — الان چند ویدیو با هم بازه، با «چی بازه» بپرس کدوماست.`);
+            }
             if (res && res.ok && res.via === 'browser-fallback') return (LANG === 'en'
               ? 'Your player could not stream YouTube — I opened it in the browser instead (no bot/sign-in walls there).'
               : 'پلیر نتوانست یوتیوب را پخش کند — در مرورگر بازش کردم (اینجا دیوار ربات/ورود نیست).');
@@ -2875,6 +2883,48 @@
           } catch (_) { return LANG === 'en' ? 'Player launch failed.' : 'اجرای پلیر ممکن نشد.'; }
         },
       },
+      /* --- v0.80 — سرچ لیستی یوتیوب (الگوی search_only معماری مرجع): ---
+         «فقط سرچ کن X تو یوتیوب پخش نکن» → لیست ۵تایی + انتخاب صوتی بعدی */
+      {
+        k: /(سرچ|جستجو|بگرد)[^.]{0,40}(یوتیوب|youtube)[^.]{0,16}(پخش\s?نکن|لیست|نتیجه|انتخاب)|(فقط\s*)?(سرچ|جستجو)\s?کن\s?(توی?|تو|در)\s?یوتیوب|(یوتیوب|youtube)[^.]{0,10}(لیست\s?کن|نتایج)/i,
+        id: 'yt_list', t: 'سرچ لیستی یوتیوب', i: '#i-music',
+        r: async (c) => {
+          if (!bridge || !bridge.yt || !bridge.yt.search) return AI_FALLBACK;
+          let q = (typeof AVAIntent !== 'undefined' && AVAIntent.ytQueryOf) ? AVAIntent.ytQueryOf(c) : '';
+          q = String(q || c)
+            .replace(/(فقط|لطفا|سرچ\s?کن|جستجو\s?کن|برام\s?سرچ\s?کن|توی?|تو|در|یوتیوب|youtube|پخش\s?نکن|لیست\s?کن|نتایج\s?رو|برام|بگرد|خب)/gi, ' ')
+            .replace(/\s+/g, ' ').trim();
+          if (!q) return AI_FALLBACK;
+          const res = await bridge.yt.search(q, 5).catch(() => null);
+          if (!res || !res.ok || !res.items || !res.items.length) {
+            return (LANG === 'en' ? 'No results.' : 'چیزی پیدا نشد') + (res && res.error ? ': ' + res.error : '.');
+          }
+          _lastYtResults = res.items; _lastYtAt = Date.now();
+          const lines = res.items.map((it, i) => `${faNum(String(i + 1))}) ${it.title || it.videoId}`);
+          actLog('interpret: گفت «' + String(c).slice(0, 40) + '» | فهمید yt_list (' + res.items.length + ' نتیجه)', 'ui', { ev: 'interpret', via: 'rule', rule: 'yt_list' });
+          return 'پیدا کردم: ' + lines.join(' | ') + ' — کدوم رو پخش کنم؟ بگو «دومی رو پخش کن» یا شماره‌ش.';
+        },
+      },
+      /* --- v0.80 — «دومی رو پخش کن» بعد از سرچ لیستی (الگوی select_from_results) --- */
+      {
+        k: /(اولی|دومی|سومی|چهارمی|پنجمی|شماره?\s?[1-5]|[1-5])\s?(رو|و)?\s?(پخش|پلی|بذار|باز|اجرا)\s?(کن|بکن)?|پخش\s?کن\s?(اولی|دومی|سومی|چهارمی|پنجمی|[1-5])/i,
+        id: 'yt_pick', t: 'پخش از نتایج', i: '#i-music',
+        r: async (c) => {
+          if (!_lastYtResults.length || Date.now() - _lastYtAt > 10 * 60 * 1000) return AI_FALLBACK;
+          const ord = { 'اولی': 0, 'دومی': 1, 'سومی': 2, 'چهارمی': 3, 'پنجمی': 4 };
+          let ix = -1;
+          for (const key in ord) { if (c.indexOf(key) >= 0) { ix = ord[key]; break; } }
+          if (ix < 0) { const m = faToEn(c).match(/([1-5])/); if (m) ix = parseInt(m[1], 10) - 1; }
+          if (ix < 0 || ix >= _lastYtResults.length) return LANG === 'en' ? 'That number is not in the list.' : 'این شماره تو لیست نیست.';
+          const it = _lastYtResults[ix];
+          const op = await bridge.player.open({ player: 'default', kind: 'url', src: 'https://www.youtube.com/watch?v=' + it.videoId });
+          if (op && op.ok) {
+            actLog('interpret: گفت «' + String(c).slice(0, 40) + '» | فهمید yt_pick#' + (ix + 1), 'ui', { ev: 'interpret', via: 'rule', rule: 'yt_pick' });
+            return (LANG === 'en' ? `Playing result ${ix + 1}: ${it.title || ''}` : `پخش نتیجهٔ ${faNum(String(ix + 1))}: «${it.title || it.videoId}»`);
+          }
+          return (LANG === 'en' ? 'Could not play it.' : 'پخش نشد: ') + ((op && op.error) || '');
+        },
+      },
       {
         /* v0.61 — بازنگری ریشه‌ای: «ویدیو رو پلی کن» دیگر به نیتِ حذف‌شدهٔ
            پنجرهٔ شناور نمی‌رود (لاگ v0.48: ۶ ثانیه معطلی AI) — کنترل واقعی
@@ -2882,8 +2932,10 @@
            پخش/پاز/فول‌اسکرین/جلو/عقب + «برو جلو/عقب» مستقل */
         /* v0.74 — + پین/جابه‌جایی/بزرگ‌وکوچک‌کردن پنجرهٔ پلیر (خواستهٔ کاربر: ممیزی
            کامل کامندهای ویدیو پلیر — «ویدیو رو بر بالا سمت راست» قبلاً فقط با
-           مغز و بدون گرامر فارسی جواب می‌داد) */
-        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی|پلی\s?کن|پخش|نگه\s?دار)|(ویدیو|فیلم|کلیپ)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب|پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن|نگه\s?دار|ببند)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن)\s*(پلیر|مدیا|ویدیو|فیلم|کلیپ)|(ویدیو|فیلم|کلیپ|پلیر|مدیا|پنجره)[^.]{0,14}(پین|روییر?|بزرگ|کوچک|کوچیک|ببر|بیار|منتقل|جابجا|جابه)|(پین|روییر?|همیشه\s*روییر?)[^.]{0,10}(کن|بزن|بکن)/i,
+           مغز و بدون گرامر فارسی جواب می‌داد)
+           v0.80 — + PIP/شفافیت/مانیتور/چیدمان/فهرست/سوییچ/سرعت/کیفیت/سایز/
+           مینیمایز/وضعیت/عکس (تطبیق گروه‌های ۵..۱۰ معماری مرجع) */
+        k: /(پلیر|مدیا)[^.]{0,16}(پاز|توقف|استاپ|جلو|عقب|فوروارد|ریویند|فول\s?اسکرین|تمام\s?صفحه|ببند|بعدی|قبلی|پلی\s?کن|پخش|نگه\s?دار)|(ویدیو|فیلم|کلیپ)[^.]{0,16}(فول\s?اسکرین|تمام\s?صفحه|جلو|عقب|پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن|نگه\s?دار|ببند)|(برو\s?|بپر\s?)(جلو|عقب|فوروارد|ریویند)|فول\s?اسکرین[^.]{0,10}(کن|پلیر|ویدیو|فیلم)|(پاز|توقف|استاپ|پلی\s?کن|پخش\s?کن)\s*(پلیر|مدیا|ویدیو|فیلم|کلیپ)|(ویدیو|فیلم|کلیپ|پلیر|مدیا|پنجره)[^.]{0,14}(پین|روییر?|بزرگ|کوچک|کوچیک|ببر|بیار|منتقل|جابجا|جابه)|(پین|روییر?|همیشه\s*روییر?)[^.]{0,10}(کن|بزن|بکن)|(ویدیو|فیلم|کلیپ|پلیر|پنجره|مدیا)[^.]{0,16}(تصویر\s?در\s?تصویر|پی\s?پ|شفاف|مانیتور|چیدمان|بچین|سرعت|سایز|اندازه|مینیمایز|ماکزیمایز|کیفیت|وضعیت|برگردون)|(ویدیو|فیلم|کلیپ|پلیر)[^.]{0,10}(عکس|اسکرین)|تصویر\s?در\s?تصویر|برو\s?سراغ\s?اون\s?یکی|چی\s?(بازه|باز\s?کردیم)|چند\s?تا\s?(ویدیو|پلیر|فیلم|کلیپ)\s?(بازه|باز|داریم)|سریع\s?ترش?|آهسته\s?ترش?/i,
         id: 'player_ctl', t: 'کنترل پلیر', i: '#i-music',
         r: async (c) => {
           /* v0.64 — گاردِ جملهٔ مرکب: «اولین ویدیو شادمهر رو کپی کن و توی پلیری که
@@ -2899,9 +2951,37 @@
               const res = await bridge.player.ctl({ action: _rich.action, arg: _rich.arg });
               /* v0.78 — پاسخ بستنِ هدفمند */
               const _closeLbl = _rich.action === 'close' ? ({ oldest: 'ویدیوی قبلی بسته شد.', newest: 'ویدیوی جدید (آخری) بسته شد.', all: 'همهٔ ویدیوها بسته شدند.', auto: 'بسته شد.' })[String(_rich.arg == null || _rich.arg === 0 ? 'auto' : _rich.arg)] || 'بسته شد.' : null;
-              const _faLbl = { pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.', grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.', move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: _rich.arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', fullscreen: 'فول‌اسکرین شد.', close: _closeLbl || 'بسته شد.', play_pause: 'پخش/توقف' };
+              const _faLbl = { pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.', grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.', move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: _rich.arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', fullscreen: 'فول‌اسکرین شد.', close: _closeLbl || 'بسته شد.', play_pause: 'پخش/توقف', resize: 'سایز پنجره عوض شد.', maximize: 'پنجره ماکزیمایز شد.', minimize: 'پنجره مینیمایز شد.', restore: 'پنجره برگشت به حالت عادی.', pip: 'تصویر در تصویر فعال شد — پایین راست، همیشه رویر.', unpip: 'از تصویر در تصویر خارج شد.', opacity: 'شفافیت پنجره عوض شد.', monitor: 'پنجره رفت روی مانیتور مقصد.', arrange: 'پنجره‌ها چیده شدند.' };
               const _extra = (_rich.action === 'seek') ? ' ' + Math.abs(_rich.arg) + ' ثانیه' : (_rich.action === 'move' ? ' (' + _rich.arg + ')' : '');
               if (res && res.ok) {
+                /* v0.80 — پاسخ‌های لیستی/خاص (الگوی خروجی JSON → پاسخ طبیعی معماری مرجع) */
+                if (_rich.action === 'players') {
+                  const _ws = (res && res.wins) || [];
+                  if (!_ws.length) return 'هیچ پلیر ویدیویی باز نیست.';
+                  const _lines = _ws.map((w, i) => {
+                    const _am = res.activePid && w.pid === res.activePid ? ' (فعال)' : '';
+                    return `${faNum(String(i + 1))}) «${String(w.title || w.proc || '').slice(0, 60)}» — ${w.proc || 'پلیر'}${_am}`;
+                  });
+                  return `${faNum(String(_ws.length))} پلیر بازه: ${_lines.join(' | ')} — بگو «برو سراغ اون یکی» یا نامش را بگو.`;
+                }
+                if (_rich.action === 'status') {
+                  const _now = res.now; const _ws = (res && res.wins) || [];
+                  let _rep = _now
+                    ? `در حال پخش در ${_now.app || 'برنامهٔ نامشخص'}: «${_now.title || ''}»${_now.playing === false ? ' (مکث شده)' : ''}`
+                    : 'الان چیزی در حال پخش نیست.';
+                  if (_ws.length) _rep += ` (${faNum(String(_ws.length))} پنجرهٔ پلیر بازه)`;
+                  return _rep;
+                }
+                if (_rich.action === 'switch') {
+                  const _w = res.win || {};
+                  return `رفتم روی ${_w.proc || 'پلیر'}: «${String(_w.title || '').slice(0, 60) || 'بدون عنوان'}»${res.focused === false ? ' (فوکوس نشد ولی هدف عوض شد)' : ''}.`;
+                }
+                if (_rich.action === 'shot' && res.path) return 'عکس ذخیره شد: ' + res.path;
+                if (_rich.action === 'speed') return `سرعت پخش: ${faNum(String(res.speed || 1))} برابر.`;
+                if (_rich.action === 'quality') return `کیفیت روی ${res.quality === 'best' ? 'بهترین' : (res.quality === 'worst' ? 'پایین‌ترین' : res.quality)} رفت — پخش از سر شروع شد.`;
+                if (_rich.action === 'close' && String(_rich.arg || 'auto') === 'other' && res.closedTitle) {
+                  return `ویدیوی دیگر بسته شد («${String(res.closedTitle).slice(0, 60)}»)` + ((res.total || 1) > 1 ? ` — ${faNum(String(Math.max(0, (res.total || 1) - 1)))} ویدیو هنوز بازه.` : '.');
+                }
                 let _rep = `انجام شد: ${_faLbl[_rich.action] || _rich.action}${_extra}.`;
                 if (_rich.action === 'close' && String(_rich.arg || 'auto') !== 'all' && res.total > 1) {
                   const _left = Math.max(0, (res.total || 1) - (res.closed || 1));
@@ -2976,8 +3056,8 @@
     video: {
       fa: 'ویدیو و پلیر سیستم', en: 'Video & System Player',
       items: {
-        fa: ['ویدیو رو پلی کن', 'ویدیو رو پاز کن', 'ویدیو رو فول اسکرین کن', 'ویدیو رو ببند', 'برو جلو ۳۰ ثانیه', 'با وی‌ال‌سی آهنگ X رو پخش کن', 'با پت‌پلیر پخش کن', 'با پلیر پیش‌فرض پخش کن', 'تو یوتیوب آهنگ X رو سرچ کن'],
-        en: ['Play the video', 'Pause the video', 'Fullscreen the video', 'Close the video', 'Forward 30s', 'Play X in VLC', 'Play in PotPlayer', 'Play in my default player', 'Search YouTube for X'],
+        fa: ['ویدیو رو پلی کن', 'ویدیو رو پاز کن', 'ویدیو رو فول اسکرین کن', 'ویدیو رو ببند', 'برو جلو ۳۰ ثانیه', 'با وی‌ال‌سی آهنگ X رو پخش کن', 'با پت‌پلیر پخش کن', 'با پلیر پیش‌فرض پخش کن', 'تو یوتیوب آهنگ X رو سرچ کن', 'فقط سرچ کن X تو یوتیوب پخش نکن', 'دومی رو پخش کن', 'ویدیو رو تصویر در تصویر کن', 'ویدیو رو شفاف کن', 'ببرش مانیتور ۲', 'کنار هم بچینشون', 'چی بازه', 'برو سراغ اون یکی ویدیو', 'دوتا ویدیو کنار هم پخش کن', 'سرعتش کن ۲ برابر', 'کیفیتش کن ۳۶۰', 'سایزش کن کوچیک', 'وضعیت ویدیو چیه', 'از ویدیو عکس بگیر'],
+        en: ['Play the video', 'Pause the video', 'Fullscreen the video', 'Close the video', 'Forward 30s', 'Play X in VLC', 'Play in PotPlayer', 'Play in my default player', 'Search YouTube for X', 'Just search X on YouTube, do not play', 'Play the second result', 'Picture-in-picture the video', 'Make the video translucent', 'Move it to monitor 2', 'Arrange them side by side', 'What is open', 'Switch to the other video', 'Play two videos together', 'Speed 2x', 'Quality 360', 'Resize small', 'Video status', 'Screenshot the video'],
       },
     },
     music: {
@@ -3279,7 +3359,7 @@
     yt_bring: 'ویدیویی که الان در مرورگر/سیستم پخش میشه رو با پلیر پیش‌فرض کاربر پخش کن: همین ویدیو رو بیار',
     now_playing: 'چی داره پخش میشه؟ — وضعیت پخش سیستم',
     player_open: 'پخش در پلیر ویندوز: با وی‌ال‌سی/پت‌پلیر/کی‌ام‌پلیر/mpv آهنگ X رو پخش کن — یا «با پلیر پیش‌فرض پخش کن»',
-    player_ctl: 'کنترل پلیر: ویدیو رو پلی/پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند / پین کن / بزرگترش کن / ببرش بالا سمت راست',
+    player_ctl: 'کنترل پلیر: ویدیو رو پلی/پاز کن / برو جلو ۳۰ ثانیه / فول اسکرین کن / پلیر رو ببند / پین کن / بزرگترش کن / ببرش بالا سمت راست / تصویر در تصویر کن / شفافش کن / ببرش مانیتور ۲ / چی بازه / برو سراغ اون یکی / سرعتش کن ۲ برابر / کیفیتش کن ۳۶۰ / سایزش کن کوچیک / وضعیت ویدیو / از ویدیو عکس بگیر',
     web_open: 'فقط باز کردن سایت — بدون هیچ جستجویی',
     open_youtube: 'باز کردن خود یوتیوب',
     open_music: 'پخش موزیک/آهنگ',
@@ -4534,6 +4614,11 @@
      ریشهٔ لاگ v0.65: کاربر لینک داد، بعد گفت «همین ویدیو توی کی‌ام‌پلیر» و
      هیچ حافظه‌ای از لینک نبود → video_play(youtube.com خالی). */
   let lastVideoUrl = '';
+  /* v0.80 — نتایج آخرین «سرچ لیستی یوتیوب» (الگوی last_search_results معماری
+     مرجع): بعد از yt_list، «دومی رو پخش کن» از همین لیست حل می‌شود
+     (select_from_results). جلسه‌ای است — ۱۰ دقیقه اعتبار دارد. */
+  let _lastYtResults = [];
+  let _lastYtAt = 0;
   /* v0.66 — نسل درخواست AI: با هر لغو/فرمان جدید جلو می‌رود؛ رانِ کهنه UI را دست نمی‌زند */
   let aiRunEpoch = 0;
   /* v0.66 — لغو درخواست در جریان (خواستهٔ کاربر: «کاربر بتونه کنسل کنه درخواستو»):
@@ -8591,7 +8676,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.79.0-beta';
+  let appVersion = '0.80.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10053,13 +10138,33 @@
     const raw = String(value == null ? '' : value).trim().toLowerCase()
       .replace(/[«»"']/g, '').replace(/\s+/g, ' ');
     const POS = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center', 'top', 'bottom', 'left', 'right'];
-    const SIMP = ['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down', 'pin', 'unpin', 'grow', 'shrink'];
+    const SIMP = ['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down', 'pin', 'unpin', 'grow', 'shrink', 'maximize', 'minimize', 'restore', 'pip', 'unpip', 'players', 'status', 'shot'];
     /* v0.78 — بستن هدفمند از مغز: close:oldest (ویدیوی قبلی) / close:newest / close:all */
     if (/^close/.test(raw)) {
       const tail = raw.replace(/^close[:\s]*/, '').trim();
-      if (tail === 'oldest' || tail === 'newest' || tail === 'all') return { action: 'close', arg: tail };
+      if (tail === 'oldest' || tail === 'newest' || tail === 'all' || tail === 'other') return { action: 'close', arg: tail };
       return { action: 'close', arg: 'auto' };
     }
+    /* v0.80 — توکن‌های جدید کاتالوگ مغز (تطبیق tool_definitions معماری مرجع):
+       resize/opacity/monitor/arrange/switch/speed/quality + maz/min/restore/pip */
+    if (/^resize/.test(raw)) {
+      const tail = raw.replace(/^resize[:\s]*/, '').trim();
+      if (['small', 'medium', 'large'].indexOf(tail) >= 0) return { action: 'resize', arg: tail };
+      const wh = tail.match(/(\d{2,4})\s*[x×،,]\s*(\d{2,4})/);
+      if (wh) return { action: 'resize', arg: { w: +wh[1], h: +wh[2] } };
+      return { action: 'resize', arg: 'medium' };
+    }
+    if (/^opacity/.test(raw)) { const n = parseInt(raw.replace(/^opacity[:\s]*/, '').replace(/[^\d]/g, ''), 10); return { action: 'opacity', arg: isNaN(n) ? 50 : Math.max(10, Math.min(100, n)) }; }
+    if (/^monitor/.test(raw)) { const n = parseInt(raw.replace(/^monitor[:\s]*/, '').replace(/[^\d]/g, ''), 10); return { action: 'monitor', arg: isNaN(n) || n < 1 ? 2 : Math.min(4, n) }; }
+    if (/^arrange/.test(raw)) { const t = raw.replace(/^arrange[:\s]*/, '').trim(); return { action: 'arrange', arg: ['cascade', 'side', 'grid'].indexOf(t) >= 0 ? t : 'side' }; }
+    if (/^switch/.test(raw)) { const t = raw.replace(/^switch[:\s]*/, '').trim(); return { action: 'switch', arg: ['oldest', 'newest', 'other'].indexOf(t) >= 0 ? t : 'other' }; }
+    if (/^speed/.test(raw)) {
+      const t = raw.replace(/^speed[:\s]*/, '').trim();
+      if (['up', 'down', 'reset'].indexOf(t) >= 0) return { action: 'speed', arg: t };
+      const n = parseFloat(t.replace(/[^\d.,]/g, '').replace(',', '.'));
+      return { action: 'speed', arg: isNaN(n) ? 'up' : Math.max(0.25, Math.min(3, n)) };
+    }
+    if (/^quality/.test(raw)) { const t = raw.replace(/^quality[:\s]*/, '').trim(); return { action: 'quality', arg: ['360', '720', 'best', 'worst'].indexOf(t) >= 0 ? t : 'best' }; }
     if (/^move/.test(raw)) {
       let tail = raw.replace(/^move[:\s]*/, '').trim().replace(/[_/]/g, '-')
         .replace(/top\s*right/g, 'top-right').replace(/top\s*left/g, 'top-left')
@@ -10094,11 +10199,11 @@
   /* v0.66 — هلپر مشترک پخش ویدیو (لَین URL + اکشن video_play هر دو همین یک
      مسیر می‌روند): پلیر مقصد (درخواستی/پیش‌فرض) + بازخورد فارسیِ صادقانه.
      خروجی { rep, ok } — ok فقط برای گیتِ صدای «انجام شد». */
-  async function videoPlayReply(vq, playerWanted, origCmdForLog) {
+  async function videoPlayReply(vq, playerWanted, origCmdForLog, keepExisting) {
     if (!bridge || !bridge.player || !bridge.player.open) return { rep: t('toast.onlyApp'), ok: false };
     const want = String(playerWanted || '').trim();
     try {
-      const res = await bridge.player.open({ player: want || 'default', kind: 'query', src: vq });
+      const res = await bridge.player.open({ player: want || 'default', kind: 'query', src: vq, keepExisting: !!keepExisting });
       const where = (res && res.fa) ? ' — در ' + res.fa : '';
       if (res && res.ok && res.via === 'browser-fallback') return { rep: LANG === 'en'
         ? `Your player could not stream it — opened "${vq}" in the browser.`
@@ -10290,13 +10395,16 @@
             const _pw = (typeof AVAIntent !== 'undefined' && AVAIntent.playerTargetOf) ? AVAIntent.playerTargetOf(String(origCmd || '')) : '';
             if (_pw) actLog('video_play player-target: ' + _pw);
             if (/(?:watch\?v=|youtu\.be\/|shorts\/|live\/|embed\/|\/v\/)/i.test(vq)) lastVideoUrl = vq;
-            const _vp = await videoPlayReply(vq, _pw, origCmd);
+            /* v0.80 — «کنارش پخش کن» از مغز: keepExisting → پلیرهای قبلی نمی‌بندند */
+            const _keepP = /کنارش|کنارشون|همزمان|با\s?هم|کنار\s?هم/i.test(String(origCmd || ''));
+            const _vp = await videoPlayReply(vq, _pw, origCmd, _keepP);
             outs.push(_vp.rep);
             break;
           }
           case 'video_ctl': {
             /* v0.61 — کنترل پلیر سیستم؛ v0.63 — گرامر گسترده با videoCtlParse:
-               pin/unpin/move/grow/shrink/seek هم اجرا می‌شوند (پنجرهٔ پلیر) */
+               pin/unpin/move/grow/shrink/seek هم اجرا می‌شوند (پنجرهٔ پلیر)
+               v0.80 — + توکن‌های جدید کاتالوگ (pip/opacity/monitor/arrange/…) */
             const pr = videoCtlParse(a.value);
             if (!pr) { outs.push(LANG === 'en' ? 'Unknown player action.' : 'اقدامِ پلیر ناشناخته.'); break; }
             if (!bridge || !bridge.player || !bridge.player.ctl) { outs.push(t('toast.onlyApp')); break; }
@@ -10306,7 +10414,36 @@
                 pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.',
                 grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.',
                 move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: 'پرش انجام شد.',
+                resize: 'سایز پنجره عوض شد.', maximize: 'پنجره ماکزیمایز شد.', minimize: 'پنجره مینیمایز شد.',
+                restore: 'پنجره برگشت به حالت عادی.', pip: 'تصویر در تصویر فعال شد.', unpip: 'از تصویر در تصویر خارج شد.',
+                opacity: 'شفافیت پنجره عوض شد.', monitor: 'پنجره رفت روی مانیتور مقصد.', arrange: 'پنجره‌ها چیده شدند.',
               }[pr.action];
+              /* v0.80 — پاسخ‌های لیستی/خاص (players/status/switch/shot/speed/quality) */
+              if (res && res.ok && pr.action === 'players') {
+                const _ws = (res && res.wins) || [];
+                outs.push(!_ws.length ? (LANG === 'en' ? 'No video player is open.' : 'هیچ پلیر ویدیویی باز نیست.')
+                  : `${faNum(String(_ws.length))} پلیر بازه: ` + _ws.map((w, i) => `${faNum(String(i + 1))}) «${String(w.title || w.proc || '').slice(0, 60)}» — ${w.proc || 'پلیر'}${res.activePid && w.pid === res.activePid ? ' (فعال)' : ''}`).join(' | '));
+                break;
+              }
+              if (res && res.ok && pr.action === 'status') {
+                const _now = res.now; const _ws = (res && res.wins) || [];
+                let _rep = _now ? (LANG === 'en' ? `Playing in ${_now.app || 'unknown'}: «${_now.title || ''}»${_now.playing === false ? ' (paused)' : ''}` : `در حال پخش در ${_now.app || 'برنامهٔ نامشخص'}: «${_now.title || ''}»${_now.playing === false ? ' (مکث شده)' : ''}`) : (LANG === 'en' ? 'Nothing playing right now.' : 'الان چیزی در حال پخش نیست.');
+                if (_ws.length) _rep += ` (${faNum(String(_ws.length))} پنجرهٔ پلیر بازه)`;
+                outs.push(_rep);
+                break;
+              }
+              if (res && res.ok && pr.action === 'switch') {
+                const _w = res.win || {};
+                outs.push(LANG === 'en' ? `Switched to ${_w.proc || 'player'}: «${String(_w.title || '').slice(0, 60)}».` : `رفتم روی ${_w.proc || 'پلیر'}: «${String(_w.title || '').slice(0, 60) || 'بدون عنوان'}».`);
+                break;
+              }
+              if (res && res.ok && pr.action === 'shot' && res.path) { outs.push((LANG === 'en' ? 'Screenshot saved: ' : 'عکس ذخیره شد: ') + res.path); break; }
+              if (res && res.ok && pr.action === 'speed') { outs.push(LANG === 'en' ? `Playback speed: ${res.speed || 1}x.` : `سرعت پخش: ${faNum(String(res.speed || 1))} برابر.`); break; }
+              if (res && res.ok && pr.action === 'quality') { outs.push(LANG === 'en' ? `Quality set to ${res.quality} (playback restarted).` : `کیفیت روی ${res.quality === 'best' ? 'بهترین' : (res.quality === 'worst' ? 'پایین‌ترین' : res.quality)} رفت — پخش از سر شروع شد.`); break; }
+              if (res && res.ok && pr.action === 'close' && String(pr.arg || 'auto') === 'other' && res.closedTitle) {
+                outs.push(`ویدیوی دیگر بسته شد («${String(res.closedTitle).slice(0, 60)}»)` + ((res.total || 1) > 1 ? ` — ${faNum(String(Math.max(0, (res.total || 1) - 1)))} ویدیو هنوز بازه.` : '.'));
+                break;
+              }
               /* v0.64 — چند ویدیو همزمان؟ اقدام روی همه اعمال شد — شمرده بگو */
               const _cnt = (res && res.ok && res.count && res.count > 1)
                 ? (LANG === 'en' ? ' (on ' + res.count + ' players)' : ' (روی ' + faNum(String(res.count)) + ' پلیر)')

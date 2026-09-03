@@ -83,8 +83,8 @@ section('3] app.js — لَین قطعی URL + videoPlayReply مشترک + حا�
 ok(/lane=video-url \(deterministic\)/.test(appSrc) && /AVAIntent\.videoUrlLane\(cmd\)/.test(appSrc), 'لَین URL در runCommand قبل از هستهٔ فهم');
 ok(/lastVideoUrl = _vl\.url/.test(appSrc), 'لَین URL حافظه را پر می‌کند');
 ok(/videoUrl: \(typeof lastVideoUrl === 'string' && lastVideoUrl\) \? lastVideoUrl : ''/.test(appSrc), 'حافظه به AVACore.prepare می‌رسد');
-ok(/async function videoPlayReply\(vq, playerWanted, origCmdForLog\)/.test(appSrc), 'هلپر مشترک videoPlayReply (لَین URL + اکشن video_play یک مسیر)');
-ok(/AVAIntent\.playerTargetOf\(String\(origCmd \|\| ''\)\)/.test(appSrc) && /videoPlayReply\(vq, _pw, origCmd\)/.test(appSrc), 'video_play پلیر مقصد را از جملهٔ کاربر می‌خواند');
+ok(/async function videoPlayReply\(vq, playerWanted, origCmdForLog(, keepExisting)?\)/.test(appSrc), 'هلپر مشترک videoPlayReply (لَین URL + اکشن video_play یک مسیر)'); /* v0.80 forward-relax */
+ok(/AVAIntent\.playerTargetOf\(String\(origCmd \|\| ''\)\)/.test(appSrc) && /videoPlayReply\(vq, _pw, origCmd(, _keepP)?\)/.test(appSrc), 'video_play پلیر مقصد را از جملهٔ کاربر می‌خواند'); /* v0.80 forward-relax */
 ok(/if \(bareYt && lastVideoUrl\) \{[\s\S]{0,120}video_play last-video memory/.test(appSrc), 'دامنهٔ خام + حافظه → لینک واقعی');
 ok(/if \(_vr\.ok\) \{ try \{ playDoneSound\(\); \} catch \(_\) \{ \/\* noop \*\/ \} \}/.test(appSrc), 'صدای انجام‌شد فقط در موفقیتِ لَین URL');
 /* فیکس [ت] — فعل‌های بستن */

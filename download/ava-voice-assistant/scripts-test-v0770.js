@@ -123,7 +123,7 @@ console.log('— ۵) باگ C2 — پرامپت مغز (قانون ۴، FA+EN) �
 }
 console.log('— ۶) دفتر ممیزی docs/COMMANDS-FA.md به‌روز است');
 {
-  ok(docsSrc.indexOf('v0.78.0') > 0 || docsSrc.indexOf('v0.77.0') > 0, 'تیتر سند (forward-relax v0.78)'); /* v0.78 forward-relax */
+  ok(docsSrc.indexOf('v0.80.0') > 0 || docsSrc.indexOf('v0.78.0') > 0 || docsSrc.indexOf('v0.77.0') > 0, 'تیتر سند (forward-relax v0.80)'); /* v0.80 forward-relax */
   ok(docsSrc.indexOf('فرمان‌های سفارشی کاربر') > 0 && docsSrc.indexOf('customMatchOf') > 0, 'بخش جدید فرمان‌های سفارشی با معماری جدید');
   ok(docsSrc.indexOf('هیچ کدومشون کار نمی‌کنند') > 0, 'شکایت کاربر + ریشهٔ مرگ در سند ثبت شده');
   ok(docsSrc.indexOf('customCmdsCtx') > 0 && docsSrc.indexOf('act=run_custom') > 0, 'فهرست مغز + اکشن در سند');

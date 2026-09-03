@@ -110,7 +110,7 @@ for (const id of ['now_playing', 'yt_bring', 'player_open', 'player_ctl', 'yt_cl
 }
 ok(app.includes('bridge.media.now()'), 'app: now_playing از SMTC می‌خواند');
 ok(app.includes('bridge.yt.resolve') && app.includes("bridge.player.open({ player: 'default'"), 'app: yt_bring از resolve + پخش با پلیر پیش‌فرض کاربر (v0.61)');
-ok(app.includes('bridge.player.open({ player, kind, src })') && app.includes("bridge.player.ctl({ action, arg })"), 'app: کنترل پلیر به پل اصلی وصل است');
+ok(/bridge\.player\.open\(\{ player, kind, src/.test(app) && app.includes("bridge.player.ctl({ action, arg })"), 'app: کنترل پلیر به پل اصلی وصل است'); /* v0.80 forward-relax: + keepExisting */
 ok(/مسیر درست خودش را دارد/.test(app) && !/\(پخش\|بزن\|پلی\|شروع\|play\|کن\)/.test(app), 'app: music_play دیگر «کن» تنهایی را نمی‌بلعد');
 ok(read('renderer/js/voiceIntent.js').includes('پلی\\s?کن|باز\\s?کن|بگیر|بزن'), 'voiceIntent: ytQueryOf فعل پخش/پلی را از عبارت حذف می‌کند (v0.50 منتقل شد)');
 ok(app.includes('sys_logoff') && /shutdown \/l/.test(main), 'app+main: لاگ‌آف ویندوز واقعی');

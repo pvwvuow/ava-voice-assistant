@@ -137,7 +137,7 @@ section('۴) videoCtlParse (app.js) — بستن هدفمند از مغز');
 /* ---------- ۵) main.js — فوکوس فول‌اسکرین + بستن هدفمند + مانیتور ---------- */
 section('۵) main.js — فوکوس پلیر / بستن هدفمند / مانیتور DDC');
 {
-  ok(/function focusPlayerWindow\(\)/.test(mainSrc), 'focusPlayerWindow تعریف شده');
+  ok(/function focusPlayerWindow\(pidHint\)/.test(mainSrc), 'focusPlayerWindow تعریف شده'); /* v0.80 forward-relax: + pidHint */
   ok(/SetForegroundWindow/.test(mainSrc) && /GetForegroundWindow/.test(mainSrc), 'فوکوس با راستی‌آزمایی GetForegroundWindow');
   ok(/keybd_event\(0x12,0,0,0\)/.test(mainSrc), 'ترفند استاندارد Alt (VK_MENU) برای حق SetForegroundWindow');
   ok(/function closeVideoTargeted\(/.test(mainSrc), 'closeVideoTargeted تعریف شده');
@@ -205,7 +205,7 @@ section('۷) UI — پاپ‌آپ شیشه‌ای مخاطب جدید');
 /* ---------- ۸) سند ---------- */
 section('۸) docs/COMMANDS-FA.md — دفتر ممیزی');
 {
-  ok(docsSrc.indexOf('v0.78.0') >= 0, 'سند به v0.78 به‌روز شد');
+  ok(docsSrc.indexOf('v0.80.0') >= 0 || docsSrc.indexOf('v0.78.0') >= 0, 'سند به v0.80 به‌روز شد'); /* v0.80 forward-relax */
   ok(docsSrc.indexOf('پاپ‌آپ «مخاطب جدید»') >= 0, 'بخش ۴.۵ پاپ‌آپ مخاطب');
   ok(docsSrc.indexOf('close:oldest') >= 0, 'بستن هدفمند در جدول پلیر');
   ok(docsSrc.indexOf('DDC/CI') >= 0, 'یادداشت فیکس مانیتور');

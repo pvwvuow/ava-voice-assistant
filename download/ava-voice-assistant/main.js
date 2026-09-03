@@ -3793,6 +3793,13 @@ let ytDlpState = { failedAt: 0 }; /* بعد از شکست دانلود، ۳۰ د
 function ytDlpCmd(bin, url) {
   return `${bin} -f "22/18/b[ext=mp4]/b" -g --no-playlist --no-warnings "${url}"`;
 }
+/* v0.80 — فرمت بر اساس کیفیت خواسته‌شده (الگوی set_video_quality معماری مرجع):
+   360p=18 / 720p=22 — فرمت‌های muxed تک‌فایلی یوتیوب که با هر پلیری پخش می‌شوند */
+function ytDlpQualityCmd(bin, url, q) {
+  const F = { '360': '18', '720': '22/18', best: '22/18/b[ext=mp4]/b', worst: '18/b[ext=mp4]/b' };
+  const f = F[String(q || 'best').toLowerCase()] || F.best;
+  return `${bin} -f "${f}" -g --no-playlist --no-warnings "${url}"`;
+}
 function ytdlpGetUrl(bin, url) {
   return new Promise((resolve) => {
     exec(ytDlpCmd(bin, String(url || '')), { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
@@ -3897,7 +3904,10 @@ async function openWithDefaultPlayer(url) {
 }
 
 /* ---------- ۵) کنترل پلیرها ---------- */
-const playerCtl = { player: null, vlcPort: 0, vlcPass: '', vlcBase: '', mpvPipe: '\\\\.\\pipe\\ava-mpv', ytUrl: '', exe: '' };
+/* v0.80 — + activePid/activeProc: «پنجرهٔ فعال» (الگوی state_manager معماری
+   مرجع) — با چند ویدیوی همزمان، مخاطبِ دستورات بعدی همین است؛ سوییچ با
+   videoSwitchTarget، ثبت خودکار بعد از هر اجرای پلیر. */
+const playerCtl = { player: null, vlcPort: 0, vlcPass: '', vlcBase: '', mpvPipe: '\\\\.\\pipe\\ava-mpv', ytUrl: '', exe: '', activePid: 0, activeProc: '', speed: 1 };
 function vlcHttp(command) {
   const url = `${playerCtl.vlcBase}/requests/status.xml?command=${command}`;
   const auth = Buffer.from(':' + playerCtl.vlcPass).toString('base64');
@@ -4065,13 +4075,19 @@ function psPathSafe(s) { return String(s || '').replace(/'/g, "''"); }
    حرف‌زدن با آوا است، پلیر ویدیو اصلاً فوکوس نیست → F/F11 داخل برنامهٔ
    فعالِ اشتباه تایپ می‌شد. فیکس: پیدا کردن پنجرهٔ پلیر از اسکن پروسس +
    ترفند استاندارد Alt (keybd_event VK_MENU) برای به‌دست‌آوردن حق
-   SetForegroundWindow + فوکوس واقعی؛ فقط بعد از فوکوسِ موفق کلید می‌رود. */
-function focusPlayerWindow() {
+   SetForegroundWindow + فوکوس واقعی؛ فقط بعد از فوکوسِ موفق کلید می‌رود.
+   v0.80 — + pidHint: وقتی چند پلیر همزمان باز است، همان نمونه‌ای که
+   «پنجرهٔ فعال» آواست (الگوی switch_active_window معماری مرجع) فوکوس
+   می‌شود؛ PID نامعتبر/بسته‌شده → فالبک به اسکن عمومی. */
+function focusPlayerWindow(pidHint) {
+  const pidN = parseInt(pidHint, 10) || 0;
   const known = playerCtl.exe ? psPathSafe(path.basename(playerCtl.exe, '.exe')) : '';
   const ps =
     "$ErrorActionPreference='SilentlyContinue'; " +
     "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h); [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h); [DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; " +
-    (known ? "$p=Get-Process -Name '" + known + "' -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}|Select-Object -First 1; " : "$p=$null; ") +
+    "$p=$null; " +
+    (pidN ? "$p=Get-Process -Id " + pidN + " -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}|Select-Object -First 1; " : "") +
+    (known ? (pidN ? "" : "$p=Get-Process -Name '" + known + "' -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}|Select-Object -First 1; ") : "") +
     "if(-not $p){ $p=Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Select-Object -First 1 } " +
     "if(-not $p){ Write-Output 'NOWIN' } else { " +
     "$h=$p.MainWindowHandle; if([W.N]::IsIconic($h)){ [W.N]::ShowWindow($h,9)|Out-Null }; " +
@@ -4137,6 +4153,258 @@ function closeVideoTargeted(arg) {
   });
 }
 
+/* ---------- ۵.۶) ابزارهای پنجرهٔ ویدیو — v0.80 ----------
+   تطبیق «window_manager / multi_instance_manager / state_manager» معماری
+   مرجع (پرامپت Tool Executor با Gemini Function Calling) روی زیرساخت
+   PowerShell تک‌خطی خود آوا:
+   • resize با پریست (نظیر WINDOW_SIZES در config.py)
+   • minimize/maximize/restore پلیر مشخص
+   • PIP تصویر-در-تصویر (اندازهٔ PIP_SIZE + گوشهٔ پایین-راست + topmost خودکار)
+   • شفافیت (WS_EX_LAYERED + SetLayeredWindowAttributes — الگوی set_window_opacity)
+   • انتقال به مانیتور N (نظیر move_to_monitor با screeninfo — اینجا Screen.AllScreens)
+   • چیدمان چند پنجره (نظیر arrange_windows: cascade/side_by_side/grid)
+   • اسکرین‌شات فریم فعلی (PrintWindow — نظیر take_screenshot)
+   • فهرست پلیرهای باز + «پنجرهٔ فعال» + سوییچ (نظیر list_open_players/
+     switch_active_window) — مصرفِ گارد شفاف‌سازی (needs_clarification). */
+const VWIN_CFG = {
+  sizes: { small: [480, 270], medium: [854, 480], large: [1280, 720] }, /* WINDOW_SIZES */
+  pip: [320, 180], pipMargin: 15, cascade: [30, 30], /* PIP_SIZE/PIP_MARGIN/CASCADE_OFFSET */
+};
+let videoPipPrev = null; /* اندازهٔ قبل از PIP — برای خروج درست از PIP */
+const VWIN_IMP = "[DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f); [DllImport(\"user32.dll\")] public static extern bool GetWindowRect(IntPtr h, out R r); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h); [DllImport(\"user32.dll\")] public static extern bool SetLayeredWindowAttributes(IntPtr h, uint cr, byte al, uint fl); [DllImport(\"user32.dll\")] public static extern int GetWindowLong(IntPtr h, int i); [DllImport(\"user32.dll\")] public static extern int SetWindowLong(IntPtr h, int i, int v); [DllImport(\"user32.dll\")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint f); public struct R { public int L; public int T; public int Rt; public int B; }";
+const VWIN_HEAD =
+  "$ErrorActionPreference='SilentlyContinue'; " +
+  "Add-Type -Namespace W -Name N -MemberDefinition '" + VWIN_IMP + "'; " +
+  "Add-Type -AssemblyName System.Windows.Forms; " +
+  "$wa=[System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; ";
+const VWIN_PREP =
+  "$h=$p.MainWindowHandle; " +
+  "if([W.N]::IsIconic($h)){ [W.N]::ShowWindow($h,9)|Out-Null }; " +
+  "$r=New-Object ('W.N+R'); [W.N]::GetWindowRect($h,[ref]$r)|Out-Null; " +
+  "$w=[Math]::Max(1,$r.Rt-$r.L); $hh=[Math]::Max(1,$r.B-$r.T); ";
+function vwinTargets(opts, mode) {
+  /* pid پنجرهٔ فعال برنده است؛ mode: 'all' | 'newest' */
+  const pidN = parseInt(opts && opts.pid, 10) || 0;
+  if (pidN) return "$ps=@(Get-Process -Id " + pidN + " -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}); ";
+  const scan = "Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Sort-Object StartTime" + (mode === 'newest' ? '|Select-Object -Last 1' : '');
+  return "$ps=@(" + scan + "); ";
+}
+function videoWinOps(op, arg, opts) {
+  const kind = String(op || '').toLowerCase();
+  let act = '';
+  if (kind === 'size' || kind === 'resize') {
+    let pw = 0, ph = 0;
+    if (arg && typeof arg === 'object') { pw = Math.max(200, parseInt(arg.w, 10) || 480); ph = Math.max(120, parseInt(arg.h, 10) || 270); }
+    else { const pr = VWIN_CFG.sizes[String(arg || 'medium').toLowerCase()] || VWIN_CFG.sizes.medium; pw = pr[0]; ph = pr[1]; }
+    act = "$nw=" + pw + "; $nh=" + ph + "; $x=[int]($r.L+[Math]::Floor(($w-$nw)/2)); $y=[int]($r.T+[Math]::Floor(($hh-$nh)/2)); [W.N]::SetWindowPos($h,[IntPtr]::Zero,$x,$y,$nw,$nh,0x14)|Out-Null; Write-Output ('OK size ' + $p.Id)";
+  }
+  else if (kind === 'maximize') act = "[W.N]::ShowWindow($h,3)|Out-Null; Write-Output ('OK max ' + $p.Id)";
+  else if (kind === 'minimize') act = "[W.N]::ShowWindow($h,6)|Out-Null; Write-Output ('OK min ' + $p.Id)";
+  else if (kind === 'restore') act = "[W.N]::ShowWindow($h,9)|Out-Null; Write-Output ('OK restore ' + $p.Id)";
+  else if (kind === 'opacity') {
+    /* WS_EX_LAYERED (0x80000) روی GWL_EXSTYLE (-20) + LWA_ALPHA (2) — مقدار ۱۰..۱۰۰٪ */
+    const al = Math.max(26, Math.min(255, Math.round((parseInt(arg, 10) || 50) * 2.55)));
+    act = "$ex=[W.N]::GetWindowLong($h,-20); [W.N]::SetWindowLong($h,-20,($ex -bor 0x80000))|Out-Null; [W.N]::SetLayeredWindowAttributes($h,0," + al + ",2)|Out-Null; Write-Output ('OK opacity ' + $p.Id)";
+  }
+  else if (kind === 'pip') {
+    /* PIP: اندازهٔ کوچک + گوشهٔ پایین-راست با margin + HWND_TOPMOST خودکار؛
+       اندازهٔ فعلی اول گزارش می‌شود (PIPPREV) تا خروجِ PIP همان را برگرداند */
+    const pw = VWIN_CFG.pip[0], ph = VWIN_CFG.pip[1], mg = VWIN_CFG.pipMargin;
+    act = "Write-Output ('PIPPREV|' + $p.Id + '|' + $w + '|' + $hh); $px=$wa.X+$wa.Width-" + pw + "-" + mg + "; $py=$wa.Y+$wa.Height-" + ph + "-" + mg + "; [W.N]::SetWindowPos($h,[IntPtr](-1),$px,$py," + pw + "," + ph + ",0x40)|Out-Null; Write-Output ('OK pip ' + $p.Id)";
+  }
+  else if (kind === 'unpip') {
+    /* خروج از PIP: برگشت به اندازهٔ قبل از PIP (یا medium) + برداشتن topmost */
+    let pw = VWIN_CFG.sizes.medium[0], ph = VWIN_CFG.sizes.medium[1];
+    const pidN = parseInt(opts && opts.pid, 10) || 0;
+    if (videoPipPrev && (!pidN || videoPipPrev.pid === pidN) && videoPipPrev.w > 100) { pw = videoPipPrev.w; ph = videoPipPrev.h; }
+    act = "$nw=" + pw + "; $nh=" + ph + "; $x=[int]($r.L+[Math]::Floor(($w-$nw)/2)); $y=[int]($r.T+[Math]::Floor(($hh-$nh)/2)); [W.N]::SetWindowPos($h,[IntPtr](-2),$x,$y,$nw,$nh,0x14)|Out-Null; Write-Output ('OK unpip ' + $p.Id)";
+  }
+  else if (kind === 'monitor') {
+    /* الگوی move_to_monitor: فهرست مانیتورها + رنج‌چک + مرکز مانیتور مقصد */
+    const mi = Math.max(1, parseInt(arg, 10) || 1) - 1;
+    act = "$ms=@([System.Windows.Forms.Screen]::AllScreens); if(" + mi + " -ge @($ms).Count){ Write-Output ('NOMON ' + @($ms).Count) } else { $mb=$ms[" + mi + "].WorkingArea; $nx=$mb.X+[int][Math]::Floor(($mb.Width-$w)/2); $ny=$mb.Y+[int][Math]::Floor(($mb.Height-$hh)/2); [W.N]::SetWindowPos($h,[IntPtr]::Zero,$nx,$ny,0,0,0x15)|Out-Null; Write-Output ('OK mon ' + $p.Id) }";
+  }
+  else if (kind === 'shot') {
+    /* الگوی take_screenshot: PrintWindow (PW_RENDERFULLCONTENT=2) → Pictures\Ava */
+    act = "Add-Type -AssemblyName System.Drawing; $bmp=New-Object System.Drawing.Bitmap($w,$hh); $g=[System.Drawing.Graphics]::FromImage($bmp); $hdc=$g.GetHdc(); [W.N]::PrintWindow($h,$hdc,2)|Out-Null; $g.ReleaseHdc($hdc); $g.Dispose(); $dir=[Environment]::GetFolderPath('MyPictures')+'\\Ava'; New-Item -ItemType Directory -Force -Path $dir|Out-Null; $f=$dir+'\\video-'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'.png'; $bmp.Save($f,[System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose(); Write-Output ('SHOT ' + $f)";
+  }
+  else if (kind === 'arrange') return videoWinArrange(String(arg || 'side').toLowerCase());
+  else return Promise.resolve({ ok: false, error: 'اقدام پنجرهٔ ناشناخته' });
+
+  const mode = (kind === 'pip' || kind === 'shot') ? 'newest' : 'all';
+  const ps = VWIN_HEAD + vwinTargets(opts, mode) +
+    "$n=@($ps).Count; if($n -eq 0){ Write-Output 'NOWIN' } else { foreach($p in $ps){ " + VWIN_PREP + act + " } Write-Output ('DONE ' + $n) }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: kind === 'shot' ? 12000 : 9000, maxBuffer: 1024 * 512 },
+      (err, so) => {
+        const out = String(so || '').trim();
+        if (out.indexOf('NOWIN') >= 0) return resolve({ ok: false, noPlayer: true, error: 'پنجرهٔ پلیری پیدا نشد' });
+        const nomon = out.match(/NOMON (\d+)/);
+        if (nomon) return resolve({ ok: false, error: 'این شماره مانیتور وجود نداره — فقط ' + nomon[1] + ' مانیتور متصله' });
+        const shotM = out.match(/SHOT (.+)$/m);
+        if (shotM) return resolve({ ok: true, path: shotM[1].trim(), count: 1, op: 'shot' });
+        const cnt = (out.match(/OK /g) || []).length;
+        const prev = out.match(/PIPPREV\|(\d+)\|(\d+)\|(\d+)/);
+        if (prev) videoPipPrev = { pid: +prev[1], w: +prev[2], h: +prev[3] };
+        if (kind === 'unpip') videoPipPrev = null;
+        if (cnt > 0) return resolve({ ok: true, count: cnt, op: kind });
+        resolve({ ok: false, error: 'کنترل پنجره ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+/* چیدمان خودکار چند پنجره — الگوی arrange_windows (cascade/side_by_side/grid) */
+function videoWinArrange(mode) {
+  const m = ['cascade', 'side', 'grid'].indexOf(mode) >= 0 ? mode : 'side';
+  const ox = VWIN_CFG.cascade[0], oy = VWIN_CFG.cascade[1];
+  let act = '';
+  if (m === 'cascade') act = "$x=$wa.X+" + ox + "*$i; $y=$wa.Y+" + oy + "*$i; [W.N]::SetWindowPos($h,[IntPtr]::Zero,$x,$y,0,0,0x15)|Out-Null; Write-Output ('OK arr ' + $p.Id)";
+  else if (m === 'side') act = "$cw=[Math]::Max(240,[int]($wa.Width/$n)); [W.N]::SetWindowPos($h,[IntPtr]::Zero,($wa.X+$cw*$i),$wa.Y,$cw,$wa.Height,0x14)|Out-Null; Write-Output ('OK arr ' + $p.Id)";
+  else act = "$cols=[Math]::Max(1,[Math]::Ceiling([Math]::Sqrt($n))); $rows=[Math]::Max(1,[Math]::Ceiling($n/$cols)); $cw=[Math]::Max(240,[int]($wa.Width/$cols)); $chh=[Math]::Max(160,[int]($wa.Height/$rows)); $cx=$i%$cols; $cy=[int][Math]::Floor($i/$cols); [W.N]::SetWindowPos($h,[IntPtr]::Zero,($wa.X+$cw*$cx),($wa.Y+$chh*$cy),$cw,$chh,0x14)|Out-Null; Write-Output ('OK arr ' + $p.Id)";
+  const ps = VWIN_HEAD + vwinTargets(null, 'all') +
+    "$n=@($ps).Count; if($n -eq 0){ Write-Output 'NOWIN' } else { $i=0; foreach($p in $ps){ $h=$p.MainWindowHandle; if([W.N]::IsIconic($h)){ [W.N]::ShowWindow($h,9)|Out-Null }; " + act + "; $i++ } Write-Output ('DONE ' + $n) }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 10000 },
+      (err, so) => {
+        const out = String(so || '').trim();
+        if (out.indexOf('NOWIN') >= 0) return resolve({ ok: false, noPlayer: true, error: 'پنجرهٔ پلیری پیدا نشد' });
+        const cnt = (out.match(/OK arr /g) || []).length;
+        if (cnt > 0) return resolve({ ok: true, count: cnt, op: 'arrange', layout: m });
+        resolve({ ok: false, error: 'چیدمان ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+/* فهرست پلیرهای باز — الگوی list_open_players (پایهٔ شفاف‌سازی ابهام) */
+function videoWinList() {
+  const ps = VWIN_HEAD +
+    "$ps=@(Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Sort-Object StartTime); " +
+    "if(@($ps).Count -eq 0){ Write-Output 'NOWIN' } else { foreach($p in $ps){ " +
+    "$t=[String]$p.MainWindowTitle; $t=$t.Replace('|',' ').Replace([char]13,' ').Replace([char]10,' '); " +
+    "$r=New-Object ('W.N+R'); [W.N]::GetWindowRect($p.MainWindowHandle,[ref]$r)|Out-Null; " +
+    "$st=-1; try{ $st=[int][Math]::Floor(((Get-Date)-$p.StartTime).TotalSeconds) }catch{}; " +
+    "Write-Output ('WIN|' + $p.Id + '|' + $p.ProcessName + '|' + $st + '|' + $r.L + '|' + $r.T + '|' + ($r.Rt-$r.L) + '|' + ($r.B-$r.T) + '|' + $t) } }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 9000, maxBuffer: 1024 * 512 },
+      (err, so) => {
+        const out = String(so || '');
+        if (out.indexOf('NOWIN') >= 0) return resolve({ ok: true, wins: [] });
+        const wins = [];
+        const re = /^WIN\|(\d+)\|([^|]*)\|(-?\d+)\|(-?\d+)\|(-?\d+)\|(-?\d+)\|(-?\d+)\|(.*)$/;
+        for (const line of out.split(/\r?\n/)) {
+          const m = line.trim().match(re);
+          if (m) wins.push({ pid: +m[1], proc: m[2], ageSec: parseInt(m[3], 10) || 0, x: +m[4], y: +m[5], w: +m[6], h: +m[7], title: m[8].trim() });
+        }
+        if (!wins.length && err) return resolve({ ok: false, error: 'فهرست پلیرها نگرفت (' + String(err.message || '').slice(0, 60) + ')' });
+        resolve({ ok: true, wins });
+      }
+    );
+  });
+}
+/* بستن یک نمونهٔ مشخص با PID — الگوی close_window(specific) نرم با WM_CLOSE */
+function closeVideoByPid(pid) {
+  const pidN = parseInt(pid, 10) || 0;
+  if (!pidN) return Promise.resolve({ ok: false, error: 'شناسهٔ پنجره نامعتبر است' });
+  const ps =
+    "$ErrorActionPreference='SilentlyContinue'; " +
+    "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'; " +
+    "$p=Get-Process -Id " + pidN + " -ErrorAction SilentlyContinue; " +
+    "if(-not $p -or $p.MainWindowHandle -eq 0){ Write-Output 'GONE' } else { " +
+    "[W.N]::PostMessage($p.MainWindowHandle,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)|Out-Null; Write-Output ('CLOSE ' + $p.ProcessName + ' ' + $p.Id); " +
+    "Start-Sleep -Milliseconds 900; " +
+    "if(Get-Process -Id $p.Id -ErrorAction SilentlyContinue){ Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }; " +
+    "Write-Output 'TTL 1 1' }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 12000 },
+      (err, so) => {
+        const out = String(so || '').trim();
+        if (out.indexOf('GONE') >= 0) return resolve({ ok: false, error: 'پنجرهٔ مورد نظر پیدا نشد — شاید قبلاً بسته شده' });
+        if ((out.match(/CLOSE /g) || []).length > 0) return resolve({ ok: true, closed: 1, total: 1, pid: pidN });
+        resolve({ ok: false, error: 'بستن پلیر ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+/* «اون یکی رو ببند» — با دو پنجره: غیرِ پنجرهٔ فعال؛ با سه+: شفاف‌سازی (لیست) */
+async function closeVideoOther() {
+  const list = await videoWinList();
+  if (!list.ok || !list.wins.length) return { ok: false, noPlayer: true, error: 'پلیری باز نیست' };
+  const wins = list.wins;
+  if (wins.length > 2) return { ok: false, ambiguous: true, wins, error: 'بیش از دو ویدیو باز است — مشخص کن کدام بسته شود' };
+  const act = wins.find((w) => w.pid === (playerCtl.activePid || 0));
+  let target = null;
+  if (wins.length === 1) target = wins[0];
+  else if (act) target = wins.find((w) => w.pid !== act.pid) || wins[0];
+  else target = wins[0]; /* فعال نامعلوم = قدیمی‌ترین «اون یکی» است */
+  const r = await closeVideoByPid(target.pid);
+  if (r.ok) {
+    if (playerCtl.activePid === target.pid) playerCtl.activePid = 0;
+    return { ok: true, closed: 1, total: wins.length, closedTitle: target.title };
+  }
+  return r;
+}
+/* سوییچ پنجرهٔ فعال — الگوی switch_active_window (کدام پلیر مخاطب دستورات است) */
+async function videoSwitchTarget(which) {
+  const list = await videoWinList();
+  if (!list.ok || !list.wins.length) return { ok: false, noPlayer: true, error: 'پلیری باز نیست' };
+  const wins = list.wins;
+  if (wins.length === 1) { /* تک‌پنجره: خودش فعال است — فقط فوکوس و گزارش */
+    const fc = await focusPlayerWindow(wins[0].pid);
+    playerCtl.activePid = wins[0].pid; playerCtl.activeProc = wins[0].proc;
+    return { ok: true, win: wins[0], focused: !!(fc && fc.ok), count: 1 };
+  }
+  const act = wins.find((w) => w.pid === (playerCtl.activePid || 0)) || null;
+  let target = null;
+  if (which === 'oldest') target = wins[0];
+  else if (which === 'newest') target = wins[wins.length - 1];
+  else { const others = wins.filter((w) => !act || w.pid !== act.pid); target = others[0] || wins[0]; }
+  const fc = await focusPlayerWindow(target.pid);
+  playerCtl.activePid = target.pid; playerCtl.activeProc = target.proc;
+  return { ok: true, win: target, focused: !!(fc && fc.ok), count: wins.length };
+}
+
+/* ---------- ۷) سرچ لیستی یوتیوب — v0.80 ----------
+   الگوی search_only/select_from_results معماری مرجع: اول لیست بده، بعد
+   کاربر بگوید «دومی رو پخش کن». ytResolve فقط اولین نتیجه را می‌دهد؛ این
+   تابع N نتیجهٔ اول با عنوان برمی‌گرداند (پارس ytInitialData). */
+async function ytSearchMany(query, n) {
+  const q = String(query || '').trim();
+  if (!q) return { ok: false, error: 'عبارت خالی است' };
+  const N = Math.max(1, Math.min(8, parseInt(n, 10) || 5));
+  try {
+    const r = await cloudFetch(
+      'https://www.youtube.com/results?search_query=' + encodeURIComponent(q.slice(0, 120)),
+      { headers: { 'User-Agent': CHROME_UA, 'Accept-Language': 'fa,en;q=0.8' }, signal: AbortSignal.timeout(9000) }
+    );
+    const html = await r.text();
+    const items = [];
+    const chunks = html.split('"videoRenderer"');
+    for (let i = 1; i < chunks.length && items.length < N; i++) {
+      const ch = chunks[i];
+      const idm = ch.match(/"videoId":"([A-Za-z0-9_-]{11})"/);
+      if (!idm) continue;
+      if (items.some((x) => x.videoId === idm[1])) continue;
+      let title = '';
+      const tm = ch.match(/"title":\{"runs":\[\{"text":"((?:[^"\\]|\\.)*)"/);
+      if (tm) { try { title = JSON.parse('"' + tm[1] + '"'); } catch (_) { title = tm[1]; } }
+      items.push({ videoId: idm[1], title: String(title).slice(0, 120) });
+    }
+    if (!items.length) return { ok: false, error: 'ویدیویی پیدا نشد' };
+    return { ok: true, items };
+  } catch (e) {
+    return { ok: false, error: netErr(e) };
+  }
+}
+ipcMain.handle('yt:search', (_e, p) => ytSearchMany(p && p.query, p && p.n));
+
 ipcMain.handle('player:ctl', async (_e, p) => {
   const a = p && p.action ? String(p.action) : '';
   if (!a) return { ok: false, error: 'اقدام نامشخص' };
@@ -4174,12 +4442,101 @@ ipcMain.handle('player:ctl', async (_e, p) => {
     if (wr.ok) return { ok: true, via: 'win-ctl', count: wr.count || 1 };
     return { ok: false, error: wr.error || 'کنترل پنجره ممکن نشد' };
   }
+  /* ۲.۶) v0.80 — ابزارهای پنجرهٔ ویدیو (تطبیق window_manager معماری مرجع):
+     resize پریست، minimize/maximize/restore، PIP، شفافیت، مانیتور، چیدمان،
+     اسکرین‌شات + فهرست/سوییچ پنجرهٔ فعال (الگوی multi_instance_manager) */
+  if (a === 'resize' || a === 'maximize' || a === 'minimize' || a === 'restore' || a === 'pip' || a === 'unpip' || a === 'opacity' || a === 'monitor' || a === 'arrange' || a === 'shot') {
+    const wr = await videoWinOps(a, p && p.arg, { pid: (p && p.pid) || 0 });
+    return wr.ok
+      ? { ok: true, via: 'win-ops', count: wr.count || 1, op: wr.op || a, path: wr.path || '', layout: wr.layout || '' }
+      : { ok: false, noPlayer: !!wr.noPlayer, error: wr.error || 'کنترل پنجره ممکن نشد' };
+  }
+  if (a === 'players') {
+    /* الگوی list_open_players — «چی بازه؟ چند تا ویدیو بازه؟» */
+    const l = await videoWinList();
+    if (!l.ok) return { ok: false, error: l.error || 'فهرست پلیرها نگرفت' };
+    return { ok: true, via: 'win-list', wins: l.wins, activePid: playerCtl.activePid || 0 };
+  }
+  if (a === 'status') {
+    /* الگوی get_current_status — SMTC (عنوان/برنامهٔ در-حال-پخش) + پنجره‌های باز */
+    const l = await videoWinList();
+    let now = null;
+    try { const n = await smtcNowPlaying(); if (n && n.ok) now = { title: n.title, artist: n.artist, app: n.app, playing: n.playing }; } catch (_) { /* noop */ }
+    return { ok: true, via: 'status', wins: (l && l.wins) || [], activePid: playerCtl.activePid || 0, now };
+  }
+  if (a === 'switch') {
+    /* الگوی switch_active_window — «برو سراغ اون یکی ویدیو» */
+    const w = String((p && p.arg) || 'other').toLowerCase();
+    const r = await videoSwitchTarget(['oldest', 'newest', 'other'].indexOf(w) >= 0 ? w : 'other');
+    if (r.ok) return { ok: true, via: 'switch', win: r.win, count: r.count, focused: !!r.focused };
+    return { ok: false, noPlayer: !!r.noPlayer, error: r.error || 'سوییچ پنجره ممکن نشد' };
+  }
+  if (a === 'speed') {
+    /* الگوی set_playback_speed — فقط پلیرهای تحت کنترل آوا (VLC HTTP / mpv IPC) */
+    const m = String((p && p.arg) == null ? '' : p.arg).toLowerCase();
+    let sp = playerCtl.speed || 1;
+    if (m === 'up') sp = Math.min(3, Math.round((playerCtl.speed || 1) * 1.25 * 100) / 100);
+    else if (m === 'down') sp = Math.max(0.25, Math.round((playerCtl.speed || 1) / 1.25 * 100) / 100);
+    else if (m === 'reset' || m === 'normal') sp = 1;
+    else sp = Math.max(0.25, Math.min(3, parseFloat(m) || 1));
+    playerCtl.speed = sp;
+    if (playerCtl.player === 'vlc' && playerCtl.vlcBase) { const ok = await vlcHttp('rate&val=' + sp.toFixed(2)); if (ok) return { ok: true, via: 'vlc-http', speed: sp }; }
+    if (playerCtl.player === 'mpv') { const ok = await mpvSend({ command: ['set', 'speed', sp] }); if (ok) return { ok: true, via: 'mpv-ipc', speed: sp }; }
+    return { ok: false, error: 'سرعت فقط برای وی‌ال‌سی و mpv قابل تنظیم است — بقیهٔ پلیرها کلید امنی برای سرعت ندارند' };
+  }
+  if (a === 'quality') {
+    /* الگوی set_video_quality — yt-dlp استریمِ کیفیت خواسته‌شده می‌سازد و همان
+       ویدیو در همان پلیر دوباره باز می‌شود (پخش از سر شروع می‌شود — صادقانه گفته می‌شود) */
+    const q = String((p && p.arg) || 'best').toLowerCase();
+    const yurl = playerCtl.ytUrl || '';
+    if (!/(youtube\.com|youtu\.be)/i.test(yurl)) return { ok: false, error: 'کیفیت فقط برای پخش یوتیوبِ خود آوا کار می‌کند — ویدیوی جاری یوتیوب نیست' };
+    const bin = await ytDlpFind();
+    if (!bin) return { ok: false, error: 'yt-dlp پیدا نشد' };
+    const nu = await new Promise((res) => exec(ytDlpQualityCmd(bin, yurl, q), { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 }, (_err, so) => {
+      const l = String(so || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0] || '';
+      res(/^https?:\/\//i.test(l) ? l : '');
+    }));
+    if (!nu) return { ok: false, error: 'استریم با این کیفیت ساخته نشد' };
+    let pl = playerCtl.player;
+    if (!pl || pl === 'default') {
+      const sc = await playersScan();
+      const def = await defaultVideoPlayer();
+      pl = (def.id && sc.list.some((x) => x.id === def.id)) ? def.id : ((sc.list.find((x) => x.id !== 'wmplayer') || sc.list[0]) || {}).id || '';
+    }
+    if (!pl) return { ok: false, error: 'پلیری برای پخش دوباره پیدا نشد' };
+    const lr = await playerLaunch(pl, nu, { ytdl: false });
+    return lr.ok ? { ok: true, via: 'quality-relaunch', player: pl, fa: lr.fa || '', quality: q } : { ok: false, error: lr.error || 'بازکردن دوباره ممکن نشد' };
+  }
   /* ۳) کلیدهای مدیای جهانی / کلیدهای پنجرهٔ فعال
      v0.64 — هیچ پلیری باز نیست؟ کلید مدیا/فوکوس به برنامهٔ فعال کاربر
      می‌رفت (تایپ حروف اضافه/پرش در ادیتور!) — حالا پاسخ صادقانه برمی‌گردد */
   if ((MEDIA_KEYS[a] || a === 'seek' || a === 'fullscreen' || a === 'volume_up' || a === 'volume_down' || a === 'play_pause' || a === 'stop') && !playerCtl.player) {
     const nOpen = await runningVideoPlayers();
     if (!nOpen) return { ok: false, noPlayer: true, error: 'پلیری باز نیست — اول ویدیو یا آهنگ را پخش کن' };
+  }
+  /* v0.80 — چند پنجرهٔ همزمان؟ کلید فقط برای «پنجرهٔ فعال» (الگوی
+     active_window معماری مرجع). قبلاً play_pause با کلید مدیای سراسری
+     پخش/پازِ «همهٔ» ویدیوها را همزمان می‌زد و seek به برنامهٔ فعالِ کاربر
+     می‌رفت؛ حالا با ۲+ پلیر، پنجرهٔ فعال فوکوس و کلید همان زده می‌شود. */
+  if (a === 'play_pause' && !playerCtl.player) {
+    const nOpen = await runningVideoPlayers();
+    if (nOpen > 1) {
+      const fc = await focusPlayerWindow(playerCtl.activePid || 0);
+      if (fc.ok) { fgKeys(['0x20']); return { ok: true, via: 'fg-keys', focused: fc.proc || '', multi: true }; }
+      return { ok: false, ambiguous: true, multi: true, error: 'چند ویدیو همزمان باز است — اول بگو «برو سراغ اون یکی ویدیو» یا نام پلیر را بگو' };
+    }
+  }
+  if (a === 'seek' && !playerCtl.player) {
+    const nOpen = await runningVideoPlayers();
+    if (nOpen > 1) {
+      const fc = await focusPlayerWindow(playerCtl.activePid || 0);
+      if (!fc.ok) return { ok: false, ambiguous: true, multi: true, error: 'چند ویدیو همزمان باز است — اول بگو «برو سراغ اون یکی ویدیو»' };
+    } else {
+      /* تک‌پنجره: فوکوس همان — الگوی فیکس فول‌اسکرین v0.78؛ پرش داخل پلیر
+         می‌نشیند نه داخل ادیتور/مرورگر فوکوس‌شدهٔ کاربر */
+      const fc = await focusPlayerWindow(0);
+      if (!fc.ok) return { ok: false, noPlayer: false, error: 'پلیر فوکوس نشد — پنجرهٔ ویدیو را جلو بیاور و دوباره بگو' };
+    }
   }
   if (MEDIA_KEYS[a]) { fgKeys([`0x${MEDIA_KEYS[a]}`]); return { ok: true, via: 'media-keys' }; }
   if (a === 'seek') {
@@ -4214,6 +4571,17 @@ ipcMain.handle('player:ctl', async (_e, p) => {
        فقط همان ویدیو را می‌بندد (قبلاً taskkill /IM همهٔ نمونه‌های همان exe +
        closeAllVideoPlayers همهٔ پلیرها را می‌کشت → شکایت «جفتشون رو میبنده») */
     const tgt = String(p.arg == null || p.arg === 0 ? 'auto' : p.arg).toLowerCase();
+    if (tgt === 'other') {
+      /* v0.80 — «اون یکی رو ببند»: با دو ویدیو = غیرِ پنجرهٔ فعال؛ سه+ = شفاف‌سازی */
+      const or = await closeVideoOther();
+      if (or.ok) {
+        try { const rest = await runningVideoPlayers(); if (!rest) { playerCtl.player = null; } } catch (_) { /* noop */ }
+        return { ok: true, via: 'win-ctl', target: 'other', closed: 1, total: or.total || 2, closedTitle: or.closedTitle || '' };
+      }
+      if (or.ambiguous) return { ok: false, ambiguous: true, wins: or.wins, error: or.error };
+      if (or.noPlayer) return { ok: false, noPlayer: true, error: or.error };
+      return { ok: false, error: or.error || 'بستن پلیر ممکن نشد' };
+    }
     if (tgt !== 'all') {
       const tr = await closeVideoTargeted(tgt);
       if (tr.ok) {
@@ -4271,17 +4639,22 @@ async function playerLaunch(player, src, opts) {
     if (player === 'vlc') {
       const port = 8907 + Math.floor(Math.random() * 80);
       const pass = crypto.randomBytes(8).toString('hex');
-      spawn(entry.exe, ['--extraintf', 'http', '--http-host', '127.0.0.1', '--http-port', String(port), '--http-password', pass, '--no-video-title-show', feed], { detached: true, stdio: 'ignore' }).unref();
+      const ch = spawn(entry.exe, ['--extraintf', 'http', '--http-host', '127.0.0.1', '--http-port', String(port), '--http-password', pass, '--no-video-title-show', feed], { detached: true, stdio: 'ignore' });
+      /* v0.80 — پنجرهٔ فعال: PID پلیر اجراشدهٔ آوا (keepExisting=false یعنی
+         بقیه بسته می‌شوند و همین تنها پنجرهٔ فعال است) */
+      playerCtl.activePid = (ch && ch.pid) || 0; playerCtl.activeProc = path.basename(entry.exe, '.exe'); playerCtl.speed = 1;
       playerCtl.player = 'vlc'; playerCtl.vlcPort = port; playerCtl.vlcPass = pass; playerCtl.vlcBase = `http://127.0.0.1:${port}`; playerCtl.exe = entry.exe;
       await new Promise((r) => setTimeout(r, 900)); /* فرصت بالا آمدن رابط HTTP */
       return { ok: true, player, fa: entry.fa, controlled: true };
     }
     if (player === 'mpv') {
-      spawn(entry.exe, ['--input-ipc-server=' + playerCtl.mpvPipe, '--force-window=yes', feed], { detached: true, stdio: 'ignore' }).unref();
+      const ch = spawn(entry.exe, ['--input-ipc-server=' + playerCtl.mpvPipe, '--force-window=yes', feed], { detached: true, stdio: 'ignore' });
+      playerCtl.activePid = (ch && ch.pid) || 0; playerCtl.activeProc = path.basename(entry.exe, '.exe'); playerCtl.speed = 1;
       playerCtl.player = 'mpv'; playerCtl.exe = entry.exe;
       return { ok: true, player, fa: entry.fa, controlled: true };
     }
-    spawn(entry.exe, [feed], { detached: true, stdio: 'ignore' }).unref();
+    const ch = spawn(entry.exe, [feed], { detached: true, stdio: 'ignore' });
+    playerCtl.activePid = (ch && ch.pid) || 0; playerCtl.activeProc = path.basename(entry.exe, '.exe'); playerCtl.speed = 1;
     playerCtl.player = player; playerCtl.exe = entry.exe; playerCtl.vlcBase = '';
     return { ok: true, player, fa: entry.fa, controlled: false };
   } catch (e) {
@@ -4296,19 +4669,20 @@ async function playerLaunch(player, src, opts) {
    و خروجی یا دیوار ربات بود یا صفحهٔ خالی — خطای شفاف برمی‌گردد تا
    رندرر لینک واقعی را از کلیپ‌بورد جبران کند. */
 const YT_NOVIDEO_RE = /^(https?:\/\/)?(www\.)?(youtube\.com\/?(?:[?#].*)?|youtu\.be\/?)(\s|$)/i;
-async function playerLaunchYt(player, src) {
+async function playerLaunchYt(player, src, keep) {
   const s = String(src || '').trim();
   if (/youtube\.com|youtu\.be/i.test(s) && (YT_NOVIDEO_RE.test(s) || !/(?:watch\?v=|youtu\.be\/|shorts\/|live\/|embed\/|\/v\/)/i.test(s))) {
     return { ok: false, player, noVideoId: true, error: 'این آدرس یوتیوب ویدیوی مشخصی ندارد' };
   }
-  const r = await playerLaunch(player, src, { ytdl: true });
+  const r = await playerLaunch(player, src, { ytdl: true, keepExisting: !!keep });
   if (r.ok) {
     actLog('player launched: ' + player + ' (via ' + (r.via || 'spawn') + ')', 'player', { ev: 'player', stage: 'launch', ok: true, player, via: r.via || 'spawn' });
     return r;
   }
   /* v0.64 — فالبک مرورگر هم جایگزین است: پلیرهای قبلی بسته شوند تا دو لاین
-     صدا همزمان نشود (فقط وقتی استریم حل نشد اینجا می‌رسیم) */
-  try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
+     صدا همزمان نشود (فقط وقتی استریم حل نشد اینجا می‌رسیم)
+     v0.80 — keepExisting: «کنارش پخش کن» پلیرهای قبلی را نمی‌بندد */
+  if (!keep) { try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ } }
   actLog('player fallback → browser: player=' + player + ' err=' + String(r.error || '').slice(0, 100), 'player', { ev: 'player', stage: 'fallback', ok: true, player, via: 'browser', error: r.error });
   try { shell.openExternal(src); return { ok: true, via: 'browser-fallback', player, fa: 'مرورگر', note: r.error || '' }; }
   catch (_) { return { ok: false, player, noYtdl: true, error: r.error || 'پخش ممکن نشد' }; }
@@ -4342,24 +4716,25 @@ ipcMain.handle('player:open', async (_e, p) => {
   const entry = scan.list.find((x) => x.id === player);
   if (d.action === 'browser') {
     /* پلیر پیش‌فرض/خواسته‌شده یوتیوب را نمی‌فهمد → همان ویدیو در مرورگر
-       v0.64 — تک‌لاین: پلیرهای قبلی بسته می‌شوند */
-    try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
+       v0.64 — تک‌لاین: پلیرهای قبلی بسته می‌شوند
+       v0.80 — keepExisting («کنارش پخش کن»): قبلی‌ها نمی‌بندند */
+    if (!q.keepExisting) { try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ } }
     try { shell.openExternal(src); } catch (_) { /* noop */ }
     return { ok: true, via: 'browser', player, fa: (entry && entry.fa) || 'مرورگر' };
   }
   if (d.action === 'os-default') {
     /* فایل محلی با انتخاب خود ویندوز (همان پلیر پیش‌فرض کاربر) باز می‌شود */
-    try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
+    if (!q.keepExisting) { try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ } }
     try { await shell.openPath(src); } catch (_) { /* noop */ }
     return { ok: true, via: 'os-default', player: 'uwp', fa: 'پلیر پیش‌فرض ویندوز' };
   }
   if (d.action === 'no-ytdlp' || d.action === 'spawn-ytdlp') {
     /* v0.62 — یک لاین: yt-dlp (سیستمی/باندل/تازه‌دانلود) استریم می‌سازد؛
        نشد → خود playerLaunchYt به مرورگر فالبک می‌کند (بن‌بست ندارد) */
-    return playerLaunchYt(player, src);
+    return playerLaunchYt(player, src, !!q.keepExisting);
   }
   if (d.action === 'spawn') {
-    return playerLaunch(player, src, {});
+    return playerLaunch(player, src, { keepExisting: !!q.keepExisting });
   }
   return { ok: false, error: 'پخش ممکن نشد' };
 });

@@ -136,7 +136,7 @@ ok(/const VK = \{ left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0
 /* v0.78 — فول‌اسکرین بازنویسی شد: اول فوکوس واقعی پلیر (ترفند Alt + SetForegroundWindow +
    راستی‌آزمایی GetForegroundWindow) و بعد کلید همان پلیر — ریشهٔ «فول اسکرین کار نمیکنه»
    کلید به پنجرهٔ فعالِ اشتباه می‌رفت. ریلکس رو به جلو: کلیدِ پلیر-آگاه از focusPlayerWindow می‌آید */
-ok(/function focusPlayerWindow\(\)/.test(mainSrc) && /keyFor/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه v0.78: فوکوس واقعی + کلید همان پلیر (پات‌پلیر=Enter، mpv/vlc/mpc=F)');
+ok(/function focusPlayerWindow\(pidHint\)/.test(mainSrc) && /keyFor/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه v0.78: فوکوس واقعی + کلید همان پلیر (پات‌پلیر=Enter، mpv/vlc/mpc=F)'); /* v0.80 forward-relax: + pidHint */
 ok(/\/potplayer\/\.test\(s\)\) return \[VK\.enter\];/.test(mainSrc) || /\/potplayer\/\.test\(s\)/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه: پات‌پلیر=Enter (در keyFor)');
 ok(mainSrc.indexOf('const YT_NOVIDEO_RE = /') >= 0 && mainSrc.indexOf('noVideoId: true') >= 0, 'YT_NOVIDEO_RE — دامنهٔ خام + ردِ لینک بی‌شناسه');
 ok(/noVideoId: true, error: 'این آدرس یوتیوب ویدیوی مشخصی ندارد'/.test(mainSrc), 'ردِ لینک بی‌شناسه با خطای شفاف (playerLaunchYt)');

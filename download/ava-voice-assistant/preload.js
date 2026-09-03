@@ -185,6 +185,8 @@ contextBridge.exposeInMainWorld('ava', {
   yt: {
     /* عبارت → ویدیوی یوتیوب (اولین نتیجه) — v0.61: برای پخش با پلیر پیش‌فرض */
     resolve: (query) => ipcRenderer.invoke('yt:resolve', { query }),
+    /* v0.80 — سرچ لیستی: N نتیجهٔ اول با عنوان (الگوی search_only معماری مرجع) */
+    search: (query, n) => ipcRenderer.invoke('yt:search', { query, n }),
   },
   player: {
     scan: () => ipcRenderer.invoke('player:scan'),

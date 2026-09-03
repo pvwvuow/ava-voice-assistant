@@ -466,6 +466,9 @@
     if (!s) return null;
     /* گارد: جملهٔ مرکب با خواستهٔ دیگر کنترل پلیر نیست (هم‌سوی گارد قاعدهٔ player_ctl) */
     if (/(کپی|سرچ|جستجو|بگرد|پیدا\s?کن|تحلیل|بررسی|لینک\s*بده|دانلود)/i.test(s)) return null;
+    /* v0.80 — گارد «کیفیت صدا» / «سرعت اینترنت» — این‌ها کنترل ویدیو نیستند */
+    if (/کیفیت\s*(صدا|صدایی|\baudio\b)/i.test(s)) return null;
+    if (/(سرعت|کیفیت)[^.]{0,12}(اینترنت|اینترنتی|وای\s?فای|\bنت\b)/i.test(s)) return null;
     /* مختصات/جهت — «ببر بالا سمت راست» / «بیار پایین چپ» / «ببر وسط» */
     const hasMoveVerb = /(ببر|ببرش|بیار|بیارش|بکش|بکوب|منتقل\s*کن|جابجا\s*کن|جابه\s*جا\s*کن|ببرش\s*ببر)/i.test(s);
     const dirUp = /بالا|top/i.test(s);
@@ -494,6 +497,16 @@
     /* همیشه‌رویر (پین) / برداشتن پین */
     if (/(پین|رویر?|سنجاق)[^.]{0,12}(دربیار|بردار|بلند\s*کن|لغو|خارج|نزن)/i.test(s) || /از\s*(حالت\s*)?(پین|روییر?|همیشه\s*رویر?)/i.test(s)) return { action: 'unpin', arg: 0 };
     if (/(پین|روییر?|سنجاق|همیشه\s*رویر?)[^.]{0,10}(کن|بزن|بکن)|همیشه\s*(روی\s*)?صفحه|always\s*on\s*top/i.test(s)) return { action: 'pin', arg: 0 };
+    /* v0.80 — سایز پریست پنجره (الگوی resize_window معماری مرجع) — فقط با
+       واژهٔ «سایز/اندازه»؛ «بزرگترش کن/کوچیکترش کن» بدون سایز/اندازه همان
+       grow/shrink می‌مانند (قانون ۱۱: بزرگ/کوچک هرگز fullscreen نیست) */
+    if (/(سایز|اندازه|\bsize\b)/i.test(s)) {
+      if (/(کوچیک|کوچک|small)/i.test(s)) return { action: 'resize', arg: 'small' };
+      if (/(متوسط|\bmedium\b)/i.test(s)) return { action: 'resize', arg: 'medium' };
+      if (/(بزرگ|\blarge\b|کامل)/i.test(s)) return { action: 'resize', arg: 'large' };
+      const dim = s.match(/(\d{3,4})\s*(?:در|×|x|\*)\s*(\d{2,4})/);
+      if (dim) return { action: 'resize', arg: { w: parseInt(dim[1], 10), h: parseInt(dim[2], 10) } };
+    }
     /* بزرگ/کوچک کردن پنجره (هرگز fullscreen نیست — قانون ۱۱) */
     if (/(بزرگ(تر|ترش)?(ش)?|بزرگ کن|بکش\s*بزرگ)[^.]{0,6}کن/i.test(s) || /بزرگترش?\s*کن/i.test(s)) return { action: 'grow', arg: 0 };
     if (/(کوچک(تر|ترش)?|کوچیک(تر|ترش)?)(ش)?\s*کن/i.test(s) || /کوچیکترش?\s*کن/i.test(s)) return { action: 'shrink', arg: 0 };
@@ -515,8 +528,59 @@
       if (/(همه|هر\s*دو|جفت(?:ش|شون|شان)?|دوتا(?:ش|شون)?|دو\s*(?:تا\s*)?(?:ویدیو|پلیر|فیلم|کلیپ|پنجره)|هرچی|هر\s*چی\s*(?:ویدیو|پلیر|فیلم|کلیپ)|همه\s*رو)/i.test(s)) tgt = 'all';
       else if (/(قبلی|اولین|(?:^|\s)اول(?:\s|$)|قدیمی|قبلا?\s*باز|قبلی\s*ک|قبلی\s*که)/i.test(s)) tgt = 'oldest';
       else if (/(جدید|آخری|آخرین|اخری|تازه|الانی|الان\s*باز|(?:^|\s)دومی|(?:(?:^|\s)دوم(?:\s|$)))/i.test(s)) tgt = 'newest';
+      /* v0.80 — «اون یکی رو ببند» (الگوی close_window(specific)): با دو ویدیو =
+         غیرِ پنجرهٔ فعال؛ سه ویدیو+ = مغز/قانون شفاف‌سازی (لیست می‌پرسد) */
+      else if (/(اون\s?یکی|اون\s?که\s?دیگه|دیگه(?:ش)?|دیگری)/i.test(s)) tgt = 'other';
       return { action: 'close', arg: tgt };
     }
+    /* v0.80 — خانواده‌های جدید (تطبیق گروه‌های ۵..۱۰ معماری مرجع) —
+       PIP، شفافیت، مانیتور دوم، چیدمان، فهرست، سوییچ، سرعت، کیفیت،
+       وضعیت و عکس — ترتیب: هرگز قبل از close/move/pin قرار نگیرند */
+    if (/(پی\s?پ|تصویر\s*در\s*تصویر|پیکچر\s*این\s*پیکچر|picture\s*in\s*picture)[^.]{0,14}(بردار|دربیا|بنداز|خاموش|لغو|کنسل|بیرون|درنیا|بس)/i.test(s) || /از\s*(حالت\s*)?(پی\s?پ|تصویر\s*در\s*تصویر)/i.test(s)) return { action: 'unpip', arg: 0 };
+    if (/تصویر\s*در\s*تصویر|picture\s*in\s*picture|\bپیپ\b|پی\s?پ\s?(کن|بزن|فعال)/i.test(s)) return { action: 'pip', arg: 0 };
+    if (/شفاف/i.test(s)) {
+      const opM = s.match(/(\d{1,3})/);
+      return { action: 'opacity', arg: opM ? Math.max(10, Math.min(100, parseInt(opM[1], 10))) : 50 };
+    }
+    if (/مانیتور|monitor|نمایشگر\s*دوم/i.test(s) && !/(چند|اوضاع|وضعیت|فول|اسکرین|عکس|در\s?صد)/i.test(s)) {
+      const wrd = /(چهارمین?|چهارم)/i.test(s) ? 4 : /(سومین?|سوم)/i.test(s) ? 3 : /(دومین?|دوم)/i.test(s) ? 2 : 0;
+      const nm = s.match(/(\d+)/);
+      return { action: 'monitor', arg: wrd || (nm ? Math.max(1, parseInt(nm[1], 10)) : 2) };
+    }
+    if (/(کاسکید|پله\s?ای)/i.test(s)) return { action: 'arrange', arg: 'cascade' };
+    if (/(شطرنجی|\bgrid\b|خانه\s?به\s?خانه)/i.test(s)) return { action: 'arrange', arg: 'grid' };
+    if (/(کنار\s?هم|دو\s?نیمه|نیم\s?نیم|بغل\s?هم|چیدمان|بچین)/i.test(s)) return { action: 'arrange', arg: 'side' };
+    if (/(چی|چیا)\s?(بازه|باز\s?هستن|باز\s?کردیم)|چند\s?تا\s?(ویدیو|پلیر|فیلم|کلیپ|پنجره)\s?(بازه|باز|داریم|هست)|لیست\s?(پلیرها|ویدیوها|باز\s?ها)|کدوم\s?(پلیرا|ویدیوها|ویدیو)\s?(بازه|باز)/i.test(s)) return { action: 'players', arg: 0 };
+    if (/(برو\s?(رو|سراغ|به)\s*(اون\s?یکی|ویدیوی?\s?(دیگه|دیگری|قبلی|جدیدی)|پنجرهٔ?\s?(دیگه|دیگری))|سوییچ\s?کن|ویدیوی?\s?دیگه\s?(رو|را)\s?(پاز|پخش|بگیر|بیار|بکن)|اون\s?یکی\s?(رو|را)?\s?(پاز|پخش|بگیر|بیار|بکن))/i.test(s)) {
+      return { action: 'switch', arg: (/(جدیدی|جدید)/i.test(s) ? 'newest' : (/قبلی/i.test(s) ? 'oldest' : 'other')) };
+    }
+    if (/(مینیمایز|\bminimize\b|نوار\s?وظیفه|تسک\s?بار)/i.test(s)) return { action: 'minimize', arg: 0 };
+    if (/(ماکزیمایز|ماکسیمایز|\bmaximize\b)/i.test(s)) return { action: 'maximize', arg: 0 };
+    if (/(\brestore\b|ری\s?استور|حالت\s?عادی[^.]{0,12}(پنجره|برگرد)|پنجره[^.]{0,12}برگردون)/i.test(s)) return { action: 'restore', arg: 0 };
+    /* سرعت پخش — حتی بدون واژهٔ «سرعت»: «سریعترش کن» / «آهسته ترش کن» */
+    if (/(آهسته\s?تر|کند\s?تر|آروم\s?تر|آرام\s?تر)/i.test(s)) return { action: 'speed', arg: 'down' };
+    if (/(سریع\s?تر|تند\s?تر)/i.test(s)) return { action: 'speed', arg: 'up' };
+    if (/سرعت/i.test(s)) {
+      if (/(اینترنت|اینترنتی|وای\s?فای|\bنت\b)/i.test(s)) return null;
+      if (/(عادی|نرمال|معمولی|\breset\b|یک\s?برابر)/i.test(s)) return { action: 'speed', arg: 'reset' };
+      const brW = s.match(/(نیم|دو|سه|چهار|ده)\s*برابر/);
+      const brD = s.match(/(\d+(?:[.,]\d+)?)\s*(?:برابر|x\b)/);
+      if (brW) return { action: 'speed', arg: Math.min(3, brW[1] === 'نیم' ? 0.5 : brW[1] === 'دو' ? 2 : brW[1] === 'سه' ? 3 : 3) };
+      if (brD) return { action: 'speed', arg: Math.max(0.25, Math.min(3, parseFloat(String(brD[1]).replace(',', '.')))) };
+      if (/(کم\s?کن|پایین\s?بیار|کاهش|آهسته|کند|کم\s?سرعت|آروم|آرام)/i.test(s)) return { action: 'speed', arg: 'down' };
+      if (/(سریع\s?تر|سریعتر|تند\s?تر|تندتر|زیاد|بالا\s?ببر|افزایش)/i.test(s)) return { action: 'speed', arg: 'up' };
+      return { action: 'speed', arg: 'up' };
+    }
+    if (/کیفیت/i.test(s)) {
+      if (/صدا|صدایی|\baudio\b/i.test(s)) return null;
+      if (/(بالاترین|بهترین|فول\s?کیفیت|\bbest\b)/i.test(s)) return { action: 'quality', arg: 'best' };
+      if (/(پایین\s?ترین|کم\s?ترین|بدترین|\bworst\b)/i.test(s)) return { action: 'quality', arg: 'worst' };
+      const qm = s.match(/(\d{3,4})\s*p?\b/);
+      if (qm) { const qv = parseInt(qm[1], 10); return { action: 'quality', arg: qv >= 900 ? 'best' : (qv >= 600 ? '720' : '360') }; }
+      return { action: 'quality', arg: 'best' };
+    }
+    if (/وضعیت\s*(ویدیو|فیلم|کلیپ|پلیر|پخش)|(ویدیو|فیلم|کلیپ|پلیر)[^.]{0,10}(وضعیت|چقدر\s?مونده)|چقدر\s?از\s*(ویدیو|فیلم|کلیپ)|چند\s?دقیقه\s?مونده/i.test(s)) return { action: 'status', arg: 0 };
+    if (/(ویدیو|فیلم|کلیپ|پلیر)[^.]{0,10}(عکس|اسکرین\s?شات|\bscreenshot\b)|(عکس|اسکرین\s?شات|\bscreenshot\b)[^.]{0,14}(از\s*(ویدیو|فیلم|کلیپ|پلیر)|ویدیو|فیلم|کلیپ|پلیر)/i.test(s)) return { action: 'shot', arg: 0 };
     /* بعدی/قبلی */
     if (/بعدی|بعد|next/i.test(s)) return { action: 'next', arg: 0 };
     if (/قبلی|قبل|prev/i.test(s)) return { action: 'prev', arg: 0 };
