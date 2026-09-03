@@ -77,6 +77,24 @@
     }
 
     /* ---------- فکت‌ها ---------- */
+    /* v0.76 — ددیپِ نزدیک (لاگ 0.72 19:07: f3 و f4 با متن یکسان دو بار ذخیره شد —
+       مغز جملهٔ کاربر را دو بار memory_save کرد و ددیپِ دقیق فقط تفاوتِ
+       نویسه‌ای جزئی را نمی‌گرفت). فکتِ ≥۱۲نویسه که در حروفِ نرمال فقط ≤۲
+       ویرایش با فکت موجود دارد → همان فکت به‌روز می‌شود، تکراری ساخته نمی‌شود. */
+    function _levClose(a, b) {
+      if (Math.abs(a.length - b.length) > 2) return false;
+      const m = a.length, n2 = b.length;
+      let prev = new Array(n2 + 1), cur = new Array(n2 + 1);
+      for (let j = 0; j <= n2; j++) prev[j] = j;
+      for (let i = 1; i <= m; i++) {
+        cur[0] = i;
+        for (let j = 1; j <= n2; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        const tmp = prev; prev = cur; cur = tmp;
+      }
+      return prev[n2] <= 2;
+    }
     function addFact(text, opts) {
       const t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, FACT_MAX_LEN);
       if (t.length < 4) return null;
@@ -84,6 +102,13 @@
       if (n.length < 4) return null;
       const dup = mem.data.facts.find((f) => f.n === n);
       if (dup) { dup.hits = (dup.hits || 0) + 1; dup.at = Date.now(); return dup.id; }
+      /* ددیپِ نزدیک — فقط برای متن‌های بلند تا اسم/عددِ کوتاه قربانی نشود */
+      if (n.length >= 12) {
+        const _strip = (x) => String(x || '').replace(/[^\u0600-\u06FFa-zA-Z0-9]/g, '');
+        const _ns = _strip(n);
+        const near = mem.data.facts.find((f) => _levClose(_ns, _strip(String(f.n || ''))));
+        if (near) { near.hits = (near.hits || 0) + 1; near.at = Date.now(); return near.id; }
+      }
       const id = 'f' + (mem.data.seq++);
       mem.data.facts.unshift({ id, text: t, n, at: Date.now(), hits: 0, scope: (opts && opts.scope) || 'permanent', src: String((opts && opts.src) || 'ai').slice(0, 12) });
       if (mem.data.facts.length > MAX_FACTS) mem.data.facts.length = MAX_FACTS;

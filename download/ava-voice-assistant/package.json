@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.75.0-beta",
+  "version": "0.76.0-beta",
   "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۶۹: هستهٔ فهم نسخهٔ ۲ (حافظهٔ گفتگو، حل‌گر ارجاع، مسیربینی دولاين) + پلیرهای ویدیوی سیستم (VLC/PotPlayer/KMPlayer/پیش‌فرض کاربر) و حذف پلیر خودساختهٔ آوا",
   "main": "main.js",
   "license": "MIT",

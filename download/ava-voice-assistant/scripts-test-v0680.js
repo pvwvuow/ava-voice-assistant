@@ -125,7 +125,7 @@ ok(MM.msgParse('بله درسته حالا برو') === null, 'گارد بله �
 section('app.js — لَین مخاطبین صوتی + عیب‌یاب');
 ok(appSrc.includes('AVAMessaging.ctCmdParse'), 'لَین مخاطبین: ctCmdParse صدا زده می‌شود');
 ok(appSrc.includes("intent: 'contacts_' + _ctc.op"), 'recordTurn مخاطبین با op');
-ok(appSrc.includes('aliases: [_ctc.name]'), 'ذخیره با alias اولیه');
+ok((appSrc.includes('aliases: [_ctc.name]') || appSrc.includes('aliases: _al0')), 'ذخیره با alias اولیه'); /* v0.76 forward-relax: alias آموزشی («هر موقع گفتم X») هم به لیست اولیه می‌رود */
 ok(appSrc.includes("AVAMessaging.contactFind(_all, '', _ctc.name, true)"), 'حذف با جستجوی anyApp');
 ok(appSrc.includes('از این به بعد فقط بگو'), 'پاسخ ذخیره راهنمای بعدی دارد');
 ok(/تلگرام\|دیسکورد\|واتساپ\|روبیکا\|ایتا\|telegram\|discord\|whatsapp\|eitaa/.test(appSrc), 'MSG_APP_SENT_RE شامل ایتا/eitaa');

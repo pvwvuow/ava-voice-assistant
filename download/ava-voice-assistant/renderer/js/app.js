@@ -4579,7 +4579,13 @@
      (فقط در خط فرمان‌ها؛ متن تایپ صوتی دست‌نخورده می‌ماند)
      ============================================================ */
   function normFaFull(s) {
-    return String(s || '')
+    /* v0.76 — باگ لاگ میدانی (19:34 و 21:10): toLowerCaseِ کل جمله شناسهٔ
+       case-sensitive یوتیوب را خراب می‌کرد (v=ulF0Tkqr7Q4 → ulf0tkqr7q4) و
+       اولین لینکِ چسبانده‌شده هرگز resolve نشد. URLها قبل از نرمالایز
+       محافظت می‌شوند و دست‌نخورده برمی‌گردند. */
+    const _urls = [];
+    const _prot = String(s || '').replace(/https?:\/\/[^\s"'<>«»،؛]+/g, (m) => { _urls.push(m); return '\u0001' + (_urls.length - 1) + '\u0001'; });
+    const _out = _prot
       .toLowerCase()
       .replace(/[\u064A\u0649]/g, '\u06CC')
       .replace(/\u0643/g, '\u06A9')
@@ -4593,6 +4599,7 @@
       .replace(/[\\|\u0060^~]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
+    return _out.replace(/\u0001(\d+)\u0001/g, (m, i) => _urls[Number(i)] || m);
   }
 
   async function runCommand(cmd, opts) {
@@ -4861,6 +4868,28 @@
     }
 
     /* ============================================================
+       v0.76 — لَین ریتریِ پیام — بعد از NOMATCH (لاگ 0.75 04:59):
+       «خب چون باید mmd سرچ کنی تو دیسکورد احمق.یک بار دیگ تلاش کن»
+       قبلاً هیچ اتفاقی نمی‌افتاد. حالا همان ارسال با هندل تازه تکرار می‌شود.
+       ============================================================ */
+    if (_pendingMsgRetry) {
+      const _rr = await msgRetryTry(raw);
+      if (_rr) {
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.done');
+        typeText(rcReply, _rr);
+        speak(_rr);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'msg-retry', intent: 'contact_send', params: { msgTarget: String(_pendingMsgRetry && _pendingMsgRetry.target || '') }, reply: _rr }); } catch (_) { /* noop */ }
+        if (/فرستادم|sent/i.test(_rr)) { try { playDoneSound(); } catch (_) { /* noop */ } }
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
+        return;
+      }
+    }
+
+    /* ============================================================
        v0.66 — لَین قطعیِ URL ویدیو — همیشه قبل از هر لایهٔ دیگر
        ------------------------------------------------------------
        ریشهٔ لاگ v0.63/v0.65 (۷ بار): کاربر URL کامل داد
@@ -4995,12 +5024,15 @@
                 _dup.handle = _ctc.handle;
                 if (!Array.isArray(_dup.aliases)) _dup.aliases = [_dup.name];
                 if (_dup.name !== _ctc.name && !_dup.aliases.includes(_ctc.name)) _dup.aliases.push(_ctc.name);
+                /* v0.76 — مستعارِ آموزشی («هر موقع گفتم محمد») هم ثبت شود */
+                if (_ctc.alias && !_dup.aliases.includes(_ctc.alias) && _ctc.alias !== _dup.name) _dup.aliases.push(_ctc.alias);
                 _dup.name = _ctc.name;
                 store.set('msgContacts', settings.msgContacts);
                 try { if (typeof msgContactsRender === 'function') msgContactsRender(); } catch (_) { /* noop */ }
                 _crep = LANG === 'en' ? `Updated "${_ctc.name}" on ${_faOf(_ctc.app)} → ${_ctc.handle}.` : `«${_ctc.name}» رو تو ${_faOf(_ctc.app)} به‌روز کردم → ${_ctc.handle}.`;
               } else {
-                settings.msgContacts.push({ id: 'mc' + Date.now().toString(36), name: _ctc.name, app: _ctc.app, handle: _ctc.handle, aliases: [_ctc.name] });
+                const _al0 = [_ctc.name].concat(_ctc.alias ? [_ctc.alias] : []);
+                settings.msgContacts.push({ id: 'mc' + Date.now().toString(36), name: _ctc.name, app: _ctc.app, handle: _ctc.handle, aliases: _al0 });
                 store.set('msgContacts', settings.msgContacts);
                 try { if (typeof msgContactsRender === 'function') msgContactsRender(); } catch (_) { /* noop */ }
                 _crep = LANG === 'en' ? `Saved "${_ctc.name}" on ${_faOf(_ctc.app)} → ${_ctc.handle}. From now on just say: message ${_ctc.name}.` : `ذخیره کردم: «${_ctc.name}» تو ${_faOf(_ctc.app)} با ${_ctc.kind === 'phone' ? 'شمارهٔ' : 'یوزرِ'} ${_ctc.handle}. از این به بعد فقط بگو «به ${_ctc.name} پیام بده».`;
@@ -5270,7 +5302,9 @@
             const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: _mp.app, name: _name, text: _mp.text, username: _uname, variants: _vs }).catch(() => null) : null;
             if (r && r.error && /NO_MATCH|NOMATCH/.test(String(r.error))) {
               /* v0.69 — وارسی عنوان چت شکست خورد → صادقانه؛ دیگر پیام به چتِ اشتباه نمی‌رود
-                 v0.74 — ERR:NOMATCH دیسکورد (هیچ واریانتی در سوییچر نتیجه نداد) هم همین پاسخ */
+                 v0.74 — ERR:NOMATCH دیسکورد (هیچ واریانتی در سوییچر نتیجه نداد) هم همین پاسخ
+                 v0.76 — مسلح‌سازی ریتری: اصلاحِ بعدی کاربر (هندل لاتین) همان ارسال را تکرار می‌کند */
+              msgRetryNote(_mp.app, _mp.appFa, _mp.target, _mp.text, _name, _vs);
               _mrep = LANG === 'en' ? `Could not find "${_name}" in ${_mp.appFa} with confidence — nothing was sent. Search them manually once and I'll remember.` : `چت «${_name}» رو تو ${_mp.appFa} مطمئن پیدا نکردم — هیچی نفرستادم. یک بار خودت سرچش کن تا اسم دقیقش رو یاد بگیرم.`;
             } else if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) {
               _mok = true;
@@ -8182,7 +8216,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.75.0-beta';
+  let appVersion = '0.76.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -9461,6 +9495,70 @@
   let chatHist = [];   // تاریخچه گفتگو برای حافظه کوتاه
   /* v0.70 — تأیید در انتظار برای کارهای حساس (ارسال پیام از مسیر مغز) */
   let _pendingConfirm = null;
+  /* v0.76 — ریتری بعد از NOMATCH (لاگ 0.75 04:59: «خب چون باید mmd سرچ کنی …
+     یک بار دیگ تلاش کن» → هیچ اتفاقی نیفتاد، مغز هم open_app یاد گرفت).
+     بعد از هر ارسالِ ناموفقِ «پیدا نشد»، اصلاحِ بعدیِ کاربر (هندل لاتین/
+     «یک بار دیگ تلاش کن») همان ارسال را با واریانت‌های تازه تکرار می‌کند
+     و در موفقیت، هندل تازه برای مخاطب ذخیره می‌شود. */
+  let _pendingMsgRetry = null;
+  const MSG_RETRY_TTL = 180000;
+  const MSG_RETRY_RE = /(یک\s*بار\s*دیگ(ه)?|یکبار\s*دیگ(ه)?|دوباره\s*(تلاش|امتحان|بفرست)|تلاش\s*کن|امتحان\s*کن|ریترای|بازم\s*امتحان|باز\s*امتحان|همینو\s*بفرست|بفرست\s*دیگه|try\s*again)/i;
+  const MSG_RETRY_CORR_RE = /(باید|قرار\s*بود|سرچ\s*کنی|سرچ\s*کن|اشتباه\s*کردی|غلط\s*(بود|کردی)|احمق|خنگ|بیشعور|نمیفهمی|نمی\s*فهمی)/i;
+  function msgRetryNote(app, appFa, target, text, name, vs) {
+    _pendingMsgRetry = { app, appFa: String(appFa || ''), target: String(target || ''), text: String(text || ''), name: String(name || ''), vs: (Array.isArray(vs) ? vs.slice(0, 12) : []), at: Date.now() };
+    try { actLog('msg retry armed: app=' + app + ' target=' + String(target || '').slice(0, 24) + ' variants=' + (Array.isArray(vs) ? vs.length : 0)); } catch (_) { /* noop */ }
+  }
+  /* ریتریِ همان ارسال با واریانت‌های تازه از جملهٔ اصلاح کاربر —
+     برمی‌گرداند: null = جملهٔ جاری ریتری نیست؛ یا رشتهٔ پاسخ */
+  async function msgRetryTry(raw) {
+    if (!_pendingMsgRetry) return null;
+    const pr = _pendingMsgRetry;
+    if (Date.now() - pr.at > MSG_RETRY_TTL) { _pendingMsgRetry = null; return null; }
+    const isRetry = MSG_RETRY_RE.test(raw) || (MSG_RETRY_CORR_RE.test(raw) && /[A-Za-z]/.test(raw));
+    if (!isRetry) return null;
+    /* واریانت‌های تازه: توکن‌های لاتینِ جملهٔ اصلاح + واریانت‌های قبلی */
+    const _vs = [];
+    const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1 && v.toLowerCase() !== pr.target.toLowerCase()) _vs.push(v); };
+    (String(raw).match(/[A-Za-z][A-Za-z0-9_'’\-]*(?:\s+[A-Za-z][A-Za-z0-9_'’\-]*){0,3}/g) || []).forEach(_pushV);
+    const _bare = String(raw).match(/[A-Za-z][A-Za-z0-9_@.\-]{2,32}/g) || [];
+    _bare.forEach(_pushV);
+    (pr.vs || []).forEach(_pushV);
+    if (!_vs.length) { _pendingMsgRetry = null; return null; }
+    if (_vs.length > 12) _vs.length = 12;
+    _pendingMsgRetry = null; /* فقط یک شانس ریتری خودکار؛ بعدش پاسخ صادقانه */
+    try {
+      const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app: pr.app, name: pr.name || pr.target, text: pr.text, username: '', variants: _vs }).catch(() => null) : null;
+      if (r && (r.ok || /MSGSENT/.test(String(r.result || '')))) {
+        /* ذخیرهٔ خودکار هندل تازه (حلقهٔ آموزش-ذخیره-ارسال برای اصلاح‌ها) */
+        let _savedRep = '';
+        try {
+          const _newV = _vs.find((x) => AVAMessaging.isLatinUsername(x));
+          const _cts = (typeof settings !== 'undefined' && Array.isArray(settings.msgContacts)) ? settings.msgContacts : [];
+          if (_newV && pr.target && !AVAMessaging.contactFind(_cts, pr.app, pr.target)) {
+            _cts.push({ id: 'mcr' + Date.now().toString(36), name: pr.target.slice(0, 40), app: pr.app, handle: _newV, aliases: [pr.target.slice(0, 40)] });
+            store.set('msgContacts', _cts);
+            try { if (typeof msgContactsRender === 'function') msgContactsRender(); } catch (_) { /* noop */ }
+            _savedRep = LANG === 'en' ? ` Also saved "${pr.target}" → ${_newV}.` : ` و «${pr.target}» رو با ${_newV} تو مخاطبین ذخیره کردم.`;
+          } else if (_newV && pr.target) {
+            const _ct = AVAMessaging.contactFind(_cts, pr.app, pr.target);
+            if (_ct && String(_ct.handle || '') !== _newV && !String(_ct.handle || '').toLowerCase().includes(_newV.toLowerCase())) {
+              _ct.handle = _newV;
+              if (!Array.isArray(_ct.aliases)) _ct.aliases = [_ct.name];
+              if (!_ct.aliases.includes(_newV)) _ct.aliases.push(_newV);
+              store.set('msgContacts', _cts);
+              _savedRep = LANG === 'en' ? ` Updated "${_ct.name}" → ${_newV}.` : ` و «${_ct.name}» رو به‌روز کردم → ${_newV}.`;
+            }
+          }
+        } catch (_) { /* noop */ }
+        try { actLog('msg retry OK: variants=' + _vs.join('|').slice(0, 90)); } catch (_) { /* noop */ }
+        return (LANG === 'en' ? `This time it was sent to "${pr.target}" on ${pr.appFa}.` : `این بار فرستادم به «${pr.target}» تو ${pr.appFa}.`) + _savedRep;
+      }
+      try { actLog('msg retry failed again: ' + String((r && r.error) || 'no-result').slice(0, 60)); } catch (_) { /* noop */ }
+      return LANG === 'en' ? `Still could not find "${pr.target}" on ${pr.appFa} — nothing was sent. Say: "save ${pr.target} on ${pr.appFa} with user …".` : `باز هم «${pr.target}» رو تو ${pr.appFa} مطمئن پیدا نکردم — هیچی نفرستادم. بگو: «${pr.target} رو تو ${pr.appFa} با یوزر … ذخیره کن».`;
+    } catch (e) {
+      return LANG === 'en' ? 'Retry failed: ' + String((e && e.message) || e).slice(0, 50) : 'ریتری انجام نشد: ' + String((e && e.message) || e).slice(0, 50);
+    }
+  }
   /* v0.70 — نمونهٔ هستهٔ حافظه (facts پایدار؛ contacts/notes آداپتور) */
   let _avaMemInst = null;
   function avaMem() {
@@ -10351,8 +10449,9 @@
        (/telegram/) داد و ذخیره شکست خورد؛ دوباره «به صدرا پیام بده» حافظه نداشت.
        ۱) handle: واژهٔ لاتینِ بعد از «اسمش/یوزرش/آیدیش (تو APP)» یا بعد از «APPش» */
     if (!hints.handle) {
-      const _hmA = s.match(new RegExp('(?:اسمش?و?|یوزرش?و?|یوزرنیمش?|آیدیش?|ایدیش?)\\s*(?:تو|توی|در)?\\s*(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)?\\s*(?:یه?\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})', 'i'));
-      const _hmB = _hmA ? null : s.match(new RegExp('(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)(?:ش|م)?\\s*(?:اسمش?|آیدیش?|ایدیش?|یوزرش?)?\\s*(?:هست\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})', 'i'));
+      /* v0.76 — «اسم مخاطبم تو دیسکورد mmd هست» هم پذیرفته می‌شود (لاگ 0.75 04:58) */
+      const _hmA = s.match(new RegExp('(?:اسم(?:ش?و?|مخاطبم|مخاطبش?|مخاطب)|یوزرش?و?|یوزرنیمش?|آیدیش?|ایدیش?)\\s*(?:تو|توی|در)?\\s*(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)?\\s*(?:یه?\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32}(?:\\s+[A-Za-z][A-Za-z0-9_.@-]{2,32}){0,2})', 'i'));
+      const _hmB = _hmA ? null : s.match(new RegExp('(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa)(?:ش|م)?\\s*(?:اسمش?|آیدیش?|ایدیش?|یوزرش?)?\\s*(?:هست\\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32}(?:\\s+[A-Za-z][A-Za-z0-9_.@-]{2,32}){0,2})', 'i'));
       if (_hmA) hints.handle = _hmA[1].replace(/^@/, '');
       else if (_hmB) hints.handle = _hmB[1].replace(/^@/, '');
       /* خودِ اپ هم ممکن است فقط در الگوی B آمده باشد */
@@ -10365,6 +10464,19 @@
     if (!hints.nameFa) {
       const _gm = s.match(/(?:بهش|براش|به\s+اون|بهشون)\s+(?:میگم|میگمش|میگیم|صدا\s*می\s*کنم|صداش\s*می\s*کنم)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
       if (_gm) hints.nameFa = _gm[1].replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim().replace(/(?:\s|^)(خب|خوب|دیگه|ببین|اوکی|باشه)$/i, '').trim();
+    }
+    /* v0.76 — نامِ قبل از «صداش می‌کنم»: «من محمد صداش میکنم» (لاگ 0.75 04:58) */
+    if (!hints.nameFa) {
+      const _gb = s.match(/(?:من\s+)?([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})\s+(?:صداشو?\s*می\s*کنم|صداش\s*می\s*کنم|صدام\s*هست|صداش\s*هست)/i);
+      if (_gb) hints.nameFa = _gb[1].replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    /* v0.76 — مستعارِ آموزشی: «هر موقع/هر وقت گفتم X» */
+    {
+      const _am = s.match(/هر\s*(?:وقت|موقع)(?:ی)?\s*(?:که)?\s*(?:گفتم|میگم|می\s?گم|بگم)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+      if (_am) {
+        const _al = _am[1].replace(/[\u200c]/g, ' ').trim();
+        if (_al && _al !== hints.nameFa) hints.alias = _al;
+      }
     }
     if (!hints.nameEn && !hints.nameFa && !hints.phone && !hints.handle) return null;
     return hints;
@@ -10453,6 +10565,11 @@
           if (!_app) _app = 'telegram';
           const name = _nmFa || _nmEn;
           const _aliases = [_nmEn].concat(Array.isArray(p.aliases) ? p.aliases.map(String) : []).map((x) => String(x || '').trim()).filter(Boolean);
+          /* v0.76 — مستعارِ آموزشی از salvage («هر موقع گفتم محمد») */
+          try {
+            const _h2 = (typeof teachContactHints === 'function') ? teachContactHints(cmd) : null;
+            if (_h2 && _h2.alias && !_aliases.includes(_h2.alias) && _h2.alias !== name) _aliases.push(_h2.alias);
+          } catch (_) { /* noop */ }
           const id = (window.AVAMemory && m && name) ? m.addContact(settings.msgContacts, { name, app: _app, handle: _hdl, aliases: _aliases }) : null;
           let ok = false;
           if (id) { try { store.set('msgContacts', settings.msgContacts); ok = true; } catch (_) { ok = false; } }
@@ -10516,8 +10633,35 @@
         const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
         _pushV(name);
         if (ct) { _pushV(ct.name); (Array.isArray(ct.aliases) ? ct.aliases : []).forEach(_pushV); _pushV(ct.handle); }
+        /* v0.76 — باگ لاگ 0.75 (04:58:38): ارسالِ تأییدشده فقط [محمد] داشت →
+           ERR:NOMATCH در حالی که هندل mmd ۳۰ثانیه قبل در همان مکالمه گفته شده بود.
+           همان خطِ لولهٔ واریانت لاین قطعی اینجا هم اجرا می‌شود: موجودیت‌های
+           مکالمه (یادداشت/شخص لاتین) + فکت‌های حافظه + آوانگاری حدسی. */
+        try {
+          if (window.AVACore && window.AVACore._state) {
+            const _ne = window.AVACore._state.entities.note || '';
+            if (_ne && /[a-zA-Z]/.test(_ne) && String(_ne).length <= 40) _pushV(_ne);
+            const _pe = window.AVACore._state.entities.person || '';
+            if (_pe && String(_pe).length <= 40) _pushV(_pe);
+          }
+        } catch (_) { /* noop */ }
+        try {
+          const _m3 = avaMem();
+          if (_m3) {
+            await _m3.load();
+            const _fh = _m3.findFacts(name, 4);
+            for (const _fx of _fh) {
+              (String(_fx && _fx.text || '').match(/[A-Za-z][A-Za-z0-9_'’\-]*(?:\s+[A-Za-z][A-Za-z0-9_'’\-]*)+/g) || []).forEach(_pushV);
+            }
+          }
+        } catch (_) { /* noop */ }
+        try { if (!AVAMessaging.phoneLike(name)) { const _fl = AVAMessaging.faToLatin(name); if (_fl && _fl.length >= 3) _pushV(_fl); } } catch (_) { /* noop */ }
         try { actLog('brain-send variants: ' + _vs.join(' | ').slice(0, 160), 'ui', { ev: 'msg-vars', app }); } catch (_) { /* noop */ }
         const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app, name, text, username: uname, variants: _vs }).catch(() => null) : null;
+        if (r && r.error && /NO_MATCH|NOMATCH/.test(String(r.error))) {
+          /* v0.76 — مسلح‌سازی ریتری برای مسیر مغز هم */
+          msgRetryNote(app, _appFa, name, text, name, _vs);
+        }
         if (r && r.ok && /UNVERIFIED/.test(String(r.result || ''))) return LANG === 'en' ? `Sent to "${name}" on ${_appFa} — double-check it landed.` : `فرستادم به «${name}» تو ${_appFa} — یه نگاه بنداز که رسیده باشه.`;
         if (r && r.ok) return LANG === 'en' ? `Sent to "${name}" on ${_appFa}.` : `فرستادم به «${name}» تو ${_appFa}.`;
         return (r && r.error) || (LANG === 'en' ? 'Messaging failed.' : 'ارسال انجام نشد.');
@@ -10548,6 +10692,16 @@
       const nm = String(p.name || '');
       const app = String(p.app || 'telegram');
       const appFa = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا' }[app] || app;
+      /* v0.76 — باگ لاگ 0.75 (04:58:24): «بگو سلام» → confirm با name= و text= خالی
+         صف شد و بعد از «اره» فقط خطای مقصد ناقص می‌آمد. صفِ تأییدِ ناقص ممنوع —
+         همین‌جا سوالِ صادقانه، بدون pendingConfirm. */
+      if (!nm.trim() || !String(p.text || '').trim()) {
+        actLog('brain confirm rejected: contact_send incomplete (name="' + nm.slice(0, 20) + '" text="' + String(p.text || '').slice(0, 20) + '") — no pending queued');
+        const _miss = !nm.trim()
+          ? (LANG === 'en' ? 'Who should I send it to? Say the name — e.g. "message Ali on Discord".' : 'به کی بفرستم؟ اسمش رو بگو — مثلاً «به علی تو دیسکورد پیام بده».')
+          : (LANG === 'en' ? 'What should I say to "' + nm.trim() + '"?' : 'چی برای «' + nm.trim() + '» بفرستم؟');
+        return { reply: _miss, kind: 'clarify' };
+      }
       _pendingConfirm = { action: c, at: Date.now(), cmd };
       actLog('brain confirm needed: contact_send ' + app + ' name=' + nm.slice(0, 30) + ' text=' + String(p.text || '').slice(0, 30));
       return { reply: b.confirm || (LANG === 'en' ? `Send "${p.text || ''}" to "${nm}" on ${appFa}?` : `به «${nm}» تو ${appFa} بگم «${p.text || ''}»؟`), kind: 'confirm' };
