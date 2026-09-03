@@ -6055,19 +6055,13 @@ try { [AvaTg2.W]::GetWindowText($hwnd, $tb0, 512) | Out-Null } catch { }
 $title0 = $tb0.ToString().Trim()
 Write-Output ('DBG:TITLE0=' + $title0)
 $np0 = Get-TgNamePart $title0
-# گام ۲ — باز کردن چت مخاطب
-if ($Username) {
-  # نام کاربری لاتین معتبر: مسیر رسمی tg://resolve — چت مستقیم باز می‌شود
-  try { Start-Process ('tg://resolve?domain=' + $Username) } catch { Write-Output ('DBG:RESOLVEERR=' + $_.Exception.Message) }
-  Start-Sleep -Milliseconds 2600
-  # باز شدن چت ممکن است فوکوس را موقتاً جابه‌جا کند — دوباره تایید می‌شود
-  if (-not (Focus-TgHard)) { Write-Output 'ERR:NOFOCUS2'; exit }
-} else {
-  # v0.69 — سرچ با واریانت‌ها + وارسی عنوان چت. ریشهٔ لاگ: سرچِ «ان» چتِ
-  # «اقتصاد انلاین» را باز می‌کرد و پیام به غریبه می‌رفت (UNVERIFIED دروغین).
-  # حالا: هر واریانت امتحان می‌شود؛ تیترِ پنجره باید با نام جور دربیاد؛
-  # وگرنه Esc و واریانت بعدی؛ هیچ → ERR:TG_NO_MATCH بدون هیچ ارسالی.
-  $variants = @()
+# گام ۲ — باز کردن چت مخاطب — v0.79 «نامِ اول» (خواستهٔ صریح کاربر):
+# تلگرام باید «نامی که بالای چت نوشته شده» را سرچ کند، نه یوزرنیم را.
+# مسیر tg://resolve (مسیرِ اول از v0.67) تیتر را هرگز وارسی نمی‌کرد —
+# یوزرنیمِ کهنه/غلط بی‌سروصدا چتِ آدمِ اشتباه را باز می‌کرد.
+# حالا همیشه سرچِ نام (Ctrl+K + واریانت‌ها + وارسی تیتر)؛ یوزرنیم فقط
+# فالبکِ آخرِ کار است و باز شدنش هم با وارسی تیتر تأیید می‌شود.
+$variants = @()
   # v0.72 — واریانت‌ها از فایل JSON می‌آیند (نه argv، نه Base64 — هر دو در میدان آسیب دیدند)
   try { $variants = @(($ReqObj.variants | ForEach-Object { [string]$_ }) | Where-Object { $_ -and $_.Trim() }) } catch { }
   if ($variants.Count -eq 0) { $variants = @($nm) }
@@ -6128,13 +6122,37 @@ if ($Username) {
     if (($uiaPick -ge 0) -and ($script:UIAScore -ge 100) -and (Test-TgMatch $np2 $v)) { $opened = $true; $usedVar = $v; break }
     try { Send-Combo 'esc'; Start-Sleep -Milliseconds 250 } catch { }
   }
+  if (-not $opened -and $Username) {
+    # v0.79 — فالبکِ یوزرنیم فقط بعد از شکستِ همهٔ واریانت‌های نام — و با وارسی تیتر:
+    # چتِ بازشده باید با نام ذخیره‌شده، یکی از واریانت‌ها یا خود یوزرنیم جور دربیاید؛
+    # وگرنه هیچ ارسالی نیست (یوزرنیمِ کهنه هرگز بی‌سروصدا ارسال نمی‌کند)
+    Write-Output 'DBG:RESOLVE_FALLBACK'
+    try { Start-Process ('tg://resolve?domain=' + $Username) } catch { Write-Output ('DBG:RESOLVEERR=' + $_.Exception.Message) }
+    Start-Sleep -Milliseconds 2600
+    # باز شدن چت ممکن است فوکوس را موقتاً جابه‌جا کند — دوباره تایید می‌شود
+    if (-not (Focus-TgHard)) { Write-Output 'ERR:NOFOCUS2'; exit }
+    Start-Sleep -Milliseconds 400
+    $title3 = ''
+    for ($pt3 = 0; $pt3 -lt 6; $pt3++) {
+      $tb3 = New-Object System.Text.StringBuilder 512
+      try { [AvaTg2.W]::GetWindowText($hwnd, $tb3, 512) | Out-Null } catch { }
+      $title3 = $tb3.ToString().Trim()
+      if ((Get-TgNamePart $title3) -ne $np0) { break }
+      Start-Sleep -Milliseconds 220
+    }
+    $np3 = Get-TgNamePart $title3
+    Write-Output ('DBG:VSTEP=R pick=resolve SCORE=0 NP0=' + $np0 + ' NP=' + $np3)
+    $okR = (Test-TgMatch $np3 $nm)
+    if (-not $okR) { foreach ($v3 in $variants) { if (Test-TgMatch $np3 $v3) { $okR = $true; break } } }
+    if (-not $okR) { $okR = (Test-TgMatch $np3 $Username) }
+    if ($okR) { $opened = $true; $usedVar = ('resolve:' + $Username); $title2 = $title3 }
+  }
   if (-not $opened) {
     Restore-Focus
     Write-Output 'ERR:TG_NO_MATCH'
     exit
   }
   Write-Output ('DBG:MATCHED=' + $usedVar)
-}
 # v0.75 — حالتِ بازکردنِ چت بدون ارسال: همین‌جا تمام — هیچ پیستی، هیچ Enterی روی متن
 if ((-not $msg) -and ($Open -eq 1)) {
   Write-Output ('DBG:TITLE=' + $title2)

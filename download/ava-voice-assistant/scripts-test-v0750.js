@@ -142,7 +142,7 @@ console.log('— ۹) پین‌های پل/نسخه');
   const pre = read('preload.js');
   ok(pre.indexOf("read: (p) => ipcRenderer.invoke('msg:read', p)") >= 0, 'preload: bridge.msg.read');
   const pkg = JSON.parse(read('package.json'));
-  ok(pkg.version === '0.75.0-beta' || pkg.version === '0.76.0-beta' || pkg.version === '0.77.0-beta' || pkg.version === '0.78.0-beta', 'نسخهٔ 0.75+ (forward-relax) → ' + pkg.version); /* v0.78 forward-relax */
+  ok(pkg.version === '0.75.0-beta' || pkg.version === '0.76.0-beta' || pkg.version === '0.77.0-beta' || pkg.version === '0.78.0-beta' || pkg.version === '0.79.0-beta', 'نسخهٔ 0.75+ (forward-relax) → ' + pkg.version); /* v0.79 forward-relax */
 }
 console.log('— ۱۰) رگرسیون‌های عمومی v0.74');
 {

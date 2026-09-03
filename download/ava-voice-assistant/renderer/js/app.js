@@ -5267,6 +5267,8 @@
           const _hdO = (_ctO && _ctO.handle) || '';
           const _vsO = [];
           const _pushO = (x) => { const v = String(x || '').trim(); if (v && _vsO.indexOf(v) === -1) _vsO.push(v); };
+          /* v0.79 — «نامِ اول» مثل لاین پیام: نام ذخیره‌شدهٔ تلگرام اول، یوزرنیم آخر */
+          if (_ctO && _ctO.name && _cop.app !== 'discord') { _pushO(_ctO.name); }
           _pushO(_cop.target);
           if (_ctO) { _pushO(_ctO.name); (Array.isArray(_ctO.aliases) ? _ctO.aliases : []).forEach(_pushO); _pushO(_ctO.handle); }
           if (!AVAMessaging.phoneLike(_cop.target)) { try { const _flO = AVAMessaging.faToLatin(_cop.target); if (_flO && _flO.length >= 3) _pushO(_flO); } catch (_) { /* noop */ } }
@@ -5354,6 +5356,11 @@
             const _vs = [];
             let _flPushed = null; /* v0.73 — آوانگاریِ حدسیِ faToLatin از «ذخیره‌شده» جدا می‌شود */
             const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
+            /* v0.79 — «نامِ اول» (خواستهٔ صریح کاربر): تلگرام باید «نامی که بالای چت
+               نوشته شده» را سرچ کند نه یوزرنیم را — نامِ ذخیره‌شده اولِ صف می‌رود و
+               اسمِ گفته‌شده بعدش؛ یوزرنیم آخر (فقط فالبک). دیسکورد سرِ خود می‌ماند:
+               سوییچرِ دیسکورد با هندل کار می‌کند (درس 0.74/0.75: «باید mmd سرچ کنی») */
+            if (_ct && _ct.name && _mp.app !== 'discord') { _pushV(_ct.name); }
             _pushV(_mp.target);
             if (_ct) { _pushV(_ct.name); (Array.isArray(_ct.aliases) ? _ct.aliases : []).forEach(_pushV); _pushV(_ct.handle); }
             try {
@@ -8584,7 +8591,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.78.0-beta';
+  let appVersion = '0.79.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -11037,7 +11044,11 @@
     const _appFa = { telegram: 'تلگرام', discord: 'دیسکورد', whatsapp: 'واتساپ', bale: 'بله', rubika: 'روبیکا', eitaa: 'ایتا' }[app] || app;
     const text = String(p.text || '').trim();
     const list = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
-    const ct = (window.AVAMemory && p.contactId) ? list.find((c) => c.id === p.contactId) : null;
+    let ct = p.contactId ? list.find((c) => c.id === p.contactId) : null;
+    /* v0.79 — مغز تقریباً هرگز contactId نمی‌دهد؛ مخاطب از روی نام هم حل می‌شود تا
+       «نامی که بالای چت نوشته شده» (اسم ذخیره‌شده) اولِ صف سرچ برود — نه یوزرنیم
+       و نه اسمِ بریدهٔ گفته‌شده (همان درسِ «چرا از ذخیره استفاده نمیکنه») */
+    if (!ct && AVAMessaging && AVAMessaging.contactFind) { try { ct = AVAMessaging.contactFind(list, app, p.name || '') || null; } catch (_) { /* noop */ } }
     const name = String((ct && ct.name) || p.name || '').trim();
     if (!text || !name) return LANG === 'en' ? 'Message target or text was missing — nothing was sent.' : 'مقصد یا متن پیام ناقص بود — چیزی نفرستادم.';
     try {
@@ -11047,6 +11058,9 @@
         const _vs = [];
         const _pushV = (x) => { const v = String(x || '').trim(); if (v && _vs.indexOf(v) === -1) _vs.push(v); };
         _pushV(name);
+        /* v0.79 — نام ذخیره‌شده اول (name خودش ct.name است وقتی حل شد)، اسمِ گفته‌شده
+           بعدش، مستعارها، یوزرنیم آخر */
+        if (ct && p.name && String(p.name).trim() !== name) _pushV(p.name);
         if (ct) { _pushV(ct.name); (Array.isArray(ct.aliases) ? ct.aliases : []).forEach(_pushV); _pushV(ct.handle); }
         /* v0.76 — باگ لاگ 0.75 (04:58:38): ارسالِ تأییدشده فقط [محمد] داشت →
            ERR:NOMATCH در حالی که هندل mmd ۳۰ثانیه قبل در همان مکالمه گفته شده بود.
@@ -11070,7 +11084,11 @@
             }
           }
         } catch (_) { /* noop */ }
-        try { if (!AVAMessaging.phoneLike(name)) { const _fl = AVAMessaging.faToLatin(name); if (_fl && _fl.length >= 3) _pushV(_fl); } } catch (_) { /* noop */ }
+        try { let _flB = null; if (!AVAMessaging.phoneLike(name)) { const _fl = AVAMessaging.faToLatin(name); if (_fl && _fl.length >= 3) { _flB = _fl; _pushV(_fl); } }
+        /* v0.79 — همان لاتین‌اولِ لاین قطعی: هویتِ ذخیره‌شدهٔ لاتین (نام/مستعار/یوزر)
+           جلو می‌رود؛ آوانگاریِ حدسیِ faToLatin تنها تریگرِ لاتین‌اول نیست */
+        const _hasSavedLatin = _vs.some((x) => /[A-Za-z]/.test(String(x || '')) && x !== _flB);
+        if (_hasSavedLatin && AVAMessaging.latinFirstOrder) { const _ordB = AVAMessaging.latinFirstOrder(_vs.slice()); _vs.length = 0; _ordB.forEach(_pushV); } } catch (_) { /* noop */ }
         try { actLog('brain-send variants: ' + _vs.join(' | ').slice(0, 160), 'ui', { ev: 'msg-vars', app }); } catch (_) { /* noop */ }
         const r = (bridge && bridge.msg && bridge.msg.send) ? await bridge.msg.send({ app, name, text, username: uname, variants: _vs }).catch(() => null) : null;
         if (r && r.error && /NO_MATCH|NOMATCH/.test(String(r.error))) {
