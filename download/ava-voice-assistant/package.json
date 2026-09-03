@@ -1,7 +1,7 @@
 {
   "name": "ava-voice-assistant",
   "productName": "AVA Voice Assistant",
-  "version": "0.83.0-beta",
+  "version": "0.83.1-beta",
   "description": "آوا — دستیار صوتی ویندوز | نسخهٔ ۰.۸۳.۰: پلیر آوا — پخش تضمینی یوتیوب با embed رسمی + هالهٔ ماورایی چندلایهٔ میکروفون + بازطراحی تم سفید-طلایی",
   "main": "main.js",
   "license": "MIT",

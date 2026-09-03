@@ -4600,7 +4600,7 @@ function closeVideoByPid(pid) {
     const en = avaPlayers.get(pidN);
     if (!en) return Promise.resolve({ ok: false, error: 'پنجرهٔ مورد نظر پیدا نشد — شاید قبلاً بسته شده' });
     try { en.win.close(); } catch (_) { /* noop */ }
-    setTimeout(() => { try { if (avaPlayers.has(pidN)) en.win.destroy(); } catch (_) { /* noop */ } }, 1200);
+    setTimeout(() => { try { if (avaPlayers.has(pidN) && !en.win.isDestroyed()) en.win.destroy(); } catch (_) { /* noop */ } }, 1200);
     if (playerCtl.activePid === pidN) playerCtl.activePid = 0;
     return Promise.resolve({ ok: true, closed: 1, total: 1, pid: pidN, closedTitle: 'آوا پلیر' + (en.title ? ' — ' + en.title : '') });
   }
@@ -4756,10 +4756,19 @@ async function avaPlayerPlay(src, opts) {
   return { ok: true, via: 'ava', player: 'ava', fa: 'پلیر آوا', apid };
 }
 function closeAvaPlayers() {
-  const n = avaPlayers.size;
-  for (const [, en] of avaPlayers) { try { en.win.close(); } catch (_) { /* noop */ } }
-  setTimeout(() => { for (const [, en] of avaPlayers) { try { en.win.destroy(); } catch (_) { /* noop */ } } }, 1500);
-  return Promise.resolve({ count: n });
+  /* v0.83.1 — فیکس بحرانی «پنجرهٔ پلیر درجا بسته میشه»: تایمر destroy قبلی
+     روی «نقشهٔ زنده» می‌چرخید — چون avaPlayerPlay اول می‌بَندد و بعد پنجرهٔ
+     نو را باز می‌کند، بمبِ ۱.۵ثانیه‌ای به‌جای پنجره‌های قدیمی، پنجرهٔ
+     تازه‌بازشده را هم destroy می‌کرد (بازتولید ۱۰۰٪: هر پخش ≈۱.۵ثانیه بعد
+     می‌مرد). حالا فقط اسنپ‌شاتِ لحظهٔ بستن نابود می‌شود؛ نقشهٔ خالی = بدون تایمر. */
+  const olds = [...avaPlayers.values()];
+  for (const en of olds) { try { if (!en.win.isDestroyed()) en.win.close(); } catch (_) { /* noop */ } }
+  if (olds.length) {
+    setTimeout(() => {
+      for (const en of olds) { try { if (!en.win.isDestroyed()) en.win.destroy(); } catch (_) { /* noop */ } }
+    }, 1500);
+  }
+  return Promise.resolve({ count: olds.length });
 }
 async function closeAllVideoTargets() {
   /* «همهٔ ویدیوها» = پلیرهای سیستم + پنجره‌های پلیر آوا (v0.83) */

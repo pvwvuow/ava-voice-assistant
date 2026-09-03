@@ -28,56 +28,54 @@ const intentSrc = read('renderer/js/voiceIntent.js');
 let playerHtmlSrc = '';
 try { playerHtmlSrc = read('renderer/ava-player.html'); } catch (_) { /* noop */ }
 
-/* ---------- ۱) هالهٔ ماورایی v2 ---------- */
-console.log('\n[1] هالهٔ ماورایی چندلایهٔ دور میکروفون (v0.83)');
-ok('index.html: لایه‌های نو orb-aurora + orb-sparks داخل orb-stage',
-  htmlSrc.includes('class="orb-aurora"') &&
-  htmlSrc.includes('class="orb-sparks"><i></i><i></i><i></i></div>'));
-ok('CSS: شفق اصلی سه‌قوسه (سرخ/کهربا/گلبرگی) با چرخش + نفس',
-  cssSrc.includes('avaHaloSpin 2.4s linear infinite, avaHaloBreath 2.8s ease-in-out infinite') &&
-  (cssSrc.match(/rgba\(255, 45, 85/g) || []).length >= 5);
-ok('CSS: شفق معکوس (avaHaloSpinRev) — چرخش خلاف جهت با بلور نرم',
-  cssSrc.includes('avaHaloSpinRev 5.6s linear infinite') && cssSrc.includes('@keyframes avaHaloSpinRev'));
-ok('CSS: سه ذرهٔ نور در سه مدار (سرعت/جهت/شعاع متفاوت)',
-  cssSrc.includes('avaOrbit 3.4s linear infinite') &&
-  cssSrc.includes('avaOrbitRev 4.9s linear infinite') &&
-  cssSrc.includes('avaOrbit 6.2s linear infinite'));
-ok('CSS: ذره‌ها دنبالهٔ درخشان دارند (glow دوبل)',
-  cssSrc.includes('box-shadow: 0 0 14px 4px rgba(255, 77, 109, 0.65), 0 0 36px 12px rgba(255, 45, 85, 0.22)'));
+/* ---------- ۱) هالهٔ فعال — v0.83.1 آرام و هم‌رنگ تم (ریلکس رو-به-جلو) ---------- */
+console.log('\n[1] هالهٔ فعال دور میکروفون — آرام و هم‌رنگ هر تم (v0.83.1)');
+ok('index.html: لایه‌های شلوغ aurora/sparks حذف و ستون فقرات سالم ماند (halo + سه حلقه)',
+  !htmlSrc.includes('orb-aurora') && !htmlSrc.includes('orb-sparks') &&
+  htmlSrc.includes('class="orb-halo"') && htmlSrc.includes('class="orb-ring rg3"'));
+ok('CSS: درخشش حالتِ فعال با اکسنتِ خودِ تم (--acc-rgb) — بدون شفقِ سرخِ ثابت',
+  cssSrc.includes('body.state-listening .orb-halo,\nbody.state-processing .orb-halo') &&
+  cssSrc.includes('rgba(var(--acc-rgb), 0.3)') &&
+  !cssSrc.includes('avaHaloSpin'));
 ok('CSS: حلقه‌های موج حین پردازش هم می‌تپند (قبلاً فقط شنیدن)',
   cssSrc.includes('body.state-processing .orb-ring {') &&
   cssSrc.includes('body.state-processing .orb-ring.rg2'));
-ok('CSS: هستهٔ سرخ تپنده (avaIcoPulse)',
-  cssSrc.includes('animation: avaIcoPulse 2s ease-in-out infinite'));
-ok('CSS: میکروفون نوار فرمان در شنیدن و پردازش هر دو قرمز + نقطهٔ نوار وضعیت',
+ok('CSS: تپش ملایم آیکون (avaIcoPulse) — بدون رنگ‌آمیزی سرخِ هسته',
+  cssSrc.includes('animation: avaIcoPulse 2.4s ease-in-out infinite'));
+ok('CSS: میکروفون نوار فرمان در شنیدن و پردازش هر دو قرمز (کارکردی: کلیک = توقف) + نقطهٔ نوار وضعیت',
   cssSrc.includes('body.state-processing .cmd-mic') &&
   cssSrc.includes('body.state-listening #sbMic .dot') &&
   cssSrc.includes('@keyframes dotPingRed'));
-ok('بحرانی (Specificity): تم طلایی حالتِ سرخِ هاله را بازنویسی صریح دارد —\n    در 0.82.2 قواعد idle طلایی (۳ کلاس) قواعد سرخ عمومی (۲ کلاس) را می‌خوردند',
-  cssSrc.includes('[data-theme="light"][data-gold="on"].state-listening .orb-halo') &&
-  cssSrc.includes('[data-theme="light"][data-gold="on"].state-processing .orb'));
-ok('گارد پایداری: لایه‌های نو زیر perf-nofx/lite/darklite خاموش می‌شوند',
-  cssSrc.includes('body.perf-nofx .orb-aurora') &&
-  cssSrc.includes('[data-theme="lite"] .orb-sparks') &&
-  cssSrc.includes('[data-theme="darklite"] .orb-aurora'));
-ok('گارد app-blur: لایه‌های نو در تارشدن پنجره هم خاموش می‌شوند',
-  cssSrc.includes('body.app-blur .orb-aurora'));
+ok('Specificity: قواعد حالت با پیشوند body از قواعد idle تم‌ها می‌برند — درس 0.82.2 حفظ شده',
+  cssSrc.includes('body.state-listening .orb,\nbody.state-processing .orb {') &&
+  cssSrc.includes('[data-theme="light"] body.state-processing .cmd-mic'));
+ok('گارد پایداری: افکت زیر perf-nofx ساکن می‌شود (halo/ring/قوس بی‌انیمیشن)',
+  cssSrc.includes('body.perf-nofx .orb-core .ic { animation: none !important; }') &&
+  cssSrc.includes('.orb-ring, .orb::after { animation: none !important; }'));
+ok('هر ۵ تم متغیر --acc-rgb دارند — افکت در همه هم‌خانواده است',
+  (cssSrc.match(/--acc-rgb:/g) || []).length >= 5);
 
-/* ---------- ۲) تم سفید-طلایی v2 ---------- */
-console.log('\n[2] ری‌ورک تم سفید-طلایی');
-ok('پس‌زمینهٔ عاجی چندلایه (چهار radial + کرم پایه)',
+/* ---------- ۲) تم سفید-طلایی — v0.83.1 سفیدِ قالب + اکسنت طلایی (ریلکس رو-به-جلو) ---------- */
+console.log('\n[2] تم سفید-طلایی — سفیدِ قالب، زرد فقط اکسنت (v0.83.1)');
+ok('پس‌زمینهٔ قالب سفید #fdfdfb در هر دو بلوک (عاجِ زرد حذف شد)',
   (cssSrc.match(/data-gold="on"\] body/g) || []).length >= 2 &&
-  cssSrc.includes('#faf4e6') && cssSrc.includes('rgba(255, 240, 200, 0.35)'));
-ok('پالت نو: طلای براق #c99916 + جوهر #fffdf5 (به‌جای سبزِ تیرهٔ قبلی)',
-  cssSrc.includes('--acc2: #c99916') && cssSrc.includes('--acc-ink: #fffdf5'));
-ok('کامپوننت‌های جامانده: سوییچ طلایی + اسکرول + سِلکشن + فوکوس + kbd',
+  (cssSrc.match(/#fdfdfb/g) || []).length >= 2 &&
+  !cssSrc.includes('#faf4e6'));
+ok('متن‌های قالب خنثی شدند (#2a2620) — قهوه‌ایِ عاجی حذف',
+  cssSrc.includes('--text: #2a2620') && !cssSrc.includes('#33260a'));
+ok('سطوح سفید: پنل/ورودی/نوار وضعیت/گروه تنظیمات/کارت پاسخ/مودال',
+  cssSrc.includes('--panel: rgba(255, 255, 255, 0.74)') &&
+  cssSrc.includes('rgba(255, 255, 255, 0.82);') &&
+  cssSrc.includes('rgba(255, 255, 255, 0.75);') &&
+  cssSrc.includes('rgba(255, 255, 255, 0.97);'));
+ok('کامپوننت‌های اکسنت: سوییچ طلایی + اسکرول + سِلکشن + فوکوس + kbd',
   cssSrc.includes('[data-theme="light"][data-gold="on"] .sw input:checked + i') &&
   cssSrc.includes('[data-theme="light"][data-gold="on"] ::selection') &&
   cssSrc.includes('[data-theme="light"][data-gold="on"] kbd'));
-ok('نوار وضعیت + دات‌ها + tb-badge طلایی شدند',
+ok('نوار وضعیت + دات‌ها + tb-badge پوشش دارند',
   cssSrc.includes('[data-theme="light"][data-gold="on"] #statusbar') &&
   cssSrc.includes('[data-theme="light"][data-gold="on"] .dot.ok'));
-ok('کارت پاسخ + چیپ فکر + تاریخچهٔ طلایی',
+ok('کارت پاسخ + چیپ فکر + تاریخچهٔ سفید با اکسنت طلایی',
   cssSrc.includes('[data-theme="light"][data-gold="on"] .response-card') &&
   cssSrc.includes('[data-theme="light"][data-gold="on"] .think-chip'));
 ok('دیک موزیک/اکنون-در-حال-پخش + مودال‌ها (تأیید/فرم مخاطب/دایرکتوری)',
@@ -87,10 +85,11 @@ ok('دیک موزیک/اکنون-در-حال-پخش + مودال‌ها (تأی�
 ok('مودال به‌روزرسانی: دکمهٔ اصلی طلایی گرادیانی + آیکون طلایی',
   cssSrc.includes('[data-theme="light"][data-gold="on"] .upd-card-primary') &&
   cssSrc.includes('[data-theme="light"][data-gold="on"] .upd-card-ic'));
-ok('چیپ توقف در تم طلایی خوانا (قرمزِ روشن روی عاج)',
+ok('چیپ توقف در تم طلایی خوانا (قرمزِ روشن روی سفید)',
   cssSrc.includes('[data-theme="light"][data-gold="on"] .stop-chip'));
-ok('خوش‌آمدگویی: گرادیان طلایی غنی‌تر با توقف‌های نو',
-  cssSrc.includes('#f2c14e'));
+ok('خوش‌آمدگویی: گرادیان طلاییِ آرام بلوک 0.82 (برقِ #f2c14e حذف شد)',
+  cssSrc.includes('[data-theme="light"][data-gold="on"] .greet h1 { background: linear-gradient(90deg, #7a5908, #b8860b, #926a0a, #7a5908)') &&
+  !cssSrc.includes('#f2c14e'));
 
 /* ---------- ۳) پلیر آوا — ری‌ورک پخش یوتیوب ---------- */
 console.log('\n[3] پلیر آوا (embed رسمی یوتیوب) — پخش تضمینی');

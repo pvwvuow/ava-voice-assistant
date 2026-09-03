@@ -2739,34 +2739,36 @@ details.set-adv[open] > summary { color: var(--text); }
 }
 [data-theme="light"][data-gold="on"] body,
 body[data-theme="light"][data-gold="on"] {
+  /* v0.83.1 — بازخورد کاربر: «سفید قالب باشه، یه ذره هم زرد توش باشه —
+     این خیلی زرده» → پس‌زمینه تقریباً سفید (#fdfdfb) با فقط دو شستِ بسیار
+     ملایمِ گرم؛ زرد دیگر لایهٔ کل صفحه نیست، فقط اکسنت است. */
   background:
-    radial-gradient(90% 60% at 80% -10%, rgba(212, 160, 23, 0.16), transparent 60%),
-    radial-gradient(80% 55% at 12% 8%, rgba(255, 216, 122, 0.22), transparent 55%),
-    radial-gradient(70% 50% at 55% 110%, rgba(146, 106, 10, 0.10), transparent 60%),
-    #fbf6ea;
-  color: #33260a;
+    radial-gradient(85% 55% at 82% -12%, rgba(228, 176, 42, 0.09), transparent 58%),
+    radial-gradient(55% 38% at 8% 2%, rgba(255, 226, 150, 0.09), transparent 55%),
+    #fdfdfb;
+  color: #2a2620;
 }
-[data-theme="light"][data-gold="on"] { --text: #33260a; --text2: #6b5a2c; --text3: #a08d55; --bg: #fbf6ea; --stroke: rgba(146, 106, 10, 0.16); }
-[data-theme="light"][data-gold="on"] .bg-blob.b1 { background: rgba(212, 160, 23, 0.18); }
-[data-theme="light"][data-gold="on"] .bg-blob.b2 { background: rgba(255, 197, 66, 0.16); }
-[data-theme="light"][data-gold="on"] .bg-blob.b3 { background: rgba(146, 106, 10, 0.10); }
-[data-theme="light"][data-gold="on"] .bg-vignette { background: radial-gradient(120% 90% at 50% 0%, transparent 60%, rgba(146, 106, 10, 0.12) 100%); }
-[data-theme="light"][data-gold="on"] .bg-particles i { background: rgba(184, 134, 11, 0.5); box-shadow: 0 0 10px rgba(212, 160, 23, 0.6); }
+[data-theme="light"][data-gold="on"] { --text: #2a2620; --text2: #5f594e; --text3: #98918a; --bg: #fdfdfb; --stroke: rgba(120, 105, 70, 0.12); }
+[data-theme="light"][data-gold="on"] .bg-blob.b1 { background: rgba(212, 160, 23, 0.08); }
+[data-theme="light"][data-gold="on"] .bg-blob.b2 { background: rgba(255, 197, 66, 0.07); }
+[data-theme="light"][data-gold="on"] .bg-blob.b3 { background: rgba(146, 106, 10, 0.05); }
+[data-theme="light"][data-gold="on"] .bg-vignette { background: radial-gradient(120% 90% at 50% 0%, transparent 60%, rgba(146, 106, 10, 0.06) 100%); }
+[data-theme="light"][data-gold="on"] .bg-particles i { background: rgba(184, 134, 11, 0.32); box-shadow: 0 0 10px rgba(212, 160, 23, 0.4); }
 [data-theme="light"][data-gold="on"] .glass {
-  background: linear-gradient(150deg, rgba(255, 252, 242, 0.86), rgba(255, 247, 224, 0.6) 55%, rgba(255, 250, 235, 0.8));
-  border: 1px solid rgba(146, 106, 10, 0.16);
-  box-shadow: 0 16px 44px rgba(146, 106, 10, 0.16),
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.74) 55%, rgba(255, 254, 250, 0.86));
+  border: 1px solid rgba(120, 105, 70, 0.12);
+  box-shadow: 0 16px 44px rgba(120, 105, 70, 0.12),
               inset 0 1px 0 rgba(255, 255, 255, 0.95),
-              inset 0 -1px 0 rgba(212, 160, 23, 0.10);
+              inset 0 -1px 0 rgba(212, 160, 23, 0.06);
 }
 [data-theme="light"][data-gold="on"] #titlebar {
   background:
     linear-gradient(90deg,
-      rgba(212, 160, 23, 0.20) 0%, rgba(212, 160, 23, 0.07) 16%,
-      rgba(255, 255, 255, 0.4) 34%, rgba(255, 255, 255, 0) 50%,
-      rgba(255, 255, 255, 0.4) 66%, rgba(212, 160, 23, 0.07) 84%,
-      rgba(212, 160, 23, 0.20) 100%);
-  border-bottom: 1px solid rgba(146, 106, 10, 0.12);
+      rgba(212, 160, 23, 0.10) 0%, rgba(212, 160, 23, 0.04) 16%,
+      rgba(255, 255, 255, 0.5) 34%, rgba(255, 255, 255, 0) 50%,
+      rgba(255, 255, 255, 0.5) 66%, rgba(212, 160, 23, 0.04) 84%,
+      rgba(212, 160, 23, 0.10) 100%);
+  border-bottom: 1px solid rgba(120, 105, 70, 0.10);
 }
 [data-theme="light"][data-gold="on"] .tb-logo {
   background: linear-gradient(145deg, rgba(212, 160, 23, 0.32), rgba(184, 134, 11, 0.16));
@@ -2774,7 +2776,7 @@ body[data-theme="light"][data-gold="on"] {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 4px 14px rgba(212, 160, 23, 0.3);
   color: #8a6508;
 }
-[data-theme="light"][data-gold="on"] .rail-item:hover { background: rgba(146, 106, 10, 0.10); }
+[data-theme="light"][data-gold="on"] .rail-item:hover { background: rgba(146, 106, 10, 0.08); }
 [data-theme="light"][data-gold="on"] .rail-item.active {
   color: #fff;
   background: linear-gradient(135deg, #d4a017, #a1720a);
@@ -2785,11 +2787,11 @@ body[data-theme="light"][data-gold="on"] {
 [data-theme="light"][data-gold="on"] .orb-halo { background: radial-gradient(circle, rgba(212, 160, 23, 0.32), transparent 65%); }
 [data-theme="light"][data-gold="on"] .orb-ring { border-color: rgba(184, 134, 11, 0.5); }
 [data-theme="light"][data-gold="on"] .orb {
-  border: 1px solid rgba(146, 106, 10, 0.18);
-  background: radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.92), rgba(255, 248, 228, 0.55) 42%, rgba(212, 160, 23, 0.16) 100%);
-  box-shadow: 0 24px 60px rgba(146, 106, 10, 0.25),
+  border: 1px solid rgba(146, 106, 10, 0.14);
+  background: radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.95), rgba(255, 252, 242, 0.6) 42%, rgba(212, 160, 23, 0.12) 100%);
+  box-shadow: 0 24px 60px rgba(120, 105, 70, 0.2),
               inset 0 2px 0 rgba(255, 255, 255, 0.95),
-              inset 0 -18px 40px rgba(212, 160, 23, 0.14);
+              inset 0 -18px 40px rgba(212, 160, 23, 0.1);
 }
 [data-theme="light"][data-gold="on"] .orb-liquid .bl1 { background: radial-gradient(circle at 40% 40%, rgba(255, 197, 66, 0.95), rgba(184, 134, 11, 0.42)); }
 [data-theme="light"][data-gold="on"] .orb-liquid .bl2 { background: radial-gradient(circle at 60% 50%, rgba(212, 160, 23, 0.85), rgba(146, 106, 10, 0.3)); }
@@ -2799,10 +2801,10 @@ body[data-theme="light"][data-gold="on"] {
 [data-theme="light"][data-gold="on"] .state-listening .orb { box-shadow: 0 24px 60px rgba(146, 106, 10, 0.3), 0 0 80px rgba(212, 160, 23, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.95); }
 [data-theme="light"][data-gold="on"] .state-listening .status-dot, [data-theme="light"][data-gold="on"] .state-success .status-dot { background: #b8860b; }
 [data-theme="light"][data-gold="on"] .state-processing .status-dot { background: #b45309; }
-[data-theme="light"][data-gold="on"] .chip { border-color: rgba(146, 106, 10, 0.16); background: rgba(255, 252, 242, 0.72); }
+[data-theme="light"][data-gold="on"] .chip { border-color: rgba(120, 105, 70, 0.12); background: rgba(255, 255, 255, 0.72); }
 [data-theme="light"][data-gold="on"] .chip .ic { color: #a1720a; }
 [data-theme="light"][data-gold="on"] .chip:hover { background: rgba(212, 160, 23, 0.14); border-color: rgba(184, 134, 11, 0.4); }
-[data-theme="light"][data-gold="on"] .cmd-bar { border-color: rgba(146, 106, 10, 0.2); }
+[data-theme="light"][data-gold="on"] .cmd-bar { border-color: rgba(120, 105, 70, 0.14); }
 [data-theme="light"][data-gold="on"] .cmd-bar:focus-within { border-color: rgba(184, 134, 11, 0.55); box-shadow: 0 10px 34px rgba(212, 160, 23, 0.22); }
 [data-theme="light"][data-gold="on"] .cmd-send { background: linear-gradient(135deg, #d4a017, #a1720a); color: #fff; box-shadow: 0 6px 18px rgba(212, 160, 23, 0.4); }
 [data-theme="light"][data-gold="on"] .cmd-mic { color: #a1720a; }
@@ -2826,82 +2828,43 @@ body[data-theme="light"][data-gold="on"] {
 [data-theme="light"][data-gold="on"] .ct-badge { background: rgba(212, 160, 23, 0.14); color: #8a6508; border-color: rgba(184, 134, 11, 0.3); }
 [data-theme="light"][data-gold="on"] .ct-badge.ct-discord { background: rgba(99, 102, 241, 0.12); color: #4f52b2; border-color: rgba(99, 102, 241, 0.3); }
 [data-theme="light"][data-gold="on"] .ct-badge.ct-whatsapp { background: rgba(22, 163, 74, 0.12); color: #166534; border-color: rgba(22, 163, 74, 0.3); }
-[data-theme="light"][data-gold="on"] .ct-row { background: rgba(255, 252, 242, 0.66); border-color: rgba(146, 106, 10, 0.14); }
-[data-theme="light"][data-gold="on"] .ct-row:hover { border-color: rgba(184, 134, 11, 0.45); background: rgba(255, 247, 224, 0.9); }
-[data-theme="light"][data-gold="on"] .ct-search-row { background: rgba(255, 252, 242, 0.8); }
-[data-theme="light"][data-gold="on"] .ct-empty { border-color: rgba(146, 106, 10, 0.2); }
+[data-theme="light"][data-gold="on"] .ct-row { background: rgba(255, 255, 255, 0.66); border-color: rgba(120, 105, 70, 0.10); }
+[data-theme="light"][data-gold="on"] .ct-row:hover { border-color: rgba(184, 134, 11, 0.4); background: rgba(255, 253, 244, 0.92); }
+[data-theme="light"][data-gold="on"] .ct-search-row { background: rgba(255, 255, 255, 0.8); }
+[data-theme="light"][data-gold="on"] .ct-empty { border-color: rgba(120, 105, 70, 0.14); }
 [data-theme="light"][data-gold="on"] .suggest-pill .sg-ico { background: linear-gradient(135deg, rgba(255, 197, 66, 0.95), rgba(184, 134, 11, 0.8)); }
 [data-theme="light"][data-gold="on"] .suggest-pill:hover { border-color: rgba(184, 134, 11, 0.5); box-shadow: 0 10px 34px rgba(212, 160, 23, 0.28); }
 [data-theme="light"][data-gold="on"] .handsfree-toggle.active { border-color: rgba(184, 134, 11, 0.6); background: rgba(212, 160, 23, 0.16); }
-[data-theme="light"][data-gold="on"] .live-text { background: rgba(255, 252, 242, 0.8); }
+[data-theme="light"][data-gold="on"] .live-text { background: rgba(255, 255, 255, 0.85); }
 [data-theme="light"][data-gold="on"] .about-logo { background: linear-gradient(145deg, rgba(212, 160, 23, 0.3), rgba(184, 134, 11, 0.15)); color: #8a6508; }
 
 /* ============================================================
-   v0.83 — هالهٔ «ماورایی» چندلایهٔ دور دکمهٔ میکروفون (بازطراحی کامل 0.82.2)
+   v0.83.1 — حالتِ فعالِ اورب: آرام، شفاف و هم‌رنگِ هر تم
    ────────────────────────────────────────────────────────────
-   سه لایهٔ هم‌مرکز که فقط حین شنیدن/پردازش جان می‌گیرند:
-   • orb-halo    شفقِ اصلی — سه قوس سرخ/کهربا/گلبرگی که می‌چرخد و نفس می‌کشد
-   • orb-aurora  شفقِ معکوس — قوس‌های نرم‌تر سفید-کهربایی، خلاف جهت، تداخل نور
-   • orb-sparks  سه ذرهٔ نور در سه مدار با سه سرعت (یکی معکوس) — دنبالهٔ درخشان
-   + حلقه‌های موج (orb-ring) حالا در پردازش هم می‌تپند + هستهٔ سرخ تپنده
-   + میکروفون نوار فرمان و نقطهٔ نوار وضعیت هم قرمزِ هم‌خانواده می‌شوند
-   ⚠ تم طلایی روی body نشسته (data-gold) — قواعد حالتِ قرمزِ طلایی با
-   نحوِ «.state-listening» هم‌عنصری بازنویسی می‌شوند تا بر idle طلایی ببرند.
+   بازخورد کاربر (v0.83): «افکت دور دکمهٔ میکروفون خیلی شلوغ
+   است و متناسب هر تم نیست». درمان: لایه‌های شفق چرخان و ذره‌های
+   مداری (aurora/sparks) کاملاً حذف شدند — زبانِ جدید همان زبانِ
+   سادهٔ خودِ تم است: درخشش نرمِ نفس‌کشنده + حلقه‌های موج + قوس
+   پردازش، همه با رنگِ اکسنتِ همان تم (متغیر --acc-rgb) تا افکت
+   در هر چهار تم «مالِ همان تم» به نظر برسد.
+   قرمز فقط جایی می‌ماند که کارکرد دارد: دکمهٔ میکروفونِ نوار
+   فرمان و نقطهٔ وضعیت (کلیک همان = توقف درخواست).
+   ⚠ نحوِ هم‌عنصری/پیشوند body برای برد از قواعد idle تم‌ها —
+   درس Specificity نسخه‌های 0.82.2/0.83 حفظ شده است.
    ============================================================ */
-.orb-aurora {
-  position: absolute; width: 402px; height: 402px; border-radius: 50%;
-  opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
-}
-.orb-sparks {
-  position: absolute; width: 348px; height: 348px; border-radius: 50%;
-  opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
-}
-.orb-sparks i { position: absolute; inset: 0; border-radius: 50%; }
-.orb-sparks i::before {
-  content: ''; position: absolute; top: -5px; left: 50%;
-  width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
-  background: radial-gradient(circle, #fff 0%, #ffc2cd 32%, rgba(255, 45, 85, 0.9) 58%, rgba(255, 45, 85, 0) 78%);
-  box-shadow: 0 0 14px 4px rgba(255, 77, 109, 0.65), 0 0 36px 12px rgba(255, 45, 85, 0.22);
-}
 
+/* درخشش نرم — حین شنیدن و پردازش جان می‌گیرد (رنگِ تم) */
 body.state-listening .orb-halo,
 body.state-processing .orb-halo {
-  background: conic-gradient(from 0deg,
-    rgba(255, 45, 85, 0) 0deg, rgba(255, 45, 85, 0.85) 55deg, rgba(255, 130, 150, 0.5) 95deg, rgba(255, 45, 85, 0) 132deg,
-    rgba(255, 176, 32, 0) 152deg, rgba(255, 176, 32, 0.78) 208deg, rgba(255, 220, 140, 0.42) 238deg, rgba(255, 176, 32, 0) 268deg,
-    rgba(255, 92, 122, 0) 286deg, rgba(255, 92, 122, 0.66) 332deg, rgba(255, 45, 85, 0) 360deg);
-  animation: avaHaloSpin 2.4s linear infinite, avaHaloBreath 2.8s ease-in-out infinite;
-  filter: blur(14px) saturate(1.35);
-  opacity: 1;
+  background: radial-gradient(circle, rgba(var(--acc-rgb), 0.3), transparent 65%);
+  animation-duration: 3.2s;
+  opacity: 0.8;
 }
-body.state-listening .orb-aurora,
-body.state-processing .orb-aurora {
-  opacity: 0.85;
-  background: conic-gradient(from 140deg,
-    rgba(255, 255, 255, 0) 0deg, rgba(255, 196, 158, 0.32) 62deg, rgba(255, 255, 255, 0) 132deg,
-    rgba(255, 126, 156, 0.24) 202deg, rgba(255, 255, 255, 0) 278deg,
-    rgba(255, 210, 130, 0.26) 330deg, rgba(255, 255, 255, 0) 360deg);
-  filter: blur(24px);
-  animation: avaHaloSpinRev 5.6s linear infinite;
-}
-body.state-listening .orb-sparks,
-body.state-processing .orb-sparks { opacity: 1; }
-body.state-listening .orb-sparks i:nth-child(1),
-body.state-processing .orb-sparks i:nth-child(1) { animation: avaOrbit 3.4s linear infinite; }
-body.state-listening .orb-sparks i:nth-child(2),
-body.state-processing .orb-sparks i:nth-child(2) { inset: 20px; animation: avaOrbitRev 4.9s linear infinite; }
-body.state-listening .orb-sparks i:nth-child(3),
-body.state-processing .orb-sparks i:nth-child(3) { inset: 38px; animation: avaOrbit 6.2s linear infinite; animation-delay: -2.1s; }
-@keyframes avaHaloSpin { to { transform: rotate(360deg); } }
-@keyframes avaHaloSpinRev { to { transform: rotate(-360deg); } }
-@keyframes avaOrbit { to { transform: rotate(360deg); } }
-@keyframes avaOrbitRev { to { transform: rotate(-360deg); } }
-@keyframes avaHaloBreath { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
 
-/* حلقه‌های موج: حین پردازش هم می‌تپند و رنگ‌شان سرخِ هم‌خانوادهٔ هاله است */
+/* حلقه‌های موج — حین پردازش هم می‌تپند (رنگِ تم) */
 body.state-listening .orb-ring,
 body.state-processing .orb-ring {
-  border-color: rgba(255, 77, 109, 0.55);
+  border-color: rgba(var(--acc-rgb), 0.5);
   animation: ringPulse 2.1s ease-out infinite;
 }
 body.state-listening .orb-ring.rg2,
@@ -2909,24 +2872,29 @@ body.state-processing .orb-ring.rg2 { animation-delay: 0.55s; }
 body.state-listening .orb-ring.rg3,
 body.state-processing .orb-ring.rg3 { animation-delay: 1.1s; }
 
+/* بدنهٔ اورب — هالهٔ نرمِ اکسنت تم؛ بدون قوس و ذرهٔ اضافه */
 body.state-listening .orb,
 body.state-processing .orb {
-  border-color: rgba(255, 45, 85, 0.55);
-  box-shadow: 0 24px 60px rgba(255, 45, 85, 0.24),
-              inset 0 2px 0 rgba(255, 255, 255, 0.12),
-              0 0 0 1px rgba(255, 45, 85, 0.28),
-              0 0 90px rgba(255, 45, 85, 0.2);
+  border-color: rgba(var(--acc-rgb), 0.45);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(var(--acc-rgb), 0.25),
+              0 0 80px rgba(var(--acc-rgb), 0.24),
+              inset 0 2px 0 rgba(255, 255, 255, 0.14);
 }
+
+/* آیکون مرکزی — تپشِ ملایم (رنگِ آیکون دست نمی‌خورد) */
 body.state-listening .orb-core .ic,
 body.state-processing .orb-core .ic {
-  color: #fb7185;
-  filter: drop-shadow(0 0 10px rgba(255, 45, 85, 0.7));
-  animation: avaIcoPulse 2s ease-in-out infinite;
+  animation: avaIcoPulse 2.4s ease-in-out infinite;
 }
-@keyframes avaIcoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+@keyframes avaIcoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
-/* میکروفون نوار فرمان + نقطهٔ نوار وضعیت: در شنیدن و پردازش هر دو قرمز
-   (رنگِ مخالفِ سبزِ آسودگی — قرمز یعنی «جریان دارد، کلیک همان دکمه = توقف») */
+/* قوس پردازش — رنگِ تم */
+body.state-processing .orb::after { border-top-color: rgba(var(--acc-rgb), 0.9); }
+
+/* میکروفون نوار فرمان + نقطهٔ نوار وضعیت: قرمزِ کارکردی — در شنیدن و
+   پردازش هر دو قرمز (رنگِ مخالفِ سبزِ آسودگی — قرمز یعنی «جریان دارد،
+   کلیک همان دکمه = توقف»). فرمِ ۴گانه برای برد از قواعد idle تم روشن/طلایی. */
 body.state-listening .cmd-mic,
 body.state-processing .cmd-mic,
 [data-theme="light"] body.state-listening .cmd-mic,
@@ -2943,82 +2911,30 @@ body.state-processing #sbMic .dot {
   animation: dotPingRed 1.6s ease-out infinite;
 }
 
-/* حالت سبک/بدون افکت: هاله ساکن ولی قرمز می‌ماند؛ ذره‌ها و شفق معکوس خاموش */
-body.perf-nofx .orb-halo { animation: none !important; }
-body.perf-nofx .orb-aurora,
-body.perf-nofx .orb-sparks,
-[data-theme="lite"] .orb-aurora,
-[data-theme="lite"] .orb-sparks,
-[data-theme="darklite"] .orb-aurora,
-[data-theme="darklite"] .orb-sparks { display: none !important; }
-body.perf-nofx .orb-sparks i,
+/* حالت سبک/بدون افکت: انیمیشن‌ها خاموش، رنگ‌ها همان تم می‌مانند */
 body.perf-nofx .orb-core .ic { animation: none !important; }
-body.perf-nofx.state-listening .orb-halo,
-body.perf-nofx.state-processing .orb-halo {
-  background: radial-gradient(circle, rgba(255, 45, 85, 0.28), transparent 65%);
-  filter: blur(12px);
-}
-/* app-blur (پنجرهٔ کم‌رنگ): لایه‌های نو هم خاموش شوند */
-body.app-blur .orb-aurora, body.app-blur .orb-sparks { animation: none !important; opacity: 0 !important; }
-
-/* ⚠ تم طلایی: قواعد idle طلایی (۳ کلاس) از قواعد حالتِ سرخِ عمومی (۲ کلاس+۱ عنصر)
-   قوی‌ترند — در 0.82.2 همین باعث می‌شد هالهٔ سرخ در تم طلایی تقریباً دیده نشود.
-   حالا حالت‌های شنیدن/پردازش با نحوِ هم‌عنصری (data-ها و state هر دو روی body)
-   صریحاً بازنویسی می‌شوند — هالهٔ ماورایی در هر چهار تم یکسان می‌درخشد. */
-[data-theme="light"][data-gold="on"].state-listening .orb-halo,
-[data-theme="light"][data-gold="on"].state-processing .orb-halo {
-  background: conic-gradient(from 0deg,
-    rgba(255, 45, 85, 0) 0deg, rgba(255, 45, 85, 0.8) 55deg, rgba(255, 140, 158, 0.48) 95deg, rgba(255, 45, 85, 0) 132deg,
-    rgba(224, 150, 26, 0) 152deg, rgba(240, 168, 26, 0.82) 208deg, rgba(255, 224, 150, 0.44) 238deg, rgba(240, 168, 26, 0) 268deg,
-    rgba(255, 92, 122, 0) 286deg, rgba(255, 92, 122, 0.62) 332deg, rgba(255, 45, 85, 0) 360deg);
-}
-[data-theme="light"][data-gold="on"].state-listening .orb-ring,
-[data-theme="light"][data-gold="on"].state-processing .orb-ring { border-color: rgba(255, 77, 109, 0.6); }
-[data-theme="light"][data-gold="on"].state-listening .orb,
-[data-theme="light"][data-gold="on"].state-processing .orb {
-  border-color: rgba(255, 45, 85, 0.55);
-  background: radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.92), rgba(255, 244, 244, 0.55) 42%, rgba(255, 45, 85, 0.14) 100%);
-  box-shadow: 0 24px 60px rgba(184, 134, 11, 0.28),
-              0 0 0 1px rgba(255, 45, 85, 0.3),
-              0 0 90px rgba(255, 45, 85, 0.2),
-              inset 0 2px 0 rgba(255, 255, 255, 0.95);
-}
-[data-theme="light"][data-gold="on"].state-listening .orb-core .ic,
-[data-theme="light"][data-gold="on"].state-processing .orb-core .ic { color: #fb7185; }
-[data-theme="light"][data-gold="on"].state-processing .orb::after { border-top-color: rgba(255, 45, 85, 0.9); }
-[data-theme="light"][data-gold="on"].state-listening .cmd-mic,
-[data-theme="light"][data-gold="on"].state-processing .cmd-mic {
-  background: linear-gradient(145deg, #fb5a75, #e11d48);
-  border-color: rgba(255, 45, 85, 0.55);
-  color: #fff;
-}
 
 /* ============================================================
-   v0.83 — تم «سفید طلایی» بازطراحی کامل (ری‌ورک خواستهٔ کاربر)
+   v0.83.1 — تم «سفید طلایی» بازطراحی دوباره (بازخورد کاربر)
    ────────────────────────────────────────────────────────────
-   لایهٔ نو روی بلوک 0.82: پالت عمیق‌تر (طلای درخشان + جوهر قهوه‌ای‌تیره)،
-   پس‌زمینهٔ عاجی چندلایه با تابِ طلایی، و پوششِ همهٔ کامپوننت‌هایی که
-   در 0.82 بنفش/زمردی مانده بودند (سوییچ، اسکرول، سِلکشن، پاسخ‌کارت،
-   دیک موزیک، مودال‌ها، چیپ فکر، تیک‌ها، ورودی‌ها…).
+   بازخورد کاربر (v0.83): «منظورم از تم سفید و زرد این بود که
+   سفید قالب باشه یه ذره هم زرد توش باشه — این دیگه خیلی زرده».
+   درمان: همهٔ سطوح (پس‌زمینه، پنل‌ها، کارت‌ها، مودال‌ها، ورودی‌ها)
+   سفید شدند و متن‌ها خنثی؛ طلایی فقط «اکسنت» ماند — دکمهٔ فعال،
+   سوییچ، آیکون، فوکوس، انتخاب متن، نوار فعال و نشانگرها.
    ============================================================ */
 [data-theme="light"][data-gold="on"] {
-  --acc: #b8860b;
-  --acc2: #c99916;
-  --acc-deep: #8a6508;
-  --acc-ink: #fffdf5;
-  --acc-glow: rgba(201, 153, 22, 0.42);
-  --panel: rgba(255, 253, 246, 0.66);
-  --panel-strong: rgba(255, 252, 240, 0.85);
-  --input-bg: rgba(255, 253, 245, 0.9);
+  --panel: rgba(255, 255, 255, 0.74);
+  --panel-strong: rgba(255, 255, 255, 0.92);
+  --input-bg: rgba(255, 255, 255, 0.94);
 }
 [data-theme="light"][data-gold="on"] body,
 body[data-theme="light"][data-gold="on"] {
+  /* هم‌سان با بلوک 0.82 — سفیدِ قالب + دو شستِ خیلی ملایم */
   background:
-    radial-gradient(85% 55% at 82% -12%, rgba(228, 176, 42, 0.20), transparent 58%),
-    radial-gradient(70% 48% at 8% 4%, rgba(255, 226, 150, 0.30), transparent 55%),
-    radial-gradient(60% 42% at 50% 118%, rgba(178, 132, 22, 0.16), transparent 62%),
-    radial-gradient(34% 24% at 50% 42%, rgba(255, 240, 200, 0.35), transparent 70%),
-    #faf4e6;
+    radial-gradient(85% 55% at 82% -12%, rgba(228, 176, 42, 0.09), transparent 58%),
+    radial-gradient(55% 38% at 8% 2%, rgba(255, 226, 150, 0.09), transparent 55%),
+    #fdfdfb;
 }
 /* اسکرول، سِلکشن، فوکوس، کیبورد — طلاییِ یکدست */
 [data-theme="light"][data-gold="on"] #main::-webkit-scrollbar-thumb,
@@ -3028,23 +2944,23 @@ body[data-theme="light"][data-gold="on"] {
 [data-theme="light"][data-gold="on"] ::selection { background: rgba(212, 160, 23, 0.32); }
 [data-theme="light"][data-gold="on"] :focus-visible { outline-color: rgba(201, 153, 22, 0.7); }
 [data-theme="light"][data-gold="on"] kbd {
-  background: rgba(255, 252, 240, 0.95);
-  border-color: rgba(146, 106, 10, 0.28);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(120, 105, 70, 0.2);
   color: #7a5908;
-  box-shadow: 0 2px 0 rgba(146, 106, 10, 0.14);
+  box-shadow: 0 2px 0 rgba(120, 105, 70, 0.12);
 }
 /* نوار وضعیت + جدازنه‌ها */
 [data-theme="light"][data-gold="on"] #statusbar {
-  background: rgba(255, 252, 242, 0.78);
-  border-top: 1px solid rgba(146, 106, 10, 0.14);
+  background: rgba(255, 255, 255, 0.82);
+  border-top: 1px solid rgba(120, 105, 70, 0.10);
 }
-[data-theme="light"][data-gold="on"] .sb-sep { background: rgba(146, 106, 10, 0.2); }
+[data-theme="light"][data-gold="on"] .sb-sep { background: rgba(120, 105, 70, 0.14); }
 [data-theme="light"][data-gold="on"] .dot.ok { background: #c99916; box-shadow: 0 0 6px rgba(212, 160, 23, 0.8); }
 [data-theme="light"][data-gold="on"] .dot.warn { background: #b45309; }
 [data-theme="light"][data-gold="on"] .dot.err { background: #dc2626; }
 [data-theme="light"][data-gold="on"] .dot.rec { background: #c99916; }
-[data-theme="light"][data-gold="on"] .tb-badge { background: rgba(146, 106, 10, 0.08); border-color: rgba(146, 106, 10, 0.2); color: #8a6508; }
-[data-theme="light"][data-gold="on"] .tb-btn:hover { background: rgba(146, 106, 10, 0.1); color: #5d4305; }
+[data-theme="light"][data-gold="on"] .tb-badge { background: rgba(120, 105, 70, 0.06); border-color: rgba(120, 105, 70, 0.14); color: #8a6508; }
+[data-theme="light"][data-gold="on"] .tb-btn:hover { background: rgba(146, 106, 10, 0.08); color: #5d4305; }
 /* سوییچ‌ها — طلاییِ براق */
 [data-theme="light"][data-gold="on"] .sw i { background: rgba(146, 106, 10, 0.12); }
 [data-theme="light"][data-gold="on"] .sw input:checked + i {
@@ -3053,63 +2969,63 @@ body[data-theme="light"][data-gold="on"] {
   box-shadow: 0 0 10px rgba(212, 160, 23, 0.4);
 }
 [data-theme="light"][data-gold="on"] .sw i::after { background: #fffdf3; }
-/* گروه‌ها و ورودی‌های تنظیمات */
+/* گروه‌ها و ورودی‌های تنظیمات — سفید */
 [data-theme="light"][data-gold="on"] .set-group {
-  background: rgba(255, 253, 244, 0.72);
-  border-color: rgba(146, 106, 10, 0.16);
-  box-shadow: 0 10px 30px rgba(146, 106, 10, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(120, 105, 70, 0.12);
+  box-shadow: 0 10px 30px rgba(120, 105, 70, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 [data-theme="light"][data-gold="on"] .set-group h3 { color: #6b5216; }
 [data-theme="light"][data-gold="on"] .set-group h3 .ic { color: #a1720a; }
 [data-theme="light"][data-gold="on"] .set-select,
 [data-theme="light"][data-gold="on"] .set-input {
-  border-color: rgba(146, 106, 10, 0.24);
-  background: rgba(255, 253, 245, 0.95);
+  border-color: rgba(120, 105, 70, 0.18);
+  background: rgba(255, 255, 255, 0.95);
 }
 [data-theme="light"][data-gold="on"] .set-hint { color: #a08d55; }
 [data-theme="light"][data-gold="on"] .set-note { color: #8a6508; }
 [data-theme="light"][data-gold="on"] .set-subhead { color: #6b5216; }
-/* کارت پاسخ + چیپ فکر + تاریخچه */
+/* کارت پاسخ + چیپ فکر + تاریخچه — سفید */
 [data-theme="light"][data-gold="on"] .response-card {
-  background: linear-gradient(150deg, rgba(255, 253, 244, 0.88), rgba(255, 248, 228, 0.7));
-  border-color: rgba(146, 106, 10, 0.18);
-  box-shadow: 0 14px 40px rgba(146, 106, 10, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.92), rgba(255, 254, 250, 0.8));
+  border-color: rgba(120, 105, 70, 0.14);
+  box-shadow: 0 14px 40px rgba(120, 105, 70, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 [data-theme="light"][data-gold="on"] .think-chip {
-  background: rgba(255, 250, 235, 0.95);
+  background: rgba(255, 254, 250, 0.95);
   color: #8a6508;
-  border-color: rgba(184, 134, 11, 0.45);
+  border-color: rgba(184, 134, 11, 0.35);
 }
-[data-theme="light"][data-gold="on"] .history-item { background: rgba(255, 253, 244, 0.6); }
+[data-theme="light"][data-gold="on"] .history-item { background: rgba(255, 255, 255, 0.6); }
 [data-theme="light"][data-gold="on"] .history-item .h-ok.ok { background: #c99916; }
 /* ویجت‌های موزیک */
 [data-theme="light"][data-gold="on"] .music-deck,
 [data-theme="light"][data-gold="on"] .np-area,
 [data-theme="light"][data-gold="on"] .mw {
-  border-color: rgba(146, 106, 10, 0.18);
-  box-shadow: 0 18px 50px rgba(146, 106, 10, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: rgba(120, 105, 70, 0.13);
+  box-shadow: 0 18px 50px rgba(120, 105, 70, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 [data-theme="light"][data-gold="on"] .m-search,
 [data-theme="light"][data-gold="on"] .ct-search-row,
 [data-theme="light"][data-gold="on"] .ct-in {
-  background: rgba(255, 253, 245, 0.92);
-  border-color: rgba(146, 106, 10, 0.2);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(120, 105, 70, 0.15);
 }
 [data-theme="light"][data-gold="on"] .m-list > *:hover,
 [data-theme="light"][data-gold="on"] .dc-call-row:hover { border-color: rgba(184, 134, 11, 0.4); }
-/* مودال‌ها (تأیید/به‌روزرسانی/فرم مخاطب) */
+/* مودال‌ها (تأیید/به‌روزرسانی/فرم مخاطب) — سفید */
 [data-theme="light"][data-gold="on"] .confirm,
 [data-theme="light"][data-gold="on"] .ctadd-card,
 [data-theme="light"][data-gold="on"] .cs-card,
 [data-theme="light"][data-gold="on"] .dnsq-card {
-  background: rgba(255, 252, 242, 0.96);
-  border-color: rgba(146, 106, 10, 0.22);
-  color: #33260a;
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(120, 105, 70, 0.16);
+  color: #2a2620;
 }
 [data-theme="light"][data-gold="on"] .confirm pre {
-  background: rgba(146, 106, 10, 0.08);
-  border-color: rgba(146, 106, 10, 0.16);
-  color: #6b5216;
+  background: rgba(120, 105, 70, 0.06);
+  border-color: rgba(120, 105, 70, 0.12);
+  color: #5f594e;
 }
 [data-theme="light"][data-gold="on"] .upd-card-ic {
   background: linear-gradient(145deg, rgba(227, 179, 65, 0.28), rgba(184, 134, 11, 0.14));
@@ -3122,11 +3038,11 @@ body[data-theme="light"][data-gold="on"] {
 [data-theme="light"][data-gold="on"] .upd-card-primary:hover { filter: brightness(1.07); }
 [data-theme="light"][data-gold="on"] .upd-card-ghost { color: #8a6508; border-color: rgba(146, 106, 10, 0.3); }
 [data-theme="light"][data-gold="on"] .upd-card-ghost:hover { background: rgba(212, 160, 23, 0.12); }
-/* چیپ‌های ویژه: کلیپ‌بورد، توقف، پیشنهاد */
+/* چیپ‌های ویژه: کلیپ‌بورد، توقف، پیشنهاد — سفید با حاشیهٔ طلاییِ کم */
 [data-theme="light"][data-gold="on"] .clip-chip {
-  background: rgba(255, 252, 240, 0.92);
-  border-color: rgba(184, 134, 11, 0.4);
-  box-shadow: 0 10px 30px rgba(146, 106, 10, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(184, 134, 11, 0.35);
+  box-shadow: 0 10px 30px rgba(120, 105, 70, 0.14);
 }
 [data-theme="light"][data-gold="on"] .cc-play { color: #8a6508; }
 [data-theme="light"][data-gold="on"] .clip-chip .cc-x:hover { color: #5d4305; background: rgba(146, 106, 10, 0.1); }
@@ -3137,24 +3053,19 @@ body[data-theme="light"][data-gold="on"] {
 }
 [data-theme="light"][data-gold="on"] .stop-chip:hover { background: rgba(255, 45, 85, 0.18); }
 [data-theme="light"][data-gold="on"] .suggest-pill {
-  background: rgba(255, 252, 240, 0.85);
-  border-color: rgba(146, 106, 10, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(120, 105, 70, 0.13);
 }
 [data-theme="light"][data-gold="on"] .suggest-pill .sg-go { color: #a1720a; }
 [data-theme="light"][data-gold="on"] .sg-hint { color: #a08d55; }
-/* زبانِ زندهٔ حین ضبط — طلایی */
+/* زبانِ زندهٔ حین ضبط — سفید با اکسنت طلایی */
 [data-theme="light"][data-gold="on"] .live-text {
-  background: rgba(255, 252, 240, 0.92);
-  border: 1px solid rgba(184, 134, 11, 0.35);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(184, 134, 11, 0.3);
   color: #5d4305;
-  box-shadow: 0 8px 26px rgba(146, 106, 10, 0.16);
+  box-shadow: 0 8px 26px rgba(120, 105, 70, 0.14);
 }
 [data-theme="light"][data-gold="on"] .live-text .lt-dot { background: #c99916; }
-[data-theme="light"][data-gold="on"] .greet h1 {
-  background: linear-gradient(90deg, #8a5a04, #c99916, #f2c14e, #a1720a, #8a5a04);
-  background-size: 280% 100%;
-  -webkit-background-clip: text; background-clip: text;
-}
-[data-theme="light"][data-gold="on"] .greet-sub { color: #7a6432; }
+[data-theme="light"][data-gold="on"] .greet-sub { color: #6b665c; }
 [data-theme="light"][data-gold="on"] .cmd-send:hover { filter: brightness(1.1); transform: translateY(-1px); }
 [data-theme="light"][data-gold="on"] .warn-note { color: #b45309; border-inline-start-color: #b45309; }

@@ -260,9 +260,9 @@ ok('چیپ کلیپ‌بورد با صدا هم خبر می‌دهد (کاربر
   appSrc.includes("speak(LANG === 'en' ? 'A video link is copied — say play it.'"));
 ok('کلیک میکروفون حین درخواست = توقف (orb-stop)',
   appSrc.includes("aiCancelRun('orb-stop')") && appSrc.includes("orb stop: request cancelled by mic click"));
-ok('هالهٔ چرخان قرمز دور میکروفون حین شنیدن/پردازش + هستهٔ مخالف',
-  cssSrc.includes('body.state-listening .orb-halo,') && cssSrc.includes('avaHaloSpin') &&
-  cssSrc.includes('body.state-processing .orb-core .ic'));
+ok('هالهٔ فعال دور میکروفون حین شنیدن/پردازش — v0.83.1 آرام و هم‌رنگ تم\n    (بازخورد کاربر: نسخهٔ چرخانِ سرخِ 0.82.2 شلوغ بود؛ قرمز فقط کارکردی ماند)',
+  cssSrc.includes('body.state-listening .orb-halo,') && cssSrc.includes('rgba(var(--acc-rgb), 0.3)') &&
+  cssSrc.includes('body.state-processing .orb-core .ic')); /* v0.83.1 forward-relax */
 ok('دکمهٔ توقف بعد از status-line (مرکز و پیدای صفحه)',
   htmlSrc.indexOf('id="statusText"') < htmlSrc.indexOf('id="stopChip"') &&
   htmlSrc.indexOf('id="stopChip"') < htmlSrc.indexOf('id="musicWidget"'));
