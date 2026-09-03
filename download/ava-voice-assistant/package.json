@@ -70,8 +70,7 @@
       "installerSidebar": "build/installerSidebar.bmp",
       "license": "build/license.fa.txt",
       "include": "build/installer.nsh",
-      "uninstallDisplayName": "آوا — دستیار صوتی ویندوز",
-      "uninstallWarningText": "آوا را حذف می‌کنی؟ مخاطبین و تنظیماتِ ذخیره‌شده باقی می‌مانند."
+      "uninstallDisplayName": "آوا — دستیار صوتی ویندوز"
     }
   },
   "allowScripts": {

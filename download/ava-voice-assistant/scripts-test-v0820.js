@@ -200,6 +200,14 @@ ok('package.json: nsis با installerHeader/Sidebar/license/include فارسی',
 ok('build/license.fa.txt فارسی + build/installer.nsh با BrandingText آوا',
   fs.existsSync(path.join(R, 'build/license.fa.txt')) &&
   fs.readFileSync(path.join(R, 'build/installer.nsh'), 'utf8').includes('BrandingText "آوا — دستیار صوتی هوشمند ویندوز'));
+ok('گارد اسکیما electron-builder 25: کلیدهای nsis همگی معتبر (درس CI v0.82)',
+  (() => {
+    const VALID = ['allowElevation', 'allowToChangeInstallationDirectory', 'artifactName', 'createDesktopShortcut', 'createStartMenuShortcut', 'customNsisBinary', 'deleteAppDataOnUninstall', 'differentialPackage', 'displayLanguageSelector', 'guid', 'include', 'installerHeader', 'installerHeaderIcon', 'installerIcon', 'installerLanguages', 'installerSidebar', 'language', 'license', 'menuCategory', 'multiLanguageInstaller', 'oneClick', 'packElevateHelper', 'perMachine', 'preCompressedFileExtensions', 'publish', 'removeDefaultUninstallWelcomePage', 'runAfterFinish', 'script', 'selectPerMachineByDefault', 'shortcutName', 'unicode', 'uninstallDisplayName', 'uninstallerIcon', 'uninstallerSidebar', 'useZip', 'warningsAsErrors'];
+    const keys = Object.keys(pkg.build.nsis);
+    const bad = keys.filter((k) => !VALID.includes(k));
+    if (bad.length) console.log('    ✗ invalid nsis keys: ' + bad.join(','));
+    return bad.length === 0;
+  })());
 
 /* ---------- ۹) فیکس یوتیوب در پلیر ---------- */
 console.log('\n[9] پخش یوتیوب در پلیر (رگرسیون ۰.۷۹→۰.۸۱)');
