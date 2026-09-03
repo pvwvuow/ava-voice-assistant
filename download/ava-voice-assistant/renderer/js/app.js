@@ -5352,6 +5352,7 @@
           let _cpre = '';
           let _cpOk = false;
           try {
+            try { statusText.textContent = LANG === 'en' ? 'Preparing playback…' : 'دارم ویدیو رو برای پلیر آماده می‌کنم…'; } catch (_) { /* noop */ }
             const _cres = await bridge.player.open({ player: _pbPlayer || 'default', kind: 'url', src: _cbUrl });
             const _where = (_cres && _cres.fa) ? ' — در ' + _cres.fa : '';
             if (_cres && _cres.ok && _cres.via === 'browser-fallback') {
@@ -8452,7 +8453,11 @@
   };
 
   /* کلیک اورب: موج ripple انیمیشنی — همیشه از «مرکز دکمه» جریان می‌گیرد
-     (نه از نقطه کلیک) + تیلت ریست */
+     (نه از نقطه کلیک) + تیلت ریست
+     v0.82.2 — خواستهٔ کاربر: «با کلیک روی همون دکمه قطع بشه درخواست» —
+     کلیک میکروفون وقتی درخواستی در جریان است (پردازش/busy) = توقف همان
+     درخواست (لغو AI + باطل‌کردن تشخیص در جریان + قطع صدا)؛ فقط وقتی بیکار
+     است شروع/توقف گوش‌دادن می‌کند. */
   orb.addEventListener('click', () => {
     try {
       const st = orb.closest('.orb-stage') || orb.parentElement;
@@ -8466,6 +8471,23 @@
       st.appendChild(rip);
       setTimeout(() => rip.remove(), 750);
     } catch (_) { /* noop */ }
+    if (state === 'processing' || cmdBusy) {
+      /* توقف درخواست در جریان — همان دکمه، همان کلیک */
+      try {
+        aveEpoch += 1;
+        aiCancelRun('orb-stop');
+        cmdBusy = false;
+        if (typingModeActive()) stopDictation(false);
+        setState('idle');
+        statusText.innerHTML = IDLE_HINT;
+        rcTag.textContent = t('tag.done');
+        const _rep = LANG === 'en' ? 'Stopped.' : 'متوقف شد.';
+        typeText(rcReply, _rep);
+        pushHistory('توقف', true);
+        actLog('orb stop: request cancelled by mic click', 'ui', { ev: 'stop' });
+      } catch (_) { /* noop */ }
+      return;
+    }
     toggleListen();
   });
 
@@ -8661,9 +8683,13 @@
     const _ccShow = (url) => {
       if (!_cc) return;
       if (_cct) _cct.textContent = LANG === 'en' ? 'Video link copied — play it?' : 'لینک ویدیو کپی شد — پخشش کنم؟';
+      /* v0.82.2 — کاربر موقع کپی معمولاً تو مرورگر است و چیپ داخل آوا را نمی‌بیند —
+         با صدا هم خبر می‌دهیم (بی‌سر و صدا ممنوع) */
+      try { speak(LANG === 'en' ? 'A video link is copied — say play it.' : 'لینک ویدیو کپی شد — بگو پخشش کنم.'); } catch (_) { /* noop */ }
       if (_ccp) _ccp.onclick = async () => {
         _ccHide();
         try {
+          try { statusText.textContent = LANG === 'en' ? 'Preparing playback…' : 'دارم ویدیو رو برای پلیر آماده می‌کنم…'; } catch (_) { /* noop */ }
           const _r = await videoPlayReply(url, 'default', 'clip-chip');
           typeText(rcReply, _r.rep);
           speak(_r.rep);
@@ -8965,7 +8991,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.82.1-beta';
+  let appVersion = '0.82.2-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -10525,6 +10551,8 @@
     if (!bridge || !bridge.player || !bridge.player.open) return { rep: t('toast.onlyApp'), ok: false };
     const want = String(playerWanted || '').trim();
     try {
+      /* v0.82.2 — فیدبک فوری: کاربر بداند آوا در حال آماده‌سازی است (نه هنگ) */
+      try { statusText.textContent = LANG === 'en' ? 'Preparing playback…' : 'دارم ویدیو رو برای پلیر آماده می‌کنم…'; } catch (_) { /* noop */ }
       const res = await bridge.player.open({ player: want || 'default', kind: /^https?:\/\//i.test(vq) ? 'url' : 'query', src: vq, keepExisting: !!keepExisting });
       const where = (res && res.fa) ? ' — در ' + res.fa : '';
       if (res && res.ok && res.via === 'browser-fallback') return { rep: LANG === 'en'

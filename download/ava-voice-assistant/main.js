@@ -4032,7 +4032,10 @@ function ytDlpClientCmd(bin, url, client) {
 function ytdlpGetUrl(bin, url, cmdBuilder) {
   return new Promise((resolve) => {
     const cmd = (cmdBuilder || ytDlpCmd)(bin, String(url || ''));
-    exec(cmd, { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
+    /* v0.82.2 — سقف ۱۰ثانیه (قبلاً ۳۰s × ۵ تلاش + دانلود ۱۲۰s = ۳-۴ دقیقه
+       سکوت → گزارش کاربر: «اصلا بالا نمیاد، چه برسه تلاش کنه»). فست-فیل
+       = فالبک مرورگر در ≤۲۰ ثانیه؛ شفا در پس‌زمینه برای «دفعه بعد». */
+    exec(cmd, { windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024 }, (err, stdout) => {
       if (err || !stdout) return resolve('');
       const line = String(stdout).split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0] || '';
       resolve(/^https?:\/\//i.test(line) ? line : '');
@@ -4063,29 +4066,27 @@ async function ytDlpFind() {
   if (b && fs.existsSync(b)) return b;
   return (await ytDlpDownload()) ? b : '';
 }
-/* حل ویدیوی یوتیوب → URL استریم مستقیم — v0.82 نردبانِ نجات کامل:
-   ۱) yt-dlp موجود (سیستم یا باندل) با نردبان فرمت گسترده
-   ۲) فالبک کلاینت ios (برای ویدیوهایی که web استریم تک‌فایلی نمی‌دهند)
-   ۳) شفای yt-dlp کهنه — حتی اگر «سیستمی» باشد: نسخهٔ تازهٔ باندل دانلود
-      می‌شود (قبلی فقط yt-dlp باندل را شفا می‌داد؛ yt-dlp کهنهٔ PATH کاربر
-      هرگز شفا نمی‌یافت و ریشهٔ «پلیر پخش نمی‌کند» همان بود)
-   ۴) با نسخهٔ تازه + کلاینت ios یک تلاش دیگر
-   هیچ گونه yt-dlp حذف نمی‌شود؛ فقط نسخهٔ باندلِ خود آوا جایگزین می‌شود. */
+/* حل ویدیوی یوتیوب → URL استریم مستقیم — v0.82.2 فست-فیل:
+   ۱) yt-dlp موجود با نردبان فرمت گسترده (سقف ۱۰s)
+   ۲) فالبک کلاینت ios (سقف ۱۰s)
+   هرگز معطلِ دانلود نمی‌مانیم — شکست → شفای پس‌زمینه (برای دفعه بعد) →
+   رندرر سریع فالبک مرورگر می‌گیرد. کل بدترین حالت ≈ ۲۰ ثانیه. */
+function ytDlpHealAsync(reason) {
+  /* دانلود نسخهٔ تازه در پس‌زمینه — بدون await؛ خنک‌کاری ۳۰دقیقه‌ای داخل خودش */
+  ytDlpDownload().then((okDown) => {
+    try { actLog('yt-dlp background heal: ' + (okDown ? 'fresh binary downloaded (' + (reason || 'fail') + ')' : 'download failed (' + (reason || 'fail') + ')'), 'player'); } catch (_) { /* noop */ }
+  }).catch(() => { /* noop */ });
+}
 async function resolveYtStream(url) {
   const bin = await ytDlpFind();
-  if (!bin) return { ok: false, error: 'yt-dlp پیدا نشد (نصب یا دانلود ناموفق بود)' };
+  if (!bin) { ytDlpHealAsync('no-binary'); return { ok: false, error: 'yt-dlp پیدا نشد — در مرورگر پخش می‌کنم' }; }
   let g = await ytdlpGetUrl(bin, url);
   if (!g) g = await ytdlpGetUrl(bin, url, (b, u) => ytDlpClientCmd(b, u, 'ios'));
   if (g) return { ok: true, url: g };
-  /* شفا: نسخهٔ تازهٔ باندل دانلود شود (مهم نیست قبلی سیستمی بود یا باندل) */
+  /* شفای پس‌زمینه: نسخهٔ تازه برای «دفعه بعد» — کاربر منتظر نمی‌ماند */
   ytDlpState.failedAt = 0;
-  const d = await ytDlpDownload();
-  const bin2 = d ? ytDlpBundledPath() : '';
-  if (!bin2) return { ok: false, error: 'استریم یوتیوب استخراج نشد و yt-dlp تازه هم نصب نشد' };
-  let g2 = await ytdlpGetUrl(bin2, url);
-  if (!g2) g2 = await ytdlpGetUrl(bin2, url, (b, u) => ytDlpClientCmd(b, u, 'ios'));
-  if (!g2) g2 = await ytdlpGetUrl(bin2, url, (b, u) => ytDlpClientCmd(b, u, 'android'));
-  return g2 ? { ok: true, url: g2 } : { ok: false, error: 'استریم یوتیوب استخراج نشد — در مرورگر پخش می‌کنم' };
+  ytDlpHealAsync('extract-fail');
+  return { ok: false, error: 'استریم یوتیوب استخراج نشد — در مرورگر پخش می‌کنم' };
 }
 /* تصمیمِ «چه چیزی با چه پلیری باز شود» — تابع خالص v0.61 برای تست بدون ویندوز */
 function playerOpenDecision(kind, src, wanted, scan, def) {

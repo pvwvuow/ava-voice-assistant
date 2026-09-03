@@ -240,12 +240,31 @@ ok('گارد اسکیما electron-builder 25: کلیدهای nsis همگی مع
 console.log('\n[9] پخش یوتیوب در پلیر (رگرسیون ۰.۷۹→۰.۸۱)');
 ok('نردبان فرمت گسترده: 22/18 → mp4 → webm → b (ریشه: یوتیوب muxed 22/18 را پس می‌گیرد)',
   mainSrc.includes('-f "22/18/b[ext=mp4]/b[ext=webm]/b"'));
-ok('فالبک کلاینت ios/android (استریم HLS تک‌خطی برای پلیرهای دسکتاپ)',
+ok('فالبک کلاینت ios در مسیر گرم (HLS تک‌خطی برای پلیرهای دسکتاپ) — v0.82.2: android به شفای پس‌زمینه منتقل شد',
   mainSrc.includes("function ytDlpClientCmd(bin, url, client)") &&
-  mainSrc.includes("ytDlpClientCmd(b, u, 'ios')") && mainSrc.includes("ytDlpClientCmd(b, u, 'android')"));
+  mainSrc.includes("ytDlpClientCmd(b, u, 'ios')"));
 ok('شفای yt-dlp سیستمیِ کهنه با نسخهٔ تازهٔ باندل (قبلاً فقط باندل شفا می‌یافت)',
   /let g = await ytdlpGetUrl\(bin, url\);/.test(mainSrc) &&
-  /const d = await ytDlpDownload\(\);\s*\n\s*const bin2 = d \? ytDlpBundledPath\(\) : '';/.test(mainSrc));
+  /function ytDlpHealAsync/.test(mainSrc) && /ytDlpHealAsync\('extract-fail'\)/.test(mainSrc));
+/* ---------- v0.82.2 — فست-فیل پخش + فیدبک فوری + اورب/توقف (گزارش کاربر:
+   «ویدیو یوتوب اصلا بالا نمیره» / «دکمه استاپ خرابش و لوکیشنش بده» / «حاله
+   ماورایی دور دکمه میکروفون» / «لینک کلیپ‌بورد رو نمی‌بینه») ---------- */
+ok('فست-فیل: yt-dlp سقف ۱۰ثانیه (بدون معطلی چنددقیقه‌ای) + شفای پس‌زمینه',
+  /timeout: 10000, maxBuffer: 1024 \* 1024/.test(mainSrc) &&
+  /function ytDlpHealAsync\(reason\)/.test(mainSrc) &&
+  !/const bin2 = d \? ytDlpBundledPath/.test(mainSrc));
+ok('فیدبک فوری «دارم ویدیو رو برای پلیر آماده می‌کنم…» در هر سه مسیر پخش',
+  (appSrc.match(/برای پلیر آماده/g) || []).length >= 3);
+ok('چیپ کلیپ‌بورد با صدا هم خبر می‌دهد (کاربر موقع کپی تو مرورگر است)',
+  appSrc.includes("speak(LANG === 'en' ? 'A video link is copied — say play it.'"));
+ok('کلیک میکروفون حین درخواست = توقف (orb-stop)',
+  appSrc.includes("aiCancelRun('orb-stop')") && appSrc.includes("orb stop: request cancelled by mic click"));
+ok('هالهٔ چرخان قرمز دور میکروفون حین شنیدن/پردازش + هستهٔ مخالف',
+  cssSrc.includes('body.state-listening .orb-halo,') && cssSrc.includes('avaHaloSpin') &&
+  cssSrc.includes('body.state-processing .orb-core .ic'));
+ok('دکمهٔ توقف بعد از status-line (مرکز و پیدای صفحه)',
+  htmlSrc.indexOf('id="statusText"') < htmlSrc.indexOf('id="stopChip"') &&
+  htmlSrc.indexOf('id="stopChip"') < htmlSrc.indexOf('id="musicWidget"'));
 
 /* ---------- ۱۰) i18n + نسخه ---------- */
 console.log('\n[10] i18n و نسخه');

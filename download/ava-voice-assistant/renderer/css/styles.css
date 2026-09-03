@@ -2835,3 +2835,33 @@ body[data-theme="light"][data-gold="on"] {
 [data-theme="light"][data-gold="on"] .handsfree-toggle.active { border-color: rgba(184, 134, 11, 0.6); background: rgba(212, 160, 23, 0.16); }
 [data-theme="light"][data-gold="on"] .live-text { background: rgba(255, 252, 242, 0.8); }
 [data-theme="light"][data-gold="on"] .about-logo { background: linear-gradient(145deg, rgba(212, 160, 23, 0.3), rgba(184, 134, 11, 0.15)); color: #8a6508; }
+
+/* ============================================================
+   v0.82.2 — هالهٔ چرخان «ماورایی» دور دکمهٔ میکروفون حین شنیدن/پردازش
+   + هستهٔ رنگِ مخالف (قرمز = در جریان، کلیک همان دکمه = توقف درخواست)
+   ============================================================ */
+body.state-listening .orb-halo,
+body.state-processing .orb-halo {
+  background: conic-gradient(from 0deg,
+    rgba(244, 63, 94, 0) 0deg, rgba(244, 63, 94, 0.65) 70deg,
+    rgba(255, 205, 120, 0.55) 140deg, rgba(244, 63, 94, 0) 220deg,
+    rgba(244, 63, 94, 0.5) 300deg, rgba(244, 63, 94, 0) 360deg);
+  animation: avaHaloSpin 2.4s linear infinite;
+  filter: blur(12px) saturate(1.2);
+  opacity: 1;
+}
+@keyframes avaHaloSpin { to { transform: rotate(360deg); } }
+body.state-listening .orb,
+body.state-processing .orb {
+  border-color: rgba(244, 63, 94, 0.55);
+  box-shadow: 0 24px 60px rgba(244, 63, 94, 0.22),
+              inset 0 2px 0 rgba(255, 255, 255, 0.12),
+              0 0 0 1px rgba(244, 63, 94, 0.25);
+}
+body.state-listening .orb-core .ic,
+body.state-processing .orb-core .ic {
+  color: #fb7185;
+  filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.65));
+}
+/* حالت سبک/بدون افکت: هاله ساکن ولی قرمز می‌ماند */
+body.perf-nofx .orb-halo { animation: none !important; }

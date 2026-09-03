@@ -168,6 +168,12 @@
             <span id="statusText">برای شروع، اورب را لمس کن یا کلید <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd></span>
           </div>
 
+          <!-- v0.82 — دکمهٔ توقف: وقتی آوا گیر می‌کند کاربر بتواند هر درخواستی را متوقف کند -->
+          <button type="button" class="stop-chip" id="stopChip" hidden>
+            <span class="sc-dot"></span>
+            <span data-i18n="stop.label">توقف</span>
+          </button>
+
           <!-- ویجت موزیک — بالا سمت چپ صفحه اصلی، فقط وقتی موزیک در جریان است -->
           <div class="mw glass" id="musicWidget" hidden>
             <span class="mw-cover" id="mwCover"><svg class="ic"><use href="#i-music"/></svg></span>
@@ -236,11 +242,6 @@
             <button type="button" class="cc-x" id="clipChipClose" aria-label="بستن">✕</button>
           </div>
 
-          <!-- v0.82 — دکمهٔ توقف: وقتی آوا گیر می‌کند کاربر بتواند هر درخواستی را متوقف کند -->
-          <button type="button" class="stop-chip" id="stopChip" hidden>
-            <span class="sc-dot"></span>
-            <span data-i18n="stop.label">توقف</span>
-          </button>
 
         </section>
 
@@ -1147,7 +1148,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.82.1-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.82.2-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و
