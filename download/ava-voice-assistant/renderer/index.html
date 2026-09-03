@@ -1133,6 +1133,47 @@
     </div>
   </div>
 
+  <!-- ============ v0.78 — پاپ‌آپ «مخاطب جدید» وسط مکالمه ============
+       کاربر میگوید «میخام مخاطب جدید ایجاد کنم برا دیسکورد» یا
+       «میخام یک نفر اد کنی برام به اسم soliiii تو دیسکورد من صداش میکنم داداش»
+       → همین فرم با فیلدهای پیش‌پر باز می‌شود، آوا جمله را می‌خواند و می‌پرسد
+       «همینه؟» — تایید/ویرایش/انصراف هم با دکمه هم با صدا -->
+  <div id="ctAdd" class="dnsq ctadd" hidden>
+    <div class="dnsq-backdrop" id="ctAddBackdrop"></div>
+    <form id="ctAddForm" class="dnsq-card glass ctadd-card" autocomplete="off">
+      <div class="dnsq-glow" aria-hidden="true"></div>
+      <header class="dnsq-head">
+        <span class="dnsq-ico"><svg class="ic"><use href="#i-plus"/></svg></span>
+        <div class="dnsq-tt">
+          <b data-i18n="ctAdd.title">مخاطب جدید</b>
+          <span data-i18n="ctAdd.sub">اینا رو نوشتم — درست همینه؟</span>
+        </div>
+        <button type="button" class="dnsq-x" id="ctAddClose" aria-label="بستن"><svg class="ic"><use href="#i-close"/></svg></button>
+      </header>
+      <div class="dnsq-body">
+        <label class="dnsq-field">
+          <span data-i18n="ctAdd.app">پیام‌رسان</span>
+          <select id="ctAddApp"></select>
+        </label>
+        <label class="dnsq-field">
+          <span data-i18n="ctAdd.name">چی صداش کنی؟ (لقب)</span>
+          <input id="ctAddName" type="text" data-i18n-ph="ctAdd.namePh" placeholder="مثلاً: داداش" maxlength="40" />
+        </label>
+        <label class="dnsq-field">
+          <span id="ctAddHandleLbl" data-i18n="ctAdd.handle">یوزرنیم / آیدی یا شماره</span>
+          <input id="ctAddHandle" type="text" dir="ltr" data-i18n-ph="ctAdd.handlePh" placeholder="@username / 0912…" maxlength="80" />
+        </label>
+        <p class="ctadd-warn" id="ctAddWarn" hidden></p>
+      </div>
+      <div class="dnsq-actions">
+        <button type="submit" class="chip dnsq-save" id="ctAddSave"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="ctAdd.save">تایید و ذخیره</span></button>
+        <button type="button" class="chip" id="ctAddEdit"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="ctAdd.edit">ویرایش</span></button>
+        <button type="button" class="chip" id="ctAddCancel"><svg class="ic"><use href="#i-close"/></svg><span data-i18n="ctAdd.cancel">بی‌خیال</span></button>
+      </div>
+      <p class="set-note ctadd-hint" data-i18n="ctAdd.hint">همین‌جا صدا هم می‌شنوم: «ذخیره کن»، «یوزرشو بکن …»، «اسمشو بکن …» یا «بی‌خیال»</p>
+    </form>
+  </div>
+
   <!-- پاپ‌آپ درباره -->
   <div id="about" class="about glass" hidden>
     <div class="about-head">
@@ -1145,7 +1186,7 @@
       <div><span data-i18n="about.cmd">کادر فرمان</span><span class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></div>
       <div><span data-i18n="about.esc">بستن / لغو</span><span class="keys"><kbd>Esc</kbd></span></div>
     </div>
-    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.77.0-beta</span></div>
+    <div class="about-foot"><span id="abRuntime">Electron —</span><span id="abVersion">v0.78.0-beta</span></div>
   </div>
 
 <!-- v0.26 — کارت بروزرسانی هنگام باز شدن برنامه: بجِ نوار بالا دیده نمی‌شد و

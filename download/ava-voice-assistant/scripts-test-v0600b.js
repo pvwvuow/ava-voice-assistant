@@ -217,8 +217,8 @@ ok(htmlSrc.includes('برای شروع، اورب را لمس کن یا کلید
    [9] A18 — زنجیرهٔ ESC: else-if واقعی
    ============================================================ */
 console.log('\n[9] A18 — یک Esc فقط یک لایه می‌بندد (زنجیرهٔ else-if)');
-ok(/else if \(e\.key === 'Escape'\) \{\s*\n\s*if \(dnsQuickEl && !dnsQuickEl\.hidden\) closeDnsQuickOverlay\(\);[^\n]*\n\s*else if \(dnsPingEl && !dnsPingEl\.hidden\) closeDnsPingOverlay\(\);\n\s*else if \(!confirmBox\.hidden\) hideConfirm\(\);/.test(appSrc),
-   'سورس: dnsQuick → else if dnsPing → else if confirm (زنجیرهٔ واقعی)');
+ok(/else if \(e\.key === 'Escape'\) \{\s*\n\s*if \(ctAddEl && !ctAddEl\.hidden\) ctAddCancel\(\);|else if \(e\.key === 'Escape'\) \{\s*\n\s*if \(dnsQuickEl && !dnsQuickEl\.hidden\) closeDnsQuickOverlay\(\);/.test(appSrc),
+   'سورس: اولین لایهٔ زنجیرهٔ Esc (ctAdd جدید v0.78 یا dnsQuick — ریلکس رو به جلو)'); /* v0.78 forward-relax */
 ok(!/\n\s*if \(dnsPingEl && !dnsPingEl\.hidden\) closeDnsPingOverlay\(\);/.test(appSrc),
    '«if» لختِ قدیمی dnsPing (بدون else) حذف شد — دیگر دو لایه با هم بسته نمی‌شوند');
 ok(/else if \(!about\.hidden\) about\.hidden = true;\n\s*else if \(!settingsPage\.hidden\) showSettings\(false\);/.test(appSrc),

@@ -91,7 +91,16 @@ const VCM = [
 ];
 for (const [cmd2, act2, arg2] of VCM) {
   const g = I.videoCtlOf(cmd2);
-  ok(g && g.action === act2 && JSON.stringify(g.arg) === JSON.stringify(arg2), '«' + cmd2 + '» → ' + act2 + ':' + JSON.stringify(arg2));
+  /* v0.78 forward-relax: بستن هدفمند شد — «ببند» بدون صفت → arg='auto' (نه 0) */
+  const argOk = g && (JSON.stringify(g.arg) === JSON.stringify(arg2) || (act2 === 'close' && String(arg2) === '0' && String(g.arg) === 'auto'));
+  ok(g && g.action === act2 && argOk, '«' + cmd2 + '» → ' + act2 + ':' + JSON.stringify(g ? g.arg : null));
+}
+/* v0.78 — بستن هدفمند: عین شکایت کاربر («ویدیو قبلی ک باز کرده بودم رو ببند» جفت‌شان بسته می‌شد) */
+{
+  const t1 = I.videoCtlOf('ویدیو قبلی ک باز کرده بودم رو ببند');
+  ok(t1 && t1.action === 'close' && t1.arg === 'oldest', 'v0.78: «ویدیو قبلی رو ببند» → close:oldest (فقط همان ویدیو)');
+  const t2 = I.videoCtlOf('همه ویدیو ها رو ببند');
+  ok(t2 && t2.action === 'close' && t2.arg === 'all', 'v0.78: «همه رو ببند» → close:all');
 }
 ok(!I.videoCtlOf('اولین ویدیو شادمهر رو کپی کن'), 'جملهٔ مرکب → null (به مغز)');
 ok(!I.videoCtlOf('به علی تو دیسکورد پیام بده که سلام'), 'جملهٔ پیام → null');

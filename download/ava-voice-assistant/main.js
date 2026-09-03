@@ -665,7 +665,11 @@ app.on('web-contents-created', (_ev, wc) => {
    تا هیچ ورودی دلخواهی به شل ویندوز تزریق نشود. */
 const PS_KEY = (vk, times = 1) => {
   const presses = Array.from({ length: times }, () => `[W.N]::keybd_event(0x${vk},0,0,0); [W.N]::keybd_event(0x${vk},0,2,0);`).join(' ');
-  return `powershell -NoProfile -Command "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; ${presses}"`;
+  /* v0.78 — فیکس escape ریشه‌ای: `\"` داخل template literal به `"` ساده فرومی‌ریخت
+     و powershell.exe کوتیشن‌های داخلی را می‌خورد → C# به شکل `[DllImport( user32.dll )]`
+     خراب کامپایل نمی‌شد → کلیدهای مدیا/صدا از sys:run بی‌صدا هیچ کاری نمی‌کردند
+     (الگوی اثبات‌شدهٔ fgKeys: `\\"` دوبل) */
+  return `powershell -NoProfile -Command "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\\"user32.dll\\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; ${presses}"`;
 };
 
 const SCREENSHOT_PS =
@@ -772,26 +776,53 @@ const COMMANDS = {
 
   /* پاور: خواب / خاموش / ریستارت / مانیتور (فرمان‌های صوتی) */
   sys_sleep: {
-    cmd: 'powershell -NoProfile -Command "Add-Type -Namespace P -Name S -MemberDefinition \'[DllImport(\"powrprof.dll\")] public static extern bool SetSuspendState(bool hiber, bool force, bool wake);\'; [P.S]::SetSuspendState($false,$false,$false); Write-Output ok"',
+    /* v0.78 — فیکس escape (همان ریشهٔ PS_KEY): `\"` تک‌بک‌اسلش در رشتهٔ تک‌کوتیشنی JS
+       به `"` خام فرومی‌ریخت → کوتیشن‌ها خورده می‌شدند → Add-Type کامپایل نمی‌شد →
+       «کامپیوتر بخوابون» بی‌صدا هیچ کاری نمی‌کرد. حالا الگوی دوبل `\\"` */
+    cmd: 'powershell -NoProfile -Command "Add-Type -Namespace P -Name S -MemberDefinition \'[DllImport(\\"powrprof.dll\\")] public static extern bool SetSuspendState(bool hiber, bool force, bool wake);\'; [P.S]::SetSuspendState($false,$false,$false); Write-Output ok"',
     fa: 'حالت خواب',
   },
   sys_shutdown: { cmd: 'shutdown /s /t 10 /c "AVA"', fa: 'خاموش کردن کامپیوتر' },
   sys_restart:  { cmd: 'shutdown /r /t 10 /c "AVA"', fa: 'راه‌اندازی مجدد' },
   shutdown_abort: { cmd: 'shutdown /a', fa: 'لغو خاموش شدن' },
   monitor_off: {
-    /* فیکس v0.43 — گزارش کاربر: «مانیتور خاموش نمیشه». SendMessageW به
-       HWND_BROADCAST تا هر پنجرهٔ هنگ‌شده‌ای گیر می‌کرد (تایم‌اوت کل فرمان).
-       حالا: PostMessageW (بدون انتظار) + SendMessageTimeoutW (۵۰۰ms،
-       SMTO_ABORTIFHUNG) — دو روش مکمل با امضای درست IntPtr در x64 */
-    cmd:
-      'powershell -NoProfile -Command "' +
-      'Start-Sleep -m 350; ' +
-      'Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport(\"user32.dll\")] public static extern IntPtr PostMessageW(IntPtr h, uint m, IntPtr w, IntPtr l); [DllImport(\"user32.dll\")] public static extern IntPtr SendMessageTimeoutW(IntPtr h, uint m, IntPtr w, IntPtr l, uint f, uint t, ref IntPtr r);\'; ' +
-      '$r = [IntPtr]::Zero; ' +
-      '[W.N]::PostMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2) | Out-Null; ' +
-      'Start-Sleep -m 250; ' +
-      '[W.N]::SendMessageTimeoutW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2,2,500,[ref]$r) | Out-Null; ' +
-      'Write-Output ok"',
+    /* فیکس ریشه‌ای v0.78 — گزارش کاربر: «خاموش کردن مانیتور کار نمیکنه» (لاگ میدانی:
+       فرمان درست مسیر می‌رفت و ok برمی‌گشت ولی مانیتور روشن می‌ماند). سه لایهٔ باگ:
+       ۱) escape: `\"` تک‌بک‌اسلش در رشتهٔ JS به `"` خام فرومی‌ریخت و powershell.exe
+          کوتیشن‌های داخلی را می‌خورد → MemberDefinition کامپایل نمی‌شد → از v0.43
+          فرمان «ok» برمی‌گرداند ولی هیچ پیامی به ویندوز نمی‌رفت (خرابی بی‌صدا).
+       ۲) حتی با پیام درست، SC_MONITORPOWER وقتی اپ‌های در حال پخش ویدیو/مرورگر
+          ES_DISPLAY_REQUIRED گرفته‌اند نادیده گرفته می‌شود.
+       ۳) برخی پنل‌ها به broadcast جواب نمی‌دهند ولی به DDC/CI جواب می‌دهند.
+       درمان: الگوی اثبات‌شدهٔ .replace(/"/g,'\\"') + خاموشی واقعی با DDC/CI
+       (SetVCPFeature کد 0xD6 مقدار 4 — همان روش Twinkle Tray) روی «همهٔ»
+       مانیتورهای فیزیکی + broadcast قدیمی به‌عنوان فالبک (لپ‌تاپ‌ها). */
+    cmd: (() => {
+      const cs =
+        'using System;using System.Runtime.InteropServices;' +
+        'public struct PMON{public IntPtr h;[MarshalAs(UnmanagedType.ByValTStr,SizeConst=128)]public string d;}' +
+        'public delegate bool MCB(IntPtr m,IntPtr dc,ref RECT r,IntPtr d);' +
+        'public struct RECT{public int l,t,rt,b;}' +
+        'public class MONOFF{' +
+        '[DllImport("user32.dll")]public static extern bool EnumDisplayMonitors(IntPtr dc,IntPtr clip,MCB cb,IntPtr data);' +
+        '[DllImport("user32.dll")]public static extern uint GetNumberOfPhysicalMonitorsFromHMONITOR(IntPtr m,ref uint n);' +
+        '[DllImport("dxva2.dll")]public static extern bool GetPhysicalMonitorsFromHMONITOR(IntPtr m,uint n,[Out] PMON[] a);' +
+        '[DllImport("dxva2.dll")]public static extern bool SetVCPFeature(IntPtr pm,byte code,uint val);' +
+        '[DllImport("dxva2.dll")]public static extern bool DestroyPhysicalMonitors(uint n,PMON[] a);' +
+        'public static int OffAll(){int c=0;EnumDisplayMonitors(IntPtr.Zero,IntPtr.Zero,delegate(IntPtr m,IntPtr dc,ref RECT r,IntPtr d){uint n=0;if(GetNumberOfPhysicalMonitorsFromHMONITOR(m,ref n)&&n>0){PMON[] a=new PMON[n];if(GetPhysicalMonitorsFromHMONITOR(m,n,a)){for(int i=0;i<n;i++){try{if(SetVCPFeature(a[i].h,0xD6,4))c++;}catch{}}DestroyPhysicalMonitors(n,a);}}return true;},IntPtr.Zero);return c;}}';
+      const ps =
+        "$src='" + cs + "'; " +
+        'Start-Sleep -m 250; ' +
+        'Add-Type -TypeDefinition $src; ' +
+        "$ddc=[MONOFF]::OffAll(); Write-Output ('DDC ' + $ddc); " +
+        'Add-Type -Namespace W -Name N -MemberDefinition \'[DllImport("user32.dll")] public static extern IntPtr PostMessageW(IntPtr h, uint m, IntPtr w, IntPtr l); [DllImport("user32.dll")] public static extern IntPtr SendMessageTimeoutW(IntPtr h, uint m, IntPtr w, IntPtr l, uint f, uint t, ref IntPtr r);\'; ' +
+        '$r = [IntPtr]::Zero; ' +
+        '[W.N]::PostMessageW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2) | Out-Null; ' +
+        'Start-Sleep -m 250; ' +
+        '[W.N]::SendMessageTimeoutW([IntPtr]0xffff,[uint32]0x0112,[IntPtr]0xf170,[IntPtr]2,2,500,[ref]$r) | Out-Null; ' +
+        'Write-Output ok';
+      return 'powershell -NoProfile -Command "' + ps.replace(/"/g, '\\"') + '"';
+    })(),
     fa: 'خاموش کردن مانیتور',
   },
   /* v0.43 — خروج از حساب ویندوز («اقدامات این چنینی») */
@@ -814,7 +845,7 @@ const COMMANDS = {
       const steps = Math.min(50, Math.round(pct / 2));
       return (
         'powershell -NoProfile -Command "' +
-        `Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; ` +
+        `Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\\"user32.dll\\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; ` + /* v0.78 — escape دوبل */
         '1..50 | ForEach-Object { [W.N]::keybd_event(0xAE,0,0,0); [W.N]::keybd_event(0xAE,0,2,0) }; ' +
         (steps > 0 ? `1..${steps} | ForEach-Object { [W.N]::keybd_event(0xAF,0,0,0); [W.N]::keybd_event(0xAF,0,2,0) }; ` : '') +
         'Write-Output ok"'
@@ -3725,7 +3756,7 @@ function defaultVideoPlayer(force = false) {
     const ps = 'powershell -NoProfile -Command "'
       + '$out=@(); '
       + 'foreach($ext in \'.mp4\',\'.mkv\',\'.avi\'){ '
-      + '$k=\"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\\' + $ext + \'\\UserChoice\"; '
+      + '$k=\\"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\$ext\\UserChoice\\"; ' /* v0.78 — $ext سمت PS داخل کوتیشن + escape دوبل */
       + 'try{ $p=(Get-ItemProperty -Path $k -ErrorAction Stop).ProgId; if($p){ $out += ($ext + \'=\' + $p) } }catch{} }; '
       + 'Write-Output ($out -join \';\')"';
     exec(ps, { windowsHide: true, timeout: 6000 }, (err, stdout) => {
@@ -4029,6 +4060,83 @@ function closeAllVideoPlayers() {
 }
 function psPathSafe(s) { return String(s || '').replace(/'/g, "''"); }
 
+/* v0.78 — فوکوس پنجرهٔ پلیر ویدیو — ریشهٔ «فول اسکرین کار نمیکنه»:
+   کلید فول‌اسکرین با keybd_event به «پنجرهٔ فعال» می‌رفت؛ وقتی کاربر وسط
+   حرف‌زدن با آوا است، پلیر ویدیو اصلاً فوکوس نیست → F/F11 داخل برنامهٔ
+   فعالِ اشتباه تایپ می‌شد. فیکس: پیدا کردن پنجرهٔ پلیر از اسکن پروسس +
+   ترفند استاندارد Alt (keybd_event VK_MENU) برای به‌دست‌آوردن حق
+   SetForegroundWindow + فوکوس واقعی؛ فقط بعد از فوکوسِ موفق کلید می‌رود. */
+function focusPlayerWindow() {
+  const known = playerCtl.exe ? psPathSafe(path.basename(playerCtl.exe, '.exe')) : '';
+  const ps =
+    "$ErrorActionPreference='SilentlyContinue'; " +
+    "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h); [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h); [DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte sc, uint fl, uint ex);'; " +
+    (known ? "$p=Get-Process -Name '" + known + "' -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle -ne 0}|Select-Object -First 1; " : "$p=$null; ") +
+    "if(-not $p){ $p=Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Select-Object -First 1 } " +
+    "if(-not $p){ Write-Output 'NOWIN' } else { " +
+    "$h=$p.MainWindowHandle; if([W.N]::IsIconic($h)){ [W.N]::ShowWindow($h,9)|Out-Null }; " +
+    "[W.N]::keybd_event(0x12,0,0,0); [W.N]::SetForegroundWindow($h)|Out-Null; [W.N]::keybd_event(0x12,0,2,0); Start-Sleep -Milliseconds 350; " +
+    "$fg=[W.N]::GetForegroundWindow(); if($fg -eq $h){ Write-Output ('OK ' + $p.ProcessName) } else { Write-Output ('FOC ' + $p.ProcessName) } }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 8000 },
+      (err, so) => {
+        const out = String(so || '').trim();
+        if (out.indexOf('NOWIN') >= 0) return resolve({ ok: false, error: 'پنجرهٔ پلیری پیدا نشد' });
+        const m = out.match(/^(OK|FOC)\s+(.+)$/m);
+        if (m) {
+          if (m[1] === 'OK') return resolve({ ok: true, proc: m[2].trim() });
+          return resolve({ ok: false, error: 'پلیر فوکوس نشد — پنجرهٔ ویدیو را جلو بیاور و دوباره بگو', proc: m[2].trim() });
+        }
+        resolve({ ok: false, error: 'فوکوس پنجرهٔ پلیر ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+
+/* v0.78 — بستن «هدفمند» پلیر ویدیو — ریشهٔ شکایت کاربر: «ویدیو قبلی که باز
+   کرده بودم رو ببند (دو ویدیو همزمان بازه)» و جفت‌شان بسته می‌شد؛ چون مسیر
+   قدیمی taskkill /IM «همهٔ نمونه‌های همان exe» + closeAllVideoPlayers «همهٔ
+   پلیرها» را می‌کشت. حالا: مرتب‌سازی پنجره‌های پلیر بر اساس StartTime پروسس —
+   oldest=ویدیوی قبلی، newest=جدیدترین، auto=تکی → همان، چندتایی → جدیدترین
+   (و در پاسخ گفته می‌شود چندتا مانده). WM_CLOSE گِریس +force فقط برای همان PID. */
+function closeVideoTargeted(arg) {
+  const which = String(arg || 'auto').toLowerCase() === 'oldest' ? 'oldest'
+    : (String(arg || 'auto').toLowerCase() === 'newest' ? 'newest' : 'auto');
+  const ps =
+    "$ErrorActionPreference='SilentlyContinue'; " +
+    "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'; " +
+    "$ps=@(Get-Process|Where-Object{$_.MainWindowHandle -ne 0 -and $_.ProcessName -match '" + PLAYER_PROC_RE + "'}|Sort-Object StartTime); " +
+    "$n=@($ps).Count; " +
+    "if($n -eq 0){ Write-Output 'NOWIN' } else { " +
+    "$targets=@(); " +
+    (which === 'oldest'
+      ? "$targets=@($ps[0]); "
+      : (which === 'newest'
+        ? "$targets=@($ps[$n-1]); "
+        : "if($n -eq 1){ $targets=@($ps[0]) } else { $targets=@($ps[$n-1]) }; ")) +
+    "foreach($p in $targets){ [W.N]::PostMessage($p.MainWindowHandle,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)|Out-Null; Write-Output ('CLOSE ' + $p.ProcessName + ' ' + $p.Id) }; " +
+    "Start-Sleep -Milliseconds 900; " +
+    "foreach($p in $targets){ if(Get-Process -Id $p.Id -ErrorAction SilentlyContinue){ Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue } }; " +
+    "Write-Output ('TTL ' + $n + ' ' + @($targets).Count) }";
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 15000 },
+      (err, so) => {
+        const out = String(so || '').trim();
+        if (out.indexOf('NOWIN') >= 0) return resolve({ ok: false, noPlayer: true, error: 'پلیری باز نیست' });
+        const closed = (out.match(/CLOSE /g) || []).length;
+        const ttlM = out.match(/TTL (\d+) (\d+)/);
+        const total = ttlM ? parseInt(ttlM[1], 10) : closed;
+        if (closed > 0) return resolve({ ok: true, closed, total });
+        resolve({ ok: false, error: 'بستن پلیر ممکن نشد' + (err ? ' (' + String(err.message || '').slice(0, 60) + ')' : '') });
+      }
+    );
+  });
+}
+
 ipcMain.handle('player:ctl', async (_e, p) => {
   const a = p && p.action ? String(p.action) : '';
   if (!a) return { ok: false, error: 'اقدام نامشخص' };
@@ -4082,30 +4190,49 @@ ipcMain.handle('player:ctl', async (_e, p) => {
     return { ok: true, via: 'fg-keys' };
   }
   if (a === 'fullscreen') {
-    /* v0.63 — کلید فول‌اسکرین از پلیر می‌آید: پات‌پلیر=Enter، mpv/vlc/mpc=F، بقیه=F11+F */
-    const nm = String(playerCtl.exe ? path.basename(playerCtl.exe) : (playerCtl.lastWinProc || '')).toLowerCase();
-    if (/potplayer/.test(nm)) { fgKeys([VK.enter]); return { ok: true, via: 'fg-keys' }; }
-    if (/mpv|vlc|mpc/.test(nm)) { fgKeys([VK.f]); return { ok: true, via: 'fg-keys' }; }
-    fgKeys([VK.f11, VK.f]);
-    return { ok: true, via: 'fg-keys' };
+    /* v0.78 — ریشهٔ «فول اسکرین کار نمیکنه»: کلید به پنجرهٔ فعالِ اشتباه می‌رفت.
+       حالا: اول فوکوس واقعی پلیر (ترفند Alt + SetForegroundWindow + راستی‌آزمایی
+       GetForegroundWindow) و بعد کلید فول‌اسکرین همان پلیر (پات‌پلیر=Enter،
+       mpv/vlc/mpc=F، بقیه=F11+F). پلیر نبود/فوکوس نشد → پاسخ صادقانه */
+    const keyFor = (nm) => {
+      const s = String(nm || '').toLowerCase();
+      if (/potplayer/.test(s)) return [VK.enter];
+      if (/mpv|vlc|mpc/.test(s)) return [VK.f];
+      return [VK.f11, VK.f];
+    };
+    const fc = await focusPlayerWindow();
+    if (!fc.ok) return { ok: false, noPlayer: !!fc.error && fc.error.indexOf('پنجرهٔ پلیری') === 0, error: fc.error || 'پنجرهٔ پلیری پیدا نشد' };
+    fgKeys(keyFor(fc.proc || (playerCtl.exe ? path.basename(playerCtl.exe) : '')));
+    return { ok: true, via: 'fg-keys', focused: fc.proc || '' };
   }
   if (a === 'volume_up') { fgKeys(['0xAF']); return { ok: true, via: 'media-keys' }; }
   if (a === 'volume_down') { fgKeys(['0xAE']); return { ok: true, via: 'media-keys' }; }
   if (a === 'play_pause') { fgKeys([`0x${MEDIA_KEYS.play_pause}`]); return { ok: true, via: 'media-keys' }; }
   if (a === 'stop') { fgKeys([`0x${MEDIA_KEYS.stop}`]); return { ok: true, via: 'media-keys' }; }
   if (a === 'close') {
+    /* v0.78 — بستن هدفمند: arg=oldest|newest|all|auto — «ویدیو قبلی رو ببند»
+       فقط همان ویدیو را می‌بندد (قبلاً taskkill /IM همهٔ نمونه‌های همان exe +
+       closeAllVideoPlayers همهٔ پلیرها را می‌کشت → شکایت «جفتشون رو میبنده») */
+    const tgt = String(p.arg == null || p.arg === 0 ? 'auto' : p.arg).toLowerCase();
+    if (tgt !== 'all') {
+      const tr = await closeVideoTargeted(tgt);
+      if (tr.ok) {
+        try { const rest = await runningVideoPlayers(); if (!rest) { playerCtl.player = null; } } catch (_) { /* noop */ }
+        return { ok: true, via: 'win-ctl', target: tgt, closed: tr.closed || 1, total: tr.total || 1 };
+      }
+      if (tr.noPlayer) return { ok: false, noPlayer: true, error: tr.error };
+      return { ok: false, error: tr.error || 'بستن پلیر ممکن نشد' }; /* هیچ فالبکِ همه‌کش — همان باگِ قدیمی */
+    }
     if (playerCtl.exe) {
       const nm = path.basename(playerCtl.exe);
       exec(`taskkill /IM "${nm}" /F`, { windowsHide: true, timeout: 5000 }, () => {});
       playerCtl.player = null;
-      /* v0.64 — نمونه‌های دیگرِ همان پلیر (دو-سه ویدیوی همزمان) هم بسته شوند */
+      /* v0.64 — نمونه‌های دیگر همان پلیر (دو-سه ویدیوی همزمان) هم بسته شوند — «همه رو ببند» */
       await closeAllVideoPlayers();
-      return { ok: true, via: 'taskkill' };
+      return { ok: true, via: 'taskkill', target: 'all' };
     }
-    /* v0.63 — پلیری که خودِ کاربر باز کرده (لاگ v0.62: پات‌پلیرِ دستی بسته نشد)
-       v0.64 — «ببند» یعنی همهٔ پلیرهای ویدیو (تک‌لاین ویدیو) */
     const cr = await closeAllVideoPlayers();
-    if (cr.count > 0) { playerCtl.player = null; return { ok: true, via: 'win-ctl', count: cr.count }; }
+    if (cr.count > 0) { playerCtl.player = null; return { ok: true, via: 'win-ctl', target: 'all', count: cr.count }; }
     return { ok: false, error: 'پلیری باز نیست' };
   }
   return { ok: false, error: 'این اقدام برای پلیر فعلی ممکن نیست' };

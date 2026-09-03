@@ -558,6 +558,19 @@
     'pow.abortDone': ['خاموش شدن لغو شد — برگشتیم!', 'Shutdown aborted — welcome back!'],
     'pow.abortNothing': ['خاموش شدن زمان‌داری در جریان نبود.', 'No scheduled shutdown was running.'],
     'pow.monitorOff': ['مانیتور خاموش شد — هر کلیدی بزنی روشن می‌شود.', 'Monitor is off — press any key to wake it.'],
+    /* v0.78 — پاپ‌آپ «مخاطب جدید» */
+    'ctAdd.title': ['مخاطب جدید', 'New contact'],
+    'ctAdd.sub': ['اینا رو نوشتم — درست همینه؟', 'Here is what I got — correct?'],
+    'ctAdd.app': ['پیام‌رسان', 'Messenger'],
+    'ctAdd.name': ['چی صداش کنی؟ (لقب)', 'What should I call them?'],
+    'ctAdd.namePh': ['مثلاً: داداش', 'e.g.: buddy'],
+    'ctAdd.handle': ['یوزرنیم / آیدی یا شماره', 'Username / ID or phone'],
+    'ctAdd.handlePh': ['@username / 0912…', '@username / +1…'],
+    'ctAdd.phone': ['واتساپ شمارهٔ تلفن می‌خواد نه یوزرنیم — شماره‌ش رو بگو.', 'WhatsApp needs a phone number, not a username — say the number.'],
+    'ctAdd.save': ['تایید و ذخیره', 'Confirm & save'],
+    'ctAdd.edit': ['ویرایش', 'Edit'],
+    'ctAdd.cancel': ['بی‌خیال', 'Cancel'],
+    'ctAdd.hint': ['همین‌جا صدا هم می‌شنوم: «ذخیره کن»، «یوزرشو بکن …»، «اسمشو بکن …» یا «بی‌خیال»', 'I am listening here too: "save it", "change the user to …", "call them …" or "cancel"'],
     'pow.confirmShutdown': ['خاموش کردن کامپیوتر', 'Shut down the PC'],
     'pow.confirmShutdownText': ['کامپیوتر تا ۱۰ ثانیه دیگر خاموش می‌شود. مطمئنی؟', 'The PC will shut down in 10 seconds. Are you sure?'],
     'pow.confirmRestart': ['راه‌اندازی مجدد', 'Restart'],
@@ -2884,9 +2897,18 @@
             const _rich = (typeof AVAIntent !== 'undefined' && AVAIntent.videoCtlOf) ? AVAIntent.videoCtlOf(c) : null;
             if (_rich) {
               const res = await bridge.player.ctl({ action: _rich.action, arg: _rich.arg });
-              const _faLbl = { pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.', grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.', move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: _rich.arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', fullscreen: 'فول‌اسکرین شد.', close: 'بسته شد.', play_pause: 'پخش/توقف' };
+              /* v0.78 — پاسخ بستنِ هدفمند */
+              const _closeLbl = _rich.action === 'close' ? ({ oldest: 'ویدیوی قبلی بسته شد.', newest: 'ویدیوی جدید (آخری) بسته شد.', all: 'همهٔ ویدیوها بسته شدند.', auto: 'بسته شد.' })[String(_rich.arg == null || _rich.arg === 0 ? 'auto' : _rich.arg)] || 'بسته شد.' : null;
+              const _faLbl = { pin: 'پلیر همیشه رویر شد.', unpin: 'از حالت همیشه‌رویر خارج شد.', grow: 'پنجرهٔ ویدیو بزرگتر شد.', shrink: 'پنجرهٔ ویدیو کوچکتر شد.', move: 'پنجرهٔ ویدیو جابه‌جا شد.', seek: _rich.arg >= 0 ? 'رفتم جلو' : 'برگشتم عقب', fullscreen: 'فول‌اسکرین شد.', close: _closeLbl || 'بسته شد.', play_pause: 'پخش/توقف' };
               const _extra = (_rich.action === 'seek') ? ' ' + Math.abs(_rich.arg) + ' ثانیه' : (_rich.action === 'move' ? ' (' + _rich.arg + ')' : '');
-              if (res && res.ok) return `انجام شد: ${_faLbl[_rich.action] || _rich.action}${_extra}.`;
+              if (res && res.ok) {
+                let _rep = `انجام شد: ${_faLbl[_rich.action] || _rich.action}${_extra}.`;
+                if (_rich.action === 'close' && String(_rich.arg || 'auto') !== 'all' && res.total > 1) {
+                  const _left = Math.max(0, (res.total || 1) - (res.closed || 1));
+                  if (_left > 0) _rep += ` (${_left} ویدیوی دیگه هنوز بازه — بگو «همه رو ببند» اگه همه بسته بشن)`;
+                }
+                return _rep;
+              }
               return `انجام نشد: ${res && res.error || ''}`;
             }
           } catch (_) { /* noop */ }
@@ -4861,6 +4883,31 @@
     rcTag.textContent = t('tag.working');
 
     /* ============================================================
+       v0.78 — لَین پاپ‌آپ مخاطب جدید — قبل از همهٔ لاین‌ها
+       ------------------------------------------------------------
+       وقتی پاپ‌آپ مخاطب باز است، هر جملهٔ کوتاه کاربر اول «جوابِ فرم» است:
+       تایید/ویرایش فیلد/انصراف/پر کردن فیلد سوال‌شده. جملهٔ بی‌ربط (بلاکِ
+       کامل‌تر) به dispatch عادی می‌رود و پاپ‌آپ باز می‌ماند (تایم‌اوت ۳۲ثانیه‌ای
+       دوبارِ محترمانه خودش می‌بندد).
+       ============================================================ */
+    if (_ctAdd && _ctAdd.open) {
+      const _car = ctAddConsume(raw);
+      if (_car != null) {
+        _dispatchOutcome = 'ct-add';
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.reply');
+        typeText(rcReply, _car);
+        speak(_car);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'ct-add', intent: 'contact_add_popup', params: { stage: (_ctAdd && _ctAdd.stage) || '' }, reply: _car }); } catch (_) { /* noop */ }
+        cmdBusy = false;
+        if (!_ctAdd) { try { playDoneSound(); } catch (_) { /* noop */ } setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 2800); }
+        return;
+      }
+    }
+
+    /* ============================================================
        v0.70 — تأییدِ در انتظار (کار حساس مغز: contact_send)
        کاربر «بله/بفرست» گفت → ارسال واقعی؛ «نه/کنسل» → هیچ.
        ============================================================ */
@@ -5097,6 +5144,32 @@
         pushHistory(raw, true);
         try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'messaging', intent: 'contacts_' + _ctc.op, params: { op: _ctc.op, app: _ctc.app || '' }, reply: _crep }); } catch (_) { /* noop */ }
         playDoneSound();
+        cmdBusy = false;
+        setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
+        return;
+      }
+    }
+
+    /* ============================================================
+       v0.78 — لَین باز کردنِ پاپ‌آپ «مخاطب جدید» — بعد از لاین مخاطبین
+       کلاسیک (ذخیرهٔ صریح با یوزر سرجایش است) و قبل از گارد آموزش.
+       «میخام مخاطب جدید ایجاد کنم برا دیسکورد» / «میخام یک نفر اد کنی برام
+       به اسم soliiii تو دیسکورد من صداش میکنم داداش» / «ذخیره کن سارا رو
+       تو تلگرام» (بدون هندل) → پاپ‌آپ پیش‌پر + سوال صوتی «همینه؟»
+       ============================================================ */
+    {
+      const _cta = (typeof AVAMessaging !== 'undefined' && AVAMessaging.ctAddParse) ? AVAMessaging.ctAddParse(raw) : null;
+      if (_cta && _cta.op === 'add-popup' && !(_ctAdd && _ctAdd.open)) {
+        _dispatchOutcome = 'ct-add';
+        try { actLog('lane=ct-add (deterministic): app=' + (_cta.app || '?') + ' handle=' + (_cta.handle || '?') + ' name=' + (_cta.name || '?'), 'ui', { ev: 'lane', lane: 'ct-add' }); } catch (_) { /* noop */ }
+        const _qrep = ctAddOpen(_cta);
+        setState('success');
+        statusText.textContent = t('status.done');
+        rcTag.textContent = t('tag.reply');
+        typeText(rcReply, _qrep);
+        speak(_qrep);
+        pushHistory(raw, true);
+        try { if (window.AVACore) window.AVACore.recordTurn({ utterance: raw, via: 'ct-add-open', intent: 'contact_add_popup', params: { app: _cta.app || '', handle: _cta.handle || '', name: _cta.name || '' }, reply: _qrep }); } catch (_) { /* noop */ }
         cmdBusy = false;
         setTimeout(() => { if (state === 'success') { setState('idle'); statusText.innerHTML = IDLE_HINT; } }, 3200);
         return;
@@ -7356,6 +7429,238 @@
     $('#dnsqBackdrop').addEventListener('click', closeDnsQuickOverlay);
   }
 
+  /* ============================================================
+     v0.78 — پاپ‌آپ «مخاطب جدید» — ساخت مخاطب وسط مکالمه
+     ------------------------------------------------------------
+     خواستهٔ کاربر: «یک المان کوچولو که وسط همون مکالمه پاپ بشه» —
+     باز شدن با جملهٔ طبیعی (ctAddParse در voiceMessaging)، پیش‌پر شدن
+     فیلدها، خواندن جمله توسط آوا، سوالِ «همینه؟»، و حلقهٔ صوتی:
+     تایید (ذخیره کن/آره/…)، ویرایش (یوزرشو بکن X / اسمشو بکن X / برا واتساپه)،
+     انصراف (بیخیال/کنسل/منصرف) و تایم‌اوتِ دو مرحله‌ای محترمانه.
+     سناریوهای مکمل: فیلد خالی → پرسش صوتی مرحله‌ای، یوزر فارسی → هشدار
+     لاتین‌بودن، واتساپ بدون شماره → هشدار، مخاطب تکراری → بروزرسانی با اطلاع.
+     ============================================================ */
+  const ctAddEl = $('#ctAdd');
+  const ctAddForm = $('#ctAddForm');
+  const ctAddAppSel = $('#ctAddApp');
+  const ctAddNameIn = $('#ctAddName');
+  const ctAddHandleIn = $('#ctAddHandle');
+  const ctAddWarnEl = $('#ctAddWarn');
+  let _ctAdd = null; /* { open, stage, app, handle, kind, name, warn, nudged, t1 } */
+
+  function ctAddAppFill() {
+    if (!ctAddAppSel) return;
+    const apps = (typeof AVAMessaging !== 'undefined' && AVAMessaging.msgAppsOf) ? AVAMessaging.msgAppsOf() : [];
+    ctAddAppSel.innerHTML = apps.map((m) => `<option value="${m.id}">${m.fa}</option>`).join('');
+  }
+  function ctAddAppFa(id) {
+    const m = (typeof AVAMessaging !== 'undefined' && AVAMessaging.appOf) ? AVAMessaging.appOf(id) : null;
+    return m ? m.fa : (id || '');
+  }
+  function ctAddValidate(st) {
+    /* '' = آماده ذخیره؛ رشته = کد مشکل */
+    if (!st || !st.app) return 'app';
+    if (!st.name || String(st.name).trim().length < 2) return 'name';
+    const h = String(st.handle || '').trim();
+    if (!h) return 'handle';
+    if (st.app === 'whatsapp') {
+      const p = (typeof AVAMessaging !== 'undefined' && AVAMessaging.phoneLike) ? AVAMessaging.phoneLike(h) : '';
+      if (!p) return 'phone';
+      return '';
+    }
+    if (/[^\x00-\x7F]/.test(h)) return 'latin';
+    return '';
+  }
+  function ctAddDupOf(st) {
+    const all = Array.isArray(settings.msgContacts) ? settings.msgContacts : [];
+    const hd = (x) => String(x || '').replace(/^@/, '').toLowerCase().trim();
+    return all.find((y) => String(y.app || '') === String(st.app) && hd(y.handle) === hd(st.handle))
+      || all.find((y) => String(y.app || '') === String(st.app) && AVAMessaging.normFa(y.name) === AVAMessaging.normFa(st.name))
+      || null;
+  }
+  function ctAddRender() {
+    if (!ctAddEl || !_ctAdd) return;
+    if (_ctAdd.app) ctAddAppSel.value = _ctAdd.app;
+    ctAddNameIn.value = _ctAdd.name || '';
+    ctAddHandleIn.value = _ctAdd.handle || '';
+    /* هشدارها */
+    const warns = [];
+    const v = ctAddValidate(_ctAdd);
+    if ((_ctAdd.warn || []).includes('latin-needed') || v === 'latin') warns.push(LANG === 'en'
+      ? 'The username must be in English letters — say or type it in English.'
+      : 'یوزرنیم باید حروف انگلیسی باشه — صدا بگو یا تایپش کن (اسم لاتینش چیست؟)');
+    if (v === 'phone') warns.push(t('ctAdd.phone'));
+    const dup = (_ctAdd.handle && _ctAdd.name) ? ctAddDupOf(_ctAdd) : null;
+    if (dup) warns.push(LANG === 'en'
+      ? `"${dup.name}" already exists with these details — confirming updates it.`
+      : `قبلاً «${dup.name}» با همین مشخصات ثبت شده — تایید یعنی به‌روزرسانی.`);
+    if (warns.length) { ctAddWarnEl.textContent = warns.join('\n'); ctAddWarnEl.hidden = false; ctAddWarnEl.classList.toggle('is-err', !!dup || v === 'latin' || v === 'phone'); }
+    else ctAddWarnEl.hidden = true;
+    /* دکمهٔ ذخیره فقط وقتی آماده */
+    $('#ctAddSave').toggleAttribute('disabled', !!v);
+  }
+  function ctAddSummary() {
+    if (LANG === 'en') return `Messenger: ${ctAddAppFa(_ctAdd.app)}, call them "${_ctAdd.name}", user ${_ctAdd.handle}`;
+    return `برا ${ctAddAppFa(_ctAdd.app)}، صداش کنی «${_ctAdd.name}»، یوزرِ ${_ctAdd.handle}`;
+  }
+  function ctAddQuestion() {
+    if (!_ctAdd) return '';
+    if (!_ctAdd.app) return LANG === 'en' ? 'For which messenger? Telegram, Discord, WhatsApp…' : 'برا کدوم پیام‌رسان باشه؟ تلگرام، دیسکورد، واتساپ…';
+    if (!_ctAdd.handle) return LANG === 'en'
+      ? `Opened for ${ctAddAppFa(_ctAdd.app)} — say or type their username/ID (or number).`
+      : `برا ${ctAddAppFa(_ctAdd.app)} بازش کردم — یوزر یا آیدیش رو بگو یا بنویس${_ctAdd.app === 'whatsapp' ? ' (واتساپ شماره می‌خواد)' : ''}.`;
+    if (!_ctAdd.name) return LANG === 'en' ? 'Got it — what should I call them?' : 'خب — چی صداش کنی؟';
+    return ctAddSummary() + (LANG === 'en' ? '. Is that right? Save?' : '. همینه؟ ذخیره کنم؟');
+  }
+  function ctAddClearTimers() { try { if (_ctAdd && _ctAdd.t1) clearTimeout(_ctAdd.t1); } catch (_) { /* noop */ } }
+  function ctAddArmTimeout() {
+    if (!_ctAdd) return;
+    ctAddClearTimers();
+    _ctAdd.t1 = setTimeout(() => {
+      if (!_ctAdd || !_ctAdd.open) return;
+      if (!_ctAdd.nudged) { _ctAdd.nudged = true; try { speak(ctAddQuestion()); } catch (_) { /* noop */ } ctAddArmTimeout(); }
+      else {
+        const _tm = LANG === 'en'
+          ? 'You said nothing — I closed the contact popup. Say "new contact" anytime.'
+          : 'چیزی نگفتی — پاپ‌آپ مخاطب رو بستم؛ هر وقت خواستی بگو «مخاطب جدید».';
+        ctAddCancel();
+        try { speak(_tm); } catch (_) { /* noop */ }
+      }
+    }, 32000);
+  }
+  function ctAddOpen(pre) {
+    if (!ctAddEl) return LANG === 'en' ? 'Only available inside the app.' : 'فقط داخل خود نرم‌افزار کار می‌کند.';
+    ctAddAppFill();
+    _ctAdd = {
+      open: true,
+      stage: 'confirm',
+      app: pre.app || '', handle: pre.handle || '', kind: pre.kind || '',
+      name: pre.name || '', warn: Array.isArray(pre.warn) ? pre.warn.slice() : [],
+      nudged: false, t1: null,
+    };
+    if (!_ctAdd.app) _ctAdd.stage = 'app';
+    else if (!_ctAdd.handle) _ctAdd.stage = 'handle';
+    else if (!_ctAdd.name) _ctAdd.stage = 'name';
+    ctAddEl.hidden = false;
+    ctAddRender();
+    const q = ctAddQuestion();
+    ctAddArmTimeout();
+    return q;
+  }
+  function ctAddCancel() {
+    ctAddClearTimers();
+    _ctAdd = null;
+    if (ctAddEl && !ctAddEl.hidden) {
+      ctAddForm.classList.add('closing');
+      setTimeout(() => { ctAddEl.hidden = true; ctAddForm.classList.remove('closing'); }, 300);
+    }
+  }
+  function ctAddSave() {
+    if (!_ctAdd) return '';
+    const v = ctAddValidate(_ctAdd);
+    if (v) {
+      _ctAdd.stage = v === 'app' ? 'app' : (v === 'name' ? 'name' : 'handle');
+      ctAddRender();
+      const qs = ctAddQuestion();
+      ctAddArmTimeout();
+      return qs;
+    }
+    const dup = ctAddDupOf(_ctAdd);
+    let rep;
+    if (dup) {
+      dup.handle = String(_ctAdd.handle || '').trim();
+      if (!Array.isArray(dup.aliases)) dup.aliases = [dup.name];
+      if (dup.name !== _ctAdd.name && !dup.aliases.includes(_ctAdd.name)) dup.aliases.push(_ctAdd.name);
+      dup.name = _ctAdd.name;
+      rep = LANG === 'en'
+        ? `Updated: "${_ctAdd.name}" on ${ctAddAppFa(_ctAdd.app)} with ${_ctAdd.handle}.`
+        : `به‌روز شد: «${_ctAdd.name}» تو ${ctAddAppFa(_ctAdd.app)} با ${_ctAdd.handle}.`;
+    } else {
+      settings.msgContacts.push({ id: 'mcp' + Date.now().toString(36), name: _ctAdd.name, app: _ctAdd.app, handle: String(_ctAdd.handle || '').replace(/^@/, ''), aliases: [_ctAdd.name], via: 'popup' });
+      rep = LANG === 'en'
+        ? `Saved: "${_ctAdd.name}" on ${ctAddAppFa(_ctAdd.app)} with ${_ctAdd.handle}. From now on just say: message ${_ctAdd.name}.`
+        : `ذخیره شد: «${_ctAdd.name}» تو ${ctAddAppFa(_ctAdd.app)} با ${_ctAdd.handle}. از این به بعد فقط بگو «به ${_ctAdd.name} پیام بده».`;
+    }
+    store.set('msgContacts', settings.msgContacts);
+    try { msgContactsRender(); } catch (_) { /* noop */ }
+    ctAddCancel();
+    return rep;
+  }
+  /* مصرفِ جملهٔ کاربر وقتی پاپ‌آپ باز است — خروجی: رشتهٔ پاسخ (مصرف شد) یا null
+     (بی‌ربط → مسیر عادی dispatch ادامه می‌یابد و پاپ‌آپ باز می‌ماند) */
+  function ctAddConsume(raw) {
+    if (!_ctAdd || !_ctAdd.open) return null;
+    const s = String(raw || '').trim();
+    if (!s) return null;
+    const yes = (typeof AVAMessaging !== 'undefined' && AVAMessaging.CTADD_YES_RE) ? AVAMessaging.CTADD_YES_RE.test(s) : false;
+    const no = (typeof AVAMessaging !== 'undefined' && AVAMessaging.CTADD_NO_RE) ? AVAMessaging.CTADD_NO_RE.test(s) : false;
+    if (no) { ctAddCancel(); return LANG === 'en' ? 'Okay, cancelled — nothing saved.' : 'باشه، بی‌خیال — چیزی ذخیره نکردم.'; }
+    const val = (typeof AVAMessaging !== 'undefined' && AVAMessaging.ctAddValueOf) ? AVAMessaging.ctAddValueOf(s, _ctAdd.stage) : null;
+    if (_ctAdd.stage === 'confirm') {
+      if (yes) return ctAddSave();
+      if (val) {
+        if (val.field === 'app') _ctAdd.app = val.value;
+        else if (val.field === 'handle') { _ctAdd.handle = val.value; _ctAdd.kind = val.kind || 'username'; _ctAdd.warn = val.warn || []; }
+        else if (val.field === 'name') _ctAdd.name = val.value;
+        ctAddRender();
+        const q = ctAddQuestion() + (LANG === 'en' ? '' : '');
+        ctAddArmTimeout();
+        return q;
+      }
+      return null; /* بی‌ربط → dispatch عادی، پاپ‌آپ می‌ماند */
+    }
+    /* مرحلهٔ پر کردن فیلد (app/handle/name) */
+    if (yes) {
+      /* «آره» وسط پر کردن — اگر کامل شد ذخیره، وگرنه تکرار سوال */
+      if (_ctAdd.app && _ctAdd.handle && _ctAdd.name) return ctAddSave();
+      const q = ctAddQuestion();
+      ctAddArmTimeout();
+      return q;
+    }
+    if (val) {
+      if (val.field === 'app') _ctAdd.app = val.value;
+      else if (val.field === 'handle') { _ctAdd.handle = val.value; _ctAdd.kind = val.kind || 'username'; _ctAdd.warn = val.warn || []; }
+      else if (val.field === 'name') _ctAdd.name = val.value;
+      ctAddRender();
+      if (!_ctAdd.app) _ctAdd.stage = 'app';
+      else if (!_ctAdd.handle) _ctAdd.stage = 'handle';
+      else if (!_ctAdd.name) _ctAdd.stage = 'name';
+      else _ctAdd.stage = 'confirm';
+      const q = ctAddQuestion();
+      ctAddArmTimeout();
+      return q;
+    }
+    /* جوابی که فیلد نیست → تکرار سوال (یک نوبت نرم) */
+    if (s.length <= 30) {
+      const q = ctAddQuestion();
+      ctAddArmTimeout();
+      return q;
+    }
+    return null;
+  }
+  if (ctAddForm) {
+    ctAddForm.addEventListener('submit', (e) => { e.preventDefault(); if (!_ctAdd) { _ctAdd = { open: true, stage: 'confirm', app: ctAddAppSel.value, handle: ctAddHandleIn.value.trim(), kind: 'username', name: ctAddNameIn.value.trim(), warn: [], nudged: false, t1: null }; } else { _ctAdd.app = ctAddAppSel.value; _ctAdd.name = ctAddNameIn.value.trim(); _ctAdd.handle = ctAddHandleIn.value.trim(); } const _r = ctAddSave(); try { toast(_r, '#i-check'); speak(_r); } catch (_) { /* noop */ } });
+    $('#ctAddCancel').addEventListener('click', () => { ctAddCancel(); try { toast(LANG === 'en' ? 'Contact popup closed.' : 'پاپ‌آپ مخاطب بسته شد.', '#i-close'); } catch (_) { /* noop */ } });
+    $('#ctAddClose').addEventListener('click', () => ctAddCancel());
+    $('#ctAddBackdrop').addEventListener('click', () => ctAddCancel());
+    $('#ctAddEdit').addEventListener('click', () => {
+      if (!_ctAdd) return;
+      const v = ctAddValidate(_ctAdd);
+      if (v === 'handle' || v === 'latin' || v === 'phone') { _ctAdd.stage = 'handle'; ctAddHandleIn.focus(); }
+      else if (v === 'name') { _ctAdd.stage = 'name'; ctAddNameIn.focus(); }
+      else if (v === 'app') { _ctAdd.stage = 'app'; ctAddAppSel.focus(); }
+      else ctAddNameIn.focus();
+    });
+    [ctAddAppSel, ctAddNameIn, ctAddHandleIn].forEach((el) => { if (el) el.addEventListener('input', () => { if (_ctAdd) { _ctAdd.app = ctAddAppSel.value; _ctAdd.name = ctAddNameIn.value.trim(); _ctAdd.handle = ctAddHandleIn.value.trim(); ctAddRender(); } }); });
+  }
+  ctAddAppFill();
+  /* فرمان دستی «مخاطب جدید» از چیپ‌ها/صفحهٔ فرمان‌ها */
+  function openContactAddPopup() {
+    const q = ctAddOpen({});
+    try { toast(t('ctAdd.title'), '#i-plus'); } catch (_) { /* noop */ }
+    return q;
+  }
+
   /* پنجره کوچک «DNS جدید» (v0.10) — فرم شیشه‌ای داخل صفحه اصلی */
   function openDnsQuick() {
     openDnsQuickOverlay();
@@ -7857,6 +8162,7 @@
     { cmd: 'کامپیوتر رو بخوابون', en: 'sleep the PC', icon: '#i-moon' },
     { cmd: 'مانیتور رو خاموش کن', en: 'turn off the monitor', icon: '#i-monitor' },
     { cmd: 'صفحه رو قفل کن', en: 'lock the screen', icon: '#i-lock' },
+    { cmd: 'مخاطب جدید برا دیسکورد', en: 'new contact for Discord', icon: '#i-plus' }, /* v0.78 — پاپ‌آپ مخاطب جدید */
   ];
   const SUGGESTIONS = [...BASE_SUGGESTIONS];
   let sgTimer = null, sgLast = -1;
@@ -7924,7 +8230,8 @@
       e.preventDefault();
       cmdInput.focus();
     } else if (e.key === 'Escape') {
-      if (dnsQuickEl && !dnsQuickEl.hidden) closeDnsQuickOverlay(); /* v0.60 — زنجیرهٔ else-if: یک Esc فقط یک لایه می‌بندد */
+      if (ctAddEl && !ctAddEl.hidden) ctAddCancel(); /* v0.78 — پاپ‌آپ مخاطب جدید */
+      else if (dnsQuickEl && !dnsQuickEl.hidden) closeDnsQuickOverlay(); /* v0.60 — زنجیرهٔ else-if: یک Esc فقط یک لایه می‌بندد */
       else if (dnsPingEl && !dnsPingEl.hidden) closeDnsPingOverlay();
       else if (!confirmBox.hidden) hideConfirm();
       else if (!about.hidden) about.hidden = true;
@@ -8277,7 +8584,7 @@
 
   /* ---------- ناوبری: خانه / تنظیمات / چت / تاریخچه ----------
      ============================================================ */
-  let appVersion = '0.77.0-beta';
+  let appVersion = '0.78.0-beta';
 
   /* پنل فعال تنظیمات (v0.9 — ناوبری لیستی سمت چپ) */
   const setNavItems = [...document.querySelectorAll('.set-nav-item')];
@@ -9499,7 +9806,7 @@
     'قانون مهم ۱۰ (بسیار مهم): اگر کاربر با ارجاع به گذشته حرف زد (همینو، همونو، اونو، همون، همونی که گفتی/سرچ کردی/پخش کردی، آخرین بار، قبلی، «همون آهنگ جدیدشو»)، مرجع را اول از «تاریخچهٔ همین گفتگو» بردار — مخصوصاً عنوانی که خودت چند پیام قبل در جواب گفتی. بعد از حلِ مرجع حتماً اکشن بده: پخش = music_play با عنوانِ حل‌شده؛ سرچ در یوتیوب = yt_search؛ سرچ گوگل = web_search. اگر مرجع در تاریخچه نبود، act=research بده یا صادقانه بپرس — هرگز عنوان را از حافظه‌ات نساز. این قانون هرگز مجوزِ رد کردن یا بی‌جواب گذاشتنِ خواستهٔ کاربر نیست.\n' +
     /* v0.63 — نگاشت مستقیم کنترل پخش (لاگ v0.62: «ببند/پین کن/ببر بالا سمت راست/
        بزرگتر کن» یا بی‌اکشن ماندند یا fullscreen اشتباه زده شد) */
-    'قانون مهم ۱۱ (بسیار مهم): هر درخواستِ کنترلِ ویدیو/پلیر = بلوک DO با act=video_ctl: «ببند/بخوابون»=close؛ «پین کن/همیشه رویر/بیفته جلو»=pin؛ «دیگه رویر نباشه»=unpin؛ «ببر بالا سمت راست»=move:top-right؛ «ببر گوشه پایین چپ»=move:bottom-left؛ «ببر وسط»=move:center؛ «بزرگتر کن/ابعادشو زیاد کن»=grow؛ «کوچکتر کن»=shrink؛ «برو جلو ۳۰ ثانیه»=seek:30؛ «۱۰ ثانیه عقب»=seek:-10؛ «پاز کن»=play_pause؛ «ادامه بده/پلی کن»=play_pause؛ «بعدی/پاس کن»=next؛ «فول اسکرین کن»=fullscreen؛ صدای ویدیو=volume_up/volume_down. فرمانِ اجرایی هرگز بدونِ بلوک DO نمی‌ماند — این کارها هرگز سوال یا گفتگو نیستند. تنها استثنا: «شفافیت/کمرنگ/اپسیتی/شفاف کردن» ویدیو در پلیر سیستم ممکن نیست — بدونِ DO صادقانه بگو پلیر امکان شفاف‌سازی ندارد و هرگز shrink/grow جای آن نزن (لاگ v0.63: «کمرنگ کن» → shrink اشتباه شد).\n' +
+    'قانون مهم ۱۱ (بسیار مهم): هر درخواستِ کنترلِ ویدیو/پلیر = بلوک DO با act=video_ctl: «ببند/بخوابون»=close؛ «ویدیو قبلی (ک قبلاً باز کرده بودم) رو ببند»=close:oldest؛ «ویدیو جدید/آخری/دومی رو ببند»=close:newest؛ «همهٔ ویدیوها رو ببند»=close:all؛ «پین کن/همیشه رویر/بیفته جلو»=pin؛ «دیگه رویر نباشه»=unpin؛ «ببر بالا سمت راست»=move:top-right؛ «ببر گوشه پایین چپ»=move:bottom-left؛ «ببر وسط»=move:center؛ «بزرگتر کن/ابعادشو زیاد کن»=grow؛ «کوچکتر کن»=shrink؛ «برو جلو ۳۰ ثانیه»=seek:30؛ «۱۰ ثانیه عقب»=seek:-10؛ «پاز کن»=play_pause؛ «ادامه بده/پلی کن»=play_pause؛ «بعدی/پاس کن»=next؛ «فول اسکرین کن»=fullscreen؛ صدای ویدیو=volume_up/volume_down. فرمانِ اجرایی هرگز بدونِ بلوک DO نمی‌ماند — این کارها هرگز سوال یا گفتگو نیستند. وقتی چند ویدیو باز است هرگز همه را نبند مگر کاربر «همه» گفته باشد. تنها استثنا: «شفافیت/کمرنگ/اپسیتی/شفاف کردن» ویدیو در پلیر سیستم ممکن نیست — بدونِ DO صادقانه بگو پلیر امکان شفاف‌سازی ندارد و هرگز shrink/grow جای آن نزن (لاگ v0.63: «کمرنگ کن» → shrink اشتباه شد).\n' +
     'قانون مهم ۱۲ (بسیار مهم): «بنویس X» / «تایپ کن X» / «برام بنویس که X» = بلوک DO با act=type_once و value=دقیقاً همان X — هرگز جوابِ چت نده و هرگز خودت متن را بازنویسی/خلاصه نکن. اگر درخواست چندمرحله‌ای بود (اول تحقیق/سرچ کن، بعد بنویس)، آخرین act باید type_once با متن نهایی باشد؛ پاسخِ بدونِ type_once وقتی کاربر «بنویس/تایپ کن» گفته ممنوع است (لاگ v0.51: «بررسی می‌کنم برام بنویس» → فقط جواب حرف زده شد و هیچ چیزی تایپ نشد).\n' +
     'اگر کاربر خواست کاری/فرمانی جدید به برنامه اضافه شود، یا درخواستش قابل تبدیل به یک فرمان سیستم باشد،\n' +
     'در انتهای پاسخ این بلوک را اضافه کن (وگرنه هیچ بلوکی ننویس):\n' +
@@ -9522,7 +9829,7 @@
     /* v0.63 — video_play/video_ctl در پرامپت فارسی غایب بودند (لاگ v0.61/0.62:
        AI فرمتِ value را خودش حدس می‌زد — video_play(https://www.youtube.com/)) */
     '- video_play: value=عنوانِ دقیقِ ویدیو/فیلم برای پخش در پلیر پیش‌فرضِ کاربر، یا خودِ لینکِ کاملِ ویدیو — اگر کاربر گفت «لینکی که کپی کردم / در کلیپ‌بورد دارم»، value را دقیقاً __clipboard__ بگذار تا آوا لینک واقعی را از کلیپ‌بورد بخواند؛ هرگز آدرسِ ناقصِ بدونِ ویدیو مثل youtube.com خالی نده\n' +
-    '- video_ctl: کنترل پلیر/پنجرهٔ ویدیو؛ value یکی از: play_pause|next|prev|stop|close|fullscreen|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=همیشه رویر، grow=بزرگتر کردن، shrink=کوچکتر کردن، move=جابه‌جایی پنجره، seek=پرش ±ثانیه — «بزرگتر/کوچکتر کردنِ» ویدیو هرگز fullscreen نیست\n' +
+    '- video_ctl: کنترل پلیر/پنجرهٔ ویدیو؛ value یکی از: play_pause|next|prev|stop|close|close:oldest|close:newest|close:all|fullscreen|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=همیشه رویر، grow=بزرگتر کردن، shrink=کوچکتر کردن، move=جابه‌جایی پنجره، seek=پرش ±ثانیه — close:oldest=بستن ویدیوی قبلیِ باز‌شده، close:newest=بستن جدیدترین، close:all=بستن همه — «بزرگتر/کوچکتر کردنِ» ویدیو هرگز fullscreen نیست\n' +
     '- media_next / media_prev / media_toggle (پلیر سیستم)\n' +
     '- music_play: value=اسم آهنگ یا خالی؛ music_pause\n' +
     /* v0.54 — سرچ یوتیوب ابزار درست گرفت (لاگ v0.53 ۱۶:۴۹: AI برای «همینو برام تو یوتیوب سرچ کن» open_url(https://www.youtube.com/result) می‌داد = صفحهٔ خالی) */
@@ -9574,7 +9881,7 @@
        عوض کرده باشد (حل‌گر ارجاع AVACore). به‌روزشدگی متن مطابق همین منابع. */
     'Important rule 9 (critical): when the user refers to something EARLIER (همینو / همون / اونو / the one you said / searched / played / last time / previous), resolve the reference FIRST from the conversation history and the entity list attached to this message (تاریخچهٔ همین گفتگو / موجودیت‌های آخرین گفتگو) — especially a title YOU gave in an earlier answer. After resolving, ALWAYS execute: video/song play = video_play (or music_play for the local music library) with the resolved title; YouTube search = yt_search; Google = web_search. If it is not in the attached history, give act=research or ask honestly — NEVER invent titles from memory. This rule never justifies refusing or ignoring the user request.\n' +
     /* v0.63 — EN mirror of قانون ۱۱: player/video control mapping + never-leave-a-command rule */
-    'Important rule 10 (critical): EVERY video/player control request = a DO block with act=video_ctl: "close it"=close؛ "pin / always on top"=pin؛ "stop being on top"=unpin؛ "move it to the top right"=move:top-right؛ "move to bottom left"=move:bottom-left؛ "center it"=move:center؛ "make it bigger"=grow؛ "make it smaller"=shrink؛ "forward 30 seconds"=seek:30؛ "back 10 seconds"=seek:-10؛ "pause/resume"=play_pause؛ "skip/next"=next؛ "fullscreen"=fullscreen؛ video volume=volume_up/volume_down. Making the video bigger/smaller is NEVER fullscreen. An understood command must NEVER remain without a DO block — these are never questions or chat. Sole exception: video opacity/transparency ("make it faded/transparent") is impossible for system players — answer honestly WITHOUT a DO that the player cannot do it; never substitute grow/shrink.\n' +
+    'Important rule 10 (critical): EVERY video/player control request = a DO block with act=video_ctl: "close it"=close؛ "close the PREVIOUS video I had opened"=close:oldest؛ "close the latest/second one"=close:newest؛ "close ALL videos"=close:all؛ "pin / always on top"=pin؛ "stop being on top"=unpin؛ "move it to the top right"=move:top-right؛ "move to bottom left"=move:bottom-left؛ "center it"=move:center؛ "make it bigger"=grow؛ "make it smaller"=shrink؛ "forward 30 seconds"=seek:30؛ "back 10 seconds"=seek:-10؛ "pause/resume"=play_pause؛ "skip/next"=next؛ "fullscreen"=fullscreen؛ video volume=volume_up/volume_down. Making the video bigger/smaller is NEVER fullscreen. When several videos are open NEVER close all unless the user asked for all. An understood command must NEVER remain without a DO block — these are never questions or chat. Sole exception: video opacity/transparency ("make it faded/transparent") is impossible for system players — answer honestly WITHOUT a DO that the player cannot do it; never substitute grow/shrink.\n' +
     'Important rule 11: "write X" / "type X" = a DO block with act=type_once and value=the exact X — NEVER answer in chat instead of typing, never rewrite or summarize X yourself. In a multi-step request (first search/find, then type) the LAST act must be type_once with the final text; a reply without type_once after a "write/type" request is forbidden.\n' +
     'If the user wants a new app command, append this block at the end (otherwise write no block):\n' +
     '<<<ADD>>>\n' +
@@ -9589,7 +9896,7 @@
     '<<<DO>>>\n' +
     '{"reply":"short spoken reply","actions":[{"act":"...","value":"..."}]}\n' +
     '<<<END>>>\n' +
-    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests; if the user means the link they COPIED, value=__clipboard__ so AVA reads the clipboard; never a bare youtube.com without a video id; if a full YouTube URL appears in the user message, copy it character-for-character into value — never shorten it to youtube.com), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=always on top, grow=bigger, shrink=smaller, move=window position, seek=jump seconds), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
+    'Allowed acts (max 3; this list only): open_app, open_url, web_search, yt_search(value=the exact title to search on YouTube — never build fake URLs like youtube.com/result), video_play(value=the exact title or URL to play — plays in the USER DEFAULT video player, preferred for "play X" video/movie requests; if the user means the link they COPIED, value=__clipboard__ so AVA reads the clipboard; never a bare youtube.com without a video id; if a full YouTube URL appears in the user message, copy it character-for-character into value — never shorten it to youtube.com), video_ctl(value=one of play_pause|next|prev|fullscreen|stop|close|close:oldest|close:newest|close:all|volume_up|volume_down|pin|unpin|grow|shrink|move:top-left|move:top-right|move:bottom-left|move:bottom-right|move:center|move:top|move:bottom|seek:-10|seek:30 — pin=always on top, grow=bigger, shrink=smaller, move=window position, seek=jump seconds; close:oldest=closes the EARLIER video the user had opened before (their words: «ویدیو قبلی/اول»), close:newest=closes the latest one («ویدیو جدید/آخرین/دومی»), close:all=closes every player window («همه رو ببند»); with several videos open NEVER plain-close all unless the user asked for all), vol_up, vol_down, vol_mute, vol_set(0-100), media_next, media_prev, media_toggle, music_play, music_pause, lock, screenshot, monitor_off, minimize_all, recycle_empty, sys_sleep(only on explicit request), dns_set, dns_reset, reminder_add, note_show(value=a fragment of a saved note, or empty for the latest), discord_call, discord_mute, discord_unmute, discord_deafen, discord_hangup, discord_answer, discord_decline, run_custom, set_wake_word(value=the new wake word, one word), research(value=a web research query; only for "first find out, then act" requests; results return to you next turn), type_once(value=the exact text to type into the focused app).\n' +
     'If it is just a question, answer in text with no block; if both, send a DO block with a reply.';
   const aiSystem = () => (LANG === 'en' ? AI_SYSTEM_EN : AI_SYSTEM_FA);
 
@@ -9740,6 +10047,12 @@
       .replace(/[«»"']/g, '').replace(/\s+/g, ' ');
     const POS = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center', 'top', 'bottom', 'left', 'right'];
     const SIMP = ['play_pause', 'next', 'prev', 'stop', 'close', 'fullscreen', 'volume_up', 'volume_down', 'pin', 'unpin', 'grow', 'shrink'];
+    /* v0.78 — بستن هدفمند از مغز: close:oldest (ویدیوی قبلی) / close:newest / close:all */
+    if (/^close/.test(raw)) {
+      const tail = raw.replace(/^close[:\s]*/, '').trim();
+      if (tail === 'oldest' || tail === 'newest' || tail === 'all') return { action: 'close', arg: tail };
+      return { action: 'close', arg: 'auto' };
+    }
     if (/^move/.test(raw)) {
       let tail = raw.replace(/^move[:\s]*/, '').trim().replace(/[_/]/g, '-')
         .replace(/top\s*right/g, 'top-right').replace(/top\s*left/g, 'top-left')

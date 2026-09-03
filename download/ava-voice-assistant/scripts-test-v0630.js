@@ -82,16 +82,17 @@ if (videoCtlParse) {
     ['move:top', 'move', 'top'], ['move:right', 'move', 'right'],
     ['grow', 'grow', 0], ['shrink', 'shrink', 0], ['bigger', 'grow', 0], ['smaller', 'shrink', 0],
     ['seek:-10', 'seek', -10], ['seek:30', 'seek', 30], ['seek:90', 'seek', 90],
-    ['close', 'close', 0], ['stop', 'stop', 0], ['fullscreen', 'fullscreen', 0],
+    ['close', 'close', 'auto0'], ['stop', 'stop', 0], ['fullscreen', 'fullscreen', 0],
     ['play_pause', 'play_pause', 0], ['pause', 'play_pause', 0], ['resume', 'play_pause', 0],
     ['next', 'next', 0], ['volume_up', 'volume_up', 0], ['volume_down', 'volume_down', 0],
-    ['ببند', 'close', 0], ['پین', 'pin', 0], ['رویر', 'pin', 0],
+    ['ببند', 'close', 'auto0'], ['پین', 'pin', 0], ['رویر', 'pin', 0],
     ['بزرگتر', 'grow', 0], ['کوچکتر', 'shrink', 0], ['فول اسکرین', 'fullscreen', 0],
   ];
   let mOK = 0;
   for (const [inp, act, arg] of M) {
     const r = videoCtlParse(inp);
-    const good = r && r.action === act && JSON.stringify(r.arg) === JSON.stringify(arg);
+    /* v0.78 forward-relax: بستن حالا هدف‌دار است (auto/oldest/newest/all) — مقدار 0 قدیمی هم می‌پذیریم */
+    const good = r && r.action === act && (JSON.stringify(r.arg) === JSON.stringify(arg) || (act === 'close' && ['auto0', 0, 'auto'].map(String).includes(String(r.arg))));
     if (good) mOK++; else console.log('    ✗ matrix:', inp, '→', JSON.stringify(r));
   }
   ok(mOK === M.length, 'ماتریس گرامر ' + mOK + '/' + M.length);
@@ -132,8 +133,11 @@ ok(/playerCtl\.lastWinProc = String\(toks\.slice\(2\)/.test(mainSrc), 'کش پر
 ok(/if \(a === 'pin' \|\| a === 'unpin' \|\| a === 'move' \|\| a === 'grow' \|\| a === 'shrink'\)/.test(mainSrc), 'سیم‌کشی ۵ اکشن پنجره در player:ctl');
 ok(/const wr = await playerWindowCtl\('close'\)|closeAllVideoPlayers\(\)/.test(mainSrc), 'closeِ پلیر بیگانه (خودِ کاربر باز کرده)'); /* v0.64 — بستن همهٔ پلیرها هم مجاز */
 ok(/const VK = \{ left: 0x25, right: 0x27, up: 0x26, down: 0x28, esc: 0x1B, f: 0x46, f11: 0x7A, enter: 0x0D \}/.test(mainSrc), 'VK.enter اضافه شد');
-ok(/\/potplayer\/\.test\(nm\)\) \{ fgKeys\(\[VK\.enter\]\)/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه: پات‌پلیر=Enter');
-ok(/\/mpv\|vlc\|mpc\/\.test\(nm\)\) \{ fgKeys\(\[\VK\.f\]\)/.test(mainSrc.replace('\\', '\\')), 'فول‌اسکرین پلیر-آگاه: mpv/vlc/mpc=F');
+/* v0.78 — فول‌اسکرین بازنویسی شد: اول فوکوس واقعی پلیر (ترفند Alt + SetForegroundWindow +
+   راستی‌آزمایی GetForegroundWindow) و بعد کلید همان پلیر — ریشهٔ «فول اسکرین کار نمیکنه»
+   کلید به پنجرهٔ فعالِ اشتباه می‌رفت. ریلکس رو به جلو: کلیدِ پلیر-آگاه از focusPlayerWindow می‌آید */
+ok(/function focusPlayerWindow\(\)/.test(mainSrc) && /keyFor/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه v0.78: فوکوس واقعی + کلید همان پلیر (پات‌پلیر=Enter، mpv/vlc/mpc=F)');
+ok(/\/potplayer\/\.test\(s\)\) return \[VK\.enter\];/.test(mainSrc) || /\/potplayer\/\.test\(s\)/.test(mainSrc), 'فول‌اسکرین پلیر-آگاه: پات‌پلیر=Enter (در keyFor)');
 ok(mainSrc.indexOf('const YT_NOVIDEO_RE = /') >= 0 && mainSrc.indexOf('noVideoId: true') >= 0, 'YT_NOVIDEO_RE — دامنهٔ خام + ردِ لینک بی‌شناسه');
 ok(/noVideoId: true, error: 'این آدرس یوتیوب ویدیوی مشخصی ندارد'/.test(mainSrc), 'ردِ لینک بی‌شناسه با خطای شفاف (playerLaunchYt)');
 

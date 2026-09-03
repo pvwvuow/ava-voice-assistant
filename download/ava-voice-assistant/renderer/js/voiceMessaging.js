@@ -514,6 +514,144 @@
     return null;
   }
 
+  /* ---------- ۶.۵) v0.78 — پاپ‌آپ «مخاطب جدید» (ساخت مخاطب وسط مکالمه) ----------
+     خواستهٔ کاربر: «یک المان کوچولو که وسط همون مکالمه پاپ بشه»:
+     «میخام مخاطب جدید ایجاد کنم برا دیسکورد» → پاپ‌آپ خالی با اپِ پیش‌پر؛
+     «میخام یک نفر اد کنی برام به اسم soliiii تو دیسکورد من صداش میکنم داداش» →
+     پاپ‌آپ با فیلدهای پیش‌پر (handle=soliiii, app=discord, name=داداش)؛
+     آوا جمله را می‌خواند، می‌پرسد «همینه؟» و صدا منتظر تایید/ویرایش/انصراف می‌ماند.
+     خروجی: { op:'add-popup', app, appFa, handle, kind, name, warn[] } یا null. */
+  function ctAddParse(cmd) {
+    let s = String(cmd || '').trim();
+    if (!s || s.length < 8) return null;
+    /* گارد ۱ — ارسال پیام نیست */
+    if (/(پیام|پیغام)\s*(بده|بفرست|برسون|برسان)|\bبگو\s+(?:که|این)|بنویس\s+برام/i.test(s)) return null;
+    /* گارد ۲ — شکل کلاسیک با هندل صریح («با یوزر ali_gh ذخیره کن») قلمرو ctCmdParse است */
+    if (/(?:با\s*)(?:یوزر|یوزرنیم|آیدی|ایدی|شماره|نمبر|username|number|phone)/i.test(s)) return null;
+    /* گارد ۳ — حذف/لیست مخاطبین نیست */
+    if (/(حذف|پاک|بردار|بخون|لیست|چین|چند)/i.test(s)) return null;
+    const sN = s.replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim();
+    /* تریگر — چهار خانوادهٔ جملهٔ طبیعی */
+    const trig =
+      /(?:مخاطب|کانتکت|contact)[^.]{0,24}(?:جدید|نو|تازه|بساز|ایجاد|اضافه|ثبت|ذخیره|اد\s?کن)/i.test(sN) ||
+      /(?:اد\s?کنی?|اضافه\s?کنی?|ایجاد\s?کنی?|بساز(?:ی)?\s*برام)[^.]{0,18}(?:برام|برای\s*من)/i.test(sN) ||
+      /(?:میخام|میخوام|می\s?خوام|بخوام)[^.]{0,36}(?:نفر|کسی|یکی|مخاطب|کانتکت)[^.]{0,24}(?:اد|اضافه|بساز|ایجاد|ذخیره|ثبت|معرفی)/i.test(sN) ||
+      /* شکل کلاسیک بدون هندل: «ذخیره کن سارا رو تو تلگرام» → پاپ‌آپ با نام+اپ */
+      /(?:ذخیره|ثبت|اضافه|سیو)\s*کن\s+[\u0600-\u06FFa-zA-Z][^.]{0,32}?(?:رو|را)\s+(?:تو|توی|در|برا|برای)\s*(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس\s?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa|بله|bale)/i.test(sN);
+    if (!trig) return null;
+    /* اپ — اولویت: کلمهٔ اپ بلافاصله بعد از تو/توی/در/برا («به اسم soliiii تو دیسکورد»)
+       تا «بله»ِ اول جمله به‌عنوان اپ بله گرفته نشود */
+    let app = '';
+    const _aml = sN.match(new RegExp('(?:تو|توی|در|برا|برای)\s+(' + APP_RE_S_SRC() + ')', 'i'));
+    const _amg = _aml ? _aml[1] : (sN.match(new RegExp(APP_RE_S_SRC(), 'i')) || [''])[0];
+    if (_amg) app = APP_MAP_FA[_amg.toLowerCase().replace(/\s+/g, ' ')] || '';
+    /* هندل — لاتین بعد از «به اسم/با اسم/با یوزر/با آیدی/اسمش/ایدیش …» */
+    let handle = '', kind = '';
+    const hm = sN.match(/(?:به\s*)?(?:با\s*)?(?:یوزر|یوزرنیم|یوزرش?و?|آیدی|آیدیش?و?|ایدی|ایدیش?و?|اسمش?و?|نامش?و?|user(?:name)?|id)\s+([A-Za-z][A-Za-z0-9_.@-]{2,32}(?:\s+[A-Za-z][A-Za-z0-9_.@-]{2,32}){0,2})/i);
+    if (hm) { handle = hm[1].replace(/^@/, '').trim(); kind = 'username'; }
+    if (!handle) {
+      /* شماره — با کلیدواژه یا موبایل ایرانی/بین‌المللی خالص */
+      const pm = sN.match(/(?:شماره|موبایل|تلفن|نمبر)\s*[:\s]*([0-9۰-۹+][0-9۰-۹+\s]{7,23})/) || sN.match(/(\+?\d{10,14})\b/);
+      if (pm) { const p = phoneLike(pm[1]); if (p) { handle = p; kind = 'phone'; } }
+    }
+    if (!handle) {
+      /* توکن لاتین تنها («اد کنی برام به اسم soliiii …») */
+      const bl = sN.match(/(?:^|\s)([A-Za-z][A-Za-z0-9_.-]{2,32})(?=\s|$)/);
+      if (bl && !CTADD_LATIN_BLACK_RE.test(bl[1])) { handle = bl[1].replace(/^@/, ''); kind = 'username'; }
+    }
+    /* لقب — «من صداش میکنم داداش» / «بهش میگم داداش» / «صداشو بذار داداش» */
+    let name = '';
+    const g1 = sN.match(/(?:من\s+)?صداش(?:و)?\s*(?:می\s*کنم|میکنم|کنم|میگم|بگم|میگیم|بگین)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+    const g2 = !g1 ? sN.match(/(?:بهش|براش|به\s+اون|براشون)\s+(?:میگم|بگو|میگین|بگید)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i) : null;
+    const g3 = !g1 && !g2 ? sN.match(/صداش(?:و)?\s*(?:رو)?\s*(?:بذار|بزار|بکن|کن)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i) : null;
+    if (g1) name = g1[1];
+    else if (g2) name = g2[1];
+    else if (g3) name = g3[1];
+    if (name) name = name.replace(/(?:\s+|^)(خب|خوب|دیگه|ببین|اوکی|باشه)$/i, '').trim();
+    const warn = [];
+    /* «به اسم سولی» فارسی — اگر لقب جدا داشت، همین توکن فارسی همان یوزری است
+       که کاربر گفت (STT لاتین را فارسی می‌نویسد) → هندل + هشدار لاتین‌بودن */
+    if (!handle && kind !== 'phone') {
+      const fnm = sN.match(/(?:به\s*)?(?:اسم|نام|یوزرش?|آیدیش?|ایدیش?)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+      if (fnm && !/^(?:اسم|نام|مخاطب|شخص)$/.test(fnm[1])) {
+        handle = fnm[1];
+        kind = 'username';
+        warn.push('latin-needed');
+      }
+    } else if (!name) {
+      /* «به اسم سارا تو تلگراف ذخیره کن» بدون «صداش میکنم» → همان اسم = لقب */
+      const nm2 = sN.match(/(?:به\s*)?(?:اسم|نام)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+      if (nm2) name = nm2[1];
+    }
+    /* v0.78 — شکل کلاسیکِ بدون هندل: «ذخیره کن سارا رو تو تلگرام» → نام = مفعول رو/را */
+    if (!name) {
+      const nm3 = sN.match(/(?:ذخیره|ثبت|اضافه|سیو)\s*کن\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24}(?:\s+[\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})?)\s*(?:رو|را)\s/i);
+      if (nm3) name = nm3[1].trim();
+    }
+    /* برچسب فارسی اپ از رجیستری */
+    const _appRec = app && appOf ? appOf(app) : null;
+    return { op: 'add-popup', app, appFa: _appRec ? _appRec.fa : (app || ''), handle: handle.slice(0, 80), kind, name: (name || '').slice(0, 40), warn };
+  }
+  /* واژه‌های لاتین قلابی که نباید هندل شوند (توکن‌های عمومی گفتار) */
+  const CTADD_LATIN_BLACK_RE = /^(?:ava|ok|okay|okey|id|dm|tv|hd|pc|dc|ai|app|usa|uk|mm|ss|yt|vk|tg|wp|ig|fb|tt|ps|xbox|hdmi|usb|wifi|pdf|mp4|mp3|ram|cpu|vpn|dns|otp|sim|gps|led|lcd|fps|gpu|hdd|ssd|uac|bio)$/i;
+  const APP_RE_S_SRC = () => '(?:تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس ?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa|بله(?!ی)|bale)';
+
+  /* تایید/انصراف صوتیِ پاپ‌آپ — عین‌کلمه‌ای (جملهٔ بلند تایید نیست) */
+  const CTADD_YES_RE = /^(?:بله|بلله|اره|آره|اکی|اوکی|اوکیه|باشه|تأیید|تایید|تاییده|ذخیره(?:ش)?(?:\s*کن)?|سیو(?:ش)?(?:\s*کن)?|ثبت(?:ش)?(?:\s*کن)?|همینه|همینو|همین(?:ه)?(?:\s*(?:رو|را))?|درسته|صحیح|yes|ok|okay|confirm|save(?:\s*it)?)\s*[.!.؟?]*$/i;
+  const CTADD_NO_RE = /^(?:نه|نخیر|کنسل|بی\s?خیال|بیخیال|لغو|منصرف(?:\s*شدم)?|ولش\s?کن|پاکش\s?کن|نخوامش|نمیخوام|نمیخوامش|cancel|no)\s*[.!.؟?]*$/i;
+
+  /* ویرایش صوتی فیلد: «یوزرشو بکن soli2» / «اسمشو بکن سارا» / «برا واتساپه»
+     خروجی { field: 'app'|'handle'|'name', value, kind?, warn? } یا null */
+  function ctAddEditParse(cmd) {
+    const s = String(cmd || '').replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!s) return null;
+    /* اپ: «برا واتساپه» / «اپشو بکن تلگرام» / «تلگرام باشه» */
+    const am = s.match(/(?:برا|برای|اپ(?:ش)?و?|پیام\s?رسان(?:ش)?)\s*(?:هم)?\s*(?:بشه|بکن|کن|هست)?\s*(تلگرام|telegram|دیسکورد|دیسبورد|discord|واتس\s?اپ|whatsapp|روبیکا|rubika|ایتا|eitaa|بله(?!ی)|bale)/i);
+    if (am && /برا|اپ|پیام\s?رسان|بشه|بکن|کن|باشه/i.test(s)) {
+      const id = APP_MAP_FA[am[1].toLowerCase().replace(/\s+/g, ' ')];
+      if (id) return { field: 'app', value: id };
+    }
+    /* هندل: «یوزرشو بکن soli_2» / «آیدیش رو عوض کن به x» / «شماره‌شو بکن 0912…» */
+    const hm = s.match(/(?:یوزرش?و?|یوزرنیمش?|آیدیش?و?|ایدیش?و?|شماره(?:ش)?و?|user(?:name)?)\s*(?:رو)?\s*(?:عوض\s*کن|تغییر\s*بده|بکن|کن|بذار|بزار|بشه|بساز)?\s*(?:به\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32}|\+?[0-9۰-۹][0-9۰-۹\s]{7,23})/i);
+    if (hm) {
+      const v = hm[1].trim();
+      if (/^[0-9۰-۹+]/.test(v)) { const p = phoneLike(v); if (p) return { field: 'handle', value: p, kind: 'phone' }; }
+      return { field: 'handle', value: v.replace(/^@/, ''), kind: 'username' };
+    }
+    /* لقب: «اسمشو بکن سارا» / «صداشو بذار داداش» / «من صداش میکنم علی» */
+    const nm = s.match(/(?:اسمش?و?|لقبش?و?|صداش(?:و)?|نامش?و?)\s*(?:رو)?\s*(?:عوض\s*کن|تغییر\s*بده|بکن|کن|بذار|بزار|بشه)?\s*(?:به\s*)?([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+    if (nm && !/^(?:عوض|تغییر|بکن|کن|بذار|بزار|بشه|به)$/.test(nm[1])) return { field: 'name', value: nm[1] };
+    const nm2 = s.match(/(?:من\s+)?صداش(?:و)?\s*(?:می\s*کنم|میکنم|کنم|میگم|بگم)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+    if (nm2) return { field: 'name', value: nm2[1] };
+    return null;
+  }
+
+  /* برداشتنِ مقدارِ فیلد از جملهٔ آزاد (وقتی آوا منتظر یک فیلد است):
+     «soliiii» → handle؛ «سارا» در مرحلهٔ name → name؛ «شماره 0912…» → handle …
+     خروجی { field, value, kind?, warn? } یا null — stage ∈ app|handle|name|confirm */
+  function ctAddValueOf(cmd, stage) {
+    const s = String(cmd || '').replace(/[\u200c]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!s) return null;
+    const ed = ctAddEditParse(s);
+    if (ed) return ed;
+    const g = s.match(/(?:من\s+)?صداش(?:و)?\s*(?:می\s*کنم|میکنم|کنم|میگم|بگم)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+    if (g) return { field: 'name', value: g[1] };
+    const g2 = s.match(/(?:بهش|براش|به\s+اون)\s+(?:میگم|بگو)\s+([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})/i);
+    if (g2) return { field: 'name', value: g2[1] };
+    const pm = s.match(/(?:شماره|موبایل|تلفن|نمبر)\s*[:\s]*([0-9۰-۹+][0-9۰-۹+\s]{7,23})/);
+    if (pm) { const p = phoneLike(pm[1]); if (p) return { field: 'handle', kind: 'phone', value: p }; }
+    const hm = s.match(/(?:یوزرش?و?|یوزرنیمش?|آیدیش?و?|ایدیش?و?|user(?:name)?)\s+(?:هست\s*)?([A-Za-z][A-Za-z0-9_.@-]{2,32})/i);
+    if (hm) return { field: 'handle', kind: 'username', value: hm[1].replace(/^@/, '') };
+    const bare = s.match(/(?:^|\s)(@?[A-Za-z][A-Za-z0-9_.-]{2,32})(?=\s|$)/);
+    if (bare && !CTADD_LATIN_BLACK_RE.test(bare[1]) && stage !== 'name') return { field: 'handle', kind: 'username', value: bare[1].replace(/^@/, '') };
+    const fp = s.match(/^([\u0600-\u06FF][\u0600-\u06FF\u200c]{1,24})$/);
+    if (fp) {
+      if (stage === 'handle') return { field: 'handle', kind: 'username', value: fp[1], warn: ['latin-needed'] };
+      if (stage === 'name') return { field: 'name', value: fp[1] };
+    }
+    return null;
+  }
+
   /* ---------- ۷) توابع کمکی قطعی مسیریابی ---------- */
   /* یوزرنیم لاتین معتبر تلگرام/دیسکورد (برای فالبک deep-link بعد از NO_TG)
      — @ ابتدای یوزرنیم هم پذیرفته می‌شود (STT هرگز @ نمی‌دهد؛ ورودی دستی می‌دهد) */
@@ -593,7 +731,7 @@
     return { app: appM ? appM.id : 'telegram', appFa: appM ? appM.fa : 'تلگرام' };
   }
 
-  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike, latinFirstOrder, stripStopTail, suspiciousTarget, chatOpenParse, msgReadParse };
+  const api = { msgAppsOf, detectInstalled, appOf, msgParse, msgBuild, contactFind, ctCmdParse, ctAddParse, ctAddEditParse, ctAddValueOf, CTADD_YES_RE, CTADD_NO_RE, normFa, faToLatin, latinToFa, noteLatinOf, isLatinUsername, phoneLike, latinFirstOrder, stripStopTail, suspiciousTarget, chatOpenParse, msgReadParse };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AVAMessaging = api;
 })(typeof window !== 'undefined' ? window : null);
