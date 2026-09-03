@@ -112,10 +112,10 @@ ok('CSS: طلایی فقط اکسنت ماند — دکمهٔ ارسال، ری�
 
 /* ---------- ۴) پین نسخه ---------- */
 console.log('\n[4] پین نسخه 0.83.1-beta');
-ok('package.json: 0.83.1-beta', pkgSrc.includes('"version": "0.83.1-beta"'));
-ok('app.js: appVersion = 0.83.1-beta', appSrc.includes("let appVersion = '0.83.1-beta';"));
-ok('index.html: abVersion = v0.83.1-beta', htmlSrc.includes('>v0.83.1-beta<'));
-ok('ava-player.html: برند پلیر v0.83.1', playerHtmlSrc.includes('آوا پلیر v0.83.1'));
+ok('package.json: 0.84.0-beta (forward-relax)', pkgSrc.includes('"version": "0.84.0-beta"'));
+ok('app.js: appVersion = 0.84.0-beta (forward-relax)', appSrc.includes("let appVersion = '0.84.0-beta';"));
+ok('index.html: abVersion = v0.84.0-beta (forward-relax)', htmlSrc.includes('>v0.84.0-beta<'));
+ok('ava-player.html: برند پلیر v0.84 (forward-relax)', playerHtmlSrc.includes('آوا پلیر v0.84'));
 
 /* ---------- ۵) رفتارِ زمان‌بندی — شبیه‌سازی واقعیِ سناریوی باگ ---------- */
 (async () => {
@@ -148,6 +148,6 @@ ok('ava-player.html: برند پلیر v0.83.1', playerHtmlSrc.includes('آوا 
     }
   }
 
-  console.log('\n==== v0.83.1-beta: ' + pass + ' passed, ' + fail + ' failed ====');
+  console.log('\n==== v0.83.1-beta (relaxed 0.84): ' + pass + ' passed, ' + fail + ' failed ====');
   process.exit(fail ? 1 : 0);
 })();

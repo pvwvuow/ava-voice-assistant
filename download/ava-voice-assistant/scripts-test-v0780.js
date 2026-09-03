@@ -143,8 +143,11 @@ section('۵) main.js — فوکوس پلیر / بستن هدفمند / مانی�
   ok(/function closeVideoTargeted\(/.test(mainSrc), 'closeVideoTargeted تعریف شده');
   ok(/Sort-Object StartTime/.test(mainSrc), 'مرتب‌سازی پلیرها بر StartTime (قبلی/جدیدترین)');
   ok(/0x0010/.test(mainSrc), 'WM_CLOSE گریس (0x0010) قبل از force');
-  const fsBranch = mainSrc.match(/if \(a === 'fullscreen'\) \{[\s\S]*?\n  \}/);
-  ok(!!fsBranch && /focusPlayerWindow\(Number\(p\.pid\) \|\| 0\)/.test(fsBranch[0]), 'شاخهٔ fullscreen اول فوکوس می‌گیرد (v0.82: با pid هدف‌دار)');
+  /* v0.84 forward-relax: دو شاخهٔ fullscreen معتبرند — مسیر رسانه‌ای (فوکوس PS + کلید) و
+     مسیر بومی پلیر آوا (setFullScreen خود پنجره)؛ پین این‌بار روی مسیر رسانه‌ای (keyFor) است */
+  const fsBranches = [...mainSrc.matchAll(/if \(a === 'fullscreen'\) \{[\s\S]*?\n  \}/g)].map((m) => m[0]);
+  const fsMedia = fsBranches.find((b2) => /const keyFor/.test(b2));
+  ok(!!fsMedia && /focusPlayerWindow\(Number\(p\.pid\) \|\| 0\)/.test(fsMedia), 'شاخهٔ fullscreen اول فوکوس می‌گیرد (v0.82: با pid هدف‌دار — v0.84: مسیر رسانه‌ای)');
   const clBranch = mainSrc.match(/if \(a === 'close'\) \{[\s\S]*?پلیری باز نیست' \};\n  \}/);
   ok(!!clBranch && /closeVideoTargeted\(tgt\)/.test(clBranch[0]), 'شاخهٔ close مسیر هدفمند دارد');
   ok(!!clBranch && /tgt !== 'all'/.test(clBranch[0]), 'close:all تنها مسیرِ همه‌کش است');

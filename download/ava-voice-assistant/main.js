@@ -4713,16 +4713,24 @@ function avaPlayerOpen(videoId, title, startSec) {
     webPreferences: {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
       spellcheck: false, autoplayPolicy: 'no-user-gesture-required',
+      /* v0.84 — پلِ امن گزینه‌های پلیر + سشن اختصاصی (تزریق Referer) */
+      preload: path.join(__dirname, 'renderer', 'ava-player-preload.js'),
+      partition: 'aplayer',
     },
   });
   win.setMenuBarVisibility(false);
-  avaPlayers.set(apid, { win, videoId, title: String(title || ''), at: Date.now(), prev: null });
+  avaPlayerRef();
+  avaPlayers.set(apid, { win, wc: win.webContents.id, videoId, title: String(title || ''), at: Date.now(), prev: null });
   win.on('closed', () => {
     try { avaPlayers.delete(apid); } catch (_) { /* noop */ }
     if (playerCtl.activePid === apid) playerCtl.activePid = 0;
   });
+  /* v0.84 — آیکون فول‌اسکرین صفحه با وضعیت واقعی پنجره همگام بماند */
+  const sendFs = (v) => { try { if (!win.isDestroyed()) win.webContents.send('aplayer:fs', v); } catch (_) { /* noop */ } };
+  win.on('enter-full-screen', () => sendFs(true));
+  win.on('leave-full-screen', () => sendFs(false));
   win.webContents.setWindowOpenHandler(({ url }) => {
-    /* دکمهٔ «در مرورگر» پنجرهٔ پلیر → مرورگر خارجی (نه پنجرهٔ نو آوا) */
+    /* لینک‌های پنجرهٔ پلیر → مرورگر خارجی (نه پنجرهٔ نو آوا) */
     try { shell.openExternal(url); } catch (_) { /* noop */ }
     return { action: 'deny' };
   });
@@ -4731,6 +4739,114 @@ function avaPlayerOpen(videoId, title, startSec) {
   }).catch(() => { /* noop */ });
   win.once('ready-to-show', () => { try { win.show(); win.focus(); } catch (_) { /* noop */ } });
   return apid;
+}
+
+/* ---------- v0.84 — فیکس ریشه‌ای «Video player configuration error (133/153)» ----------
+   از پاییز ۲۰۲۵ یوتیوب embedِ بدون Referer معتبر را رد می‌کند؛ صفحهٔ پلیر از
+   file:// بار می‌شود و مرورگر برای file:// هرگز Referer نمی‌فرستد → ویدیو
+   (مخصوصاً لایوها) با خطای پیکربندی رد می‌شود. درمان قطعی در لایهٔ شبکه:
+   سشن اختصاصی «aplayer» + تزریق Referer روی همهٔ درخواست‌های یوتیوبِ همین
+   سشن — بقیهٔ اپ دست‌نخورده می‌ماند. */
+let applayerRefDone = false;
+function avaPlayerRef() {
+  if (applayerRefDone) return;
+  applayerRefDone = true;
+  try {
+    const ses = session.fromPartition('aplayer');
+    ses.webRequest.onBeforeSendHeaders(
+      { urls: ['*://*.youtube.com/*', '*://*.youtube-nocookie.com/*'] },
+      (det, cb) => {
+        const h = det.requestHeaders || {};
+        h['Referer'] = 'https://www.youtube.com/';
+        cb({ requestHeaders: h });
+      }
+    );
+  } catch (_) { /* noop */ }
+}
+/* پنجرهٔ فرستندهٔ IPC → apid (webContents.id در زمان باز شدن ثبت شده) */
+function apidOfSender(sender) {
+  try {
+    const wc = sender && sender.id;
+    if (!wc) return 0;
+    for (const [apid, en] of avaPlayers) { if (en.wc === wc) return apid; }
+  } catch (_) { /* noop */ }
+  return 0;
+}
+/* v0.84 — گزینه‌های پنجره از خود پلیر (preload → aplayer:win) */
+ipcMain.handle('aplayer:win', (_e, p) => {
+  const apid = apidOfSender(_e.sender);
+  const en = apid ? avaPlayers.get(apid) : null;
+  if (!en || !en.win || en.win.isDestroyed()) return { ok: false, error: 'پنجرهٔ پلیر پیدا نشد' };
+  const win = en.win;
+  const op = String((p && p.op) || '');
+  try {
+    if (op === 'fullscreen') {
+      const want = p.arg === true || p.arg === false ? p.arg : !win.isFullScreen();
+      win.setFullScreen(want);
+      try { if (want) { win.show(); win.focus(); } } catch (_) { /* noop */ }
+      return { ok: true, fs: want };
+    }
+    if (op === 'top') {
+      const want = p.arg === true || p.arg === false ? p.arg : !win.isAlwaysOnTop();
+      win.setAlwaysOnTop(want, 'screen-saver');
+      return { ok: true, top: want };
+    }
+    if (op === 'pip' || op === 'unpip') { const r = avaPlayerOp(op, '', apid); return { ok: !!r.ok, pip: op === 'pip' }; }
+    if (op === 'size') { const r = avaPlayerOp('size', String(p.arg || 'medium'), apid); return { ok: !!r.ok, size: String(p.arg || 'medium') }; }
+    if (op === 'opacity') { const r = avaPlayerOp('opacity', parseInt(p.arg, 10) || 100, apid); return { ok: !!r.ok, opacity: parseInt(p.arg, 10) || 100 }; }
+    if (op === 'close') { win.close(); return { ok: true }; }
+    if (op === 'browser') {
+      const u = 'https://www.youtube.com/watch?v=' + en.videoId;
+      try { shell.openExternal(u); return { ok: true, url: u }; } catch (e) { return { ok: false, error: netErr(e) }; }
+    }
+    return { ok: false, error: 'اقدام ناشناخته: ' + op };
+  } catch (e) { return { ok: false, error: netErr(e) }; }
+});
+/* v0.84 — «پخش با پلیر سیستم» از خود پلیر: yt-dlp → پت‌پلیر/VLC/… —
+   موفق → همین پنجرهٔ آوا بسته می‌شود؛ شکست → پاسخ صادقانه به صفحه */
+ipcMain.handle('aplayer:sys', async (_e) => {
+  const apid = apidOfSender(_e.sender);
+  const en = apid ? avaPlayers.get(apid) : null;
+  if (!en) return { ok: false, error: 'پنجرهٔ پلیر پیدا نشد' };
+  const url = 'https://www.youtube.com/watch?v=' + en.videoId;
+  try {
+    const r = await resolveYtStream(url);
+    if (!r.ok) return { ok: false, noYtdl: true, error: r.error || 'استریم یوتیوب استخراج نشد' };
+    const scan = await playersScan();
+    const def = await defaultVideoPlayer();
+    const pl = (def.id && scan.list.some((x) => x.id === def.id)) ? def.id : ((scan.list.find((x) => x.id !== 'wmplayer') || scan.list[0]) || {}).id || '';
+    if (!pl) return { ok: false, error: 'پلیر ویدیویی روی سیستم پیدا نشد' };
+    const lr = await playerLaunch(pl, r.url, { ytdl: false });
+    if (!lr.ok) return { ok: false, error: lr.error || 'بازکردن در پلیر سیستم ممکن نشد' };
+    playerCtl.player = pl; playerCtl.activePid = 0; playerCtl.activeProc = pl; playerCtl.ytUrl = url;
+    playerCtl.exe = lr.exe || playerCtl.exe || ''; playerCtl.speed = 1; playerCtl.vlcBase = '';
+    actLog('ava-player → system player: ' + pl + ' (videoId=' + en.videoId + ')', 'player',
+      { ev: 'player', stage: 'ava-sys', ok: true, via: 'ava-to-system', player: pl });
+    setTimeout(() => { try { const e2 = avaPlayers.get(apid); if (e2 && !e2.win.isDestroyed()) e2.win.close(); } catch (_) { /* noop */ } }, 600);
+    return { ok: true, player: pl, fa: lr.fa || '' };
+  } catch (e) { return { ok: false, error: netErr(e) }; }
+});
+/* v0.84 — کنترل پخشِ پلیر آوا از مسیر صوتی (player:ctl): play/pause/seek/
+   سرعت/ولوم — واقعی و هدفمند (postMessage به خود پنجره)، نه کلید کورِ
+   مدیای سراسری. فول‌اسکرین بومی خود پنجره است. */
+async function avaPlayerCtl(a, arg, pidHint) {
+  let apid = 0;
+  if (Number(pidHint) < 0) apid = Number(pidHint);
+  else { const ids = [...avaPlayers.keys()]; apid = ids[ids.length - 1] || 0; }
+  const en = apid ? avaPlayers.get(apid) : null;
+  if (!en || !en.win || en.win.isDestroyed()) return { ok: false, noPlayer: true, error: 'پنجرهٔ پلیر آوا باز نیست' };
+  try {
+    if (a === 'fullscreen') {
+      const want = !en.win.isFullScreen();
+      en.win.setFullScreen(want);
+      try { en.win.show(); en.win.focus(); } catch (_) { /* noop */ }
+      return { ok: true, via: 'ava-player', fullscreen: want };
+    }
+    const js = '(window.__avaCtl ? window.__avaCtl(' + JSON.stringify({ a, arg }) + ') : { ok:false, error:"پل preload ندارد" })';
+    const r = await en.win.webContents.executeJavaScript(js, true);
+    if (r && r.ok) return Object.assign({ ok: true, via: 'ava-player' }, r);
+    return { ok: false, error: (r && r.error) || 'کنترل پخش در پلیر آوا ممکن نشد' };
+  } catch (e) { return { ok: false, error: netErr(e) }; }
 }
 async function avaPlayerPlay(src, opts) {
   const o = opts || {};
@@ -4921,6 +5037,18 @@ ipcMain.handle('player:ctl', async (_e, p) => {
       volume_down: { command: ['add', 'volume', -5] },
     };
     if (mpvMap[a]) { const ok = await mpvSend(mpvMap[a]); if (ok) { if (a === 'close') playerCtl.player = null; return { ok: true, via: 'mpv-ipc' }; } }
+  }
+  /* ۲.۴) v0.84 — پلیر آوا: کنترل واقعیِ پخش (هدفمند و pid-دار) — «ویدیو رو
+     پاز کن / سرعت دو برابر / بلندتر / برو جلو ۳۰ ثانیه / فول اسکرین» دیگر
+     کلیدِ کورِ مدیا نیست؛ postMessage به خود پنجرهٔ پلیر آوا می‌رود */
+  if (playerCtl.player === 'ava' || Number(p.pid) < 0) {
+    const A_HANDLED = ['play_pause', 'pause', 'play', 'seek', 'speed', 'volume_up', 'volume_down', 'mute', 'loop', 'stop', 'fullscreen'];
+    if (A_HANDLED.indexOf(a) >= 0) {
+      const r = await avaPlayerCtl(a, p && p.arg, Number(p.pid) || 0);
+      if (r && r.ok) { if (r.speed) playerCtl.speed = r.speed; return r; }
+      if (r && r.noPlayer) { playerCtl.player = null; return r; }
+      return { ok: false, error: (r && r.error) || 'کنترل پلیر آوا ممکن نشد' };
+    }
   }
   /* ۲.۵) v0.63 — کنترل پنجرهٔ پلیر: pin/unpin/move/grow/shrink — برای هر پلیری
      (حتی پلیری که خودِ کاربر باز کرده) با یافتن پنجره از اسکن پروسس

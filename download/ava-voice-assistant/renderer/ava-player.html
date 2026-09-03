@@ -1,36 +1,50 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <!-- ============================================================
-     آوا پلیر (v0.83) — پنجرهٔ پخشِ خودِ آوا
-     ریشهٔ ری‌ورک پخش یوتیوب: مسیر yt-dlp → پلیر سیستم مرتب می‌شکند
-     (yt-dlp کهنه، دیوار ربات، URL منقضی، TLS اپراتور). این پنجره با
-     «پخش‌کنندهٔ رسمی embed یوتیوب» کار می‌کند — بدون yt-dlp، بدون
-     دیوار ربات، همیشه و در ≤۲ ثانیه پخش می‌شود. فقط videoId لازم است.
-     همه‌چیز self-contained است (بدون preload، بدون شبکهٔ اضافه).
+     آوا پلیر v2 (v0.84) — پنجرهٔ پخشِ خودِ آوا با «اپشنای کامل»
+     ────────────────────────────────────────────────────────────
+     v0.83: embed رسمی یوتیوب، فقط «در مرورگر / پخش مجدد / بستن».
+     بازخورد کاربر: «اپشنای آواپلیر خیلی کمه» + میدانی: بعضی ویدیوها
+     (مخصوصاً لایو) با «Video player configuration error (133/153)»
+     رد می‌شوند — یوتیوب از پاییز ۲۰۲۵ embedِ بدون Referer معتبر را
+     رد می‌کند و صفحهٔ file:// هرگز Referer ندارد (فیکس سمت main:
+     تزریق Referer در سشن aplayer + referrerpolicy روی iframe).
+     این نسخه:
+     • نوار کنترل کامل: پخش/پاز، ±۱۰ثانیه، سیک‌بار+زمان، ولوم+بی‌صدا،
+       سرعت، تکرار، PIP، همیشه‌روانه، فول‌اسکرین، منوی گزینه‌ها
+     • زبان مشترک با YT embed: postMessage command + listening
+       (infoDelivery) — اگر رویدادها ساکت بودند، حالت شبیه‌سازی
+     • نردبان خطا: onError → تلاش nocookie → پنل فالبک صادقانه
+       (تلاش دوباره / در مرورگر / پلیر سیستم)
+     • بج LIVE (ویدیوی زنده: سیک‌بار خاموش)
+     • میان‌برها: Space/K، J/L، ←→، ↑↓، M، R، T، P، F، 0-9، </>، Esc
      ============================================================ -->
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="frame-src https://www.youtube.com https://www.youtube-nocookie.com; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="frame-src https://www.youtube.com https://www.youtube-nocookie.com; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https://i.ytimg.com https://img.youtube.com data:">
 <title>آوا پلیر</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; background: #050507; }
-  body { font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif; color: #efeadd; user-select: none; }
+  body { font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif; color: #efeadd; user-select: none; cursor: default; }
+  body.nocursor, body.nocursor * { cursor: none !important; }
 
   #frame { position: absolute; inset: 0; border: 0; width: 100%; height: 100%; background: #000; }
+  /* لایهٔ ضربه — کلیک = پخش/پاز، دابل‌کلیک = فول‌اسکرین */
+  #hit { position: absolute; inset: 0; z-index: 2; }
 
-  /* نوار عنوانِ باریک — با ماوس نزدیکِ بالا ظاهر می‌شود، بعد از ۲.۶ ثانیه پنهان */
+  /* ── نوار بالا: عنوان + بستن ─────────────────────────────── */
   #bar {
     position: absolute; top: 0; left: 0; right: 0; height: 44px;
     display: flex; align-items: center; gap: 10px; padding: 0 10px 0 14px;
     direction: rtl;
-    background: linear-gradient(180deg, rgba(8, 8, 10, 0.92), rgba(8, 8, 10, 0.55) 70%, transparent);
-    opacity: 0; transform: translateY(-6px);
+    background: linear-gradient(180deg, rgba(8, 8, 10, 0.94), rgba(8, 8, 10, 0.55) 70%, transparent);
+    opacity: 0; transform: translateY(-6px); pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
     -webkit-app-region: drag;
-    z-index: 5;
+    z-index: 6;
   }
-  #bar.show { opacity: 1; transform: none; }
+  #bar.show { opacity: 1; transform: none; pointer-events: auto; }
   #bar .ava-dot {
     width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px;
     background: radial-gradient(circle at 35% 30%, #ffe9a8, #d4a017 60%, #8a6508);
@@ -49,7 +63,84 @@
   #bar button:hover { background: rgba(212, 160, 23, 0.2); border-color: rgba(212, 160, 23, 0.5); }
   #bar button.x:hover { background: rgba(244, 63, 94, 0.25); border-color: rgba(244, 63, 94, 0.55); }
 
-  /* پردهٔ اتصال — تا fire شدن load iframe می‌ماند */
+  /* ── نوار کنترل پایین — قلب «اپشنای کامل» ────────────────── */
+  #ctl {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    direction: ltr;
+    padding: 26px 12px 8px; z-index: 6;
+    display: flex; align-items: center; gap: 7px;
+    background: linear-gradient(0deg, rgba(8, 8, 10, 0.95), rgba(8, 8, 10, 0.6) 65%, transparent);
+    opacity: 0; transform: translateY(8px); pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  #ctl.show { opacity: 1; transform: none; pointer-events: auto; }
+  #ctl button {
+    border: 0; background: transparent; color: #efeadd; cursor: pointer;
+    font-family: inherit; font-size: 15px; line-height: 1;
+    width: 30px; height: 28px; border-radius: 7px; flex: 0 0 auto;
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+  }
+  #ctl button:hover { background: rgba(212, 160, 23, 0.22); }
+  #ctl button.on { color: #ffd76a; }
+  #ctl button.big { font-size: 19px; width: 36px; }
+  #ctl button .k { position: absolute; bottom: 2px; right: 4px; font-size: 7.5px; opacity: 0.75; }
+  #ctl .time { font-size: 11px; color: #d8cba6; font-variant-numeric: tabular-nums;
+    white-space: nowrap; flex: 0 0 auto; direction: ltr; }
+  #ctl .live {
+    display: none; flex: 0 0 auto; align-items: center; gap: 5px;
+    font-size: 10.5px; font-weight: 700; color: #fff;
+    background: rgba(244, 63, 94, 0.28); border: 1px solid rgba(244, 63, 94, 0.55);
+    border-radius: 6px; padding: 3px 8px; direction: ltr;
+  }
+  #ctl .live i { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e;
+    box-shadow: 0 0 7px rgba(244, 63, 94, 0.9); animation: liveblink 1.4s ease-in-out infinite; }
+  @keyframes liveblink { 50% { opacity: 0.35; } }
+  body.islive #ctl .live { display: inline-flex; }
+  body.islive #seek, body.islive #tlabel { display: none; }
+
+  #seek { -webkit-appearance: none; appearance: none; flex: 1 1 40px; min-width: 60px; height: 4px;
+    border-radius: 3px; background: rgba(255, 255, 255, 0.22); outline: 0; cursor: pointer; }
+  #seek::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px;
+    border-radius: 50%; background: #d4a017; box-shadow: 0 0 6px rgba(212, 160, 23, 0.8); }
+  #vol { -webkit-appearance: none; appearance: none; width: 84px; height: 4px; flex: 0 0 84px;
+    border-radius: 3px; background: rgba(255, 255, 255, 0.22); outline: 0; cursor: pointer; }
+  #vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px;
+    border-radius: 50%; background: #e8d9ac; }
+  #ctl .sep { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.14); flex: 0 0 1px; margin: 0 3px; }
+  #rate { font-size: 11px; font-weight: 700; width: auto; padding: 0 8px; direction: ltr; }
+
+  /* ── منوی گزینه‌ها (⋮) + راهنمای کلیدها ──────────────────── */
+  .pop {
+    position: absolute; bottom: 52px; right: 10px; z-index: 8;
+    min-width: 218px; direction: rtl;
+    background: rgba(14, 14, 17, 0.97); border: 1px solid rgba(212, 160, 23, 0.28);
+    border-radius: 12px; padding: 8px; display: none;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+  }
+  .pop.show { display: block; }
+  .pop h5 { font-size: 10px; color: #c9a84c; margin: 6px 6px 4px; }
+  .pop .row { display: flex; gap: 4px; padding: 0 2px 6px; }
+  .pop .row button {
+    flex: 1; border: 1px solid rgba(255, 255, 255, 0.13); border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05); color: #efeadd; cursor: pointer;
+    font-family: inherit; font-size: 10.5px; padding: 4px 2px;
+  }
+  .pop .row button:hover, .pop .row button.on { background: rgba(212, 160, 23, 0.25); border-color: rgba(212, 160, 23, 0.5); }
+  .pop .item {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    border: 0; border-radius: 8px; background: transparent; color: #efeadd; cursor: pointer;
+    font-family: inherit; font-size: 12px; padding: 7px 9px; text-align: right;
+  }
+  .pop .item:hover { background: rgba(212, 160, 23, 0.16); }
+  .pop .item .ic { width: 18px; text-align: center; flex: 0 0 18px; }
+  .pop .item small { margin-inline-start: auto; color: #8d8264; font-size: 9.5px; }
+  .pop .item.danger:hover { background: rgba(244, 63, 94, 0.2); }
+  #help { left: 10px; right: auto; min-width: 250px; }
+  #help .kv { display: flex; justify-content: space-between; gap: 14px; font-size: 11px; padding: 3px 8px; color: #d8cba6; }
+  #help .kv b { color: #ffd76a; font-weight: 700; direction: ltr; font-family: Consolas, monospace; }
+
+  /* ── پردهٔ اتصال ─────────────────────────────────────────── */
   #veil {
     position: absolute; inset: 0; z-index: 4;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
@@ -65,9 +156,30 @@
   #veil .sub { font-size: 11px; color: #7d7458; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── پنل فالبک — وقتی یوتیوب embed را رد کرد ─────────────── */
+  #panel {
+    position: absolute; inset: 0; z-index: 7; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    background: rgba(5, 5, 7, 0.9); text-align: center; padding: 24px; direction: rtl;
+  }
+  #panel.show { display: flex; }
+  #panel .em { font-size: 34px; }
+  #panel .msg { font-size: 14px; font-weight: 700; color: #f5efdd; max-width: 460px; line-height: 1.9; }
+  #panel .sub { font-size: 11.5px; color: #a99e7e; max-width: 480px; line-height: 1.9; }
+  #panel .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  #panel .row button {
+    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px;
+    background: rgba(255, 255, 255, 0.07); color: #efeadd; cursor: pointer;
+    font-family: inherit; font-size: 12px; padding: 8px 16px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  #panel .row button:hover { background: rgba(212, 160, 23, 0.22); border-color: rgba(212, 160, 23, 0.55); }
+  #panel .row button.pri { background: rgba(212, 160, 23, 0.3); border-color: rgba(212, 160, 23, 0.6); }
+  #panel .row button.x:hover { background: rgba(244, 63, 94, 0.25); border-color: rgba(244, 63, 94, 0.55); }
+
   /* برندِ کوچک گوشهٔ پایین — فقط وقتی نوار دیده می‌شود */
   #brand {
-    position: absolute; bottom: 12px; inset-inline-start: 14px; z-index: 5;
+    position: absolute; bottom: 40px; inset-inline-start: 14px; z-index: 5;
     font-size: 10.5px; color: rgba(212, 160, 23, 0.75);
     opacity: 0; transition: opacity 0.25s ease; pointer-events: none;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
@@ -76,26 +188,96 @@
 </style>
 </head>
 <body>
-<iframe id="frame" src="about:blank" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+<iframe id="frame" src="about:blank" referrerpolicy="strict-origin-when-cross-origin"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+<div id="hit" title=""></div>
 
 <div id="bar">
   <span class="ava-dot"></span>
   <span class="tt"><small>آوا پلیر</small><span id="title">…</span></span>
-  <button id="btnBrowser" type="button" title="در مرورگر باز کن">در مرورگر</button>
-  <button id="btnReload" type="button" title="پخش مجدد">پخش مجدد</button>
   <button id="btnClose" class="x" type="button" title="بستن (Esc)">✕</button>
+</div>
+
+<div id="ctl">
+  <button id="btnPlay" class="big" type="button" title="پخش / توقف (Space)">▶</button>
+  <button id="btnB10" type="button" title="۱۰ ثانیه عقب (J)">⏪<span class="k">10</span></button>
+  <button id="btnF10" type="button" title="۱۰ ثانیه جلو (L)">⏩<span class="k">10</span></button>
+  <span class="time" id="tlabel">0:00 / 0:00</span>
+  <span class="live"><i></i> LIVE</span>
+  <input id="seek" type="range" min="0" max="1000" value="0" title="نوار زمان (کلیک یا درگ)">
+  <span class="sep"></span>
+  <button id="btnMute" type="button" title="بی‌صدا / با صدا (M)">🔊</button>
+  <input id="vol" type="range" min="0" max="100" value="100" title="صدا (↑ ↓)">
+  <button id="rate" type="button" title="سرعت پخش (&lt; &gt;)">1×</button>
+  <button id="btnLoop" type="button" title="تکرار (R)">🔁</button>
+  <span class="sep"></span>
+  <button id="btnPip" type="button" title="تصویر-in-تصویر (P)">⧉</button>
+  <button id="btnTop" type="button" title="همیشه روونه (T)">📌</button>
+  <button id="btnFs" type="button" title="فول‌اسکرین (F)">⛶</button>
+  <button id="btnMore" type="button" title="گزینه‌های بیشتر">⋮</button>
+</div>
+
+<div class="pop" id="opts">
+  <h5>اندازهٔ پنجره</h5>
+  <div class="row" id="sizeRow">
+    <button data-size="small" type="button">کوچک</button>
+    <button data-size="medium" type="button" class="on">متوسط</button>
+    <button data-size="large" type="button">بزرگ</button>
+    <button data-size="max" type="button">حداکثر</button>
+  </div>
+  <h5>شفافیت پنجره</h5>
+  <div class="row" id="opRow">
+    <button data-op="100" type="button" class="on">۱۰۰٪</button>
+    <button data-op="80" type="button">۸۰٪</button>
+    <button data-op="60" type="button">۶۰٪</button>
+    <button data-op="40" type="button">۴۰٪</button>
+  </div>
+  <button class="item" id="btnBrowser" type="button"><span class="ic">🌐</span> در مرورگر باز کن</button>
+  <button class="item" id="btnSys" type="button"><span class="ic">🎬</span> پخش با پلیر سیستم <small>پت‌پلیر و…</small></button>
+  <button class="item" id="btnReload" type="button"><span class="ic">🔄</span> پخش مجدد</button>
+  <button class="item" id="btnKeys" type="button"><span class="ic">⌨️</span> کلیدهای میان‌بر</button>
+  <button class="item danger" id="btnClose2" type="button"><span class="ic">✕</span> بستن پلیر</button>
+</div>
+
+<div class="pop" id="help">
+  <h5>کلیدهای میان‌بر</h5>
+  <div class="kv"><span>پخش / توقف</span><b>Space / K</b></div>
+  <div class="kv"><span>۵ ثانیه عقب / جلو</span><b>← / →</b></div>
+  <div class="kv"><span>۱۰ ثانیه عقب / جلو</span><b>J / L</b></div>
+  <div class="kv"><span>صدا بیشتر / کمتر</span><b>↑ / ↓</b></div>
+  <div class="kv"><span>بی‌صدا</span><b>M</b></div>
+  <div class="kv"><span>سرعت بعدی / قبلی</span><b>&gt; / &lt;</b></div>
+  <div class="kv"><span>تکرار ویدیو</span><b>R</b></div>
+  <div class="kv"><span>تصویر-در-تصویر</span><b>P</b></div>
+  <div class="kv"><span>همیشه روونه</span><b>T</b></div>
+  <div class="kv"><span>فول‌اسکرین</span><b>F</b></div>
+  <div class="kv"><span>پرش به درصد</span><b>0 تا 9</b></div>
+  <div class="kv"><span>خروج از فول‌اسکرین / بستن</span><b>Esc</b></div>
 </div>
 
 <div id="veil">
   <div class="ring"></div>
   <div class="msg" id="veilMsg">در حال اتصال به یوتیوب…</div>
-  <div class="sub">اگر پخش نشد، دکمهٔ «در مرورگر» یا «پخش مجدد» را امتحان کن</div>
+  <div class="sub" id="veilSub">اگر پخش نشد، از منوی ⋮ گزینهٔ «پلیر سیستم» یا «در مرورگر» را امتحان کن</div>
 </div>
 
-<div id="brand">آوا پلیر v0.83.1</div>
+<div id="panel">
+  <div class="em">⚠️</div>
+  <div class="msg" id="panelMsg">این ویدیو در پلیر داخلی پخش نشد</div>
+  <div class="sub" id="panelSub"></div>
+  <div class="row">
+    <button class="pri" id="panelRetry" type="button">تلاش دوباره</button>
+    <button id="panelSys" type="button">پلیر سیستم</button>
+    <button id="panelBrowser" type="button">در مرورگر</button>
+    <button class="x" id="panelDismiss" type="button">بستن این پنل</button>
+  </div>
+</div>
+
+<div id="brand">آوا پلیر v0.84</div>
 
 <script>
   (function () {
+    'use strict';
     var q = new URLSearchParams(location.search);
     var vid = String(q.get('v') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
     var start = String(q.get('start') || '').replace(/[^0-9]/g, '');
@@ -103,10 +285,26 @@
 
     var frame = document.getElementById('frame');
     var bar = document.getElementById('bar');
+    var ctl = document.getElementById('ctl');
     var brand = document.getElementById('brand');
     var veil = document.getElementById('veil');
+    var panel = document.getElementById('panel');
     var titleEl = document.getElementById('title');
+    var hit = document.getElementById('hit');
+    var AP = window.avaPlayer || null; /* پل preload — در اسموک/بدون preload هم صفحه می‌آید بالا */
 
+    /* ---------- وضعیت پخش ---------- */
+    var st = { playing: false, dur: 0, cur: 0, vol: 100, muted: false, rate: 1,
+               loop: false, live: false, pip: false, top: false, fs: false,
+               evtAlive: false, lastInfo: 0, loadedAt: 0, triedNC: false, nocookie: false };
+    var SIZES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(s) {
+      s = Math.max(0, Math.floor(s || 0));
+      var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+      return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0');
+    }
     function setTitle(t) {
       title = String(t || '');
       titleEl.textContent = title || vid || '—';
@@ -115,49 +313,282 @@
     window.__avaSetTitle = setTitle;
     setTitle(title);
 
+    /* ---------- embed + زبان postMessage ----------
+       enablejsapi=1 → پلیر یوتیوب فرمان‌های postMessage را می‌شنود؛
+       فرمان «listening» جریان infoDelivery (زمان/وضعیت/خطا) را روشن می‌کند.
+       ارسال با '*' از file:// هم می‌گذرد. */
     function src() {
-      var u = 'https://www.youtube.com/embed/' + (vid || '') +
-        '?autoplay=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3' +
+      var u = (st.nocookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com') +
+        '/embed/' + (vid || '') +
+        '?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&controls=0' +
         (start ? '&start=' + start : '');
       return u;
     }
-    function load() {
-      veil.classList.remove('off');
-      document.getElementById('veilMsg').textContent = 'در حال اتصال به یوتیوب…';
-      frame.src = src();
+    function cmd(fn, args) {
+      try { frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: fn, args: args || [] }), '*'); } catch (_) { /* cross-origin */ }
     }
-    frame.addEventListener('load', function () {
-      if (!frame.src || frame.src === 'about:blank') return;
-      veil.classList.add('off');
-      try { frame.focus(); frame.contentWindow.focus(); } catch (_) { /* cross-origin */ }
+    function listening() { cmd('listening', [{ id: 1, channel: 'widget' }]); }
+    function load() {
+      st.loadedAt = Date.now();
+      st.evtAlive = false; st.playing = false; st.cur = 0;
+      panel.classList.remove('show');
+      veil.classList.remove('off');
+      $('veilMsg').textContent = 'در حال اتصال به یوتیوب…';
+      $('veilSub').textContent = 'اگر پخش نشد، از منوی ⋮ گزینهٔ «پلیر سیستم» یا «در مرورگر» را امتحان کن';
+      frame.src = src();
+      setTimeout(listening, 2500);
+      setTimeout(listening, 6000);
+    }
+
+    /* ---------- رویدادهای پلیر یوتیوب ---------- */
+    window.addEventListener('message', function (e) {
+      var o = e && e.origin ? String(e.origin) : '';
+      if (o.indexOf('youtube') < 0) return;
+      var d = e.data;
+      if (typeof d === 'string') { try { d = JSON.parse(d); } catch (_) { return; } }
+      if (!d || typeof d !== 'object') return;
+      if (d.event === 'infoDelivery' && d.info && typeof d.info === 'object') {
+        st.evtAlive = true; st.lastInfo = Date.now();
+        veil.classList.add('off'); panel.classList.remove('show');
+        var inf = d.info;
+        if (typeof inf.currentTime === 'number') st.cur = inf.currentTime;
+        if (typeof inf.duration === 'number' && inf.duration > 0) { st.dur = inf.duration; st.live = false; }
+        else if (inf.duration === 0) st.live = true;
+        var vd = inf.videoData || {};
+        if (vd.isLive === true) st.live = true;
+        if (typeof inf.volume === 'number') { st.vol = Math.round(inf.volume); }
+        if (typeof inf.muted === 'boolean') st.muted = inf.muted;
+        if (typeof inf.playbackRate === 'number') st.rate = inf.playbackRate;
+        var ps = inf.playerState;
+        if (ps === 1) st.playing = true; else if (ps === 2 || ps === 0) st.playing = false;
+        if (ps === 0 && st.loop) { cmd('seekTo', [0, true]); cmd('playVideo', []); st.playing = true; }
+        render();
+      } else if (d.event === 'onStateChange' && d.info) {
+        st.evtAlive = true; st.lastInfo = Date.now();
+        if (d.info === 1) { st.playing = true; veil.classList.add('off'); panel.classList.remove('show'); }
+        else if (d.info === 2 || d.info === 0) st.playing = false;
+        if (d.info === 0 && st.loop) { cmd('seekTo', [0, true]); cmd('playVideo', []); st.playing = true; }
+        render();
+      } else if (d.event === 'onError') {
+        var code = typeof d.info === 'number' ? d.info : (d.data || 0);
+        onError(code);
+      } else if (d.event === 'onVolumeChange' && d.info) {
+        if (typeof d.info.volume === 'number') st.vol = Math.round(d.info.volume);
+        if (typeof d.info.muted === 'boolean') st.muted = d.info.muted;
+        render();
+      }
     });
 
-    /* نوار: با حرکت ماوس به ثلث بالای پنجره ظاهر، بعد از ۲.۶ ثانیه پنهان */
+    /* ---------- نردبان خطا: onError → nocookie → پنل فالبک ---------- */
+    var ERR_TXT = {
+      2:   ['این آدرس ویدیوی معتبری ندارد', 'لینک ممکن است ناقص باشد — با «تلاش دوباره» یا «در مرورگر» امتحان کن.'],
+      5:   ['پخش‌کنندهٔ یوتیوب خطا داد', 'معمولاً موقتی است — «تلاش دوباره» بزن یا با «پلیر سیستم» پخش کن.'],
+      100: ['این ویدیو پیدا نمی‌شود', 'ویدیو حذف یا خصوصی شده — در مرورگر هم در دسترس نیست.'],
+      101: ['سازندهٔ این ویدیو اجازهٔ پخش خارجی نداده', 'embed برای این ویدیو بسته شده — با «پلیر سیستم» یا «در مرورگر» پخش کن.'],
+      150: ['سازندهٔ این ویدیو اجازهٔ پخش خارجی نداده', 'embed برای این ویدیو بسته شده — با «پلیر سیستم» یا «در مرورگر» پخش کن.'],
+      133: ['یوتیوب پیکربندی پخش این ویدیو را رد کرد', 'این خطای سمتِ یوتیوب است (مخصوصاً روی ویدیوهای زنده) — «پلیر سیستم» یا «در مرورگر».'],
+      153: ['یوتیوب پیکربندی پخش این ویدیو را رد کرد', 'این خطای سمتِ یوتیوب است — «پلیر سیستم» یا «در مرورگر».']
+    };
+    function onError(code) {
+      var t = ERR_TXT[code] || ERR_TXT[133];
+      if (!st.triedNC && code !== 100 && code !== 2) {
+        /* یک پله فالبک خودکار: دامنهٔ nocookie — بعضی ردشوها را پاس می‌کند */
+        st.triedNC = true; st.nocookie = true;
+        $('veilMsg').textContent = 'تلاش دوم با مسیر جایگزین یوتیوب…';
+        setTimeout(load, 350);
+        return;
+      }
+      fail(t[0], t[1]);
+    }
+    function fail(msg, sub) {
+      st.playing = false;
+      veil.classList.add('off');
+      $('panelMsg').textContent = msg || 'این ویدیو در پلیر داخلی پخش نشد';
+      $('panelSub').textContent = sub || '';
+      panel.classList.add('show');
+      poke();
+    }
+    /* ساعتِ نگهبان: ۱۴ ثانیه بدون هیچ رویداد زنده = مشکل واقعی (ولی پنل، پنجره را نمی‌بندد) */
+    setInterval(function () {
+      if (!vid || !st.loadedAt || st.evtAlive || panel.classList.contains('show')) return;
+      if (Date.now() - st.loadedAt > 14000) {
+        fail('پخش شروع نشد', 'اتصال به یوتیوب برقرار نشد — اینترنت/تحریم یا خطای سمت یوتیوب. می‌توانی با «پلیر سیستم» یا «در مرورگر» ببینی‌اش.');
+      }
+    }, 2000);
+
+    /* ---------- رندر UI ---------- */
+    function render() {
+      $('btnPlay').textContent = st.playing ? '⏸' : '▶';
+      $('btnMute').textContent = (st.muted || st.vol === 0) ? '🔇' : (st.vol < 45 ? '🔉' : '🔊');
+      $('btnLoop').classList.toggle('on', st.loop);
+      $('btnPip').classList.toggle('on', st.pip);
+      $('btnTop').classList.toggle('on', st.top);
+      $('btnFs').classList.toggle('on', st.fs);
+      $('rate').textContent = st.rate + '×';
+      document.body.classList.toggle('islive', !!st.live);
+      if (!st.live) {
+        $('tlabel').textContent = fmt(st.cur) + ' / ' + fmt(st.dur);
+        if (st.dur > 0 && document.activeElement !== $('seek')) $('seek').value = Math.min(1000, Math.round((st.cur / st.dur) * 1000));
+      }
+      if (document.activeElement !== $('vol')) $('vol').value = st.vol;
+    }
+
+    /* تیکِ UI: رویداد زنده؟ دقیق. ساکت؟ شمارش محلی (حالت شبیه‌سازی) */
+    setInterval(function () {
+      if (st.playing && !st.live) {
+        if (Date.now() - st.lastInfo > 3000) { st.cur += 1; if (st.dur && st.cur >= st.dur) { if (st.loop) { st.cur = 0; } else { st.playing = false; } } }
+        render();
+      }
+    }, 1000);
+
+    /* ---------- کنترل پخش ---------- */
+    function toggle() {
+      if (st.playing) { cmd('pauseVideo', []); st.playing = false; }
+      else { cmd('playVideo', []); st.playing = true; if (panel.classList.contains('show')) { panel.classList.remove('show'); load(); } }
+      render(); poke();
+    }
+    function seekTo(s) {
+      s = Math.max(0, st.dur ? Math.min(st.dur - 1, s) : s);
+      cmd('seekTo', [Math.round(s), true]); st.cur = s; render(); poke();
+    }
+    function setVol(v) {
+      v = Math.max(0, Math.min(100, Math.round(v)));
+      st.vol = v; st.muted = v === 0;
+      cmd('setVolume', [v]); if (v > 0 && st.muted) { cmd('unMute', []); st.muted = false; }
+      render(); poke();
+    }
+    function setRate(r) {
+      r = SIZES.indexOf(r) >= 0 ? r : 1;
+      st.rate = r; cmd('setPlaybackRate', [r]); render(); poke();
+    }
+    function rateStep(dir) {
+      var i = SIZES.indexOf(st.rate); if (i < 0) i = 3;
+      setRate(SIZES[Math.max(0, Math.min(SIZES.length - 1, i + dir))]);
+    }
+    /* زبان مشترک صوتی/میان‌بر — main با executeJavaScript همین را صدا می‌زند */
+    window.__avaCtl = function (c) {
+      c = c || {}; var a = c.a, arg = c.arg;
+      try {
+        if (a === 'play_pause') { toggle(); return { ok: true, playing: st.playing }; }
+        if (a === 'pause') { cmd('pauseVideo', []); st.playing = false; render(); return { ok: true, playing: false }; }
+        if (a === 'play') { cmd('playVideo', []); st.playing = true; render(); return { ok: true, playing: true }; }
+        if (a === 'seek') { seekTo(st.cur + (parseFloat(arg) || 10)); return { ok: true, cur: Math.round(st.cur) }; }
+        if (a === 'speed') {
+          var m = String(arg == null ? '' : arg).toLowerCase();
+          if (m === 'up') rateStep(1); else if (m === 'down') rateStep(-1);
+          else if (m === 'reset' || m === 'normal') setRate(1);
+          else { var v = parseFloat(m); setRate(SIZES.indexOf(v) >= 0 ? v : 1); }
+          return { ok: true, speed: st.rate };
+        }
+        if (a === 'volume_up') { setVol(st.vol + 10); return { ok: true, vol: st.vol }; }
+        if (a === 'volume_down') { setVol(st.vol - 10); return { ok: true, vol: st.vol }; }
+        if (a === 'mute') { if (st.muted) { cmd('unMute', []); st.muted = false; if (!st.vol) setVol(50); } else { cmd('mute', []); st.muted = true; } render(); return { ok: true, muted: st.muted }; }
+        if (a === 'loop') { st.loop = arg === 'on' ? true : arg === 'off' ? false : !st.loop; render(); return { ok: true, loop: st.loop }; }
+        if (a === 'stop') { cmd('pauseVideo', []); cmd('seekTo', [0, true]); st.playing = false; st.cur = 0; render(); return { ok: true }; }
+        if (a === 'status') { return { ok: true, playing: st.playing, cur: Math.round(st.cur), dur: Math.round(st.dur), live: st.live, speed: st.rate, vol: st.vol, muted: st.muted, loop: st.loop }; }
+        return { ok: false, error: 'اقدام ناشناخته: ' + a };
+      } catch (err) { return { ok: false, error: String(err && err.message || err).slice(0, 120) }; }
+    };
+
+    /* ---------- اتصال نوار کنترل ---------- */
+    $('btnPlay').addEventListener('click', toggle);
+    $('btnB10').addEventListener('click', function () { seekTo(st.cur - 10); });
+    $('btnF10').addEventListener('click', function () { seekTo(st.cur + 10); });
+    $('btnMute').addEventListener('click', function () { window.__avaCtl({ a: 'mute' }); });
+    $('rate').addEventListener('click', function () { rateStep(1); });
+    $('rate').addEventListener('contextmenu', function (e) { e.preventDefault(); rateStep(-1); });
+    $('btnLoop').addEventListener('click', function () { window.__avaCtl({ a: 'loop' }); });
+    var seekDrag = false;
+    $('seek').addEventListener('pointerdown', function () { seekDrag = true; });
+    $('seek').addEventListener('input', function () { if (st.dur) $('tlabel').textContent = fmt(($('seek').value / 1000) * st.dur) + ' / ' + fmt(st.dur); });
+    $('seek').addEventListener('change', function () { seekDrag = false; if (st.dur) seekTo(($('seek').value / 1000) * st.dur); });
+    $('vol').addEventListener('input', function () { setVol(parseInt($('vol').value, 10) || 0); });
+    function winOp(op, arg) { if (AP && AP.win) return AP.win(op, arg); return Promise.resolve({ ok: false }); }
+    $('btnPip').addEventListener('click', function () { winOp(st.pip ? 'unpip' : 'pip').then(function (r) { if (r && r.ok !== false) { st.pip = !st.pip; if (!st.pip) winOp('unpip'); render(); } }); });
+    $('btnTop').addEventListener('click', function () { winOp('top').then(function (r) { if (r && r.ok) { st.top = !!r.top; render(); } }); });
+    $('btnFs').addEventListener('click', function () { winOp('fullscreen').then(function (r) { if (r && r.ok) { st.fs = !!r.fs; render(); } }); });
+    $('btnMore').addEventListener('click', function () { $('help').classList.remove('show'); $('opts').classList.toggle('show'); poke(); });
+    $('btnKeys').addEventListener('click', function () { $('opts').classList.remove('show'); $('help').classList.toggle('show'); poke(); });
+    $('btnBrowser').addEventListener('click', function () { winOp('browser'); });
+    $('btnReload').addEventListener('click', load);
+    $('btnClose').addEventListener('click', function () { window.close(); });
+    $('btnClose2').addEventListener('click', function () { window.close(); });
+    $('sizeRow').addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('button[data-size]') : null; if (!b) return;
+      [].forEach.call($('sizeRow').children, function (x) { x.classList.remove('on'); }); b.classList.add('on');
+      winOp('size', b.getAttribute('data-size')); poke();
+    });
+    $('opRow').addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('button[data-op]') : null; if (!b) return;
+      [].forEach.call($('opRow').children, function (x) { x.classList.remove('on'); }); b.classList.add('on');
+      winOp('opacity', b.getAttribute('data-op')); poke();
+    });
+    $('panelRetry').addEventListener('click', load);
+    $('panelDismiss').addEventListener('click', function () { panel.classList.remove('show'); });
+    $('panelBrowser').addEventListener('click', function () { winOp('browser'); });
+    $('panelSys').addEventListener('click', function () {
+      if (!(AP && AP.sys)) return fail('پلیر سیستم در دسترس نیست', 'این نسخه از آوا پل preload ندارد — آوا را به‌روزرسانی کن.');
+      $('panelSub').textContent = 'دارم استریم یوتیوب را برای پلیر سیستم آماده می‌کنم… (پت‌پلیر/VLC و…)';
+      AP.sys().then(function (r) {
+        if (r && r.ok) { $('panelMsg').textContent = 'در «' + (r.fa || r.player || 'پلیر سیستم') + '» پخش شد'; $('panelSub').textContent = 'این پنجره خودش بسته می‌شود…'; setTimeout(function () { window.close(); }, 1200); }
+        else fail('پلیر سیستم نتوانست پخش کند', (r && r.error) || 'استریم یوتیوب استخراج نشد — گزینهٔ «در مرورگر» همیشه کار می‌کند.');
+      }).catch(function () { fail('پلیر سیستم نتوانست پخش کند', 'گزینهٔ «در مرورگر» را امتحان کن.'); });
+    });
+
+    /* لایهٔ ضربه: کلیک = پخش/پاز، دابل‌کلیک = فول‌اسکرین */
+    hit.addEventListener('click', function () { toggle(); });
+    hit.addEventListener('dblclick', function () { winOp('fullscreen').then(function (r) { if (r && r.ok) { st.fs = !!r.fs; render(); } }); });
+
+    /* ---------- فول‌اسکرین از سمت main (همگام‌سازی آیکون) ---------- */
+    if (AP && AP.onFs) AP.onFs(function (v) { st.fs = !!v; render(); });
+
+    /* ---------- ظاهر/محو نوارها + ماوس ---------- */
     var hideT = 0;
     function poke() {
-      bar.classList.add('show'); brand.classList.add('show');
+      bar.classList.add('show'); ctl.classList.add('show'); brand.classList.add('show');
+      document.body.classList.remove('nocursor');
       if (hideT) clearTimeout(hideT);
-      hideT = setTimeout(function () { bar.classList.remove('show'); brand.classList.remove('show'); }, 2600);
+      hideT = setTimeout(function () {
+        if (!panel.classList.contains('show') && !$('opts').classList.contains('show') && !$('help').classList.contains('show')) {
+          bar.classList.remove('show'); ctl.classList.remove('show'); brand.classList.remove('show');
+          if (st.playing) document.body.classList.add('nocursor');
+        }
+      }, 2600);
     }
     document.addEventListener('mousemove', function (e) {
-      if (e.clientY <= 70) poke(); else if (bar.classList.contains('show')) poke();
+      if (e.clientY <= 70 || e.clientY >= window.innerHeight - 110 || bar.classList.contains('show')) poke();
     });
     poke();
 
-    document.getElementById('btnClose').addEventListener('click', function () { window.close(); });
-    document.getElementById('btnReload').addEventListener('click', load);
-    document.getElementById('btnBrowser').addEventListener('click', function () {
-      /* پنجرهٔ نو مسدود است؛ لینک با target=_self باز می‌شود و
-         setWindowOpenHandlerِ main آن را به مرورگر خارجی می‌فرستد */
-      window.open('https://www.youtube.com/watch?v=' + vid + (start ? '&t=' + start : ''), '_blank');
-    });
+    /* ---------- میان‌برهای کیبورد ---------- */
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !document.fullscreenElement) { window.close(); }
+      var k = e.key;
+      if (k === 'Escape') {
+        if (document.fullscreenElement || st.fs) { winOp('fullscreen'); return; }
+        $('opts').classList.remove('show'); $('help').classList.remove('show');
+        if (e.key === 'Escape' && !document.fullscreenElement) { window.close(); }
+        return;
+      }
+      if (k === ' ' || k === 'Spacebar' || k === 'k' || k === 'K') { e.preventDefault(); toggle(); return; }
+      if (k === 'ArrowLeft' || k === 'j' || k === 'J') { e.preventDefault(); seekTo(st.cur - (k === 'ArrowLeft' && !e.shiftKey ? 5 : 10)); return; }
+      if (k === 'ArrowRight' || k === 'l' || k === 'L') { e.preventDefault(); seekTo(st.cur + (k === 'ArrowRight' && !e.shiftKey ? 5 : 10)); return; }
+      if (k === 'ArrowUp') { e.preventDefault(); setVol(st.vol + 10); return; }
+      if (k === 'ArrowDown') { e.preventDefault(); setVol(st.vol - 10); return; }
+      if (k === 'm' || k === 'M') { window.__avaCtl({ a: 'mute' }); return; }
+      if (k === 'r' || k === 'R') { window.__avaCtl({ a: 'loop' }); return; }
+      if (k === 't' || k === 'T') { $('btnTop').click(); return; }
+      if (k === 'p' || k === 'P') { $('btnPip').click(); return; }
+      if (k === 'f' || k === 'F') { $('btnFs').click(); return; }
+      if (k === '?' || k === '/') { $('help').classList.toggle('show'); poke(); return; }
+      if (k === '.' || k === '>') { rateStep(1); return; }
+      if (k === ',' || k === '<') { rateStep(-1); return; }
+      if (/^[0-9]$/.test(k) && st.dur) { seekTo((parseInt(k, 10) / 10) * st.dur); return; }
     });
 
+    /* ---------- شروع ---------- */
     if (vid) load();
     else {
-      document.getElementById('veilMsg').textContent = 'ویدیویی برای پخش مشخص نشد';
+      $('veilMsg').textContent = 'ویدیویی برای پخش مشخص نشد';
       veil.querySelector('.ring').style.display = 'none';
     }
   })();

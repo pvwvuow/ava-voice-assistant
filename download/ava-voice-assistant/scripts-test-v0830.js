@@ -93,8 +93,8 @@ ok('خوش‌آمدگویی: گرادیان طلاییِ آرام بلوک 0.82 
 
 /* ---------- ۳) پلیر آوا — ری‌ورک پخش یوتیوب ---------- */
 console.log('\n[3] پلیر آوا (embed رسمی یوتیوب) — پخش تضمینی');
-ok('صفحهٔ پلیر: renderer/ava-player.html وجود دارد + iframe یوتیوب',
-  playerHtmlSrc.includes('youtube.com/embed/') && playerHtmlSrc.includes('autoplay=1'));
+ok('صفحهٔ پلیر: renderer/ava-player.html وجود دارد + iframe یوتیوب (v0.84: دامنهٔ قابل‌تعویض nocookie)',
+  playerHtmlSrc.includes('/embed/') && playerHtmlSrc.includes("'https://www.youtube.com'") && playerHtmlSrc.includes('autoplay=1'));
 ok('صفحهٔ پلیر: نوار شیشه‌ای خود-پنهان + دکمه‌های مرورگر/پخش‌مجدد/بستن + Esc',
   playerHtmlSrc.includes('id="btnBrowser"') && playerHtmlSrc.includes('id="btnReload"') &&
   playerHtmlSrc.includes("e.key === 'Escape'"));

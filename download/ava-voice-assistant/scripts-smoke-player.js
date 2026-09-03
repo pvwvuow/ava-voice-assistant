@@ -1,13 +1,23 @@
-/* اسموکِ پنجرهٔ پلیر آوا — صفحه باز می‌شود، iframe ست می‌شود، خطای کنسول ندارد */
+/* اسموکِ پنجرهٔ پلیر آوا (v0.84) — صفحه باز می‌شود، iframe/embed ست می‌شود،
+   پل preload وصل است، کنترل‌ها هست‌اند، خطای کنسول ندارد */
 'use strict';
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, session } = require('electron');
 const path = require('path');
 let win = null;
 let errs = [];
 app.whenReady().then(() => {
+  /* همان وب‌پرفرنسِ تولیدیِ avaPlayerOpen — پل preload + سشن aplayer */
+  try {
+    const ses = session.fromPartition('aplayer');
+    ses.webRequest.onBeforeSendHeaders(
+      { urls: ['*://*.youtube.com/*', '*://*.youtube-nocookie.com/*'] },
+      (det, cb) => { const h = det.requestHeaders || {}; h['Referer'] = 'https://www.youtube.com/'; cb({ requestHeaders: h }); }
+    );
+  } catch (e) { errs.push('ref-inject: ' + String(e && e.message).slice(0, 80)); }
   win = new BrowserWindow({
     width: 640, height: 400, show: false, frame: false,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required',
+      preload: path.join(__dirname, 'renderer', 'ava-player-preload.js'), partition: 'aplayer' },
   });
   win.webContents.on('console-message', (_e, level, msg) => { if (level >= 3) errs.push(String(msg).slice(0, 160)); });
   win.loadFile(path.join(__dirname, 'renderer', 'ava-player.html'), { query: { v: 'dQw4w9WgXcQ', t: 'تست', start: '30' } });
@@ -16,10 +26,21 @@ app.whenReady().then(() => {
       const r = await win.webContents.executeJavaScript(`(function(){
         const f = document.getElementById('frame');
         return {
-          src: (f && f.src || '').slice(0, 90),
+          src: (f && f.src || '').slice(0, 110),
+          refpol: (f && f.getAttribute('referrerpolicy')) || '',
           hasSet: typeof window.__avaSetTitle === 'function',
+          hasCtl: typeof window.__avaCtl === 'function',
+          hasBridge: !!(window.avaPlayer && typeof window.avaPlayer.win === 'function' && typeof window.avaPlayer.sys === 'function'),
           title: document.title,
           bar: !!document.getElementById('bar'),
+          ctl: !!document.getElementById('ctl'),
+          seek: !!document.getElementById('seek'),
+          vol: !!document.getElementById('vol'),
+          opts: !!document.getElementById('opts'),
+          help: !!document.getElementById('help'),
+          panel: !!document.getElementById('panel'),
+          btns: ['btnPlay','btnB10','btnF10','btnMute','btnLoop','btnPip','btnTop','btnFs','btnMore','btnBrowser','btnReload','btnSys'].filter(function(id){ return !document.getElementById(id); }).length,
+          ctlStatus: (function(){ try { return window.__avaCtl({ a: 'status' }); } catch (e) { return { err: String(e).slice(0,60) }; } })(),
           veil: !document.getElementById('veil').classList.contains('off'),
         };
       })()`, true);
