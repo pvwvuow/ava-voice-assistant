@@ -304,8 +304,10 @@ function runElectron() {
       return { error: new Error('no Xvfb available'), stdout: '', stderr: '' };
     }
   }
-  const elArgs = [];
-  if (safeTmp) elArgs.push('--disable-dev-shm-usage', '--disable-gpu'); /* فقط «قبل از» مسیر main — وگرنه آرگِ اپ می‌شوند */
+  const elArgs = ['--no-sandbox', '--disable-gpu'];
+  /* ↑ باید «قبل از» مسیر main باشند — appendSwitch در main برای sandbox دیر است
+     (روی CI: SUID sandbox instant-crash). disable-dev-shm-usage فقط با TMPDIR امن */
+  if (safeTmp) elArgs.push('--disable-dev-shm-usage');
   elArgs.push(tmpMain);
   const r = spawnSync(elBin, elArgs, { cwd: R, env, encoding: 'utf8', timeout: 180000, maxBuffer: 64 * 1024 * 1024 });
   if (xv && typeof xv.kill === 'function') { try { xv.kill(); } catch (_) { /* noop */ } }
