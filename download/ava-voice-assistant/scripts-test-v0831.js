@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 /* ============================================================
-   scripts-test-v0831.js — باتری نسخهٔ ۰.۸۳.۱-بتا
+   scripts-test-v0831.js — باتری نسخهٔ ۰.۸۳.۱-بتا (نگهبانِ بازساختِ v0.85)
    ------------------------------------------------------------
-   ۱) فیکس بحرانی «پلیر آوا درجا بسته میشه» (گزارش کاربر):
-      تایمر destroy در closeAvaPlayers روی «نقشهٔ زنده» می‌چرخید —
-      چون avaPlayerPlay اول می‌بندد و بعد پنجرهٔ نو را باز می‌کند،
-      بمبِ ۱.۵ثانیه‌ای پنجرهٔ تازه‌بازشده را نابود می‌کرد (بازتولید
-      ۱۰۰٪: هر پخش ≈۱.۵ ثانیه بعد می‌مرد).
-      فیکس: فقط اسنپ‌شاتِ لحظهٔ بستن نابود می‌شود؛ نقشهٔ خالی =
-      بدون تایمر؛ گارد isDestroyed روی همهٔ destroyها.
+   ۱) فیکس بحرانی «پلیر آوا درجا بسته میشه» — در v0.85 ساختاراً
+      فراتر رفت: تک‌پنجرهٔ بازاستفاده با ناوبری درجا (aplayer:navigate)
+      و «هیچ تایمرِ destroy» روی مسیرهای عادی؛ پاک‌سازی فقط از رویداد
+      'closed'. این سوئیت همان تضمین‌ها را روی معماری نو نگه می‌دارد.
    ۲) ساده‌سازی افکت میکروفون (بازخورد کاربر: «خیلی شلوغه و
       متناسب هر تم نیست») → حذف کامل aurora/sparks + افکتِ آرام
       هم‌رنگِ هر تم با متغیر --acc-rgb؛ قرمز فقط کارکردی (میک/نقطه).
@@ -20,6 +17,7 @@
    ============================================================ */
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const R = __dirname;
 let pass = 0, fail = 0;
 function ok(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); } else { fail++; console.log('  ✗ FAIL: ' + name); } }
@@ -30,26 +28,37 @@ const htmlSrc = read('renderer/index.html');
 const cssSrc = read('renderer/css/styles.css');
 const pkgSrc = read('package.json');
 const appSrc = read('renderer/js/app.js');
+const modSrc = read('lib/ava-player.js');
 let playerHtmlSrc = '';
 try { playerHtmlSrc = read('renderer/ava-player.html'); } catch (_) { /* noop */ }
 
-/* ---------- ۱) فیکس بحرانی پلیر آوا ---------- */
-console.log('\n[1] فیکس «پلیر آوا درجا بسته میشه» — closeAvaPlayers');
-ok('main.js: closeAvaPlayers اسنپ‌شات می‌گیرد (const olds = [...avaPlayers.values()])',
-  mainSrc.includes('const olds = [...avaPlayers.values()];'));
-ok('main.js: destroy فقط روی اسنپ‌شات است، نه نقشهٔ زنده (فرم باگ حذف شد)',
-  !mainSrc.includes('setTimeout(() => { for (const [, en] of avaPlayers) { try { en.win.destroy()'));
-ok('main.js: نقشهٔ خالی تایمر نمی‌سازد (if (olds.length) دور setTimeout)',
-  /if \(olds\.length\) \{\s*\n\s*setTimeout/.test(mainSrc));
-ok('main.js: گارد isDestroyed روی close/destroy اسنپ‌شات',
-  (mainSrc.match(/!en\.win\.isDestroyed\(\)/g) || []).length >= 3);
-ok('main.js: closeVideoByPid هم گارد isDestroyed گرفت',
-  mainSrc.includes('if (avaPlayers.has(pidN) && !en.win.isDestroyed()) en.win.destroy()'));
-ok('main.js: ترتیب تک‌لاین حفظ است — اول بستنِ قبلی‌ها بعد باز کردنِ نو (avaPlayerPlay)',
-  /await closeAllVideoPlayers\(\)[\s\S]{0,120}await closeAvaPlayers\(\);[\s\S]{0,200}avaPlayerOpen\(/.test(mainSrc));
+/* ---------- ۱) فیکس ساختاری «پلیر آوا درجا بسته میشه» (معماری v0.85) ---------- */
+console.log('\n[1] ریشه‌کنی «درجا بسته میشه» — تک‌پنجرهٔ بازاستفاده + بدون تایمر destroy');
+ok('main.js: پلیر آوا ماژولِ مستقل lib/ava-player.js است (require با دیپ‌ها)',
+  mainSrc.includes("require('./lib/ava-player.js')") &&
+  mainSrc.includes('closeAllExternalVideoPlayers: closeAllVideoPlayers'));
+ok('main.js: نام‌های قدیمی به ماژول وصل‌اند (قرارداد لایهٔ صوتی دست‌نخورده)',
+  mainSrc.includes('const avaPlayerPlay = (src, opts) => AP.play(src, opts);') &&
+  mainSrc.includes('const closeAvaPlayers = () => AP.closeAll();') &&
+  mainSrc.includes('const avaAvaFocusNewest = () => AP.focusNewest();'));
+ok('ماژول: پاک‌سازی فقط از رویداد closed — win.on(\'closed\', ...) → forget',
+  modSrc.includes("win.on('closed', () => forget(apid));"));
+ok('ماژول: هیچ تایمر destroy روی مسیر عادی وجود ندارد (setsetTimeout+destroy ممنوع)',
+  !/setTimeout\(\s*\(\)\s*=>\s*\{[^}]*destroy/.test(modSrc) && !/setTimeout\([^)]*\)\s*;[\s\S]{0,40}destroy/.test(modSrc));
+ok('ماژول: ناوبری درجا — aplayer:navigate (الگوی «بستن-بعد-بازکردن» حذف شد)',
+  modSrc.includes("send('aplayer:navigate'") && modSrc.includes('function navigateEntry'));
+ok('ماژول: play بدون keepExisting پنجرهٔ موجود را «همان» navigate می‌کند، نه بستن/بازکردن',
+  /const reuse = o\.keepExisting \? null : newest\(\);[\s\S]{0,120}apid = reuse\.apid; navigateEntry\(reuse, payload\)/.test(modSrc));
+ok('ماژول: کرشِ رندرر = ریلود نه مرگ (render-process-gone → reload)',
+  modSrc.includes("on('render-process-gone'") && modSrc.includes('.reload()'));
+ok('ماژول: closeAll بدون تایمر — بستن عادی، پاک‌سازی با closed',
+  /function closeAll\(\) \{[\s\S]{0,300}closeEntry\(en\)[\s\S]{0,120}return Promise\.resolve\(\{ count: olds\.length \}\);/.test(modSrc));
+ok('main.js: closeVideoByPid pid منفی → ماژول (بدون تایمر destroy، بدون Stop-Process)',
+  mainSrc.includes('if (pidN < 0) return avaCloseByPid(pidN);') &&
+  !mainSrc.includes('en.win.destroy()'));
 ok('main.js: closeAllVideoTargets پنجره‌های آوا + پلیرهای خارجی را پوشش می‌دهد',
   mainSrc.includes('async function closeAllVideoTargets()') &&
-  /closeAllVideoTargets\(\)[\s\S]{0,400}closeAvaPlayers\(\)/.test(mainSrc.slice(mainSrc.indexOf('async function closeAllVideoTargets()'))));
+  /closeAllVideoTargets\(\)[\s\S]{0,400}AP\.closeAll\(\)/.test(mainSrc.slice(mainSrc.indexOf('async function closeAllVideoTargets()'))));
 
 /* ---------- ۲) ساده‌سازی افکت میکروفون ---------- */
 console.log('\n[2] افکت آرام هم‌رنگِ هر تم — حذف شلوغی');
@@ -111,43 +120,20 @@ ok('CSS: طلایی فقط اکسنت ماند — دکمهٔ ارسال، ری�
   cssSrc.includes('[data-theme="light"][data-gold="on"] ::selection'));
 
 /* ---------- ۴) پین نسخه ---------- */
-console.log('\n[4] پین نسخه 0.83.1-beta');
-ok('package.json: 0.84.0-beta (forward-relax)', pkgSrc.includes('"version": "0.84.0-beta"'));
-ok('app.js: appVersion = 0.84.0-beta (forward-relax)', appSrc.includes("let appVersion = '0.84.0-beta';"));
-ok('index.html: abVersion = v0.84.0-beta (forward-relax)', htmlSrc.includes('>v0.84.0-beta<'));
-ok('ava-player.html: برند پلیر v0.84 (forward-relax)', playerHtmlSrc.includes('آوا پلیر v0.84'));
+console.log('\n[4] پین نسخه 0.85.0-beta (forward-relax)');
+ok('package.json: 0.85.0-beta (forward-relax)', pkgSrc.includes('"version": "0.85.0-beta"'));
+ok('app.js: appVersion = 0.85.0-beta (forward-relax)', appSrc.includes("let appVersion = '0.85.0-beta';"));
+ok('index.html: abVersion = v0.85.0-beta (forward-relax)', htmlSrc.includes('>v0.85.0-beta<'));
+ok('ava-player.html: برند پلیر v0.85 (forward-relax)', playerHtmlSrc.includes('آوا پلیر v0.85'));
 
-/* ---------- ۵) رفتارِ زمان‌بندی — شبیه‌سازی واقعیِ سناریوی باگ ---------- */
-(async () => {
-  console.log('\n[5] شبیه‌سازی: پنجرهٔ نو که بعد از close باز می‌شود باید زنده بماند');
-  const fnMatch = mainSrc.match(/function closeAvaPlayers\(\) \{[\s\S]*?\n\}/);
-  ok('main.js: بدنهٔ closeAvaPlayers برای شبیه‌سازی استخراج شد', !!fnMatch);
-  if (fnMatch) {
-    try {
-      const makeCloseAvaPlayers = new Function('avaPlayers', 'setTimeout',
-        fnMatch[0] + '\n; return closeAvaPlayers;');
-      const map = new Map();
-      const mkWin = () => ({ _closed: false, _dead: false,
-        close() { this._closed = true; }, isDestroyed() { return this._dead; }, destroy() { this._dead = true; } });
-      const realSetTimeout = setTimeout;
-      const closeAvaPlayers = makeCloseAvaPlayers(map, realSetTimeout);
-      const oldWin = mkWin();
-      map.set(-1, { win: oldWin });
-      closeAvaPlayers();                 /* بستنِ پنجرهٔ قدیمی */
-      const newWin = mkWin();
-      map.set(-2, { win: newWin });      /* «بعد» از close، پنجرهٔ نو باز می‌شود */
-      await new Promise((r) => realSetTimeout(r, 1700)); /* بمبِ ۱.۵ثانیه‌ای */
-      ok('پنجرهٔ قدیمی destroy شد (حلقهٔ اطمینان کار می‌کند)', oldWin._dead === true);
-      ok('بحرانی: پنجرهٔ تازه‌بازشده زنده ماند — باگ «درجا بسته میشه» ریشه‌کن شد',
-        newWin._dead === false && newWin._closed === false);
-      map.delete(-1); map.delete(-2);    /* رویداد closed در اپ واقعی پاک می‌کند */
-      const n = await closeAvaPlayers(); /* نقشهٔ خالی: نباید تایمر بسازد/خطا بدهد */
-      ok('نقشهٔ خالی: بدون تایمر، count=0 و بدون خطا', n && n.count === 0);
-    } catch (e) {
-      ok('شبیه‌سازی اجرا شد (' + String(e && e.message || e).slice(0, 60) + ')', false);
-    }
-  }
+/* ---------- ۵) نحو ---------- */
+console.log('\n[5] نحو سورس‌های بازساخته');
+let syn = spawnSync(process.execPath, ['--check', path.join(R, 'lib', 'ava-player.js')]);
+ok('node --check lib/ava-player.js', !syn.status);
+syn = spawnSync(process.execPath, ['--check', path.join(R, 'main.js')]);
+ok('node --check main.js', !syn.status);
+syn = spawnSync(process.execPath, ['--check', path.join(R, 'renderer', 'ava-player-preload.js')]);
+ok('node --check ava-player-preload.js', !syn.status);
 
-  console.log('\n==== v0.83.1-beta (relaxed 0.84): ' + pass + ' passed, ' + fail + ' failed ====');
-  process.exit(fail ? 1 : 0);
-})();
+console.log('\n==== v0.83.1-beta (guards on v0.85 architecture): ' + pass + ' passed, ' + fail + ' failed ====');
+process.exit(fail ? 1 : 0);

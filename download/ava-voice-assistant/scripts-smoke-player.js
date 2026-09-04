@@ -1,12 +1,13 @@
-/* اسموکِ پنجرهٔ پلیر آوا (v0.84) — صفحه باز می‌شود، iframe/embed ست می‌شود،
-   پل preload وصل است، کنترل‌ها هست‌اند، خطای کنسول ندارد */
+/* اسموکِ پنجرهٔ پلیر آوا (v0.85) — صفحهٔ نو با <video> مستقیم + iframe embed:
+   صفحه باز می‌شود، هر دو لایهٔ پخش هست‌اند، پل preload (win/sys/stream/meta)
+   وصل است، کنترل‌ها و منو کامل‌اند، __avaCtl کار می‌کند، خطای کنسول ندارد */
 'use strict';
 const { app, BrowserWindow, session } = require('electron');
 const path = require('path');
 let win = null;
 let errs = [];
 app.whenReady().then(() => {
-  /* همان وب‌پرفرنسِ تولیدیِ avaPlayerOpen — پل preload + سشن aplayer */
+  /* همان وب‌پرفرنسِ تولیدیِ ماژول — پل preload + سشن aplayer + تزریق Referer */
   try {
     const ses = session.fromPartition('aplayer');
     ses.webRequest.onBeforeSendHeaders(
@@ -20,7 +21,8 @@ app.whenReady().then(() => {
       preload: path.join(__dirname, 'renderer', 'ava-player-preload.js'), partition: 'aplayer' },
   });
   win.webContents.on('console-message', (_e, level, msg) => { if (level >= 3) errs.push(String(msg).slice(0, 160)); });
-  win.loadFile(path.join(__dirname, 'renderer', 'ava-player.html'), { query: { v: 'dQw4w9WgXcQ', t: 'تست', start: '30' } });
+  /* engine=embed در اسموک — بدون yt-dlp، بدون نیاز به شبکه برای موتور مستقیم */
+  win.loadFile(path.join(__dirname, 'renderer', 'ava-player.html'), { query: { v: 'dQw4w9WgXcQ', t: 'تست', start: '30', engine: 'embed' } });
   win.webContents.once('did-finish-load', async () => {
     try {
       const r = await win.webContents.executeJavaScript(`(function(){
@@ -28,18 +30,26 @@ app.whenReady().then(() => {
         return {
           src: (f && f.src || '').slice(0, 110),
           refpol: (f && f.getAttribute('referrerpolicy')) || '',
+          hasVideo: !!document.getElementById('video'),
+          engEmbed: document.body.classList.contains('eng-embed'),
+          engBadge: (document.getElementById('eng') || {}).textContent || '',
           hasSet: typeof window.__avaSetTitle === 'function',
           hasCtl: typeof window.__avaCtl === 'function',
-          hasBridge: !!(window.avaPlayer && typeof window.avaPlayer.win === 'function' && typeof window.avaPlayer.sys === 'function'),
+          hasBridge: !!(window.avaPlayer && typeof window.avaPlayer.win === 'function' && typeof window.avaPlayer.sys === 'function'
+            && typeof window.avaPlayer.stream === 'function' && typeof window.avaPlayer.meta === 'function'
+            && typeof window.avaPlayer.onNavigate === 'function' && typeof window.avaPlayer.onFs === 'function'),
           title: document.title,
           bar: !!document.getElementById('bar'),
           ctl: !!document.getElementById('ctl'),
           seek: !!document.getElementById('seek'),
           vol: !!document.getElementById('vol'),
+          qual: !!document.getElementById('qual'),
           opts: !!document.getElementById('opts'),
           help: !!document.getElementById('help'),
           panel: !!document.getElementById('panel'),
-          btns: ['btnPlay','btnB10','btnF10','btnMute','btnLoop','btnPip','btnTop','btnFs','btnMore','btnBrowser','btnReload','btnSys'].filter(function(id){ return !document.getElementById(id); }).length,
+          toast: !!document.getElementById('toast'),
+          monRow: !!document.getElementById('monRow'),
+          btns: ['btnPlay','btnB10','btnF10','btnMute','btnLoop','btnPip','btnTop','btnFs','btnMore','btnBrowser','btnReload','btnSys','btnCopy','btnShot'].filter(function(id){ return !document.getElementById(id); }).length,
           ctlStatus: (function(){ try { return window.__avaCtl({ a: 'status' }); } catch (e) { return { err: String(e).slice(0,60) }; } })(),
           veil: !document.getElementById('veil').classList.contains('off'),
         };

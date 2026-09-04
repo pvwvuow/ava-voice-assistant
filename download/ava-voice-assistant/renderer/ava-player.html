@@ -1,27 +1,27 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <!-- ============================================================
-     آوا پلیر v2 (v0.84) — پنجرهٔ پخشِ خودِ آوا با «اپشنای کامل»
+     آوا پلیر v3 (v0.85) — بازساختِ کامل: <video> محلی = موتورِ اصلی
      ────────────────────────────────────────────────────────────
-     v0.83: embed رسمی یوتیوب، فقط «در مرورگر / پخش مجدد / بستن».
-     بازخورد کاربر: «اپشنای آواپلیر خیلی کمه» + میدانی: بعضی ویدیوها
-     (مخصوصاً لایو) با «Video player configuration error (133/153)»
-     رد می‌شوند — یوتیوب از پاییز ۲۰۲۵ embedِ بدون Referer معتبر را
-     رد می‌کند و صفحهٔ file:// هرگز Referer ندارد (فیکس سمت main:
-     تزریق Referer در سشن aplayer + referrerpolicy روی iframe).
-     این نسخه:
-     • نوار کنترل کامل: پخش/پاز، ±۱۰ثانیه، سیک‌بار+زمان، ولوم+بی‌صدا،
-       سرعت، تکرار، PIP، همیشه‌روانه، فول‌اسکرین، منوی گزینه‌ها
-     • زبان مشترک با YT embed: postMessage command + listening
-       (infoDelivery) — اگر رویدادها ساکت بودند، حالت شبیه‌سازی
-     • نردبان خطا: onError → تلاش nocookie → پنل فالبک صادقانه
-       (تلاش دوباره / در مرورگر / پلیر سیستم)
-     • بج LIVE (ویدیوی زنده: سیک‌بار خاموش)
-     • میان‌برها: Space/K، J/L، ←→، ↑↓، M، R، T، P، F، 0-9، </>، Esc
+     ریشهٔ «کار نمی‌کند»: یوتیوب embed را با Error 133/153 (ردِ
+     IP/ربات، سمتِ سرور) می‌بندد؛ هیچ ترفندِ سمتِ صفحه آن را درست
+     نمی‌کند. معماریِ نو:
+     • موتور ۱ «مستقیم»: استریمِ تک‌فایلی mp4/webm (yt-dlp) در
+       <video> خودِ صفحه — embed در کار نیست؛ خطای ۱۳۳ ناممکن است.
+     • موتور ۲ «embed»: فالبکِ خودکار (خطای ویدیو/تعویض کیفیت ناموفق).
+     • موتور ۳/۴: پلیر سیستم / مرورگر — از پنل خطا و منو.
+     • ناوبری درجا (aplayer:navigate): ویدیوی نو در همین پنجره —
+       پنجره هرگز «بسته و باز» نمی‌شود (ریشهٔ «درجا بسته میشه»).
+     اپشنای کامل: پخش/پاز، ±۱۰ث، Shift+±۳۰ث، نوار زمان با بافر،
+     ولوم/بی‌صدا، سرعت ۰.۲۵–۲×، تکرار، کیفیت (بهترین/۳۶۰)، LIVE،
+     PIP، همیشه‌روانه، فول‌اسکرین، اندازهٔ پنجره ×۴، شفافیت ×۴،
+     مانیتور ×۲، اسکرین‌شات، کپی لینک، مرورگر، پلیر سیستم، پخش
+     مجدد، میان‌برها، MediaSession.
+     زبانِ صوتیِ مشترک: __avaCtl + __avaSetTitle (سازگار با main).
      ============================================================ -->
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="frame-src https://www.youtube.com https://www.youtube-nocookie.com; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https://i.ytimg.com https://img.youtube.com data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src https: blob: data:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https://i.ytimg.com https://img.youtube.com data:; font-src 'none'">
 <title>آوا پلیر</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,11 +29,16 @@
   body { font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif; color: #efeadd; user-select: none; cursor: default; }
   body.nocursor, body.nocursor * { cursor: none !important; }
 
-  #frame { position: absolute; inset: 0; border: 0; width: 100%; height: 100%; background: #000; }
+  /* ── لایه‌های پخش: ویدیو (مستقیم) + iframe (embed) ─────────── */
+  #video, #frame { position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0; background: #000; object-fit: contain; }
+  #frame { display: none; }
+  body.eng-embed #video { display: none; }
+  body.eng-embed #frame { display: block; }
   /* لایهٔ ضربه — کلیک = پخش/پاز، دابل‌کلیک = فول‌اسکرین */
   #hit { position: absolute; inset: 0; z-index: 2; }
 
-  /* ── نوار بالا: عنوان + بستن ─────────────────────────────── */
+  /* ── نوار بالا: عنوان + بج موتور + بستن ─────────────────── */
   #bar {
     position: absolute; top: 0; left: 0; right: 0; height: 44px;
     display: flex; align-items: center; gap: 10px; padding: 0 10px 0 14px;
@@ -53,6 +58,10 @@
   #bar .tt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: #f5efdd;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
   #bar .tt small { color: #c9a84c; font-weight: 700; margin-inline-end: 8px; }
+  #eng { flex: 0 0 auto; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;
+    color: #86efac; border: 1px solid rgba(134, 239, 172, 0.4); background: rgba(34, 197, 94, 0.14);
+    border-radius: 20px; padding: 2px 8px; direction: ltr; -webkit-app-region: no-drag; }
+  body.eng-embed #eng { color: #fca5a5; border-color: rgba(252, 165, 165, 0.4); background: rgba(239, 68, 68, 0.14); }
   #bar button {
     -webkit-app-region: no-drag;
     border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 9px;
@@ -63,12 +72,12 @@
   #bar button:hover { background: rgba(212, 160, 23, 0.2); border-color: rgba(212, 160, 23, 0.5); }
   #bar button.x:hover { background: rgba(244, 63, 94, 0.25); border-color: rgba(244, 63, 94, 0.55); }
 
-  /* ── نوار کنترل پایین — قلب «اپشنای کامل» ────────────────── */
+  /* ── نوار کنترل پایین ────────────────────────────────────── */
   #ctl {
     position: absolute; bottom: 0; left: 0; right: 0;
     direction: ltr;
     padding: 26px 12px 8px; z-index: 6;
-    display: flex; align-items: center; gap: 7px;
+    display: flex; align-items: center; gap: 6px;
     background: linear-gradient(0deg, rgba(8, 8, 10, 0.95), rgba(8, 8, 10, 0.6) 65%, transparent);
     opacity: 0; transform: translateY(8px); pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
@@ -98,9 +107,11 @@
   @keyframes liveblink { 50% { opacity: 0.35; } }
   body.islive #ctl .live { display: inline-flex; }
   body.islive #seek, body.islive #tlabel { display: none; }
+  body.islive #btnLoop { display: none; }
 
   #seek { -webkit-appearance: none; appearance: none; flex: 1 1 40px; min-width: 60px; height: 4px;
-    border-radius: 3px; background: rgba(255, 255, 255, 0.22); outline: 0; cursor: pointer; }
+    border-radius: 3px; outline: 0; cursor: pointer;
+    background: linear-gradient(to right, #d4a017 0%, #d4a017 0%, rgba(212,160,23,0.35) 0%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.22) 100%); }
   #seek::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px;
     border-radius: 50%; background: #d4a017; box-shadow: 0 0 6px rgba(212, 160, 23, 0.8); }
   #vol { -webkit-appearance: none; appearance: none; width: 84px; height: 4px; flex: 0 0 84px;
@@ -108,12 +119,12 @@
   #vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px;
     border-radius: 50%; background: #e8d9ac; }
   #ctl .sep { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.14); flex: 0 0 1px; margin: 0 3px; }
-  #rate { font-size: 11px; font-weight: 700; width: auto; padding: 0 8px; direction: ltr; }
+  #rate, #qual { font-size: 11px; font-weight: 700; width: auto; padding: 0 8px; direction: ltr; }
 
   /* ── منوی گزینه‌ها (⋮) + راهنمای کلیدها ──────────────────── */
   .pop {
     position: absolute; bottom: 52px; right: 10px; z-index: 8;
-    min-width: 218px; direction: rtl;
+    min-width: 232px; direction: rtl;
     background: rgba(14, 14, 17, 0.97); border: 1px solid rgba(212, 160, 23, 0.28);
     border-radius: 12px; padding: 8px; display: none;
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
@@ -136,7 +147,7 @@
   .pop .item .ic { width: 18px; text-align: center; flex: 0 0 18px; }
   .pop .item small { margin-inline-start: auto; color: #8d8264; font-size: 9.5px; }
   .pop .item.danger:hover { background: rgba(244, 63, 94, 0.2); }
-  #help { left: 10px; right: auto; min-width: 250px; }
+  #help { left: 10px; right: auto; min-width: 262px; max-height: 78vh; overflow: auto; }
   #help .kv { display: flex; justify-content: space-between; gap: 14px; font-size: 11px; padding: 3px 8px; color: #d8cba6; }
   #help .kv b { color: #ffd76a; font-weight: 700; direction: ltr; font-family: Consolas, monospace; }
 
@@ -153,14 +164,14 @@
     animation: spin 0.9s linear infinite;
   }
   #veil .msg { font-size: 13px; color: #d8cba6; }
-  #veil .sub { font-size: 11px; color: #7d7458; }
+  #veil .sub { font-size: 11px; color: #7d7458; max-width: 480px; text-align: center; line-height: 1.9; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── پنل فالبک — وقتی یوتیوب embed را رد کرد ─────────────── */
+  /* ── پنل فالبک — صادقانه، پنجره را هرگز نمی‌بندد ─────────── */
   #panel {
     position: absolute; inset: 0; z-index: 7; display: none;
     flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-    background: rgba(5, 5, 7, 0.9); text-align: center; padding: 24px; direction: rtl;
+    background: rgba(5, 5, 7, 0.92); text-align: center; padding: 24px; direction: rtl;
   }
   #panel.show { display: flex; }
   #panel .em { font-size: 34px; }
@@ -177,6 +188,16 @@
   #panel .row button.pri { background: rgba(212, 160, 23, 0.3); border-color: rgba(212, 160, 23, 0.6); }
   #panel .row button.x:hover { background: rgba(244, 63, 94, 0.25); border-color: rgba(244, 63, 94, 0.55); }
 
+  /* ── توست ────────────────────────────────────────────────── */
+  #toast {
+    position: absolute; bottom: 56px; left: 50%; transform: translate(-50%, 8px);
+    z-index: 9; direction: rtl; font-size: 12px; color: #f5efdd;
+    background: rgba(14, 14, 17, 0.95); border: 1px solid rgba(212, 160, 23, 0.35);
+    border-radius: 10px; padding: 7px 14px; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
   /* برندِ کوچک گوشهٔ پایین — فقط وقتی نوار دیده می‌شود */
   #brand {
     position: absolute; bottom: 40px; inset-inline-start: 14px; z-index: 5;
@@ -187,7 +208,8 @@
   #brand.show { opacity: 1; }
 </style>
 </head>
-<body>
+<body class="eng-embed">
+<video id="video" playsinline></video>
 <iframe id="frame" src="about:blank" referrerpolicy="strict-origin-when-cross-origin"
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
 <div id="hit" title=""></div>
@@ -195,6 +217,7 @@
 <div id="bar">
   <span class="ava-dot"></span>
   <span class="tt"><small>آوا پلیر</small><span id="title">…</span></span>
+  <span id="eng" title="موتور پخش">یوتیوب</span>
   <button id="btnClose" class="x" type="button" title="بستن (Esc)">✕</button>
 </div>
 
@@ -209,6 +232,7 @@
   <button id="btnMute" type="button" title="بی‌صدا / با صدا (M)">🔊</button>
   <input id="vol" type="range" min="0" max="100" value="100" title="صدا (↑ ↓)">
   <button id="rate" type="button" title="سرعت پخش (&lt; &gt;)">1×</button>
+  <button id="qual" type="button" title="کیفیت (Q)">AUTO</button>
   <button id="btnLoop" type="button" title="تکرار (R)">🔁</button>
   <span class="sep"></span>
   <button id="btnPip" type="button" title="تصویر-in-تصویر (P)">⧉</button>
@@ -232,10 +256,17 @@
     <button data-op="60" type="button">۶۰٪</button>
     <button data-op="40" type="button">۴۰٪</button>
   </div>
+  <h5>مانیتور</h5>
+  <div class="row" id="monRow">
+    <button data-mon="1" type="button">مانیتور ۱</button>
+    <button data-mon="2" type="button">مانیتور ۲</button>
+  </div>
+  <button class="item" id="btnShot" type="button"><span class="ic">📷</span> اسکرین‌شات از ویدیو <small>Pictures/Ava</small></button>
+  <button class="item" id="btnCopy" type="button"><span class="ic">🔗</span> کپی لینک ویدیو <small>C</small></button>
   <button class="item" id="btnBrowser" type="button"><span class="ic">🌐</span> در مرورگر باز کن</button>
   <button class="item" id="btnSys" type="button"><span class="ic">🎬</span> پخش با پلیر سیستم <small>پت‌پلیر و…</small></button>
   <button class="item" id="btnReload" type="button"><span class="ic">🔄</span> پخش مجدد</button>
-  <button class="item" id="btnKeys" type="button"><span class="ic">⌨️</span> کلیدهای میان‌بر</button>
+  <button class="item" id="btnKeys" type="button"><span class="ic">⌨️</span> کلیدهای میان‌بر <small>?</small></button>
   <button class="item danger" id="btnClose2" type="button"><span class="ic">✕</span> بستن پلیر</button>
 </div>
 
@@ -243,10 +274,13 @@
   <h5>کلیدهای میان‌بر</h5>
   <div class="kv"><span>پخش / توقف</span><b>Space / K</b></div>
   <div class="kv"><span>۵ ثانیه عقب / جلو</span><b>← / →</b></div>
+  <div class="kv"><span>۳۰ ثانیه عقب / جلو</span><b>Shift + ← / →</b></div>
   <div class="kv"><span>۱۰ ثانیه عقب / جلو</span><b>J / L</b></div>
   <div class="kv"><span>صدا بیشتر / کمتر</span><b>↑ / ↓</b></div>
   <div class="kv"><span>بی‌صدا</span><b>M</b></div>
   <div class="kv"><span>سرعت بعدی / قبلی</span><b>&gt; / &lt;</b></div>
+  <div class="kv"><span>کیفیت (بهترین / ۳۶۰)</span><b>Q</b></div>
+  <div class="kv"><span>کپی لینک</span><b>C</b></div>
   <div class="kv"><span>تکرار ویدیو</span><b>R</b></div>
   <div class="kv"><span>تصویر-در-تصویر</span><b>P</b></div>
   <div class="kv"><span>همیشه روونه</span><b>T</b></div>
@@ -257,7 +291,7 @@
 
 <div id="veil">
   <div class="ring"></div>
-  <div class="msg" id="veilMsg">در حال اتصال به یوتیوب…</div>
+  <div class="msg" id="veilMsg">در حال آماده‌سازی پخش…</div>
   <div class="sub" id="veilSub">اگر پخش نشد، از منوی ⋮ گزینهٔ «پلیر سیستم» یا «در مرورگر» را امتحان کن</div>
 </div>
 
@@ -267,13 +301,15 @@
   <div class="sub" id="panelSub"></div>
   <div class="row">
     <button class="pri" id="panelRetry" type="button">تلاش دوباره</button>
+    <button id="panelEmbed" type="button">پخش با یوتیوب</button>
     <button id="panelSys" type="button">پلیر سیستم</button>
     <button id="panelBrowser" type="button">در مرورگر</button>
     <button class="x" id="panelDismiss" type="button">بستن این پنل</button>
   </div>
 </div>
 
-<div id="brand">آوا پلیر v0.84</div>
+<div id="toast"></div>
+<div id="brand">آوا پلیر v0.85</div>
 
 <script>
   (function () {
@@ -282,65 +318,160 @@
     var vid = String(q.get('v') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
     var start = String(q.get('start') || '').replace(/[^0-9]/g, '');
     var title = String(q.get('t') || '');
+    var engine = (q.get('engine') === 'direct' && q.get('src')) ? 'direct' : 'embed';
+    var streamSrc = engine === 'direct' ? String(q.get('src') || '') : '';
+    var quality = (q.get('q') === '360') ? '360' : 'best';
 
+    var video = document.getElementById('video');
     var frame = document.getElementById('frame');
     var bar = document.getElementById('bar');
     var ctl = document.getElementById('ctl');
     var brand = document.getElementById('brand');
     var veil = document.getElementById('veil');
     var panel = document.getElementById('panel');
+    var toast = document.getElementById('toast');
     var titleEl = document.getElementById('title');
     var hit = document.getElementById('hit');
     var AP = window.avaPlayer || null; /* پل preload — در اسموک/بدون preload هم صفحه می‌آید بالا */
+    var RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
     /* ---------- وضعیت پخش ---------- */
     var st = { playing: false, dur: 0, cur: 0, vol: 100, muted: false, rate: 1,
-               loop: false, live: false, pip: false, top: false, fs: false,
-               evtAlive: false, lastInfo: 0, loadedAt: 0, triedNC: false, nocookie: false };
-    var SIZES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+               loop: false, live: false, pip: false, top: false, fs: false, buf: 0,
+               evtAlive: false, lastInfo: 0, loadedAt: 0, triedNC: false, nocookie: false,
+               wdFired: false, tried360: false };
+    var payload = { videoId: vid, start: parseInt(start, 10) || 0, title: title, engine: engine, src: streamSrc, quality: quality };
 
     function $(id) { return document.getElementById(id); }
     function fmt(s) {
+      if (s === Infinity || isNaN(s)) return 'LIVE';
       s = Math.max(0, Math.floor(s || 0));
       var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
       return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0');
     }
+    var toastT = 0;
+    function say(msg) {
+      toast.textContent = msg; toast.classList.add('show');
+      if (toastT) clearTimeout(toastT);
+      toastT = setTimeout(function () { toast.classList.remove('show'); }, 2200);
+    }
     function setTitle(t) {
       title = String(t || '');
+      payload.title = title;
       titleEl.textContent = title || vid || '—';
       document.title = 'آوا پلیر' + (title ? ' — ' + title : '');
     }
     window.__avaSetTitle = setTitle;
     setTitle(title);
 
-    /* ---------- embed + زبان postMessage ----------
-       enablejsapi=1 → پلیر یوتیوب فرمان‌های postMessage را می‌شنود؛
-       فرمان «listening» جریان infoDelivery (زمان/وضعیت/خطا) را روشن می‌کند.
-       ارسال با '*' از file:// هم می‌گذرد. */
-    function src() {
-      var u = (st.nocookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com') +
+    function applyEng(e) {
+      engine = e === 'direct' && streamSrc ? 'direct' : 'embed';
+      payload.engine = engine;
+      document.body.classList.toggle('eng-embed', engine !== 'direct');
+      $('eng').textContent = engine === 'direct' ? 'مستقیم' : 'یوتیوب';
+    }
+
+    /* ---------- موتور ۱ — <video> مستقیم ---------- */
+    function directLoad() {
+      st.wdFired = false; st.evtAlive = false; st.loadedAt = Date.now();
+      st.playing = false; st.cur = 0; st.dur = 0; st.buf = 0; st.live = false;
+      panel.classList.remove('show');
+      veil.classList.remove('off');
+      $('veilMsg').textContent = 'در حال اتصال به استریم مستقیم…';
+      $('veilSub').textContent = 'کیفیت: ' + (quality === '360' ? '۳۶۰p' : 'بهترین') + ' — اگر پخش نشد خودکار به یوتیوب برمی‌گردم';
+      try { frame.src = 'about:blank'; frame.contentWindow && frame.contentWindow.postMessage('', '*'); } catch (_) { /* noop */ }
+      video.src = streamSrc;
+      video.loop = st.loop;
+      video.playbackRate = st.rate;
+      var p = video.play();
+      if (p && p.catch) p.catch(function () { /* autoplay/decode — watchdog می‌رسد */ });
+      render();
+    }
+    function directFresh() {
+      /* پخش مجددِ مستقیم: استریمِ تازه (URL های googlevideo منقضی می‌شوند) */
+      if (!(AP && AP.stream)) return directLoad();
+      $('veilMsg').textContent = 'در حال گرفتن استریم تازه…';
+      AP.stream({ quality: quality }).then(function (r) {
+        if (r && r.ok && r.url) { streamSrc = r.url; payload.src = r.url; quality = r.quality || quality; directLoad(); }
+        else embedLoad('استریم مستقیم در دسترس نبود — پخش با یوتیوب…');
+      }).catch(function () { embedLoad('استریم مستقیم در دسترس نبود — پخش با یوتیوب…'); });
+    }
+    /* نردبانِ خطای موتور مستقیم: بهترین → ۳۶۰ → embed → پنل صادقانه */
+    function directFail(reason) {
+      if (engine !== 'direct' || st.wdFired) return;
+      if (!st.tried360 && quality !== '360' && AP && AP.stream) {
+        st.tried360 = true;
+        $('veilMsg').textContent = 'تلاش با کیفیت ۳۶۰p…';
+        AP.stream({ quality: '360' }).then(function (r) {
+          if (r && r.ok && r.url) {
+            streamSrc = r.url; payload.src = r.url; quality = '360';
+            $('qual').textContent = '360p';
+            directLoad();
+          } else embedLoad('استریم مستقیم کامل نشد — پخش با یوتیوب…');
+        }).catch(function () { embedLoad('استریم مستقیم کامل نشد — پخش با یوتیوب…'); });
+        return;
+      }
+      embedLoad(reason || 'پخش مستقیم ممکن نشد — پخش با یوتیوب…');
+    }
+
+    /* ---------- موتور ۲ — embed یوتیوب (فالبک) ---------- */
+    function embedSrcUrl() {
+      return (st.nocookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com') +
         '/embed/' + (vid || '') +
         '?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&controls=0' +
-        (start ? '&start=' + start : '');
-      return u;
+        (payload.start ? '&start=' + payload.start : '');
     }
     function cmd(fn, args) {
       try { frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: fn, args: args || [] }), '*'); } catch (_) { /* cross-origin */ }
     }
     function listening() { cmd('listening', [{ id: 1, channel: 'widget' }]); }
-    function load() {
-      st.loadedAt = Date.now();
-      st.evtAlive = false; st.playing = false; st.cur = 0;
+    function embedLoad(msg) {
+      st.wdFired = false; st.evtAlive = false; st.loadedAt = Date.now(); st.lastInfo = 0;
+      st.playing = false; st.cur = 0; st.dur = 0; st.live = false; st.buf = 0;
+      applyEng('embed');
       panel.classList.remove('show');
       veil.classList.remove('off');
-      $('veilMsg').textContent = 'در حال اتصال به یوتیوب…';
+      $('veilMsg').textContent = msg || 'در حال اتصال به یوتیوب…';
       $('veilSub').textContent = 'اگر پخش نشد، از منوی ⋮ گزینهٔ «پلیر سیستم» یا «در مرورگر» را امتحان کن';
-      frame.src = src();
+      try { video.pause(); video.removeAttribute('src'); video.load(); } catch (_) { /* noop */ }
+      frame.src = embedSrcUrl();
       setTimeout(listening, 2500);
       setTimeout(listening, 6000);
+      render();
     }
 
-    /* ---------- رویدادهای پلیر یوتیوب ---------- */
+    /* ---------- رویدادهای <video> ---------- */
+    video.addEventListener('playing', function () {
+      st.playing = true; st.evtAlive = true;
+      veil.classList.add('off'); panel.classList.remove('show');
+      mediaSession(); render();
+    });
+    video.addEventListener('pause', function () { st.playing = false; render(); });
+    video.addEventListener('timeupdate', function () {
+      st.evtAlive = true;
+      if (isFinite(video.duration)) { st.dur = video.duration; st.live = false; }
+      else st.live = true;
+      st.cur = video.currentTime || 0;
+      render();
+    });
+    video.addEventListener('progress', function () {
+      try {
+        if (video.buffered.length && isFinite(video.duration) && video.duration > 0) {
+          st.buf = video.buffered.end(video.buffered.length - 1);
+        }
+      } catch (_) { /* noop */ }
+      render();
+    });
+    video.addEventListener('ended', function () {
+      if (st.loop) { try { video.currentTime = 0; video.play(); } catch (_) { /* noop */ } }
+      else { st.playing = false; render(); }
+    });
+    video.addEventListener('volumechange', function () {
+      st.vol = Math.round(video.volume * 100); st.muted = video.muted; render();
+    });
+    video.addEventListener('error', function () { if (video.error) directFail('پخش مستقیم خطا داد'); });
+
+    /* ---------- رویدادهای پلیر یوتیوب (embed) ---------- */
     window.addEventListener('message', function (e) {
       var o = e && e.origin ? String(e.origin) : '';
       if (o.indexOf('youtube') < 0) return;
@@ -356,7 +487,7 @@
         else if (inf.duration === 0) st.live = true;
         var vd = inf.videoData || {};
         if (vd.isLive === true) st.live = true;
-        if (typeof inf.volume === 'number') { st.vol = Math.round(inf.volume); }
+        if (typeof inf.volume === 'number') st.vol = Math.round(inf.volume);
         if (typeof inf.muted === 'boolean') st.muted = inf.muted;
         if (typeof inf.playbackRate === 'number') st.rate = inf.playbackRate;
         var ps = inf.playerState;
@@ -379,7 +510,7 @@
       }
     });
 
-    /* ---------- نردبان خطا: onError → nocookie → پنل فالبک ---------- */
+    /* ---------- نردبانِ خطای embed: onError → nocookie → پنل فالبک ---------- */
     var ERR_TXT = {
       2:   ['این آدرس ویدیوی معتبری ندارد', 'لینک ممکن است ناقص باشد — با «تلاش دوباره» یا «در مرورگر» امتحان کن.'],
       5:   ['پخش‌کنندهٔ یوتیوب خطا داد', 'معمولاً موقتی است — «تلاش دوباره» بزن یا با «پلیر سیستم» پخش کن.'],
@@ -395,7 +526,7 @@
         /* یک پله فالبک خودکار: دامنهٔ nocookie — بعضی ردشوها را پاس می‌کند */
         st.triedNC = true; st.nocookie = true;
         $('veilMsg').textContent = 'تلاش دوم با مسیر جایگزین یوتیوب…';
-        setTimeout(load, 350);
+        setTimeout(function () { frame.src = embedSrcUrl(); }, 350);
         return;
       }
       fail(t[0], t[1]);
@@ -408,11 +539,14 @@
       panel.classList.add('show');
       poke();
     }
-    /* ساعتِ نگهبان: ۱۴ ثانیه بدون هیچ رویداد زنده = مشکل واقعی (ولی پنل، پنجره را نمی‌بندد) */
+    /* ساعتِ نگهبان: پخش شروع نشد → نردبان/پنل — پنجره هرگز خودش بسته نمی‌شود */
     setInterval(function () {
       if (!vid || !st.loadedAt || st.evtAlive || panel.classList.contains('show')) return;
-      if (Date.now() - st.loadedAt > 14000) {
-        fail('پخش شروع نشد', 'اتصال به یوتیوب برقرار نشد — اینترنت/تحریم یا خطای سمت یوتیوب. می‌توانی با «پلیر سیستم» یا «در مرورگر» ببینی‌اش.');
+      var lim = engine === 'direct' ? 12000 : 14000;
+      if (Date.now() - st.loadedAt > lim) {
+        st.wdFired = true;
+        if (engine === 'direct') directFail('پخش مستقیم شروع نشد');
+        else fail('پخش شروع نشد', 'اتصال به یوتیوب برقرار نشد — اینترنت/تحریم یا خطای سمت یوتیوب. می‌توانی با «پلیر سیستم» یا «در مرورگر» ببینی‌اش.');
       }
     }, 2000);
 
@@ -425,91 +559,142 @@
       $('btnTop').classList.toggle('on', st.top);
       $('btnFs').classList.toggle('on', st.fs);
       $('rate').textContent = st.rate + '×';
+      $('qual').textContent = engine === 'direct' ? (quality === '360' ? '360p' : 'AUTO') : '—';
       document.body.classList.toggle('islive', !!st.live);
       if (!st.live) {
         $('tlabel').textContent = fmt(st.cur) + ' / ' + fmt(st.dur);
-        if (st.dur > 0 && document.activeElement !== $('seek')) $('seek').value = Math.min(1000, Math.round((st.cur / st.dur) * 1000));
+        if (st.dur > 0 && document.activeElement !== $('seek')) {
+          var pct = Math.min(1000, Math.round((st.cur / st.dur) * 1000));
+          $('seek').value = pct;
+          var b = st.dur > 0 ? Math.min(100, (st.buf / st.dur) * 100) : 0;
+          $('seek').style.background = 'linear-gradient(to right, #d4a017 ' + (pct / 10) + '%, rgba(212,160,23,0.35) ' + (pct / 10) + '%, rgba(212,160,23,0.35) ' + b + '%, rgba(255,255,255,0.22) ' + b + '%, rgba(255,255,255,0.22) 100%)';
+        }
       }
       if (document.activeElement !== $('vol')) $('vol').value = st.vol;
     }
 
     /* تیکِ UI: رویداد زنده؟ دقیق. ساکت؟ شمارش محلی (حالت شبیه‌سازی) */
     setInterval(function () {
-      if (st.playing && !st.live) {
+      if (st.playing && !st.live && engine === 'embed') {
         if (Date.now() - st.lastInfo > 3000) { st.cur += 1; if (st.dur && st.cur >= st.dur) { if (st.loop) { st.cur = 0; } else { st.playing = false; } } }
         render();
       }
     }, 1000);
 
-    /* ---------- کنترل پخش ---------- */
-    function toggle() {
-      if (st.playing) { cmd('pauseVideo', []); st.playing = false; }
-      else { cmd('playVideo', []); st.playing = true; if (panel.classList.contains('show')) { panel.classList.remove('show'); load(); } }
-      render(); poke();
-    }
-    function seekTo(s) {
+    /* ---------- کنترل پخش — دو موتور، یک زبان ---------- */
+    function pPlay() { if (engine === 'direct') { var p = video.play(); if (p && p.catch) p.catch(function () {}); } else cmd('playVideo', []); }
+    function pPause() { if (engine === 'direct') video.pause(); else cmd('pauseVideo', []); }
+    function pSeek(s) {
       s = Math.max(0, st.dur ? Math.min(st.dur - 1, s) : s);
-      cmd('seekTo', [Math.round(s), true]); st.cur = s; render(); poke();
+      if (engine === 'direct') { try { video.currentTime = s; } catch (_) { /* noop */ } }
+      else cmd('seekTo', [Math.round(s), true]);
+      st.cur = s; render(); poke();
     }
-    function setVol(v) {
+    function pVol(v) {
       v = Math.max(0, Math.min(100, Math.round(v)));
-      st.vol = v; st.muted = v === 0;
-      cmd('setVolume', [v]); if (v > 0 && st.muted) { cmd('unMute', []); st.muted = false; }
+      st.vol = v;
+      if (engine === 'direct') { video.volume = v / 100; video.muted = v === 0; st.muted = v === 0; }
+      else { cmd('setVolume', [v]); if (v > 0 && st.muted) { cmd('unMute', []); st.muted = false; } }
       render(); poke();
     }
-    function setRate(r) {
-      r = SIZES.indexOf(r) >= 0 ? r : 1;
-      st.rate = r; cmd('setPlaybackRate', [r]); render(); poke();
+    function pRate(r) {
+      r = RATES.indexOf(r) >= 0 ? r : 1;
+      st.rate = r;
+      if (engine === 'direct') video.playbackRate = r; else cmd('setPlaybackRate', [r]);
+      render(); poke();
     }
     function rateStep(dir) {
-      var i = SIZES.indexOf(st.rate); if (i < 0) i = 3;
-      setRate(SIZES[Math.max(0, Math.min(SIZES.length - 1, i + dir))]);
+      var i = RATES.indexOf(st.rate); if (i < 0) i = 3;
+      pRate(RATES[Math.max(0, Math.min(RATES.length - 1, i + dir))]);
     }
+    function toggle() {
+      if (st.playing) pPause(); else pPlay();
+      st.playing = !st.playing;
+      if (panel.classList.contains('show')) { panel.classList.remove('show'); load(); }
+      render(); poke();
+    }
+    function toggleMute() {
+      if (engine === 'direct') { video.muted = !video.muted; if (video.muted === false && st.vol === 0) pVol(50); }
+      else { if (st.muted) { cmd('unMute', []); st.muted = false; if (!st.vol) pVol(50); } else { cmd('mute', []); st.muted = true; } }
+      render(); poke();
+    }
+
+    /* ---------- تعویض کیفیت (Q / دکمه) ---------- */
+    function setQuality(q2) {
+      if (engine !== 'direct') { say('تعویض کیفیت فقط در حالت پخش مستقیم است'); return; }
+      if (!(AP && AP.stream)) { say('پل کیفیت در دسترس نیست'); return; }
+      say('در حال گرفتن کیفیت ' + (q2 === '360' ? '۳۶۰p' : 'بهترین') + '…');
+      var keep = st.cur;
+      AP.stream({ quality: q2 }).then(function (r) {
+        if (r && r.ok && r.url) {
+          streamSrc = r.url; payload.src = r.url; quality = r.quality || q2;
+          video.src = streamSrc;
+          var p = video.play();
+          if (p && p.catch) p.catch(function () {});
+          video.addEventListener('loadedmetadata', function once() {
+            video.removeEventListener('loadedmetadata', once);
+            try { if (keep > 1) video.currentTime = keep; } catch (_) { /* noop */ }
+          });
+          say('کیفیت: ' + (quality === '360' ? '۳۶۰p' : 'بهترین'));
+        } else say('این کیفیت در دسترس نبود');
+        render();
+      }).catch(function () { say('تعویض کیفیت ممکن نشد'); });
+    }
+
     /* زبان مشترک صوتی/میان‌بر — main با executeJavaScript همین را صدا می‌زند */
     window.__avaCtl = function (c) {
       c = c || {}; var a = c.a, arg = c.arg;
       try {
         if (a === 'play_pause') { toggle(); return { ok: true, playing: st.playing }; }
-        if (a === 'pause') { cmd('pauseVideo', []); st.playing = false; render(); return { ok: true, playing: false }; }
-        if (a === 'play') { cmd('playVideo', []); st.playing = true; render(); return { ok: true, playing: true }; }
-        if (a === 'seek') { seekTo(st.cur + (parseFloat(arg) || 10)); return { ok: true, cur: Math.round(st.cur) }; }
+        if (a === 'pause') { pPause(); st.playing = false; render(); return { ok: true, playing: false }; }
+        if (a === 'play') { pPlay(); st.playing = true; render(); return { ok: true, playing: true }; }
+        if (a === 'seek') { pSeek(st.cur + (parseFloat(arg) || 10)); return { ok: true, cur: Math.round(st.cur) }; }
         if (a === 'speed') {
           var m = String(arg == null ? '' : arg).toLowerCase();
           if (m === 'up') rateStep(1); else if (m === 'down') rateStep(-1);
-          else if (m === 'reset' || m === 'normal') setRate(1);
-          else { var v = parseFloat(m); setRate(SIZES.indexOf(v) >= 0 ? v : 1); }
+          else if (m === 'reset' || m === 'normal') pRate(1);
+          else { var v = parseFloat(m); pRate(RATES.indexOf(v) >= 0 ? v : 1); }
           return { ok: true, speed: st.rate };
         }
-        if (a === 'volume_up') { setVol(st.vol + 10); return { ok: true, vol: st.vol }; }
-        if (a === 'volume_down') { setVol(st.vol - 10); return { ok: true, vol: st.vol }; }
-        if (a === 'mute') { if (st.muted) { cmd('unMute', []); st.muted = false; if (!st.vol) setVol(50); } else { cmd('mute', []); st.muted = true; } render(); return { ok: true, muted: st.muted }; }
-        if (a === 'loop') { st.loop = arg === 'on' ? true : arg === 'off' ? false : !st.loop; render(); return { ok: true, loop: st.loop }; }
-        if (a === 'stop') { cmd('pauseVideo', []); cmd('seekTo', [0, true]); st.playing = false; st.cur = 0; render(); return { ok: true }; }
-        if (a === 'status') { return { ok: true, playing: st.playing, cur: Math.round(st.cur), dur: Math.round(st.dur), live: st.live, speed: st.rate, vol: st.vol, muted: st.muted, loop: st.loop }; }
+        if (a === 'volume_up') { pVol(st.vol + 10); return { ok: true, vol: st.vol }; }
+        if (a === 'volume_down') { pVol(st.vol - 10); return { ok: true, vol: st.vol }; }
+        if (a === 'mute') { toggleMute(); return { ok: true, muted: st.muted }; }
+        if (a === 'loop') { st.loop = arg === 'on' ? true : arg === 'off' ? false : !st.loop; if (engine === 'direct') video.loop = st.loop; render(); return { ok: true, loop: st.loop }; }
+        if (a === 'stop') { pPause(); pSeek(0); st.playing = false; st.cur = 0; render(); return { ok: true }; }
+        if (a === 'fullscreen') { winOp('fullscreen'); return { ok: true }; }
+        if (a === 'status') { return { ok: true, playing: st.playing, cur: Math.round(st.cur), dur: isFinite(st.dur) ? Math.round(st.dur) : 0, live: st.live, speed: st.rate, vol: st.vol, muted: st.muted, loop: st.loop, engine: engine }; }
         return { ok: false, error: 'اقدام ناشناخته: ' + a };
       } catch (err) { return { ok: false, error: String(err && err.message || err).slice(0, 120) }; }
     };
 
     /* ---------- اتصال نوار کنترل ---------- */
     $('btnPlay').addEventListener('click', toggle);
-    $('btnB10').addEventListener('click', function () { seekTo(st.cur - 10); });
-    $('btnF10').addEventListener('click', function () { seekTo(st.cur + 10); });
-    $('btnMute').addEventListener('click', function () { window.__avaCtl({ a: 'mute' }); });
+    $('btnB10').addEventListener('click', function () { pSeek(st.cur - 10); });
+    $('btnF10').addEventListener('click', function () { pSeek(st.cur + 10); });
+    $('btnMute').addEventListener('click', toggleMute);
     $('rate').addEventListener('click', function () { rateStep(1); });
     $('rate').addEventListener('contextmenu', function (e) { e.preventDefault(); rateStep(-1); });
+    $('qual').addEventListener('click', function () { setQuality(quality === '360' ? 'best' : '360'); });
     $('btnLoop').addEventListener('click', function () { window.__avaCtl({ a: 'loop' }); });
     var seekDrag = false;
     $('seek').addEventListener('pointerdown', function () { seekDrag = true; });
     $('seek').addEventListener('input', function () { if (st.dur) $('tlabel').textContent = fmt(($('seek').value / 1000) * st.dur) + ' / ' + fmt(st.dur); });
-    $('seek').addEventListener('change', function () { seekDrag = false; if (st.dur) seekTo(($('seek').value / 1000) * st.dur); });
-    $('vol').addEventListener('input', function () { setVol(parseInt($('vol').value, 10) || 0); });
+    $('seek').addEventListener('change', function () { seekDrag = false; if (st.dur) pSeek(($('seek').value / 1000) * st.dur); });
+    $('vol').addEventListener('input', function () { pVol(parseInt($('vol').value, 10) || 0); });
     function winOp(op, arg) { if (AP && AP.win) return AP.win(op, arg); return Promise.resolve({ ok: false }); }
-    $('btnPip').addEventListener('click', function () { winOp(st.pip ? 'unpip' : 'pip').then(function (r) { if (r && r.ok !== false) { st.pip = !st.pip; if (!st.pip) winOp('unpip'); render(); } }); });
+    $('btnPip').addEventListener('click', function () {
+      winOp(st.pip ? 'unpip' : 'pip').then(function (r) {
+        if (r && r.ok) { st.pip = !st.pip; render(); }
+        else if (r && r.ok === false && r.error) say(r.error);
+      });
+    });
     $('btnTop').addEventListener('click', function () { winOp('top').then(function (r) { if (r && r.ok) { st.top = !!r.top; render(); } }); });
     $('btnFs').addEventListener('click', function () { winOp('fullscreen').then(function (r) { if (r && r.ok) { st.fs = !!r.fs; render(); } }); });
     $('btnMore').addEventListener('click', function () { $('help').classList.remove('show'); $('opts').classList.toggle('show'); poke(); });
     $('btnKeys').addEventListener('click', function () { $('opts').classList.remove('show'); $('help').classList.toggle('show'); poke(); });
     $('btnBrowser').addEventListener('click', function () { winOp('browser'); });
+    $('btnCopy').addEventListener('click', function () { winOp('copyurl').then(function (r) { say(r && r.ok ? 'لینک کپی شد' : 'کپی ممکن نشد'); }); });
+    $('btnShot').addEventListener('click', function () { winOp('shot').then(function (r) { say(r && r.ok ? 'اسکرین‌شات ذخیره شد' : 'اسکرین‌شات ممکن نشد'); }); });
     $('btnReload').addEventListener('click', load);
     $('btnClose').addEventListener('click', function () { window.close(); });
     $('btnClose2').addEventListener('click', function () { window.close(); });
@@ -523,8 +708,14 @@
       [].forEach.call($('opRow').children, function (x) { x.classList.remove('on'); }); b.classList.add('on');
       winOp('opacity', b.getAttribute('data-op')); poke();
     });
+    $('monRow').addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('button[data-mon]') : null; if (!b) return;
+      winOp('monitor', b.getAttribute('data-mon')).then(function (r) { if (r && !r.ok && r.error) say(r.error); });
+      poke();
+    });
     $('panelRetry').addEventListener('click', load);
     $('panelDismiss').addEventListener('click', function () { panel.classList.remove('show'); });
+    $('panelEmbed').addEventListener('click', function () { st.nocookie = false; embedLoad('پخش با یوتیوب…'); });
     $('panelBrowser').addEventListener('click', function () { winOp('browser'); });
     $('panelSys').addEventListener('click', function () {
       if (!(AP && AP.sys)) return fail('پلیر سیستم در دسترس نیست', 'این نسخه از آوا پل preload ندارد — آوا را به‌روزرسانی کن.');
@@ -541,6 +732,58 @@
 
     /* ---------- فول‌اسکرین از سمت main (همگام‌سازی آیکون) ---------- */
     if (AP && AP.onFs) AP.onFs(function (v) { st.fs = !!v; render(); });
+
+    /* ---------- ناوبری درجا — ویدیوی نو در همین پنجره ---------- */
+    function apply(p2) {
+      p2 = p2 || {};
+      vid = String(p2.videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
+      payload.videoId = vid;
+      payload.start = parseInt(p2.start, 10) || 0;
+      setTitle(String(p2.title || ''));
+      streamSrc = String(p2.src || '');
+      quality = (p2.quality === '360') ? '360' : 'best';
+      $('qual').textContent = quality === '360' ? '360p' : 'AUTO';
+      st.triedNC = false; st.nocookie = false; st.tried360 = false; st.wdFired = false;
+      st.pip = false; st.top = false;
+      applyEng(p2.engine);
+      load();
+    }
+    if (AP && AP.onNavigate) AP.onNavigate(apply);
+
+    /* ---------- بارگذاری بر اساس موتور ---------- */
+    function load() {
+      st.playing = false; st.cur = 0; st.dur = 0; st.buf = 0; st.live = false;
+      st.evtAlive = false; st.loadedAt = Date.now(); st.wdFired = false;
+      panel.classList.remove('show');
+      if (!vid) {
+        veil.classList.remove('off');
+        $('veilMsg').textContent = 'ویدیویی برای پخش مشخص نشد';
+        veil.querySelector('.ring').style.display = 'none';
+        return;
+      }
+      if (engine === 'direct' && streamSrc) directLoad();
+      else if (engine === 'direct' && !streamSrc) directFresh();
+      else embedLoad();
+      poke();
+    }
+
+    /* ---------- MediaSession (موتور مستقیم) ---------- */
+    function mediaSession() {
+      if (engine !== 'direct' || !('mediaSession' in navigator)) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title || 'آوا پلیر',
+          artist: 'YouTube',
+          artwork: [{ src: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg', sizes: '480x360', type: 'image/jpeg' }],
+        });
+        navigator.mediaSession.setActionHandler('play', function () { pPlay(); });
+        navigator.mediaSession.setActionHandler('pause', function () { pPause(); });
+        navigator.mediaSession.setActionHandler('seekbackward', function () { pSeek(st.cur - 10); });
+        navigator.mediaSession.setActionHandler('seekforward', function () { pSeek(st.cur + 10); });
+        navigator.mediaSession.setActionHandler('previoustrack', function () { pSeek(st.cur - 10); });
+        navigator.mediaSession.setActionHandler('nexttrack', function () { pSeek(st.cur + 10); });
+      } catch (_) { /* noop */ }
+    }
 
     /* ---------- ظاهر/محو نوارها + ماوس ---------- */
     var hideT = 0;
@@ -566,31 +809,37 @@
       if (k === 'Escape') {
         if (document.fullscreenElement || st.fs) { winOp('fullscreen'); return; }
         $('opts').classList.remove('show'); $('help').classList.remove('show');
-        if (e.key === 'Escape' && !document.fullscreenElement) { window.close(); }
+        window.close();
         return;
       }
       if (k === ' ' || k === 'Spacebar' || k === 'k' || k === 'K') { e.preventDefault(); toggle(); return; }
-      if (k === 'ArrowLeft' || k === 'j' || k === 'J') { e.preventDefault(); seekTo(st.cur - (k === 'ArrowLeft' && !e.shiftKey ? 5 : 10)); return; }
-      if (k === 'ArrowRight' || k === 'l' || k === 'L') { e.preventDefault(); seekTo(st.cur + (k === 'ArrowRight' && !e.shiftKey ? 5 : 10)); return; }
-      if (k === 'ArrowUp') { e.preventDefault(); setVol(st.vol + 10); return; }
-      if (k === 'ArrowDown') { e.preventDefault(); setVol(st.vol - 10); return; }
-      if (k === 'm' || k === 'M') { window.__avaCtl({ a: 'mute' }); return; }
+      if (k === 'ArrowLeft' || k === 'j' || k === 'J') {
+        e.preventDefault();
+        pSeek(st.cur - (k === 'ArrowLeft' ? (e.shiftKey ? 30 : 5) : 10));
+        return;
+      }
+      if (k === 'ArrowRight' || k === 'l' || k === 'L') {
+        e.preventDefault();
+        pSeek(st.cur + (k === 'ArrowRight' ? (e.shiftKey ? 30 : 5) : 10));
+        return;
+      }
+      if (k === 'ArrowUp') { e.preventDefault(); pVol(st.vol + 10); return; }
+      if (k === 'ArrowDown') { e.preventDefault(); pVol(st.vol - 10); return; }
+      if (k === 'm' || k === 'M') { toggleMute(); return; }
       if (k === 'r' || k === 'R') { window.__avaCtl({ a: 'loop' }); return; }
       if (k === 't' || k === 'T') { $('btnTop').click(); return; }
       if (k === 'p' || k === 'P') { $('btnPip').click(); return; }
       if (k === 'f' || k === 'F') { $('btnFs').click(); return; }
+      if (k === 'q' || k === 'Q') { setQuality(quality === '360' ? 'best' : '360'); return; }
+      if (k === 'c' || k === 'C') { $('btnCopy').click(); return; }
       if (k === '?' || k === '/') { $('help').classList.toggle('show'); poke(); return; }
       if (k === '.' || k === '>') { rateStep(1); return; }
       if (k === ',' || k === '<') { rateStep(-1); return; }
-      if (/^[0-9]$/.test(k) && st.dur) { seekTo((parseInt(k, 10) / 10) * st.dur); return; }
+      if (/^[0-9]$/.test(k) && st.dur) { pSeek((parseInt(k, 10) / 10) * st.dur); return; }
     });
 
     /* ---------- شروع ---------- */
-    if (vid) load();
-    else {
-      $('veilMsg').textContent = 'ویدیویی برای پخش مشخص نشد';
-      veil.querySelector('.ring').style.display = 'none';
-    }
+    load();
   })();
 </script>
 </body>

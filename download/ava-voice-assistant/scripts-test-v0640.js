@@ -90,7 +90,7 @@ ok(/via: 'win-ctl', count: wr\.count \|\| 1/.test(mainSrc), 'پاسخ player:ctl
 ok(/function playerWindowCtl\(kind, arg, all\)/.test(mainSrc), 'playerWindowCtl — حالت all');
 ok(/foreach\(\$p in \$ps\)\{ /.test(mainSrc), 'all-mode — حلقهٔ foreach روی همهٔ پروسس‌ها');
 ok(/noPlayer: true, error: 'پلیری باز نیست — اول ویدیو یا آهنگ را پخش کن'/.test(mainSrc), 'کلید مدیا بدون پلیر = پاسخ صادقانه (نه شلیک به برنامهٔ فعال)');
-ok(/!playerCtl\.player\) \{\s*\n\s*const nOpen = \(await runningVideoPlayers\(\)\)( \+ avaPlayers\.size)?;/.test(mainSrc), 'گاردِ پلیرِ خالی فقط وقتی آوا پلیری ثبت نکرده (v0.83: پلیر آوا هم شمرده می‌شود)');
+ok(/!playerCtl\.player\) \{\s*\n\s*const nOpen = \(await runningVideoPlayers\(\)\)( \+ (avaPlayers\.size|AP\.size\(\)))?;/.test(mainSrc), 'گاردِ پلیرِ خالی فقط وقتی آوا پلیری ثبت نکرده (v0.85: شمارش از AP.size)');
 
 /* ---------- [3] renderer — تایپ مقصد-درست ---------- */
 section('3] renderer — typeOnceExec مقصد-درست + دیکته');

@@ -27,6 +27,7 @@ const cssSrc = read('renderer/css/styles.css');
 const intentSrc = read('renderer/js/voiceIntent.js');
 let playerHtmlSrc = '';
 try { playerHtmlSrc = read('renderer/ava-player.html'); } catch (_) { /* noop */ }
+const modSrc = read('lib/ava-player.js');
 
 /* ---------- ۱) هالهٔ فعال — v0.83.1 آرام و هم‌رنگ تم (ریلکس رو-به-جلو) ---------- */
 console.log('\n[1] هالهٔ فعال دور میکروفون — آرام و هم‌رنگ هر تم (v0.83.1)');
@@ -95,32 +96,34 @@ ok('خوش‌آمدگویی: گرادیان طلاییِ آرام بلوک 0.82 
 console.log('\n[3] پلیر آوا (embed رسمی یوتیوب) — پخش تضمینی');
 ok('صفحهٔ پلیر: renderer/ava-player.html وجود دارد + iframe یوتیوب (v0.84: دامنهٔ قابل‌تعویض nocookie)',
   playerHtmlSrc.includes('/embed/') && playerHtmlSrc.includes("'https://www.youtube.com'") && playerHtmlSrc.includes('autoplay=1'));
-ok('صفحهٔ پلیر: نوار شیشه‌ای خود-پنهان + دکمه‌های مرورگر/پخش‌مجدد/بستن + Esc',
+ok('صفحهٔ پلیر: نوار شیشه‌ای خود-پنهان + دکمه‌های مرورگر/پخش‌مجدد/بستن + Esc (v0.85: k === Escape)',
   playerHtmlSrc.includes('id="btnBrowser"') && playerHtmlSrc.includes('id="btnReload"') &&
-  playerHtmlSrc.includes("e.key === 'Escape'"));
+  /(?:e\.key|k) === 'Escape'/.test(playerHtmlSrc));
 ok('صفحهٔ پلیر: پردهٔ اتصال با حالت خطا/راهنما (اگر یوتیوب نرسید)',
   playerHtmlSrc.includes('id="veil"') && playerHtmlSrc.includes('در مرورگر'));
-ok('main.js: رجیستری avaPlayers + pid منفی متوالی (هرگز با PID ویندوز اشتباه نمی‌شود)',
-  mainSrc.includes('const avaPlayers = new Map()') && mainSrc.includes('const apid = --avaPlayerSeq'));
+ok('ماژول: رجیستری players + pid منفی متوالی (هرگز با PID ویندوز اشتباه نمی‌شود) — v0.85',
+  modSrc.includes('const players = new Map()') && modSrc.includes('const apid = --seq'));
 ok('main.js: autoplayPolicy بدون ژست + sandbox + contextIsolation در پنجرهٔ پلیر',
   mainSrc.includes("autoplayPolicy: 'no-user-gesture-required'") &&
   /ava-player\.html[\s\S]{0,600}sandbox: true/.test(mainSrc.replace(/\n/g, ' ')) === false ? mainSrc.includes('sandbox: true') : true);
 ok('main.js: setWindowOpenHandler → مرورگر خارجی (پنجرهٔ نو داخل آوا ممنوع)',
   mainSrc.includes('setWindowOpenHandler'));
-ok('main.js: avaPlayerPlay — عنوان با oEmbed زنده به‌روز می‌شود',
-  mainSrc.includes('async function ytTitleOf') && mainSrc.includes('youtube.com/oembed'));
-ok('main.js: avaPlayerPlay پلیرهای قبلی (خارجی + آوا) را می‌بندد — تک‌لاین حفظ شود',
-  /async function avaPlayerPlay[\s\S]{0,900}closeAllVideoPlayers\(\)[\s\S]{0,400}closeAvaPlayers\(\)/.test(mainSrc));
-ok('بحرانی: closeVideoByPid هرگز روی pid منفی PowerShell/Stop-Process اجرا نمی‌کند',
-  /function closeVideoByPid\(pid\) \{[\s\S]{0,300}if \(pidN < 0\) \{[\s\S]{0,400}en\.win\.close\(\)/.test(mainSrc));
-ok('بحرانی: focusPlayerWindow pid منفی → فوکوس بومی + NOWIN → فالبک پلیر آوا',
-  /function focusPlayerWindow\(pidHint\) \{[\s\S]{0,260}if \(pidN0 < 0\) \{/.test(mainSrc) &&
-  mainSrc.includes('avaAvaFocusNewest()'));
+ok('ماژول: avaPlayerPlay — عنوان با oEmbed زنده به‌روز می‌شود — v0.85',
+  modSrc.includes('async function ytTitleOf') && modSrc.includes('youtube.com/oembed'));
+ok('ماژول: play پلیرهای قبلی (خارجی) را می‌بندد + آوایی‌ها navigate/بستن — تک‌لاین حفظ شود — v0.85',
+  /async function play\(src, opts\)[\s\S]{0,900}closeAllExternalVideoPlayers\(\)[\s\S]{0,300}closeEntry\(en\)/.test(modSrc));
+ok('بحرانی: closeVideoByPid روی pid منفی فقط بومیِ ماژول است (هرگز PowerShell/Stop-Process) — v0.85',
+  mainSrc.includes('if (pidN < 0) return avaCloseByPid(pidN);') &&
+  /function closeByPid\(pid\) \{[\s\S]{0,400}closeEntry\(en\)/.test(modSrc));
+ok('بحرانی: focusPlayerWindow pid منفی → فوکوس بومی ماژول + NOWIN → فالبک پلیر آوا — v0.85',
+  /function focusPlayerWindow\(pidHint\) \{[\s\S]{0,260}if \(pidN0 < 0\) return avaFocusByPid\(pidN0\);/.test(mainSrc) &&
+  mainSrc.includes('avaAvaFocusNewest()') && /function focusNewest\(\)/.test(modSrc));
 ok('videoWinList: پنجره‌های پلیر آوا در فهرست (proc=ava-player) + مرتب‌سازی سنی',
   mainSrc.includes("proc: 'ava-player'") && mainSrc.includes('wins.sort((a, b) => a.ageSec - b.ageSec)'));
-ok('videoWinOps: pid منفی → عملیات بومی (PIP/سایز/شفافیت/مانیتور/شات بدون PowerShell)',
+ok('videoWinOps: pid منفی → عملیات بومی ماژول (PIP/سایز/شفافیت/مانیتور/شات بدون PowerShell) — v0.85',
   mainSrc.includes('if (pidN < 0) return avaPlayerOp(kind, arg, pidN);') &&
-  mainSrc.includes('async function avaPlayerOpAll'));
+  mainSrc.includes('const avaPlayerOpAll = (kind, arg) => AP.opAll(kind, arg);') &&
+  /async function opAll\(kind, arg\)/.test(modSrc));
 ok('player:ctl: pid منفی به مسیر بستن هدفمند می‌آید + fullscreen پلیر آوا فقط کلید F',
   mainSrc.includes('if (Number(p.pid) || /^ord:\\d+$/.test(tgt))') &&
   mainSrc.includes("if (/ava-player/.test(s)) return [VK.f];"));
@@ -140,8 +143,9 @@ ok('openWithDefaultPlayer: مسیر مستقیم AI هم به پلیر آوا م
   mainSrc.includes("if (d.action === 'ava-player') return avaPlayerPlay(url, { reason: 'ai-direct' });"));
 ok('closeAllVideoTargets: «همه رو ببند» پلیر آوا را هم می‌بندد (۴ نقطهٔ مصرف)',
   (mainSrc.match(/await closeAllVideoTargets\(\)/g) || []).length >= 4);
-ok('runningVideoTargets: شمارش «پلیری باز نیست» پلیر آوا را هم می‌بیند',
+ok('runningVideoTargets: شمارش «پلیری باز نیست» پلیر آوا را هم می‌بیند (v0.85: n + AP.size)',
   mainSrc.includes('async function runningVideoTargets()') &&
+  mainSrc.includes('return n + AP.size();') &&
   (mainSrc.match(/await runningVideoTargets\(\)/g) || []).length >= 3);
 ok('voiceIntent: «پلیر آوا» به‌عنوان هدف پلیر شناخته می‌شود',
   intentSrc.includes("if (/پلیر\\s?آوا|پلیرِ?\\s?اوا|ava\\s?player/i.test(s)) return 'ava';"));

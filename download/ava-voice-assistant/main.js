@@ -4332,12 +4332,8 @@ function psPathSafe(s) { return String(s || '').replace(/'/g, "''"); }
 function focusPlayerWindow(pidHint) {
   /* v0.83 — pid منفی = پنجرهٔ پلیر آوا: فوکوس بومی Electron (هرگز PowerShell) */
   const pidN0 = parseInt(pidHint, 10) || 0;
-  if (pidN0 < 0) {
-    const en0 = avaPlayers.get(pidN0);
-    if (!en0) return Promise.resolve({ ok: false, error: 'پنجرهٔ پلیر آوا پیدا نشد' });
-    try { if (en0.win.isMinimized()) en0.win.restore(); en0.win.show(); en0.win.focus(); } catch (_) { /* noop */ }
-    return Promise.resolve({ ok: true, proc: 'ava-player' });
-  }
+  /* v0.85 — pid منفی = پنجرهٔ پلیر آوا: فوکوس بومی از ماژولِ بازساخته */
+  if (pidN0 < 0) return avaFocusByPid(pidN0);
   const pidN = pidN0;
   const known = playerCtl.exe ? psPathSafe(path.basename(playerCtl.exe, '.exe')) : '';
   const ps =
@@ -4359,7 +4355,7 @@ function focusPlayerWindow(pidHint) {
         const out = String(so || '').trim();
         if (out.indexOf('NOWIN') >= 0) {
           /* v0.83 — پنجرهٔ خارجی نیست ولی شاید پلیر آوا باز باشد */
-          if (avaPlayers.size && avaAvaFocusNewest()) return resolve({ ok: true, proc: 'ava-player' });
+          if (AP.size() && avaAvaFocusNewest()) return resolve({ ok: true, proc: 'ava-player' });
           return resolve({ ok: false, error: 'پنجرهٔ پلیری پیدا نشد' });
         }
         const m = out.match(/^(OK|FOC)\s+(.+)$/m);
@@ -4520,7 +4516,7 @@ function videoWinOps(op, arg, opts) {
   const pidN = parseInt(opts && opts.pid, 10) || 0;
   if (pidN < 0) return avaPlayerOp(kind, arg, pidN);
   /* v0.83 — بدون هدف صریح ولی پلیر آوا باز است: بومی روی آوا + PS روی خارجی‌ها، ادغام نتایج */
-  if (!pidN && avaPlayers.size) {
+  if (!pidN && AP.size()) {
     return Promise.all([psRun(), avaPlayerOpAll(kind, arg)]).then(([psr, avr]) => {
       if (avr && avr.ok && psr && psr.ok) return { ok: true, count: avr.count + (psr.count || 0), op: kind, path: avr.path || psr.path };
       if (avr && avr.ok) return avr;
@@ -4576,14 +4572,8 @@ function videoWinList() {
             if (m) wins.push({ pid: +m[1], proc: m[2], ageSec: parseInt(m[3], 10) || 0, x: +m[4], y: +m[5], w: +m[6], h: +m[7], title: m[8].trim() });
           }
         }
-        /* v0.83 — پنجره‌های پلیر آوا (pid منفی) در همان فهرست — شفاف‌سازی/بستن اردینال/سوییچ همه کار می‌کنند */
-        for (const [apid, en] of avaPlayers) {
-          try {
-            const b = en.win.getBounds();
-            wins.push({ pid: apid, proc: 'ava-player', ageSec: Math.max(0, Math.floor((Date.now() - en.at) / 1000)),
-              x: b.x, y: b.y, w: b.width, h: b.height, title: 'آوا پلیر' + (en.title ? ' — ' + en.title : '') });
-          } catch (_) { /* noop */ }
-        }
+        /* v0.85 — پنجره‌های پلیر آوا (pid منفی) از ماژولِ بازساخته */
+        for (const aw of avaListEntries()) wins.push(aw);
         wins.sort((a, b) => a.ageSec - b.ageSec);
         if (!wins.length && err) return resolve({ ok: false, error: 'فهرست پلیرها نگرفت (' + String(err.message || '').slice(0, 60) + ')' });
         resolve({ ok: true, wins });
@@ -4595,15 +4585,8 @@ function videoWinList() {
 function closeVideoByPid(pid) {
   const pidN = parseInt(pid, 10) || 0;
   if (!pidN) return Promise.resolve({ ok: false, error: 'شناسهٔ پنجره نامعتبر است' });
-  /* v0.83 — pid منفی = پلیر آوا: بستن بومی (هرگز Stop-Process — PID واقعیِ خود آوا است) */
-  if (pidN < 0) {
-    const en = avaPlayers.get(pidN);
-    if (!en) return Promise.resolve({ ok: false, error: 'پنجرهٔ مورد نظر پیدا نشد — شاید قبلاً بسته شده' });
-    try { en.win.close(); } catch (_) { /* noop */ }
-    setTimeout(() => { try { if (avaPlayers.has(pidN) && !en.win.isDestroyed()) en.win.destroy(); } catch (_) { /* noop */ } }, 1200);
-    if (playerCtl.activePid === pidN) playerCtl.activePid = 0;
-    return Promise.resolve({ ok: true, closed: 1, total: 1, pid: pidN, closedTitle: 'آوا پلیر' + (en.title ? ' — ' + en.title : '') });
-  }
+  /* v0.85 — pid منفی = پلیر آوا: بستن بومی از ماژول (هرگز Stop-Process — PID واقعیِ خود آوا است) */
+  if (pidN < 0) return avaCloseByPid(pidN);
   const ps =
     "$ErrorActionPreference='SilentlyContinue'; " +
     "Add-Type -Namespace W -Name N -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'; " +
@@ -4665,315 +4648,51 @@ async function videoSwitchTarget(which) {
 }
 
 /* ============================================================
-   ۶.۵) پلیر آوا (v0.83) — ری‌ورک کامل منطق پخش یوتیوب
+   ۶.۵) پلیر آوا (v0.85) — بازساختِ کامل: ماژولِ مستقل lib/ava-player.js
    ────────────────────────────────────────────────────────────
-   ریشهٔ شکایت مکرر کاربر («اصلا بالا نمی‌آید»، «هنوزم مشکل دارد»):
-   مسیر yt-dlp → پلیر سیستم مرتب می‌شکند (yt-dlp کهنه، دیوار ربات،
-   URL منقضی، TLS اپراتور، سکوتِ طولانی تا فالبک). درمان ساختاری:
-   «پلیر آوا» — پنجرهٔ frameless خود آوا با embed رسمی یوتیوب:
-   • بدون yt-dlp و بدون دیوار ربات؛ همیشه و در ≤۲ ثانیه پخش می‌شود
-   • مسیر پیش‌فرض یوتیوب حالا پلیر آواست؛ پلیر صریح (پت‌پلیر/VLC/…)
-     همان مسیر yt-dlp، اما شکستش دیگر به مرورگر نمی‌رود — به پلیر آوا
-     می‌رسد؛ مرورگر آخرین طبقه شد.
-   مدیریت پنجره: pid «منفی» (هرگز با PID واقعی ویندوز اشتباه نمی‌شود)
-   تا taskkill/Stop-Process هرگز روی پروسهٔ خود آوا اجرا نشود — بستن/
-   فوکوس/PIP/شفافیت/مانیتور/شاتِ این پنجره‌ها همه بومی Electron است.
+   ریشهٔ «کار نمی‌کند» (لاگ میدانی): embed یوتیوب با «Video player
+   configuration error (133/153)» رد می‌شود — ردِ سمتِ یوتیوب و
+   سطحِ IP/ربات‌یابی است؛ Referer/nocookie قطعی‌اش نمی‌کنند.
+   معماریِ نو (همهٔ جزئیات در ماژول):
+   • موتور ۱ «مستقیم»: yt-dlp → استریمِ تک‌فایلی mp4/webm → <video>
+     محلی — embed در کار نیست؛ خطای ۱۳۳ از اساس ناممکن می‌شود.
+   • موتور ۲ «embed»: فقط وقتی استخراجِ مستقیم نشد.
+   • موتور ۳/۴ «پلیر سیستم/مرورگر»: همیشه در دسترس.
+   پنجره: تک‌پنجرهٔ بازاستفاده — ویدیوی نو در همان پنجره navigate
+   می‌شود (aplayer:navigate)؛ الگوی «بستن-بعد-بازکردن» (ریشهٔ
+   تاریخی «باز می‌شود و درجا می‌میرد») از ساختار حذف شده است؛
+   هیچ تایمرِ destroy روی مسیرهای عادی وجود ندارد. اینجا فقط
+   سیم‌کشی و نام‌های قدیمی برای بقیهٔ main.js.
    ============================================================ */
-const avaPlayers = new Map(); /* apid(منفی) → { win, videoId, title, at, prev } */
-let avaPlayerSeq = 0;
-function ytIdOf(raw) {
-  const u = String(raw || '');
-  const m = u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/|\/v\/))([A-Za-z0-9_-]{11})/);
-  if (!m) return null;
-  let start = 0;
-  try {
-    const q = new URL(u);
-    const t = String(q.searchParams.get('t') || q.searchParams.get('start') || '');
-    const hm = t.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/);
-    if (hm && t) start = (parseInt(hm[1], 10) || 0) * 3600 + (parseInt(hm[2], 10) || 0) * 60 + (parseInt(hm[3], 10) || 0);
-    else if (/^\d+$/.test(t)) start = parseInt(t, 10) || 0;
-  } catch (_) { /* noop */ }
-  return { id: m[1], start };
-}
-async function ytTitleOf(videoId) {
-  try {
-    const r = await cloudFetch('https://www.youtube.com/oembed?format=json&url=' +
-      encodeURIComponent('https://www.youtube.com/watch?v=' + videoId), { signal: AbortSignal.timeout(4000) });
-    if (!r.ok) return '';
-    const j = await r.json();
-    return String((j && j.title) || '').slice(0, 120);
-  } catch (_) { return ''; }
-}
-function avaPlayerOpen(videoId, title, startSec) {
-  const apid = --avaPlayerSeq; /* -1, -2, … — منفی */
-  const win = new BrowserWindow({
-    width: 960, height: 562, minWidth: 420, minHeight: 260,
-    show: false, frame: false, backgroundColor: '#050507',
-    title: 'آوا پلیر', autoHideMenuBar: true,
-    webPreferences: {
-      contextIsolation: true, nodeIntegration: false, sandbox: true,
-      spellcheck: false, autoplayPolicy: 'no-user-gesture-required',
-      /* v0.84 — پلِ امن گزینه‌های پلیر + سشن اختصاصی (تزریق Referer) */
-      preload: path.join(__dirname, 'renderer', 'ava-player-preload.js'),
-      partition: 'aplayer',
-    },
-  });
-  win.setMenuBarVisibility(false);
-  avaPlayerRef();
-  avaPlayers.set(apid, { win, wc: win.webContents.id, videoId, title: String(title || ''), at: Date.now(), prev: null });
-  win.on('closed', () => {
-    try { avaPlayers.delete(apid); } catch (_) { /* noop */ }
-    if (playerCtl.activePid === apid) playerCtl.activePid = 0;
-  });
-  /* v0.84 — آیکون فول‌اسکرین صفحه با وضعیت واقعی پنجره همگام بماند */
-  const sendFs = (v) => { try { if (!win.isDestroyed()) win.webContents.send('aplayer:fs', v); } catch (_) { /* noop */ } };
-  win.on('enter-full-screen', () => sendFs(true));
-  win.on('leave-full-screen', () => sendFs(false));
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    /* لینک‌های پنجرهٔ پلیر → مرورگر خارجی (نه پنجرهٔ نو آوا) */
-    try { shell.openExternal(url); } catch (_) { /* noop */ }
-    return { action: 'deny' };
-  });
-  win.loadFile(path.join(__dirname, 'renderer', 'ava-player.html'), {
-    query: { v: videoId, t: String(title || '').slice(0, 110), start: startSec ? String(startSec) : '' },
-  }).catch(() => { /* noop */ });
-  win.once('ready-to-show', () => { try { win.show(); win.focus(); } catch (_) { /* noop */ } });
-  return apid;
-}
-
-/* ---------- v0.84 — فیکس ریشه‌ای «Video player configuration error (133/153)» ----------
-   از پاییز ۲۰۲۵ یوتیوب embedِ بدون Referer معتبر را رد می‌کند؛ صفحهٔ پلیر از
-   file:// بار می‌شود و مرورگر برای file:// هرگز Referer نمی‌فرستد → ویدیو
-   (مخصوصاً لایوها) با خطای پیکربندی رد می‌شود. درمان قطعی در لایهٔ شبکه:
-   سشن اختصاصی «aplayer» + تزریق Referer روی همهٔ درخواست‌های یوتیوبِ همین
-   سشن — بقیهٔ اپ دست‌نخورده می‌ماند. */
-let applayerRefDone = false;
-function avaPlayerRef() {
-  if (applayerRefDone) return;
-  applayerRefDone = true;
-  try {
-    const ses = session.fromPartition('aplayer');
-    ses.webRequest.onBeforeSendHeaders(
-      { urls: ['*://*.youtube.com/*', '*://*.youtube-nocookie.com/*'] },
-      (det, cb) => {
-        const h = det.requestHeaders || {};
-        h['Referer'] = 'https://www.youtube.com/';
-        cb({ requestHeaders: h });
-      }
-    );
-  } catch (_) { /* noop */ }
-}
-/* پنجرهٔ فرستندهٔ IPC → apid (webContents.id در زمان باز شدن ثبت شده) */
-function apidOfSender(sender) {
-  try {
-    const wc = sender && sender.id;
-    if (!wc) return 0;
-    for (const [apid, en] of avaPlayers) { if (en.wc === wc) return apid; }
-  } catch (_) { /* noop */ }
-  return 0;
-}
-/* v0.84 — گزینه‌های پنجره از خود پلیر (preload → aplayer:win) */
-ipcMain.handle('aplayer:win', (_e, p) => {
-  const apid = apidOfSender(_e.sender);
-  const en = apid ? avaPlayers.get(apid) : null;
-  if (!en || !en.win || en.win.isDestroyed()) return { ok: false, error: 'پنجرهٔ پلیر پیدا نشد' };
-  const win = en.win;
-  const op = String((p && p.op) || '');
-  try {
-    if (op === 'fullscreen') {
-      const want = p.arg === true || p.arg === false ? p.arg : !win.isFullScreen();
-      win.setFullScreen(want);
-      try { if (want) { win.show(); win.focus(); } } catch (_) { /* noop */ }
-      return { ok: true, fs: want };
-    }
-    if (op === 'top') {
-      const want = p.arg === true || p.arg === false ? p.arg : !win.isAlwaysOnTop();
-      win.setAlwaysOnTop(want, 'screen-saver');
-      return { ok: true, top: want };
-    }
-    if (op === 'pip' || op === 'unpip') { const r = avaPlayerOp(op, '', apid); return { ok: !!r.ok, pip: op === 'pip' }; }
-    if (op === 'size') { const r = avaPlayerOp('size', String(p.arg || 'medium'), apid); return { ok: !!r.ok, size: String(p.arg || 'medium') }; }
-    if (op === 'opacity') { const r = avaPlayerOp('opacity', parseInt(p.arg, 10) || 100, apid); return { ok: !!r.ok, opacity: parseInt(p.arg, 10) || 100 }; }
-    if (op === 'close') { win.close(); return { ok: true }; }
-    if (op === 'browser') {
-      const u = 'https://www.youtube.com/watch?v=' + en.videoId;
-      try { shell.openExternal(u); return { ok: true, url: u }; } catch (e) { return { ok: false, error: netErr(e) }; }
-    }
-    return { ok: false, error: 'اقدام ناشناخته: ' + op };
-  } catch (e) { return { ok: false, error: netErr(e) }; }
+const AP = require('./lib/ava-player.js')({
+  BrowserWindow, ipcMain, session, shell, screen, app, clipboard, exec,
+  playerCtl, actLog, netErr, cloudFetch,
+  closeAllExternalVideoPlayers: closeAllVideoPlayers,
+  playersScan, defaultVideoPlayer, playerLaunch, ytDlpFind, resolveYtStream,
 });
-/* v0.84 — «پخش با پلیر سیستم» از خود پلیر: yt-dlp → پت‌پلیر/VLC/… —
-   موفق → همین پنجرهٔ آوا بسته می‌شود؛ شکست → پاسخ صادقانه به صفحه */
-ipcMain.handle('aplayer:sys', async (_e) => {
-  const apid = apidOfSender(_e.sender);
-  const en = apid ? avaPlayers.get(apid) : null;
-  if (!en) return { ok: false, error: 'پنجرهٔ پلیر پیدا نشد' };
-  const url = 'https://www.youtube.com/watch?v=' + en.videoId;
-  try {
-    const r = await resolveYtStream(url);
-    if (!r.ok) return { ok: false, noYtdl: true, error: r.error || 'استریم یوتیوب استخراج نشد' };
-    const scan = await playersScan();
-    const def = await defaultVideoPlayer();
-    const pl = (def.id && scan.list.some((x) => x.id === def.id)) ? def.id : ((scan.list.find((x) => x.id !== 'wmplayer') || scan.list[0]) || {}).id || '';
-    if (!pl) return { ok: false, error: 'پلیر ویدیویی روی سیستم پیدا نشد' };
-    const lr = await playerLaunch(pl, r.url, { ytdl: false });
-    if (!lr.ok) return { ok: false, error: lr.error || 'بازکردن در پلیر سیستم ممکن نشد' };
-    playerCtl.player = pl; playerCtl.activePid = 0; playerCtl.activeProc = pl; playerCtl.ytUrl = url;
-    playerCtl.exe = lr.exe || playerCtl.exe || ''; playerCtl.speed = 1; playerCtl.vlcBase = '';
-    actLog('ava-player → system player: ' + pl + ' (videoId=' + en.videoId + ')', 'player',
-      { ev: 'player', stage: 'ava-sys', ok: true, via: 'ava-to-system', player: pl });
-    setTimeout(() => { try { const e2 = avaPlayers.get(apid); if (e2 && !e2.win.isDestroyed()) e2.win.close(); } catch (_) { /* noop */ } }, 600);
-    return { ok: true, player: pl, fa: lr.fa || '' };
-  } catch (e) { return { ok: false, error: netErr(e) }; }
-});
-/* v0.84 — کنترل پخشِ پلیر آوا از مسیر صوتی (player:ctl): play/pause/seek/
-   سرعت/ولوم — واقعی و هدفمند (postMessage به خود پنجره)، نه کلید کورِ
-   مدیای سراسری. فول‌اسکرین بومی خود پنجره است. */
-async function avaPlayerCtl(a, arg, pidHint) {
-  let apid = 0;
-  if (Number(pidHint) < 0) apid = Number(pidHint);
-  else { const ids = [...avaPlayers.keys()]; apid = ids[ids.length - 1] || 0; }
-  const en = apid ? avaPlayers.get(apid) : null;
-  if (!en || !en.win || en.win.isDestroyed()) return { ok: false, noPlayer: true, error: 'پنجرهٔ پلیر آوا باز نیست' };
-  try {
-    if (a === 'fullscreen') {
-      const want = !en.win.isFullScreen();
-      en.win.setFullScreen(want);
-      try { en.win.show(); en.win.focus(); } catch (_) { /* noop */ }
-      return { ok: true, via: 'ava-player', fullscreen: want };
-    }
-    const js = '(window.__avaCtl ? window.__avaCtl(' + JSON.stringify({ a, arg }) + ') : { ok:false, error:"پل preload ندارد" })';
-    const r = await en.win.webContents.executeJavaScript(js, true);
-    if (r && r.ok) return Object.assign({ ok: true, via: 'ava-player' }, r);
-    return { ok: false, error: (r && r.error) || 'کنترل پخش در پلیر آوا ممکن نشد' };
-  } catch (e) { return { ok: false, error: netErr(e) }; }
-}
-async function avaPlayerPlay(src, opts) {
-  const o = opts || {};
-  const idm = ytIdOf(src);
-  if (!idm) return { ok: false, error: 'لینک یوتیوب ویدیوی مشخصی ندارد' };
-  if (!o.keepExisting) {
-    /* تک‌لاین ویدیو (v0.64): پخش جدید جایگزین قبلی — خارجی‌ها و پنجره‌های آوا */
-    try { const cr = await closeAllVideoPlayers(); if (cr.count) playerCtl.player = null; } catch (_) { /* noop */ }
-    try { await closeAvaPlayers(); } catch (_) { /* noop */ }
-  }
-  const apid = avaPlayerOpen(idm.id, o.title || '', idm.start || 0);
-  playerCtl.player = 'ava'; playerCtl.activePid = apid; playerCtl.activeProc = 'ava-player';
-  playerCtl.ytUrl = 'https://www.youtube.com/watch?v=' + idm.id; playerCtl.exe = ''; playerCtl.speed = 1; playerCtl.vlcBase = '';
-  actLog('ava-player open: ' + idm.id + ' apid=' + apid + (o.reason ? ' (' + o.reason + ')' : ''), 'player',
-    { ev: 'player', stage: 'ava-player', ok: true, via: 'ava', videoId: idm.id });
-  /* عنوان واقعی با oEmbed — نوار عنوان پنجره زنده به‌روز می‌شود (عنوانِ فوری از مسیر سرچ می‌آید) */
-  ytTitleOf(idm.id).then((t2) => {
-    if (!t2) return;
-    const en = avaPlayers.get(apid); if (!en) return;
-    en.title = t2;
-    try { en.win.webContents.executeJavaScript('window.__avaSetTitle && window.__avaSetTitle(' + JSON.stringify(t2) + ')', true).catch(() => { /* noop */ }); } catch (_) { /* noop */ }
-  }).catch(() => { /* noop */ });
-  return { ok: true, via: 'ava', player: 'ava', fa: 'پلیر آوا', apid };
-}
-function closeAvaPlayers() {
-  /* v0.83.1 — فیکس بحرانی «پنجرهٔ پلیر درجا بسته میشه»: تایمر destroy قبلی
-     روی «نقشهٔ زنده» می‌چرخید — چون avaPlayerPlay اول می‌بَندد و بعد پنجرهٔ
-     نو را باز می‌کند، بمبِ ۱.۵ثانیه‌ای به‌جای پنجره‌های قدیمی، پنجرهٔ
-     تازه‌بازشده را هم destroy می‌کرد (بازتولید ۱۰۰٪: هر پخش ≈۱.۵ثانیه بعد
-     می‌مرد). حالا فقط اسنپ‌شاتِ لحظهٔ بستن نابود می‌شود؛ نقشهٔ خالی = بدون تایمر. */
-  const olds = [...avaPlayers.values()];
-  for (const en of olds) { try { if (!en.win.isDestroyed()) en.win.close(); } catch (_) { /* noop */ } }
-  if (olds.length) {
-    setTimeout(() => {
-      for (const en of olds) { try { if (!en.win.isDestroyed()) en.win.destroy(); } catch (_) { /* noop */ } }
-    }, 1500);
-  }
-  return Promise.resolve({ count: olds.length });
-}
+/* نام‌های قدیمی — قراردادِ لایهٔ صوتی و IPC دست‌نخورده می‌ماند */
+const avaPlayerPlay = (src, opts) => AP.play(src, opts);
+const avaPlayerCtl = (a, arg, pidHint) => AP.ctl(a, arg, pidHint);
+const avaPlayerOp = (kind, arg, apid) => AP.op(kind, arg, apid);
+const avaPlayerOpAll = (kind, arg) => AP.opAll(kind, arg);
+const closeAvaPlayers = () => AP.closeAll();
+const avaAvaFocusNewest = () => AP.focusNewest();
+const avaFocusByPid = (pid) => AP.focusByPid(pid);
+const avaCloseByPid = (pid) => AP.closeByPid(pid);
+const avaListEntries = () => AP.listEntries();
+const avaYtIdOf = (raw) => AP.ytIdOf(raw);
 async function closeAllVideoTargets() {
-  /* «همهٔ ویدیوها» = پلیرهای سیستم + پنجره‌های پلیر آوا (v0.83) */
+  /* «همهٔ ویدیوها» = پلیرهای سیستم + پنجرهٔ پلیر آوا */
   let c = 0;
   try { const r = await closeAllVideoPlayers(); c += r.count || 0; } catch (_) { /* noop */ }
-  try { const r2 = await closeAvaPlayers(); c += r2.count || 0; } catch (_) { /* noop */ }
+  try { const r2 = await AP.closeAll(); c += r2.count || 0; } catch (_) { /* noop */ }
   return { count: c };
 }
 async function runningVideoTargets() {
+  /* شمارشِ «چند ویدیو باز است» = پلیرهای سیستم + پنجره‌های پلیر آوا (v0.85 از ماژول) */
   let n = 0;
   try { n = await runningVideoPlayers(); } catch (_) { /* noop */ }
-  return n + avaPlayers.size;
-}
-function avaAvaFocusNewest() {
-  const ids = [...avaPlayers.keys()];
-  const en = ids.length ? avaPlayers.get(ids[ids.length - 1]) : null;
-  if (!en) return false;
-  try { if (en.win.isMinimized()) en.win.restore(); en.win.show(); en.win.focus(); } catch (_) { /* noop */ }
-  return true;
-}
-/* عملیات بومی روی یک پنجرهٔ پلیر آوا — معادل همان اعمال PowerShellِ پلیرهای خارجی */
-function avaPlayerOp(kind, arg, apid) {
-  const en = avaPlayers.get(apid);
-  if (!en) return Promise.resolve({ ok: false, error: 'پنجرهٔ پلیر آوا پیدا نشد' });
-  const win = en.win;
-  const okN = (extra) => Promise.resolve(Object.assign({ ok: true, count: 1, op: kind }, extra || {}));
-  try {
-    if (kind === 'size' || kind === 'resize') {
-      let pw = 0, ph = 0;
-      if (arg && typeof arg === 'object') { pw = Math.max(200, parseInt(arg.w, 10) || 480); ph = Math.max(120, parseInt(arg.h, 10) || 270); }
-      else { const pr = VWIN_CFG.sizes[String(arg || 'medium').toLowerCase()] || VWIN_CFG.sizes.medium; pw = pr[0]; ph = pr[1]; }
-      const wa = screen.getDisplayMatching(win.getBounds()).workArea;
-      win.setBounds({ x: wa.x + Math.floor((wa.width - pw) / 2), y: wa.y + Math.floor((wa.height - ph) / 2), width: pw, height: ph });
-      return okN();
-    }
-    if (kind === 'maximize') { win.maximize(); return okN(); }
-    if (kind === 'minimize') { win.minimize(); return okN(); }
-    if (kind === 'restore') { win.restore(); return okN(); }
-    if (kind === 'pip') {
-      if (!en.prev) en.prev = win.getBounds();
-      const wa = screen.getPrimaryDisplay().workArea;
-      const pw = VWIN_CFG.pip[0], ph = VWIN_CFG.pip[1], mg = VWIN_CFG.pipMargin;
-      win.setAlwaysOnTop(true, 'screen-saver');
-      win.setBounds({ x: wa.x + wa.width - pw - mg, y: wa.y + wa.height - ph - mg, width: pw, height: ph });
-      return okN();
-    }
-    if (kind === 'unpip') {
-      const p = (en.prev && en.prev.width > 100) ? en.prev : { width: VWIN_CFG.sizes.medium[0], height: VWIN_CFG.sizes.medium[1] };
-      const wa = screen.getDisplayMatching(win.getBounds()).workArea;
-      win.setAlwaysOnTop(false);
-      win.setBounds({ x: wa.x + Math.floor((wa.width - p.width) / 2), y: wa.y + Math.floor((wa.height - p.height) / 2), width: p.width, height: p.height });
-      en.prev = null;
-      return okN();
-    }
-    if (kind === 'opacity') {
-      win.setOpacity(Math.max(0.1, Math.min(1, (parseInt(arg, 10) || 50) / 100)));
-      return okN();
-    }
-    if (kind === 'monitor') {
-      const i = Math.max(1, parseInt(arg, 10) || 1) - 1;
-      const ds = screen.getAllDisplays();
-      if (i >= ds.length) return Promise.resolve({ ok: false, error: 'این شماره مانیتور وجود نداره — فقط ' + ds.length + ' مانیتور متصله' });
-      const wa = ds[i].workArea; const b = win.getBounds();
-      win.setPosition(wa.x + Math.floor((wa.width - b.width) / 2), wa.y + Math.floor((wa.height - b.height) / 2));
-      return okN();
-    }
-    if (kind === 'shot') {
-      return win.webContents.capturePage().then((img) => {
-        const dir = path.join(app.getPath('pictures'), 'Ava');
-        try { fs.mkdirSync(dir, { recursive: true }); } catch (_) { /* noop */ }
-        const d = new Date();
-        const pad = (x) => String(x).padStart(2, '0');
-        const f = path.join(dir, 'video-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + '.png');
-        fs.writeFileSync(f, img.toPNG());
-        return { ok: true, path: f, count: 1, op: 'shot' };
-      }).catch((e) => ({ ok: false, error: netErr(e) }));
-    }
-    return Promise.resolve({ ok: false, error: 'اقدام پنجرهٔ ناشناخته' });
-  } catch (e) { return Promise.resolve({ ok: false, error: netErr(e) }); }
-}
-/* عملیات روی همهٔ پنجره‌های آوا — پیروی همان معنای PS: pip/shot = جدیدترین، بقیه = همه */
-async function avaPlayerOpAll(kind, arg) {
-  if (!avaPlayers.size) return { ok: false, noPlayer: true };
-  const ids = [...avaPlayers.keys()]; /* ترتیب درج = قدیم→جدید */
-  const targets = (kind === 'pip' || kind === 'shot') ? [ids[ids.length - 1]] : ids;
-  let cnt = 0, last = null;
-  for (const id of targets) { const r = await avaPlayerOp(kind, arg, id); if (r.ok) { cnt++; last = r; } }
-  if (cnt > 0) { const out = { ok: true, count: cnt, op: kind }; if (last && last.path) out.path = last.path; return out; }
-  return { ok: false, error: 'کنترل پلیر آوا ممکن نشد' };
+  return n + AP.size();
 }
 
 /* ---------- ۷) سرچ لیستی یوتیوب — v0.80 ----------
@@ -5128,7 +4847,7 @@ ipcMain.handle('player:ctl', async (_e, p) => {
      v0.64 — هیچ پلیری باز نیست؟ کلید مدیا/فوکوس به برنامهٔ فعال کاربر
      می‌رفت (تایپ حروف اضافه/پرش در ادیتور!) — حالا پاسخ صادقانه برمی‌گردد */
   if ((MEDIA_KEYS[a] || a === 'seek' || a === 'fullscreen' || a === 'volume_up' || a === 'volume_down' || a === 'play_pause' || a === 'stop') && !playerCtl.player) {
-    const nOpen = (await runningVideoPlayers()) + avaPlayers.size; /* v0.83 — پلیر آوا هم شمرده شود */
+    const nOpen = (await runningVideoPlayers()) + AP.size(); /* v0.85 — پلیر آوا هم شمرده شود */
     if (!nOpen) return { ok: false, noPlayer: true, error: 'پلیری باز نیست — اول ویدیو یا آهنگ را پخش کن' };
   }
   /* v0.80 — چند پنجرهٔ همزمان؟ کلید فقط برای «پنجرهٔ فعال» (الگوی
@@ -5136,7 +4855,7 @@ ipcMain.handle('player:ctl', async (_e, p) => {
      پخش/پازِ «همهٔ» ویدیوها را همزمان می‌زد و seek به برنامهٔ فعالِ کاربر
      می‌رفت؛ حالا با ۲+ پلیر، پنجرهٔ فعال فوکوس و کلید همان زده می‌شود. */
   if (a === 'play_pause' && !playerCtl.player) {
-    const nOpen = (await runningVideoPlayers()) + avaPlayers.size;
+    const nOpen = (await runningVideoPlayers()) + AP.size();
     if (nOpen > 1) {
       /* v0.82 — pid هدف‌دار از رزولورِ رندرر («دومی رو پاز کن») برترِ فعالِ کور است */
       const fc = await focusPlayerWindow(Number(p.pid) || playerCtl.activePid || 0);
@@ -5145,7 +4864,7 @@ ipcMain.handle('player:ctl', async (_e, p) => {
     }
   }
   if (a === 'seek' && !playerCtl.player) {
-    const nOpen = (await runningVideoPlayers()) + avaPlayers.size;
+    const nOpen = (await runningVideoPlayers()) + AP.size();
     if (nOpen > 1) {
       const fc = await focusPlayerWindow(Number(p.pid) || playerCtl.activePid || 0);
       if (!fc.ok) return { ok: false, ambiguous: true, multi: true, error: 'چند ویدیو همزمان باز است — اول بگو «برو سراغ اون یکی ویدیو»' };
